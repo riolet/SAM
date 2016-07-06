@@ -92,4 +92,4 @@ ENV/
 .idea/
 
 # database root access
-sql/pass.*
+dbconfig_local.*
