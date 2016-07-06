@@ -1,0 +1,16 @@
+$def with (name)
+$# "$def with (...)" MUST be the first line. See template.py for details
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+    <title>Test Template</title>
+</head>
+<body>
+<p>
+$if name:
+    I just wanted to say <em>hello</em> to $name.
+$else:
+    <em>Hello</em>, world!
+</p>
+</body>
+</html>
