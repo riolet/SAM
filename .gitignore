@@ -90,3 +90,6 @@ ENV/
 
 # PyCharm project settings
 .idea/
+
+# database root access
+sql/pass.*
