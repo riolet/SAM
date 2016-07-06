@@ -1,6 +1,7 @@
 import web
 # tell renderer where to look for templates
 render = web.template.render('templates/')
+db = web.database(dbn='mysql', user='root', pw='Zervos', db='samapper', port=4710)
 
 # Manage routing from here. Regex matches URL and chooses class by name
 urls = (
@@ -10,8 +11,9 @@ urls = (
 class index:
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self, name):
+        rows = db.select('syslog')
         # index is name of template.
-        return render.index(name)
+        return render.index(name, rows)
 
 
 if __name__ == "__main__":

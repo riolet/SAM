@@ -1,4 +1,4 @@
-$def with (name)
+$def with (name, rows)
 $# "$def with (...)" MUST be the first line. See template.py for details
 <!DOCTYPE html>
 <html lang="en-CA">
@@ -12,5 +12,9 @@ $if name:
 $else:
     <em>Hello</em>, world!
 </p>
+<ul>
+$for row in rows:
+    <li>$row</li>
+</ul>
 </body>
 </html>
