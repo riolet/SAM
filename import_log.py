@@ -29,6 +29,21 @@ Usage:
     """.format(sys.argv[0]))
 
 
+def create_database():
+    saved_db = dbconfig.params.pop('db')
+    with MySQLdb.connect(**dbconfig.params) as connection:
+        connection.execute("CREATE DATABASE IF NOT EXISTS samapper;")
+        connection.execute("USE samapper;")
+        connection.execute("DROP TABLE IF EXISTS Links;")
+        connection.execute("DROP TABLE IF EXISTS Nodes;")
+        connection.execute("DROP TABLE IF EXISTS Syslog;")
+        connection.execute("CREATE TABLE Syslog (entry INT UNSIGNED NOT NULL AUTO_INCREMENT, SourceIP INT UNSIGNED NOT NULL, SourcePort INT NOT NULL, DestinationIP INT UNSIGNED NOT NULL, DestinationPort INT NOT NULL, Occurances INT DEFAULT 1 NOT NULL, CONSTRAINT PKSyslog PRIMARY KEY (entry));")
+        connection.execute("CREATE TABLE Nodes (IPAddress INT UNSIGNED NOT NULL, CONSTRAINT PKNodes PRIMARY KEY (IPAddress));")
+        connection.execute("CREATE TABLE Links (SourceIP INT UNSIGNED NOT NULL, DestinationIP INT UNSIGNED NOT NULL, DestinationPort INT NOT NULL, CONSTRAINT PKLinks PRIMARY KEY (SourceIP, DestinationIP, DestinationPort), CONSTRAINT FKSrc FOREIGN KEY (SourceIP) REFERENCES Nodes (IPAddress), CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress));")
+    dbconfig.params['db'] = saved_db
+
+
+
 # Translate an IP address into a number, [0..2^32 - 1]
 def convert(a, b, c, d):
   return (int(a)<<24) + (int(b)<<16) + (int(c)<<8) + int(d)
@@ -82,10 +97,20 @@ def import_file(path_in):
 
 
 def insert_data(rows, count):
-    with MySQLdb.connect(**dbconfig.params) as connection:
-        truncatedRows = rows[:count]
-        connection.executemany("""INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort)
-        VALUES (%s, %s, %s, %s);""", truncatedRows)
+    try:
+        with MySQLdb.connect(**dbconfig.params) as connection:
+            truncatedRows = rows[:count]
+            connection.executemany("""INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort)
+            VALUES (%s, %s, %s, %s);""", truncatedRows)
+    except Exception as e:
+        # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
+        if e[0] == 1049: # Unknown database 'samapper'
+            create_database()
+            insert_data(rows, count)
+        elif e[0] == 1045: # Access Denied for '%s'@'%s' (using password: (YES|NO))
+            print(e[1])
+            print("Check your username / password? (dbconfig_local.py)")
+            sys.exit(1)
 
 
 
