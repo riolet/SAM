@@ -80,7 +80,7 @@ class map:
     pageTitle = "Map"
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        return str(render._head(self.pageTitle)) \
+        return str(render._head(self.pageTitle, stylesheets=['/static/css/map.css'], scripts=['/static/js/map.js'])) \
              + str(render._header(Common.navbar, self.pageTitle)) \
              + str(render.map()) \
              + str(render._tail())
