@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import common
 import MySQLdb
 
 try:
@@ -27,21 +28,6 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Usage:
     python {0} <input-file>
     """.format(sys.argv[0]))
-
-
-def create_database():
-    saved_db = dbconfig.params.pop('db')
-    with MySQLdb.connect(**dbconfig.params) as connection:
-        connection.execute("CREATE DATABASE IF NOT EXISTS samapper;")
-        connection.execute("USE samapper;")
-        connection.execute("DROP TABLE IF EXISTS Links;")
-        connection.execute("DROP TABLE IF EXISTS Nodes;")
-        connection.execute("DROP TABLE IF EXISTS Syslog;")
-        connection.execute("CREATE TABLE Syslog (entry INT UNSIGNED NOT NULL AUTO_INCREMENT, SourceIP INT UNSIGNED NOT NULL, SourcePort INT NOT NULL, DestinationIP INT UNSIGNED NOT NULL, DestinationPort INT NOT NULL, Occurances INT DEFAULT 1 NOT NULL, CONSTRAINT PKSyslog PRIMARY KEY (entry));")
-        connection.execute("CREATE TABLE Nodes (IPAddress INT UNSIGNED NOT NULL, CONSTRAINT PKNodes PRIMARY KEY (IPAddress));")
-        connection.execute("CREATE TABLE Links (SourceIP INT UNSIGNED NOT NULL, DestinationIP INT UNSIGNED NOT NULL, DestinationPort INT NOT NULL, CONSTRAINT PKLinks PRIMARY KEY (SourceIP, DestinationIP, DestinationPort), CONSTRAINT FKSrc FOREIGN KEY (SourceIP) REFERENCES Nodes (IPAddress), CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress));")
-    dbconfig.params['db'] = saved_db
-
 
 
 # Translate an IP address into a number, [0..2^32 - 1]
@@ -77,6 +63,7 @@ def translate(line, lineNum):
 def import_file(path_in):
     with open(path_in) as fin:
         lineNum = -1
+        linesInserted = 0;
         counter = 0
         rows = [("","","","")]*1000
         for line in fin:
@@ -91,9 +78,12 @@ def import_file(path_in):
 
             if counter == 1000:
                 insert_data(rows, counter)
+                linesInserted += counter
                 counter = 0
         if counter != 0:
             insert_data(rows, counter)
+            linesInserted += counter
+        print("Done. {0} lines processed, {1} rows inserted".format(lineNum, linesInserted))
 
 
 def insert_data(rows, count):
@@ -105,7 +95,7 @@ def insert_data(rows, count):
     except Exception as e:
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
         if e[0] == 1049: # Unknown database 'samapper'
-            create_database()
+            common.create_database()
             insert_data(rows, count)
         elif e[0] == 1045: # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print(e[1])
