@@ -3,14 +3,16 @@ var ctx;
 var width;
 var height;
 var rect;
+
 var navBarHeight;
 var nodes;
-var ismdown;
+
+var ismdown = false;
 var mdownx, mdowny;
 var mx, my;
-var oldTransform;
-var tx, ty;
-var scale;
+var tx = 400;
+var ty = 120;
+var scale = 1;
 
 
 function init() {
@@ -30,12 +32,6 @@ function init() {
     canvas.addEventListener('mousemove', mousemove);
     canvas.addEventListener('mouseup', mouseup);
     canvas.addEventListener('wheel', wheel);
-
-
-    //default viewport coordinates
-    tx = 400;
-    ty = 120;
-    scale = 1;
 
     render(tx, ty, scale);
 }
