@@ -4,6 +4,13 @@ var width;
 var height;
 var navBarHeight;
 var nodes;
+var ismdown;
+var mdownx, mdowny;
+var mx, my;
+var oldTransform;
+var tx, ty;
+var scale;
+
 
 function init() {
     canvas = document.getElementById("canvas");
@@ -14,12 +21,65 @@ function init() {
     width = canvas.width;
     height = canvas.height;
     ctx = canvas.getContext("2d");
-    render();
+
+    //Event listeners for detecting clicks
+    canvas.addEventListener('mousedown', mousedown);
+    canvas.addEventListener('mousemove', mousemove);
+    canvas.addEventListener('mouseup', mouseup);
+
+    //default viewport coordinates
+    tx = 400;
+    ty = 120;
+    scale = 1;
+
+    render(tx, ty, scale);
 }
 
-function render() {
+//==========================================
+//  Mouse Interaction Handlers
+//==========================================
+
+function mousedown(event) {
+    var rect = canvas.getBoundingClientRect();
+    mdownx = event.clientX - rect.left;
+    mdowny = event.clientY - rect.top;
+    ismdown = true;
+}
+
+function mouseup(event) {
+    if (ismdown == false) {
+        return
+    }
+
+    ismdown = false;
+    var rect = canvas.getBoundingClientRect();
+    mx = event.clientX - rect.left;
+    my = event.clientY - rect.top;
+    tx = tx + mx - mdownx;
+    ty = ty + my - mdowny;
+    render(tx, ty, scale);
+}
+
+function mousemove(event) {
+    if (ismdown == false) {
+        return
+    }
+    var rect = canvas.getBoundingClientRect();
+    mx = event.clientX - rect.left;
+    my = event.clientY - rect.top;
+    render(tx + mx - mdownx, ty + my - mdowny, scale);
+}
+
+//==========================================
+//  Drawing Functions
+//==========================================
+
+function render(x, y, scale) {
+    ctx.resetTransform();
     ctx.fillStyle = "#AAFFDD";
     ctx.fillRect(0, 0, width, height);
+
+    ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     drawNode("Node A", 0, 0, 100, 50);
     drawNode("Node B", 200, 0, 100, 50);
@@ -36,16 +96,16 @@ function drawNode(name, x, y, width, height) {
     ctx.fillText(name, x + (width - size.width) / 2, y + 20);
 }
 
-
-
+//==========================================
+//  Other Event Handlers
+//==========================================
 
 function onResize() {
-    console.log("Resource conscious resize callback!");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - navBarHeight;
     width = canvas.width;
     height = canvas.height;
-    render();
+    render(tx, ty, scale);
 }
 
 (function() {
