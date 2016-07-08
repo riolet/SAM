@@ -2,6 +2,7 @@ var canvas;
 var ctx;
 var width;
 var height;
+var rect;
 var navBarHeight;
 var nodes;
 var ismdown;
@@ -20,12 +21,16 @@ function init() {
     canvas.height = window.innerHeight - navBarHeight;
     width = canvas.width;
     height = canvas.height;
+    rect = canvas.getBoundingClientRect();
     ctx = canvas.getContext("2d");
 
-    //Event listeners for detecting clicks
+
+    //Event listeners for detecting clicks and zooms
     canvas.addEventListener('mousedown', mousedown);
     canvas.addEventListener('mousemove', mousemove);
     canvas.addEventListener('mouseup', mouseup);
+    canvas.addEventListener('wheel', wheel);
+
 
     //default viewport coordinates
     tx = 400;
@@ -40,7 +45,6 @@ function init() {
 //==========================================
 
 function mousedown(event) {
-    var rect = canvas.getBoundingClientRect();
     mdownx = event.clientX - rect.left;
     mdowny = event.clientY - rect.top;
     ismdown = true;
@@ -52,7 +56,6 @@ function mouseup(event) {
     }
 
     ismdown = false;
-    var rect = canvas.getBoundingClientRect();
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
     tx = tx + mx - mdownx;
@@ -64,10 +67,34 @@ function mousemove(event) {
     if (ismdown == false) {
         return
     }
-    var rect = canvas.getBoundingClientRect();
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
     render(tx + mx - mdownx, ty + my - mdowny, scale);
+}
+
+function wheel(event) {
+    //event is a WheelEvent
+    mx = event.clientX - rect.left;
+    my = event.clientY - rect.top;
+
+    if (event.deltaY < 0) { // Zoom in
+        tx -= mx;
+        ty -= my;
+        scale *= 1.15;
+        tx *= 1.15;
+        ty *= 1.15;
+        tx += mx;
+        ty += my;
+    } else if (event.deltaY > 0) { // Zoom out
+        tx -= mx;
+        ty -= my;
+        scale *= 0.87;
+        tx *= 0.87;
+        ty *= 0.87;
+        tx += mx;
+        ty += my;
+    }
+    render(tx, ty, scale);
 }
 
 //==========================================
@@ -105,6 +132,7 @@ function onResize() {
     canvas.height = window.innerHeight - navBarHeight;
     width = canvas.width;
     height = canvas.height;
+    rect = canvas.getBoundingClientRect();
     render(tx, ty, scale);
 }
 
