@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import common
+import dbaccess
 import MySQLdb
 
 try:
@@ -95,7 +96,7 @@ def insert_data(rows, count):
     except Exception as e:
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
         if e[0] == 1049: # Unknown database 'samapper'
-            common.create_database()
+            dbaccess.create_database()
             insert_data(rows, count)
         elif e[0] == 1045: # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print(e[1])

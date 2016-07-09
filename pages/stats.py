@@ -1,4 +1,5 @@
 import common
+import dbaccess
 
 class Stats:
     pageTitle = "Stats"
@@ -6,9 +7,9 @@ class Stats:
 
     def collect_stats(self):
         self.stats = []
-        dbworks = common.test_database()
+        dbworks = dbaccess.test_database()
         if dbworks == 1049:  #database not found
-            common.create_database()
+            dbaccess.create_database()
         elif dbworks == 1045:  #invalid username/password
             self.stats.append(("Access Denied. Check username/password?", "Error 1045"))
             return
