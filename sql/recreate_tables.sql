@@ -29,3 +29,12 @@ CREATE TABLE Links
 ,CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress)
 );
 
+CREATE TABLE Links
+(SourceIP          INT UNSIGNED NOT NULL
+,DestinationIP     INT UNSIGNED NOT NULL
+,DestinationPort   INT NOT NULL
+,CONSTRAINT PKLinks PRIMARY KEY (SourceIP, DestinationIP, DestinationPort)
+,CONSTRAINT FKSrc FOREIGN KEY (SourceIP) REFERENCES Nodes (IPAddress)
+,CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress)
+);
+

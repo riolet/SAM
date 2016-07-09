@@ -74,3 +74,9 @@ SELECT DestinationIP, DestinationPort, COUNT(*) AS cnt
 -- HAVING cnt > 10    =>   519 rows
 -- HAVING cnt > 0     =>  1571 rows
 
+SELECT SourceIP DIV 16777215 AS 'Source', DestinationIP DIV 16777215 AS 'Destination', DestinationPort, COUNT(*) AS 'Occurrences'
+    FROM Syslog
+    GROUP BY Source, Destination, DestinationPort
+    ORDER BY Occurrences ASC
+    ;
+-- 230 unique connections, 7 sources, 4 destination
