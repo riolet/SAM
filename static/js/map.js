@@ -118,14 +118,16 @@ function render(x, y, scale) {
 
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
-    ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
     ctx.font = "20px sans";
     ctx.fillStyle = "#0000FF";
+    ctx.strokeStyle = "#5555CC";
+    ctx.lineWidth = 5;
     for (var node in nodeCollection) {
-        drawNode(nodeCollection[node].number, nodeCollection[node].x, nodeCollection[node].y, 50, 50);
+        drawClusterNode(nodeCollection[node].number, nodeCollection[node].x, nodeCollection[node].y, 50, 50);
     }
 
+    ctx.strokeStyle = "#000000";
     for (var link in linkCollection) {
         var start = nodeCollection[linkCollection[link].Source];
         var end = nodeCollection[linkCollection[link].Destination];
@@ -133,8 +135,12 @@ function render(x, y, scale) {
     }
 }
 
-function drawNode(name, x, y, width, height) {
-    ctx.strokeRect(x - width/2, y - height/2, width, height);
+function zoomLevel() {
+    if (scale > ) return 4;
+    if (scale > )
+}
+
+function drawClusterNode(name, x, y, width, height) {
     ctx.beginPath();
     ctx.arc(x, y, height / 2, 0, Math.PI * 2, 0);
     ctx.stroke();
@@ -143,18 +149,44 @@ function drawNode(name, x, y, width, height) {
 }
 
 function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
-    if (Math.abs(x1 - x2) + Math.abs(y1 - y2) < 10) {
+    var dx = x2-x1;
+    var dy = y2-y1;
+    if (Math.abs(dx) + Math.abs(dy) < 10) {
         return;
     }
     //offset endpoints by radius
-    var dx = x2-x1;
-    var dy = y2-y1;
     if (Math.abs(dx) > Math.abs(dy)) {
-        x1 = (dx > 0 ? x1 + radius : x1 - radius);
-        x2 = (dx > 0 ? x2 - radius : x2 + radius);
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //leftward flowing
+            x1 = x1 - radius;
+            x2 = x2 + radius;
+            y1 += 5;
+            y2 += 5;
+        } else {
+            //rightward flowing
+            x1 = x1 + radius;
+            x2 = x2 - radius;
+            y1 -= 5;
+            y2 -= 5;
+        }
+        dx = x2 - x1;
     } else {
-        y1 = (dy > 0 ? y1 + radius : y1 - radius);
-        y2 = (dy > 0 ? y2 - radius : y2 + radius);
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //upward flowing
+            y1 = y1 - radius;
+            y2 = y2 + radius;
+            x1 += 5;
+            x2 += 5;
+        } else {
+            //downward flowing
+            y1 = y1 + radius;
+            y2 = y2 - radius;
+            x1 -= 5;
+            x2 -= 5;
+        }
+        dy = y2 - y1;
     }
 
     ctx.beginPath();
@@ -162,9 +194,9 @@ function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
 
-    var len = Math.hypot(x2-x1, y2-y1);
-    var xTemp = (x1 - x2) / len * 10;
-    var yTemp = (y1 - y2) / len * 10;
+    var len = Math.hypot(dx, dy);
+    var xTemp = (-dx) / len * 10;
+    var yTemp = (-dy) / len * 10;
 
 
     var c = Math.cos(0.3);
@@ -247,6 +279,7 @@ function onResize() {
     width = canvas.width;
     height = canvas.height;
     rect = canvas.getBoundingClientRect();
+    ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);
 }
 

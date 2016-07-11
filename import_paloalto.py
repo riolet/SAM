@@ -31,11 +31,6 @@ Usage:
     """.format(sys.argv[0]))
 
 
-# Translate an IP address into a number, [0..2^32 - 1]
-def convert(a, b, c, d):
-  return (int(a)<<24) + (int(b)<<16) + (int(c)<<8) + int(d)
-
-
 def translate(line, lineNum):
     data = json.loads(line)['message']
     # TODO: this assumes the data will not have any commas embedded in strings
