@@ -198,7 +198,6 @@ function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
     var xTemp = (-dx) / len * 10;
     var yTemp = (-dy) / len * 10;
 
-
     var c = Math.cos(0.3);
     var s = Math.sin(0.3);
     var x3 = xTemp * c - yTemp * s + x2;

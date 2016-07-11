@@ -106,4 +106,3 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
             AND ip <= $max
         GROUP BY address;""", vars=vars)
     return rows
-
