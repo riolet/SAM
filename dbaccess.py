@@ -5,7 +5,7 @@ import common
 def test_database():
     result = 0;
     try:
-        rows = common.db.query("SELECT COUNT(*) FROM Nodes")
+        rows = common.db.query("SELECT * FROM Syslog LIMIT 1;")
     except Exception as e:
         result = e[0]
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
