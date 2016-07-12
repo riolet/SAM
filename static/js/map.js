@@ -137,6 +137,11 @@ function loadChildren(node) {
             name = node.alias + "." + result[row].address;
             node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
         }
+        for (var i in node.children) {
+            for (var j in node.children[i].inputs) {
+                preprocessConnection(node.children[i].inputs[j])
+            }
+        }
     }});
 }
 
