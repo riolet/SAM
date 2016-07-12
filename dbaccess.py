@@ -76,28 +76,31 @@ def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
     return (min, max, quot)
 
 
-def connections(subnet=8):
+def connections():
     rows = common.db.select("Nodes8")
     return rows
 
 
 def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
-    range = determineRange(ipSegment1, ipSegment2, ipSegment3);
-
-    # test with 172.21.47
-
-    vars = dict(min=range[0], max=range[1], quot=range[2])
-
-    rows = common.db.query("""
-    SELECT (ip - $min) DIV $quot AS 'address', COUNT(*) AS 'count'
-        FROM (
-            (SELECT SourceIP AS ip
-            FROM Syslog)
-            UNION ALL
-            (SELECT DestinationIP AS ip
-            FROM Syslog)
-        ) as result
-        WHERE ip >= $min
-            AND ip <= $max
-        GROUP BY address;""", vars=vars)
+    print("called with {0}.{1}.{2}.0".format(ipSegment1,ipSegment2,ipSegment3))
+    rows = []
+    if ipSegment1 == -1 or ipSegment1 < 0 or ipSegment1 > 255:
+        # check Nodes8
+        rows = common.db.select("Nodes8")
+    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+        # check Nodes16
+        rows = common.db.where("Nodes16",
+                               parent8 = ipSegment1)
+    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+        # check Nodes24
+        # TODO: This is broken :(
+        rows = common.db.where("Nodes24",
+                               parent8 = ipSegment1,
+                               parent16 = ipSegment2)
+    else:
+        # check Nodes32
+        rows = common.db.where("Nodes32",
+                               parent8 = ipSegment1,
+                               parent16 = ipSegment2,
+                               parent24 = ipSegment3)
     return rows

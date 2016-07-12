@@ -57,7 +57,7 @@ function Node(address, alias, level, connections, x, y, radius) {
     this.connections = connections;
     this.x = x;
     this.y = y;
-    this.radius = 2000;
+    this.radius = radius;
     this.children = {};
     this.childrenLoaded = false;
 }
@@ -94,20 +94,7 @@ function onLoadData(result) {
     }
     //linkCollection = result;
 
-    arrangeCircle();
-
     render(tx, ty, scale);
-}
-
-function arrangeCircle() {
-    var numKeys = Object.keys(nodeCollection).length
-    var i = 0
-    for (var node in nodeCollection) {
-        var ix = i / numKeys * Math.PI * 2;
-        nodeCollection[node].x = Math.sin(ix) * 20000;
-        nodeCollection[node].y = Math.cos(ix) * 20000;
-        i++
-    }
 }
 
 function checkLoD() {
@@ -123,8 +110,17 @@ function checkLoD() {
 
 function loadChildren(node) {
     node.childrenLoaded = true;
-    // TODO: load child nodes
     console.log("Dynamically loading children of " + node.address);
+    // TODO: Fix address notation. Only works for /16 nodes.
+    $.ajax({url: "/query/" + node.address, dataType: "json", error: onNotLoadData, success: function(result) {
+        console.log("Loaded node " + node.address + "'s children:");
+        console.log(result);
+        console.log("There are " + result.length + " of them.")
+
+        for (var row in result) {
+            node.children[result[row].IPAddress] = new Node(result[row].IPAddress, result[row].alias, 16, result[row].connections, result[row].x, result[row].y, result[row].radius);
+        }
+    }});
 }
 
 //==========================================
@@ -139,13 +135,10 @@ function render(x, y, scale) {
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     ctx.lineWidth = 1;
-    ctx.font = "1000px sans";
     ctx.fillStyle = "#0000FF";
     ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 5 / scale;
-    for (var node in nodeCollection) {
-        drawClusterNode(nodeCollection[node].address, nodeCollection[node].x, nodeCollection[node].y, nodeCollection[node].radius);
-    }
+    renderClusters(nodeCollection);
 
     ctx.strokeStyle = "#000000";
     for (var link in linkCollection) {
@@ -155,12 +148,27 @@ function render(x, y, scale) {
     }
 }
 
+function renderClusters(collection) {
+    var level = currentLevel();
+
+    for (var node in collection) {
+        if (collection[node].level > level) {
+            return;
+        }
+        ctx.font = (collection[node].radius / 2) + "px sans";
+        drawClusterNode(collection[node].address, collection[node].x, collection[node].y, collection[node].radius);
+        if (collection[node].childrenLoaded) {
+            renderClusters(collection[node].children);
+        }
+    }
+}
+
 function drawClusterNode(name, x, y, radius) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
     ctx.stroke();
     var size = ctx.measureText(name);
-    ctx.fillText(name, x - size.width / 2, y - radius - 500);
+    ctx.fillText(name, x - size.width / 2, y - radius * 1.25);
 }
 
 function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
