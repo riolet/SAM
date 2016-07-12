@@ -18,13 +18,13 @@ def import_nodes():
 
     # Get all /8 nodes. Load them into Nodes8
     query = """
-    INSERT INTO Nodes8 (IPAddress, connections, children, radius)
-    SELECT cluster.address AS ipa
+    INSERT INTO Nodes8 (address, connections, children, radius)
+    SELECT cluster.nip AS address
         , SUM(cluster.conns) AS connections
         , COUNT(cluster.child) AS children
         , (COUNT(cluster.child) / 127.5 + 0.5) * 2000
     FROM
-        (SELECT ip DIV 16777216 AS 'address'
+        (SELECT ip DIV 16777216 AS 'nip'
             , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'child'
             , COUNT(*) AS 'conns'
         FROM (
@@ -34,15 +34,15 @@ def import_nodes():
             (SELECT DestinationIP AS ip
             FROM Syslog)
         ) AS result
-        GROUP BY address, child
+        GROUP BY nip, child
     ) AS cluster
-    GROUP BY ipa;
+    GROUP BY address;
     """
     common.db.query(query)
 
     # Get all the /16 nodes. Load these into Nodes16
     query = """
-        INSERT INTO Nodes16 (parent8, IPAddress, connections, children, radius)
+        INSERT INTO Nodes16 (parent8, address, connections, children, radius)
         SELECT cluster.pip8 AS parent8
             , cluster.nip AS address
             , SUM(cluster.conns) AS connections
@@ -68,7 +68,7 @@ def import_nodes():
 
     # Get all the /24 nodes. Load these into Nodes24
     query = """
-        INSERT INTO Nodes24 (parent8, parent16, IPAddress, connections, children, radius)
+        INSERT INTO Nodes24 (parent8, parent16, address, connections, children, radius)
         SELECT cluster.pip8 AS parent8
             , cluster.pip16 AS parent16
             , cluster.nip AS address
@@ -96,7 +96,7 @@ def import_nodes():
 
     # Get all the /32 nodes. Load these into Nodes32
     query = """
-        INSERT INTO Nodes32 (parent8, parent16, parent24, IPAddress, connections, children, radius)
+        INSERT INTO Nodes32 (parent8, parent16, parent24, address, connections, children, radius)
         SELECT cluster.pip8 AS parent8
             , cluster.pip16 AS parent16
             , cluster.pip24 AS parent24
@@ -155,17 +155,17 @@ def position_nodes():
             UPDATE Nodes8
             SET x = $nx
               , y = $ny
-            WHERE IPAddress = $nip"""
-            qvars = {'nx':node.x, 'ny':node.y, 'nip':node.IPAddress}
+            WHERE address = $nip"""
+            qvars = {'nx':node.x, 'ny':node.y, 'nip':node.address}
             common.db.query(query, vars=qvars)
 
 
     # position the /16 within each node's parent
     query = """
-        SELECT A.parent8, A.IPAddress, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
+        SELECT A.parent8, A.address, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
         FROM
             Nodes16 A JOIN Nodes8 B
-            ON A.parent8 = B.IPAddress
+            ON A.parent8 = B.address
         ORDER BY A.parent8;
         """
     rows = common.db.query(query)
@@ -187,17 +187,17 @@ def position_nodes():
             UPDATE Nodes16
             SET x = $nx
               , y = $ny
-            WHERE parent8 = $pip8 AND IPAddress = $nip"""
-            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'nip': node.IPAddress}
+            WHERE parent8 = $pip8 AND address = $nip"""
+            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'nip': node.address}
             common.db.query(query, vars=qvars)
 
 
     # position the /24 within each node's parent
     query = """
-        SELECT A.parent8, A.parent16, A.IPAddress, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
+        SELECT A.parent8, A.parent16, A.address, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
         FROM
             Nodes24 A JOIN Nodes16 B
-            ON (A.parent16 = B.IPAddress AND A.parent8 = B.parent8)
+            ON (A.parent16 = B.address AND A.parent8 = B.parent8)
             ORDER BY A.parent8, A.parent16;
         """
     rows = common.db.query(query)
@@ -221,17 +221,17 @@ def position_nodes():
             UPDATE Nodes24
             SET x = $nx
               , y = $ny
-            WHERE parent8 = $pip8 AND parent16 = $pip16 AND IPAddress = $nip"""
-            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'pip16': node.parent16, 'nip': node.IPAddress}
+            WHERE parent8 = $pip8 AND parent16 = $pip16 AND address = $nip"""
+            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'pip16': node.parent16, 'nip': node.address}
             common.db.query(query, vars=qvars)
 
 
     # position the /32 within each node's parent
     query = """
-        SELECT A.parent8, A.parent16, A.parent24, A.IPAddress, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
+        SELECT A.parent8, A.parent16, A.parent24, A.address, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
         FROM
             Nodes32 A JOIN Nodes24 B
-            ON (A.parent24 = B.IPAddress AND A.parent16 = B.parent16 AND A.parent8 = B.parent8)
+            ON (A.parent24 = B.address AND A.parent16 = B.parent16 AND A.parent8 = B.parent8)
             ORDER BY A.parent8, A.parent16, A.parent24;
         """
     rows = common.db.query(query)
@@ -255,13 +255,71 @@ def position_nodes():
             UPDATE Nodes32
             SET x = $nx
               , y = $ny
-            WHERE parent8 = $pip8 AND parent16 = $pip16  AND parent24 = $pip24 AND IPAddress = $nip"""
-            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'pip16': node.parent16, 'pip24': node.parent24, 'nip': node.IPAddress}
+            WHERE parent8 = $pip8 AND parent16 = $pip16  AND parent24 = $pip24 AND address = $nip"""
+            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'pip16': node.parent16, 'pip24': node.parent24, 'nip': node.address}
             common.db.query(query, vars=qvars)
 
 
 def import_links():
-    pass
+    # Populate Links8
+    query = """
+        INSERT INTO Links8 (source8, dest8, links)
+        SELECT SourceIP DIV 16777216 AS source8
+             , DestinationIP DIV 16777216 AS dest8
+             , COUNT(*) AS conns
+        FROM Syslog
+        GROUP BY source8, dest8;
+        """
+    common.db.query(query)
+
+
+    # Populate Links16
+    query = """
+        INSERT INTO Links16 (source8, source16, dest8, dest16, links)
+        SELECT SourceIP DIV 16777216 AS source8
+             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+             , DestinationIP DIV 16777216 AS dest8
+             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+             , COUNT(*) AS conns
+        FROM Syslog
+        GROUP BY source8, source16, dest8, dest16;
+    """
+    common.db.query(query)
+
+
+    # Populate Links24
+    query = """
+        INSERT INTO Links24 (source8, source16, source24, dest8, dest16, dest24, links)
+        SELECT SourceIP DIV 16777216 AS source8
+             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+             , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+             , DestinationIP DIV 16777216 AS dest8
+             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+             , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+             , COUNT(*) AS conns
+        FROM Syslog
+        GROUP BY source8, source16, source24, dest8, dest16, dest24;
+    """
+    common.db.query(query)
+
+
+    # Populate Links32
+    query = """
+        INSERT INTO Links32 (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links)
+        SELECT SourceIP DIV 16777216 AS source8
+             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+             , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+             , (SourceIP - (SourceIP DIV 256) * 256) AS source32
+             , DestinationIP DIV 16777216 AS dest8
+             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+             , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+             , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
+             , DestinationPort AS port
+             , COUNT(*) AS conns
+        FROM Syslog
+        GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, dest32, port;
+    """
+    common.db.query(query)
 
 
 def preprocess_log():

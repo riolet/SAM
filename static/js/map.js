@@ -89,11 +89,11 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
 function onLoadData(result) {
     // result should be a json object.
     // I am expecting `result` to be an array of objects
-    // where each object has IPAddress, alias, connections, x, y, radius,
+    // where each object has address, alias, connections, x, y, radius,
     nodeCollection = {};
     for (var row in result) {
-        name = result[row].IPAddress;
-        nodeCollection[result[row].IPAddress] = new Node(result[row].IPAddress, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
+        name = result[row].address;
+        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
     }
     renderCollection = nodeCollection;
 
@@ -122,9 +122,9 @@ function loadChildren(node) {
         error: onNotLoadData,
         success: function(result) {
         for (var row in result) {
-            //console.log("Loaded " + node.alias + " -> " + result[row].IPAddress);
-            name = node.alias + "." + result[row].IPAddress;
-            node.children[result[row].IPAddress] = new Node(result[row].IPAddress, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
+            //console.log("Loaded " + node.alias + " -> " + result[row].address);
+            name = node.alias + "." + result[row].address;
+            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
         }
     }});
 }

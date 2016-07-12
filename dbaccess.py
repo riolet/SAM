@@ -25,8 +25,6 @@ def create_database():
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
     connection.query("USE samapper;")
-    connection.query("DROP TABLE IF EXISTS Links;")
-    connection.query("DROP TABLE IF EXISTS Nodes;")
     connection.query("DROP TABLE IF EXISTS Syslog;")
     connection.query("""
         CREATE TABLE Syslog (
@@ -37,20 +35,6 @@ def create_database():
             DestinationPort INT NOT NULL,
             Occurances INT DEFAULT 1 NOT NULL,
             CONSTRAINT PKSyslog PRIMARY KEY (entry))
-            ;""")
-    connection.query("""
-        CREATE TABLE Nodes (
-            IPAddress INT UNSIGNED NOT NULL,
-            CONSTRAINT PKNodes PRIMARY KEY (IPAddress))
-            ;""")
-    connection.query("""
-        CREATE TABLE Links (
-            SourceIP INT UNSIGNED NOT NULL,
-            DestinationIP INT UNSIGNED NOT NULL,
-            DestinationPort INT NOT NULL,
-            CONSTRAINT PKLinks PRIMARY KEY (SourceIP, DestinationIP, DestinationPort),
-            CONSTRAINT FKSrc FOREIGN KEY (SourceIP) REFERENCES Nodes (IPAddress),
-            CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress))
             ;""")
 
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
@@ -82,7 +66,6 @@ def connections():
 
 
 def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
-    print("called with {0}.{1}.{2}.0".format(ipSegment1,ipSegment2,ipSegment3))
     rows = []
     if ipSegment1 == -1 or ipSegment1 < 0 or ipSegment1 > 255:
         # check Nodes8
