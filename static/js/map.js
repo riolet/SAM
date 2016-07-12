@@ -8,9 +8,11 @@ var navBarHeight;
 var ismdown = false;
 var mdownx, mdowny;
 var mx, my;
-var tx = 366;
-var ty = 187;
-var scale = 0.75;
+var tx = 532;
+var ty = 288;
+var scale = 0.01;
+
+var map = {};
 
 var nodeCollection;
 var linkCollection;
@@ -48,20 +50,28 @@ function loadData() {
     $.ajax({url: "/query", dataType: "json", success: onLoadData, error: onNotLoadData});
 }
 
-function Node(number, x, y) {
-    this.number = number;
-    this.inputs = [];
+function Node(address, alias, level, connections, x, y, radius) {
+    this.address = address;
+    this.alias = alias;
+    this.level = level;
+    this.connections = connections;
     this.x = x;
     this.y = y;
+    this.radius = 2000;
+    this.children = {};
+    this.childrenLoaded = false;
 }
 
 Node.prototype = {
-    name: "",
-    number: 0,
-    visits: 0,
-    inputs: [],
+    alias: "",
+    address: 0,
+    level: 8,
+    connections: 0,
     x: 0,
-    y: 0
+    y: 0,
+    radius: 0,
+    children: {},
+    childrenLoaded: false
 };
 
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
@@ -76,20 +86,13 @@ function onLoadData(result) {
     console.log(result);
     console.log("There are " + result.length + " connections to map");
     // result should be a json object.
-    // I am expecting it to be an array of objects
-    // where each object has Source, Destination, Occurrences
+    // I am expecting `result` to be an array of objects
+    // where each object has IPAddress, alias, connections, x, y, radius,
     nodeCollection = {};
     for (var row in result) {
-        if (!(result[row].Source in nodeCollection)) {
-            nodeCollection[result[row].Source] = new Node(result[row].Source, 0, 0);
-        }
-        if (!(result[row].Destination in nodeCollection)) {
-            nodeCollection[result[row].Destination] = new Node(result[row].Destination, 0, 0);
-        }
-        //save the link:  record the inputs (sources) for the destination
-        nodeCollection[result[row].Destination].inputs.push(result[row].Source);
+        nodeCollection[result[row].IPAddress] = new Node(result[row].IPAddress, result[row].alias, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
     }
-    linkCollection = result;
+    //linkCollection = result;
 
     arrangeCircle();
 
@@ -101,10 +104,27 @@ function arrangeCircle() {
     var i = 0
     for (var node in nodeCollection) {
         var ix = i / numKeys * Math.PI * 2;
-        nodeCollection[node].x = Math.sin(ix) * 200;
-        nodeCollection[node].y = Math.cos(ix) * 200;
+        nodeCollection[node].x = Math.sin(ix) * 20000;
+        nodeCollection[node].y = Math.cos(ix) * 20000;
         i++
     }
+}
+
+function checkLoD() {
+    level = currentLevel();
+    visible = onScreen();
+
+    for (var i in visible) {
+        if (visible[i].level < level && visible[i].childrenLoaded == false) {
+            loadChildren(visible[i]);
+        }
+    }
+}
+
+function loadChildren(node) {
+    node.childrenLoaded = true;
+    // TODO: load child nodes
+    console.log("Dynamically loading children of " + node.address);
 }
 
 //==========================================
@@ -119,12 +139,12 @@ function render(x, y, scale) {
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     ctx.lineWidth = 1;
-    ctx.font = "20px sans";
+    ctx.font = "1000px sans";
     ctx.fillStyle = "#0000FF";
     ctx.strokeStyle = "#5555CC";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 5 / scale;
     for (var node in nodeCollection) {
-        drawClusterNode(nodeCollection[node].number, nodeCollection[node].x, nodeCollection[node].y, 50, 50);
+        drawClusterNode(nodeCollection[node].address, nodeCollection[node].x, nodeCollection[node].y, nodeCollection[node].radius);
     }
 
     ctx.strokeStyle = "#000000";
@@ -135,17 +155,12 @@ function render(x, y, scale) {
     }
 }
 
-function zoomLevel() {
-    if (scale > ) return 4;
-    if (scale > )
-}
-
-function drawClusterNode(name, x, y, width, height) {
+function drawClusterNode(name, x, y, radius) {
     ctx.beginPath();
-    ctx.arc(x, y, height / 2, 0, Math.PI * 2, 0);
+    ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
     ctx.stroke();
     var size = ctx.measureText(name);
-    ctx.fillText(name, x - size.width / 2, y + 8);
+    ctx.fillText(name, x - size.width / 2, y - radius - 500);
 }
 
 function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
@@ -232,6 +247,7 @@ function mouseup(event) {
     tx = tx + mx - mdownx;
     ty = ty + my - mdowny;
     render(tx, ty, scale);
+    checkLoD();
 }
 
 function mousemove(event) {
@@ -264,8 +280,11 @@ function wheel(event) {
         ty *= 0.87;
         tx += mx;
         ty += my;
+    } else {
+        return;
     }
     render(tx, ty, scale);
+    checkLoD()
 }
 
 //==========================================
@@ -280,6 +299,7 @@ function onResize() {
     rect = canvas.getBoundingClientRect();
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);
+    checkLoD();
 }
 
 (function() {
@@ -303,3 +323,51 @@ function onResize() {
 
 // handle event
 window.addEventListener("optimizedResize", onResize);
+
+//==========================================
+//  Other Utilities
+//==========================================
+
+function currentLevel() {
+    if (scale < 0.07) {
+        return 8;
+    }
+    if (scale < 0.5) {
+        return 16;
+    }
+    if (scale < 3.5) {
+        return 24;
+    }
+    return 32;
+}
+
+function canSee(level) {
+    if (level <= 8) {
+        return true;
+    }
+    if (scale > 0.07 && level <= 16) {
+        return true;
+    }
+    if (scale > 0.5 && level <= 24) {
+        return true;
+    }
+    if (scale > 3.5 && level <= 32) {
+        return true;
+    }
+    return false;
+}
+
+function onScreen() {
+    var left = -tx/scale;
+    var right = (rect.width-tx)/scale;
+    var top = -ty/scale;
+    var bottom = (rect.height-ty)/scale;
+    var visible = [];
+
+    for (var node in nodeCollection) {
+        if (nodeCollection[node].x > left && nodeCollection[node].x < right && nodeCollection[node].y > top && nodeCollection[node].y < bottom) {
+            visible.push(nodeCollection[node]);
+        }
+    }
+    return visible;
+}

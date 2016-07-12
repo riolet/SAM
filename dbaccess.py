@@ -77,12 +77,7 @@ def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
 
 
 def connections(subnet=8):
-    denominator = 2**(32-subnet);
-    rows = common.db.query("""
-    SELECT SourceIP DIV 16777215 AS 'Source', DestinationIP DIV 16777215 AS 'Destination', COUNT(*) AS 'Occurrences'
-        FROM Syslog
-        GROUP BY Source, Destination
-        ORDER BY Occurrences ASC;""")
+    rows = common.db.select("Nodes8")
     return rows
 
 
