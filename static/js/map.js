@@ -171,7 +171,7 @@ function renderClusters(collection) {
         }
         //Font size below 2 pixels: the letter spacing is broken.
         //Font size above 2000 pixels: letters stop getting bigger.
-        ctx.font = (Math.max(collection[node].radius / 2, 2)) + "px sans";
+        ctx.font = Math.max(collection[node].radius / 2, 2) + "px sans";
         alpha = opacity(collection[node].level);
         ctx.globalAlpha = alpha;
         drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
@@ -291,7 +291,7 @@ function wheel(event) {
     my = event.clientY - rect.top;
 
     if (event.deltaY < 0) { // Zoom in
-        if (scale >= 7.0) {
+        if (scale >= 49.0) {
             return;
         }
         tx -= mx;

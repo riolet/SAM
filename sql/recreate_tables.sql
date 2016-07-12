@@ -18,6 +18,7 @@ CREATE TABLE Syslog
 CREATE TABLE Nodes8
 (IPAddress         INT NOT NULL
 ,connections       INT NOT NULL
+,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
@@ -29,6 +30,7 @@ CREATE TABLE Nodes16
 (parent8           INT NOT NULL
 ,IPAddress         INT NOT NULL
 ,connections       INT NOT NULL
+,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 200
@@ -42,6 +44,7 @@ CREATE TABLE Nodes24
 ,parent16          INT NOT NULL
 ,IPAddress         INT NOT NULL
 ,connections       INT NOT NULL
+,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 20
@@ -56,6 +59,7 @@ CREATE TABLE Nodes32
 ,parent24          INT NOT NULL
 ,IPAddress         INT NOT NULL
 ,connections       INT NOT NULL
+,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2
@@ -72,3 +76,4 @@ CREATE TABLE Links
 ,CONSTRAINT FKSrc FOREIGN KEY (SourceIP) REFERENCES Nodes (IPAddress)
 ,CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress)
 );
+
