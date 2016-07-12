@@ -124,9 +124,13 @@ def position_nodes():
     placed16 = []
     for node in rows:
         node.radius = 200
-        while checkCollisions(node, placed16, 100):
-            node.x = random.random() * 4000 - 2000 + node.px
-            node.y = random.random() * 4000 - 2000 + node.py
+        safetyCounter = 0
+        #while checkCollisions(node, placed16, 100):
+        node.x = random.random() * 4000 - 2000 + node.px
+        node.y = random.random() * 4000 - 2000 + node.py
+        #    safetyCounter += 1
+        #    if safetyCounter > 100:
+        #        break
         placed16.append(node)
     for node in placed16:
         query = """
@@ -139,12 +143,72 @@ def position_nodes():
         common.db.query(query, vars=qvars)
 
     # position the /24 within each node's parent
+query = """
+    SELECT A.parent8, A.parent16, A.IPAddress, B.x AS px, B.y AS py, A.x, A.y
+    FROM
+        Nodes24 A JOIN Nodes16 B
+        ON (A.parent16 = B.IPAddress AND A.parent8 = B.parent8);
+    """
+rows = common.db.query(query)
+placed24 = []
+for node in rows:
+    node.radius = 20
+    safetyCounter = 0
+    # while checkCollisions(node, placed24, 10):
+    node.x = random.random() * 400 - 200 + node.px
+    node.y = random.random() * 400 - 200 + node.py
+    #    safetyCounter += 1
+    #    if safetyCounter > 100:
+    #        break
+    placed24.append(node)
+for node in placed24:
+    query = """
+    UPDATE Nodes24
+    SET x = $nx
+      , y = $ny
+      , radius = $nr
+    WHERE parent8 = $pip8 AND parent16 = $pip16 AND IPAddress = $nip"""
+    qvars = {'nx': node.x, 'ny': node.y, 'nr': node.radius, 'pip8': node.parent8, 'pip16': node.parent16, 'nip': node.IPAddress}
+    common.db.query(query, vars=qvars)
+
     # position the /32 within each node's parent
+    query = """
+        SELECT A.parent8, A.parent16, A.parent24, A.IPAddress, B.x AS px, B.y AS py, A.x, A.y
+        FROM
+            Nodes32 A JOIN Nodes24 B
+            ON (A.parent24 = B.IPAddress AND A.parent16 = B.parent16 AND A.parent8 = B.parent8);
+        """
+    rows = common.db.query(query)
+    placed32 = []
+    for node in rows:
+        node.radius = 2
+        safetyCounter = 0
+        # while checkCollisions(node, placed24, 10):
+        node.x = random.random() * 40 - 20 + node.px
+        node.y = random.random() * 40 - 20 + node.py
+        #    safetyCounter += 1
+        #    if safetyCounter > 100:
+        #        break
+        placed32.append(node)
+    for node in placed32:
+        query = """
+        UPDATE Nodes32
+        SET x = $nx
+          , y = $ny
+          , radius = $nr
+        WHERE parent8 = $pip8 AND parent16 = $pip16  AND parent24 = $pip24 AND IPAddress = $nip"""
+        qvars = {'nx': node.x, 'ny': node.y, 'nr': node.radius, 'pip8': node.parent8, 'pip16': node.parent16, 'pip24': node.parent24, 'nip': node.IPAddress}
+        common.db.query(query, vars=qvars)
+
+
+def import_links():
+    pass
 
 
 def preprocess_log():
     import_nodes()
     position_nodes()
+    import_links()
     # do something with links...
 
 

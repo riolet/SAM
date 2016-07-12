@@ -15,6 +15,7 @@ var scale = 0.01;
 var map = {};
 
 var nodeCollection;
+var renderCollection;
 var linkCollection;
 
 
@@ -47,7 +48,11 @@ function init() {
 //==========================================
 
 function loadData() {
-    $.ajax({url: "/query", dataType: "json", success: onLoadData, error: onNotLoadData});
+    $.ajax({
+        url: "/query",
+        success: onLoadData,
+        error: onNotLoadData
+        });
 }
 
 function Node(address, alias, level, connections, x, y, radius) {
@@ -76,15 +81,12 @@ Node.prototype = {
 
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
-    console.log("Failed to load data.");
-    console.log(textStatus);
-    console.log(errorThrown);
+    console.log("Failed to load data:");
+    console.log("\t" + textStatus);
+    console.log("\t" + errorThrown);
 }
 
 function onLoadData(result) {
-    console.log("Data loaded!");
-    console.log(result);
-    console.log("There are " + result.length + " connections to map");
     // result should be a json object.
     // I am expecting `result` to be an array of objects
     // where each object has IPAddress, alias, connections, x, y, radius,
@@ -93,7 +95,7 @@ function onLoadData(result) {
         name = result[row].IPAddress;
         nodeCollection[result[row].IPAddress] = new Node(result[row].IPAddress, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
     }
-    //linkCollection = result;
+    renderCollection = nodeCollection;
 
     render(tx, ty, scale);
 }
@@ -107,20 +109,22 @@ function checkLoD() {
             loadChildren(visible[i]);
         }
     }
+    updateRenderRoot();
+    render(tx, ty, scale);
 }
 
 function loadChildren(node) {
     node.childrenLoaded = true;
-    console.log("Dynamically loading children of " + node.address);
-    // TODO: Fix address notation. Only works for /16 nodes.
-    $.ajax({url: "/query/" + node.address, dataType: "json", error: onNotLoadData, success: function(result) {
-        console.log("Loaded node " + node.address + "'s children:");
-        console.log(result);
-        console.log("There are " + result.length + " of them.")
-
+    //console.log("Dynamically loading children of " + node.alias);
+    $.ajax({
+        url: "/query/" + node.alias.split(".").join("/"),
+        dataType: "json",
+        error: onNotLoadData,
+        success: function(result) {
         for (var row in result) {
-            name = result[row].parent8 + "." + result[row].IPAddress;
-            node.children[result[row].IPAddress] = new Node(result[row].IPAddress, name, 16, result[row].connections, result[row].x, result[row].y, result[row].radius);
+            //console.log("Loaded " + node.alias + " -> " + result[row].IPAddress);
+            name = node.alias + "." + result[row].IPAddress;
+            node.children[result[row].IPAddress] = new Node(result[row].IPAddress, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
         }
     }});
 }
@@ -128,6 +132,10 @@ function loadChildren(node) {
 //==========================================
 //  Drawing Functions
 //==========================================
+
+function updateRenderRoot() {
+    renderCollection = onScreen();
+}
 
 function render(x, y, scale) {
     ctx.resetTransform();
@@ -141,7 +149,9 @@ function render(x, y, scale) {
     ctx.fillStyle = "#0000FF";
     ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 5 / scale;
-    renderClusters(nodeCollection);
+
+    //TODO: replace nodeCollection with onScreen() to only render visible nodes
+    renderClusters(renderCollection);
 
     ctx.strokeStyle = "#000000";
     for (var link in linkCollection) {
@@ -159,14 +169,15 @@ function renderClusters(collection) {
         if (collection[node].level > level) {
             return;
         }
-        ctx.font = (collection[node].radius / 2) + "px sans";
-            //TODO: Fade in/out based on scale
-            alpha = opacity(collection[node].level);
-            ctx.globalAlpha = alpha;
-            drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
-        if (collection[node].childrenLoaded) {
-            renderClusters(collection[node].children);
-        }
+        //Font size below 2 pixels: the letter spacing is broken.
+        //Font size above 2000 pixels: letters stop getting bigger.
+        ctx.font = (Math.max(collection[node].radius / 2, 2)) + "px sans";
+        alpha = opacity(collection[node].level);
+        ctx.globalAlpha = alpha;
+        drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
+        //if (collection[node].childrenLoaded) {
+        //    renderClusters(collection[node].children);
+        //}
     }
 }
 
@@ -280,6 +291,9 @@ function wheel(event) {
     my = event.clientY - rect.top;
 
     if (event.deltaY < 0) { // Zoom in
+        if (scale >= 7.0) {
+            return;
+        }
         tx -= mx;
         ty -= my;
         scale *= 1.15;
@@ -288,6 +302,9 @@ function wheel(event) {
         tx += mx;
         ty += my;
     } else if (event.deltaY > 0) { // Zoom out
+        if (scale <= 0.01) {
+            return;
+        }
         tx -= mx;
         ty -= my;
         scale *= 0.87;
@@ -299,7 +316,7 @@ function wheel(event) {
         return;
     }
     render(tx, ty, scale);
-    checkLoD()
+    checkLoD();
 }
 
 //==========================================
@@ -378,7 +395,6 @@ function opacity(level) {
             return (scale - 1.0) / (-0.5);
         }
     } else if (level == 24) {
-        //TODO: test this
         if (scale <= 0.5) {
             return 0.0;
         } else if (scale >= 7.0) {
@@ -388,16 +404,15 @@ function opacity(level) {
         } else if (scale < 1.0) {
             return 1 - (scale - 1.0) / (-0.5);
         } else if (scale > 3.5) {
-            return (scale - 1.0) / (-3.5);
+            return (scale - 7.0) / (-3.5);
         }
     } else if (level == 32) {
-        //TODO: test this
         if (scale <= 3.5) {
             return 0.0;
         } else if (scale >= 7.0) {
             return 1.0;
         } else if (scale < 7.0) {
-            return 1 - (scale - 7.0) / (3.5);
+            return 1 - (scale - 7.0) / (-3.5);
         }
     }
 }
@@ -424,11 +439,52 @@ function onScreen() {
     var top = -ty/scale;
     var bottom = (rect.height-ty)/scale;
     var visible = [];
+    var x;
+    var y;
+    var r;
 
-    for (var node in nodeCollection) {
-        if (nodeCollection[node].x > left && nodeCollection[node].x < right && nodeCollection[node].y > top && nodeCollection[node].y < bottom) {
-            visible.push(nodeCollection[node]);
-        }
+    var level = currentLevel();
+
+    visible = onScreenRecursive(left, right, top, bottom, nodeCollection);
+
+    if (visible.length == 0) {
+        console.log("Cannot see any nodes");
     }
     return visible;
 }
+
+function onScreenRecursive(left, right, top, bottom, collection) {
+    var selected = [];
+    for (var node in collection) {
+        x = collection[node].x;
+        y = collection[node].y;
+        r = collection[node].radius * 2;
+
+        if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
+            selected.push(collection[node]);
+            if (collection[node].childrenLoaded && collection[node].level < currentLevel()) {
+                selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children))
+            }
+        }
+    }
+    return selected;
+}
+
+
+/*
+//Note: this function hasn't been tested.
+function findClosest(x, y, collection) {
+    var closestDist = Infinity;
+    var closest = null;
+    var dist = 0;
+    for (var node in collection) {
+        //NOTE: this is an approximation, rather than the true distance.
+        dist = Math.abs(collection[node].x - x) + Math.abs(collection[node].y - y)
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = collection[node];
+        }
+    }
+    return closest;
+}
+*/
