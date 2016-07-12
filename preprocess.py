@@ -124,7 +124,7 @@ def position_nodes():
     placed16 = []
     for node in rows:
         node.radius = 200
-        while checkCollisions(node, placed16, 0):
+        while checkCollisions(node, placed16, 100):
             node.x = random.random() * 4000 - 2000 + node.px
             node.y = random.random() * 4000 - 2000 + node.py
         placed16.append(node)

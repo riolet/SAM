@@ -90,7 +90,8 @@ function onLoadData(result) {
     // where each object has IPAddress, alias, connections, x, y, radius,
     nodeCollection = {};
     for (var row in result) {
-        nodeCollection[result[row].IPAddress] = new Node(result[row].IPAddress, result[row].alias, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
+        name = result[row].IPAddress;
+        nodeCollection[result[row].IPAddress] = new Node(result[row].IPAddress, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
     }
     //linkCollection = result;
 
@@ -118,7 +119,8 @@ function loadChildren(node) {
         console.log("There are " + result.length + " of them.")
 
         for (var row in result) {
-            node.children[result[row].IPAddress] = new Node(result[row].IPAddress, result[row].alias, 16, result[row].connections, result[row].x, result[row].y, result[row].radius);
+            name = result[row].parent8 + "." + result[row].IPAddress;
+            node.children[result[row].IPAddress] = new Node(result[row].IPAddress, name, 16, result[row].connections, result[row].x, result[row].y, result[row].radius);
         }
     }});
 }
@@ -130,6 +132,7 @@ function loadChildren(node) {
 function render(x, y, scale) {
     ctx.resetTransform();
     ctx.fillStyle = "#AAFFDD";
+    ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, width, height);
 
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
@@ -150,20 +153,24 @@ function render(x, y, scale) {
 
 function renderClusters(collection) {
     var level = currentLevel();
+    var alpha = 1.0;
 
     for (var node in collection) {
         if (collection[node].level > level) {
             return;
         }
         ctx.font = (collection[node].radius / 2) + "px sans";
-        drawClusterNode(collection[node].address, collection[node].x, collection[node].y, collection[node].radius);
+            //TODO: Fade in/out based on scale
+            alpha = opacity(collection[node].level);
+            ctx.globalAlpha = alpha;
+            drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
         if (collection[node].childrenLoaded) {
             renderClusters(collection[node].children);
         }
     }
 }
 
-function drawClusterNode(name, x, y, radius) {
+function drawClusterNode(name, x, y, radius, opacity) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
     ctx.stroke();
@@ -347,6 +354,52 @@ function currentLevel() {
         return 24;
     }
     return 32;
+}
+
+function opacity(level) {
+    if (level == 8) {
+        if (scale <= 0.07) {
+            return 1.0;
+        } else if (scale >= 0.14) {
+            return 0.0;
+        } else {
+            return (scale - 0.14) / (-0.07);
+        }
+    } else if (level == 16) {
+        if (scale <= 0.07) {
+            return 0.0;
+        } else if (scale >= 1.0) {
+            return 0.0;
+        } else if (scale >= 0.14 && scale <= 0.5) {
+            return 1.0;
+        } else if (scale < 0.14) {
+            return 1 - (scale - 0.14) / (-0.07);
+        } else if (scale > 0.5) {
+            return (scale - 1.0) / (-0.5);
+        }
+    } else if (level == 24) {
+        //TODO: test this
+        if (scale <= 0.5) {
+            return 0.0;
+        } else if (scale >= 7.0) {
+            return 0.0;
+        } else if (scale >= 1.0 && scale <= 3.5) {
+            return 1.0;
+        } else if (scale < 1.0) {
+            return 1 - (scale - 1.0) / (-0.5);
+        } else if (scale > 3.5) {
+            return (scale - 1.0) / (-3.5);
+        }
+    } else if (level == 32) {
+        //TODO: test this
+        if (scale <= 3.5) {
+            return 0.0;
+        } else if (scale >= 7.0) {
+            return 1.0;
+        } else if (scale < 7.0) {
+            return 1 - (scale - 7.0) / (3.5);
+        }
+    }
 }
 
 function canSee(level) {
