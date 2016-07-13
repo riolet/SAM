@@ -25,7 +25,7 @@ except Exception as e:
     print e
     import dbconfig
 
-db = web.database(dbn='mysql', user=dbconfig.params['user'], pw=dbconfig.params['passwd'], db=dbconfig.params['db'], port=dbconfig.params['port'])
+db = web.database(**dbconfig.params)
 
 
 def IPtoString(ipNumber):

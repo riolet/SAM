@@ -17,11 +17,9 @@ def test_database():
     return result
 
 def create_database():
-    connection = web.database(
-        dbn='mysql',
-        user=common.dbconfig.params['user'],
-        pw=common.dbconfig.params['passwd'],
-        port=common.dbconfig.params['port'])
+    params = common.dbconfig.params.copy()
+    params.pop('db')
+    connection = web.database(**params)
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
 
