@@ -5,7 +5,7 @@ import common
 def test_database():
     result = 0;
     try:
-        rows = common.db.query("SELECT COUNT(*) FROM Nodes")
+        rows = common.db.query("SELECT * FROM Syslog LIMIT 1;")
     except Exception as e:
         result = e[0]
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
@@ -25,8 +25,6 @@ def create_database():
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
     connection.query("USE samapper;")
-    connection.query("DROP TABLE IF EXISTS Links;")
-    connection.query("DROP TABLE IF EXISTS Nodes;")
     connection.query("DROP TABLE IF EXISTS Syslog;")
     connection.query("""
         CREATE TABLE Syslog (
@@ -38,26 +36,97 @@ def create_database():
             Occurances INT DEFAULT 1 NOT NULL,
             CONSTRAINT PKSyslog PRIMARY KEY (entry))
             ;""")
-    connection.query("""
-        CREATE TABLE Nodes (
-            IPAddress INT UNSIGNED NOT NULL,
-            CONSTRAINT PKNodes PRIMARY KEY (IPAddress))
-            ;""")
-    connection.query("""
-        CREATE TABLE Links (
-            SourceIP INT UNSIGNED NOT NULL,
-            DestinationIP INT UNSIGNED NOT NULL,
-            DestinationPort INT NOT NULL,
-            CONSTRAINT PKLinks PRIMARY KEY (SourceIP, DestinationIP, DestinationPort),
-            CONSTRAINT FKSrc FOREIGN KEY (SourceIP) REFERENCES Nodes (IPAddress),
-            CONSTRAINT FKDest FOREIGN KEY (DestinationIP) REFERENCES Nodes (IPAddress))
-            ;""")
 
-def connections(subnet=8):
-    denominator = 2**(32-subnet);
-    rows = common.db.query("""
-    SELECT SourceIP DIV 16777215 AS 'Source', DestinationIP DIV 16777215 AS 'Destination', COUNT(*) AS 'Occurrences'
-        FROM Syslog
-        GROUP BY Source, Destination
-        ORDER BY Occurrences ASC;""")
+def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
+    min = 0x00000000;
+    max = 0xFFFFFFFF;
+    quot = 1;
+    if ip1 != 0 and ip1 < 255 and ip1 > 0:
+        min = (ip1 << 24)   # 172.0.0.0
+        if ip2 != 0 and ip2 < 255 and ip2 > 0:
+            min |= (ip2 << 16)  # 172.19.0.0
+            if ip3 != 0 and ip3 < 255 and ip3 > 0:
+                min |= (ip3 << 8)
+                max = min | 0xFF
+                quot = 0x1
+            else:
+                max = min | 0xFFFF
+                quot = 0x100
+        else:
+            max = min | 0xFFFFFF
+            quot = 0x10000
+    else:
+        quot = 0x1000000
+    return (min, max, quot)
+
+
+def connections():
+    rows = common.db.select("Nodes8")
     return rows
+
+
+def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
+    rows = []
+    if ipSegment1 == -1 or ipSegment1 < 0 or ipSegment1 > 255:
+        # check Nodes8
+        rows = common.db.select("Nodes8")
+    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+        # check Nodes16
+        rows = common.db.where("Nodes16",
+                               parent8 = ipSegment1)
+    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+        # check Nodes24
+        # TODO: This is broken :(
+        rows = common.db.where("Nodes24",
+                               parent8 = ipSegment1,
+                               parent16 = ipSegment2)
+    else:
+        # check Nodes32
+        rows = common.db.where("Nodes32",
+                               parent8 = ipSegment1,
+                               parent16 = ipSegment2,
+                               parent24 = ipSegment3)
+    return rows
+
+
+def getLinks(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+    inputs = []
+
+    if ipSegment1 < 0 or ipSegment1 > 255:
+        inputs = []
+    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+        query = """
+            SELECT * FROM Links8
+            WHERE dest8 = $seg1;
+            """
+        qvars = {'seg1': str(ipSegment1)}
+        inputs = list(common.db.query(query, vars=qvars))
+    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+        query = """
+            SELECT * FROM Links16
+            WHERE dest8 = $seg1
+                && dest16 = $seg2;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2)}
+        inputs = list(common.db.query(query, vars=qvars))
+    elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
+        query = """
+            SELECT * FROM Links24
+            WHERE dest8 = $seg1
+                && dest16 = $seg2
+                && dest24 = $seg3;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3)}
+        inputs = list(common.db.query(query, vars=qvars))
+    else:
+        query = """
+            SELECT * FROM Links32
+            WHERE dest8 = $seg1
+                && dest16 = $seg2
+                && dest24 = $seg3
+                && dest32 = $seg4;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4)}
+        inputs = list(common.db.query(query, vars=qvars))
+
+    return inputs

@@ -5,13 +5,11 @@ INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort) VALUES
 INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort) VALUES (2887123978, 51894, 176794212, 3268);
 INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort) VALUES (203610520, 46732, 203598668, 389);
 
+
+
+
+
 --  python helper for making test data from lines like "10.0.160.228, 61003, 12.34.171.158, 443"
-
-
-
-def convert(a, b, c, d):
-  return (int(a)<<24) + (int(b)<<16) + (int(c)<<8) + int(d)
-
 def encode(line):
   a = line.split(", ")
   srcip = convert(*(a[0].split(".")))
@@ -19,4 +17,36 @@ def encode(line):
   dstip = convert(*(a[2].split(".")))
   dstport = int(a[3])
   return "INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort) VALUES ({0}, {1}, {2}, {3});".format(srcip, srcport, dstip, dstport)
+
+def convert(a, b, c, d):
+  return (int(a)<<24) + (int(b)<<16) + (int(c)<<8) + int(d)
+
+
+-- testing column joins syntax
+CREATE TABLE blah
+(counter INT UNSIGNED NOT NULL AUTO_INCREMENT
+, colA INT NOT NULL
+, colB INT NOT NULL
+, CONSTRAINT PKblah PRIMARY KEY (counter)
+);
+
+INSERT INTO blah (colA, colB) VALUES (1, 10);
+INSERT INTO blah (colA, colB) VALUES (1, 11);
+INSERT INTO blah (colA, colB) VALUES (1, 12);
+INSERT INTO blah (colA, colB) VALUES (2, 12);
+INSERT INTO blah (colA, colB) VALUES (3, 12);
+INSERT INTO blah (colA, colB) VALUES (5, 5);
+INSERT INTO blah (colA, colB) VALUES (5, 1);
+INSERT INTO blah (colA, colB) VALUES (12, 5);
+INSERT INTO blah (colA, colB) VALUES (12, 1);
+
+SELECT col, COUNT(*) AS cnt
+FROM (
+    (SELECT colA as col
+    FROM blah)
+    UNION ALL
+    (SELECT colB as col
+    FROM blah)
+) as jpResult
+GROUP BY col;
 

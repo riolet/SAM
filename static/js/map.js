@@ -8,11 +8,14 @@ var navBarHeight;
 var ismdown = false;
 var mdownx, mdowny;
 var mx, my;
-var tx = 366;
-var ty = 187;
-var scale = 0.75;
+var tx = 532;
+var ty = 288;
+var scale = 0.01;
+
+var map = {};
 
 var nodeCollection;
+var renderCollection;
 var linkCollection;
 
 
@@ -45,87 +48,183 @@ function init() {
 //==========================================
 
 function loadData() {
-    $.ajax({url: "/query", dataType: "json", success: onLoadData, error: onNotLoadData});
+    $.ajax({
+        url: "/query",
+        success: onLoadData,
+        error: onNotLoadData
+        });
 }
 
-function Node(number, x, y) {
-    this.number = number;
-    this.inputs = [];
+function Node(address, alias, level, connections, x, y, radius, inputs) {
+    this.address = address;
+    this.alias = alias;
+    this.level = level;
+    this.connections = connections;
     this.x = x;
     this.y = y;
+    this.radius = radius;
+    this.children = {};
+    this.childrenLoaded = false;
+    this.inputs = inputs;
 }
 
 Node.prototype = {
-    name: "",
-    number: 0,
-    visits: 0,
-    inputs: [],
+    alias: "",
+    address: 0,
+    level: 8,
+    connections: 0,
     x: 0,
-    y: 0
+    y: 0,
+    radius: 0,
+    children: {},
+    childrenLoaded: false,
+    inputs: []
 };
 
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
-    console.log("Failed to load data.");
-    console.log(textStatus);
-    console.log(errorThrown);
+    console.log("Failed to load data:");
+    console.log("\t" + textStatus);
+    console.log("\t" + errorThrown);
 }
 
 function onLoadData(result) {
-    console.log("Data loaded!");
-    console.log(result);
-    console.log("There are " + result.length + " connections to map");
     // result should be a json object.
-    // I am expecting it to be an array of objects
-    // where each object has Source, Destination, Occurrences
+    // I am expecting `result` to be an array of objects
+    // where each object has address, alias, connections, x, y, radius,
     nodeCollection = {};
+    console.log("Loaded base data:");
+    console.log(result);
+    console.log("rows: " + result.length);
     for (var row in result) {
-        if (!(result[row].Source in nodeCollection)) {
-            nodeCollection[result[row].Source] = new Node(result[row].Source, 0, 0);
-        }
-        if (!(result[row].Destination in nodeCollection)) {
-            nodeCollection[result[row].Destination] = new Node(result[row].Destination, 0, 0);
-        }
-        //save the link:  record the inputs (sources) for the destination
-        nodeCollection[result[row].Destination].inputs.push(result[row].Source);
+        name = result[row].address;
+        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
     }
-    linkCollection = result;
+    for (var i in nodeCollection) {
+        for (var j in nodeCollection[i].inputs) {
+            preprocessConnection(nodeCollection[i].inputs[j])
+        }
+    }
 
-    arrangeCircle();
+    renderCollection = nodeCollection;
 
     render(tx, ty, scale);
 }
 
-function arrangeCircle() {
-    var numKeys = Object.keys(nodeCollection).length
-    var i = 0
-    for (var node in nodeCollection) {
-        var ix = i / numKeys * Math.PI * 2;
-        nodeCollection[node].x = Math.sin(ix) * 200;
-        nodeCollection[node].y = Math.cos(ix) * 200;
-        i++
+function checkLoD() {
+    level = currentLevel();
+    visible = onScreen();
+
+    for (var i in visible) {
+        if (visible[i].level < level && visible[i].childrenLoaded == false) {
+            loadChildren(visible[i]);
+        }
     }
+    updateRenderRoot();
+    render(tx, ty, scale);
+}
+
+function loadChildren(node) {
+    node.childrenLoaded = true;
+    //console.log("Dynamically loading children of " + node.alias);
+    $.ajax({
+        url: "/query/" + node.alias.split(".").join("/"),
+        dataType: "json",
+        error: onNotLoadData,
+        success: function(result) {
+        for (var row in result) {
+            //console.log("Loaded " + node.alias + " -> " + result[row].address);
+            name = node.alias + "." + result[row].address;
+            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
+        }
+        for (var i in node.children) {
+            for (var j in node.children[i].inputs) {
+                preprocessConnection(node.children[i].inputs[j])
+            }
+        }
+    }});
+}
+
+function preprocessConnection(link) {
+    //TODO: move this preprocessing into the database instead of client-side.
+    var source = {};
+    var dest = {};
+    if ("source32" in link) {
+        source = findNode(link.source8, link.source16, link.source24, link.source32)
+        dest = findNode(link.dest8, link.dest16, link.dest24, link.dest32)
+    } else if ("source24" in link) {
+        source = findNode(link.source8, link.source16, link.source24)
+        dest = findNode(link.dest8, link.dest16, link.dest24)
+    } else if ("source16" in link) {
+        source = findNode(link.source8, link.source16)
+        dest = findNode(link.dest8, link.dest16)
+    } else {
+        source = findNode(link.source8)
+        dest = findNode(link.dest8)
+    }
+
+    //offset endpoints by radius
+    var dx = link.x2 - link.x1;
+    var dy = link.y2 - link.y1;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //leftward flowing
+            link.x1 -= source.radius;
+            link.x2 += dest.radius;
+            link.y1 += source.radius * 0.2;
+            link.y2 += dest.radius * 0.2;
+        } else {
+            //rightward flowing
+            link.x1 += source.radius;
+            link.x2 -= dest.radius;
+            link.y1 -= source.radius * 0.2;
+            link.y2 -= dest.radius * 0.2;
+        }
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //upward flowing
+            link.y1 -= source.radius;
+            link.y2 += dest.radius;
+            link.x1 += source.radius * 0.2;
+            link.x2 += dest.radius * 0.2;
+        } else {
+            //downward flowing
+            link.y1 += source.radius;
+            link.y2 -= dest.radius;
+            link.x1 -= source.radius * 0.2;
+            link.x2 -= dest.radius * 0.2;
+        }
+    }
+
 }
 
 //==========================================
 //  Drawing Functions
 //==========================================
 
+function updateRenderRoot() {
+    renderCollection = onScreen();
+}
+
 function render(x, y, scale) {
     ctx.resetTransform();
     ctx.fillStyle = "#AAFFDD";
+    ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, width, height);
 
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
-    ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
-    ctx.font = "20px sans";
     ctx.fillStyle = "#0000FF";
-    for (var node in nodeCollection) {
-        drawNode(nodeCollection[node].number, nodeCollection[node].x, nodeCollection[node].y, 50, 50);
-    }
+    ctx.strokeStyle = "#5555CC";
 
+    //TODO: replace nodeCollection with onScreen() to only render visible nodes
+    renderClusters(renderCollection);
+
+    ctx.strokeStyle = "#000000";
     for (var link in linkCollection) {
         var start = nodeCollection[linkCollection[link].Source];
         var end = nodeCollection[linkCollection[link].Destination];
@@ -133,39 +232,58 @@ function render(x, y, scale) {
     }
 }
 
-function drawNode(name, x, y, width, height) {
-    ctx.strokeRect(x - width/2, y - height/2, width, height);
-    ctx.beginPath();
-    ctx.arc(x, y, height / 2, 0, Math.PI * 2, 0);
-    ctx.stroke();
-    var size = ctx.measureText(name);
-    ctx.fillText(name, x - size.width / 2, y + 8);
+function renderClusters(collection) {
+    var level = currentLevel();
+    var alpha = 1.0;
+
+    for (var node in collection) {
+        if (collection[node].level > level) {
+            return;
+        }
+        //Font size below 2 pixels: the letter spacing is broken.
+        //Font size above 2000 pixels: letters stop getting bigger.
+        ctx.font = Math.max(collection[node].radius / 2, 2) + "px sans";
+        alpha = opacity(collection[node].level);
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = 5 / scale;
+        drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
+        renderLinks(collection[node])
+        //if (collection[node].childrenLoaded) {
+        //    renderClusters(collection[node].children);
+        //}
+    }
 }
 
-function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
-    if (Math.abs(x1 - x2) + Math.abs(y1 - y2) < 10) {
-        return;
+function drawClusterNode(name, x, y, radius, opacity) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
+    ctx.stroke();
+    var size = ctx.measureText(name);
+    ctx.fillText(name, x - size.width / 2, y - radius * 1.25);
+}
+
+function renderLinks(node) {
+    var link = node.inputs
+    for (var i in link) {
+        drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, findNode(link[i].source8).radius, node.radius, link[i].links);
     }
-    //offset endpoints by radius
+}
+
+function drawArrow(x1, y1, x2, y2, rStart = 0, rEnd = 0, thickness = 1) {
     var dx = x2-x1;
     var dy = y2-y1;
-    if (Math.abs(dx) > Math.abs(dy)) {
-        x1 = (dx > 0 ? x1 + radius : x1 - radius);
-        x2 = (dx > 0 ? x2 - radius : x2 + radius);
-    } else {
-        y1 = (dy > 0 ? y1 + radius : y1 - radius);
-        y2 = (dy > 0 ? y2 - radius : y2 + radius);
+    if (Math.abs(dx) + Math.abs(dy) < 10) {
+        return;
     }
 
     ctx.beginPath();
-    ctx.lineWidth = Math.log(thickness) / 4 + 1;
+    ctx.lineWidth = (Math.log(thickness) / 4 + 1) / scale;
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
 
-    var len = Math.hypot(x2-x1, y2-y1);
-    var xTemp = (x1 - x2) / len * 10;
-    var yTemp = (y1 - y2) / len * 10;
-
+    var len = Math.hypot(dx, dy);
+    var xTemp = (-dx) / len * (30 / scale);
+    var yTemp = (-dy) / len * (30 / scale);
 
     var c = Math.cos(0.3);
     var s = Math.sin(0.3);
@@ -201,6 +319,7 @@ function mouseup(event) {
     tx = tx + mx - mdownx;
     ty = ty + my - mdowny;
     render(tx, ty, scale);
+    checkLoD();
 }
 
 function mousemove(event) {
@@ -218,6 +337,9 @@ function wheel(event) {
     my = event.clientY - rect.top;
 
     if (event.deltaY < 0) { // Zoom in
+        if (scale >= 49.0) {
+            return;
+        }
         tx -= mx;
         ty -= my;
         scale *= 1.15;
@@ -226,6 +348,9 @@ function wheel(event) {
         tx += mx;
         ty += my;
     } else if (event.deltaY > 0) { // Zoom out
+        if (scale <= 0.01) {
+            return;
+        }
         tx -= mx;
         ty -= my;
         scale *= 0.87;
@@ -233,8 +358,11 @@ function wheel(event) {
         ty *= 0.87;
         tx += mx;
         ty += my;
+    } else {
+        return;
     }
     render(tx, ty, scale);
+    checkLoD();
 }
 
 //==========================================
@@ -247,7 +375,9 @@ function onResize() {
     width = canvas.width;
     height = canvas.height;
     rect = canvas.getBoundingClientRect();
+    ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);
+    checkLoD();
 }
 
 (function() {
@@ -271,3 +401,155 @@ function onResize() {
 
 // handle event
 window.addEventListener("optimizedResize", onResize);
+
+//==========================================
+//  Other Utilities
+//==========================================
+
+function currentLevel() {
+    if (scale < 0.07) {
+        return 8;
+    }
+    if (scale < 0.5) {
+        return 16;
+    }
+    if (scale < 3.5) {
+        return 24;
+    }
+    return 32;
+}
+
+function opacity(level) {
+    if (level == 8) {
+        if (scale <= 0.07) {
+            return 1.0;
+        } else if (scale >= 0.14) {
+            return 0.0;
+        } else {
+            return (scale - 0.14) / (-0.07);
+        }
+    } else if (level == 16) {
+        if (scale <= 0.07) {
+            return 0.0;
+        } else if (scale >= 1.0) {
+            return 0.0;
+        } else if (scale >= 0.14 && scale <= 0.5) {
+            return 1.0;
+        } else if (scale < 0.14) {
+            return 1 - (scale - 0.14) / (-0.07);
+        } else if (scale > 0.5) {
+            return (scale - 1.0) / (-0.5);
+        }
+    } else if (level == 24) {
+        if (scale <= 0.5) {
+            return 0.0;
+        } else if (scale >= 7.0) {
+            return 0.0;
+        } else if (scale >= 1.0 && scale <= 3.5) {
+            return 1.0;
+        } else if (scale < 1.0) {
+            return 1 - (scale - 1.0) / (-0.5);
+        } else if (scale > 3.5) {
+            return (scale - 7.0) / (-3.5);
+        }
+    } else if (level == 32) {
+        if (scale <= 3.5) {
+            return 0.0;
+        } else if (scale >= 7.0) {
+            return 1.0;
+        } else if (scale < 7.0) {
+            return 1 - (scale - 7.0) / (-3.5);
+        }
+    }
+}
+
+function canSee(level) {
+    if (level <= 8) {
+        return true;
+    }
+    if (scale > 0.07 && level <= 16) {
+        return true;
+    }
+    if (scale > 0.5 && level <= 24) {
+        return true;
+    }
+    if (scale > 3.5 && level <= 32) {
+        return true;
+    }
+    return false;
+}
+
+function onScreen() {
+    var left = -tx/scale;
+    var right = (rect.width-tx)/scale;
+    var top = -ty/scale;
+    var bottom = (rect.height-ty)/scale;
+    var visible = [];
+    var x;
+    var y;
+    var r;
+
+    var level = currentLevel();
+
+    visible = onScreenRecursive(left, right, top, bottom, nodeCollection);
+
+    if (visible.length == 0) {
+        console.log("Cannot see any nodes");
+    }
+    return visible;
+}
+
+function onScreenRecursive(left, right, top, bottom, collection) {
+    var selected = [];
+    for (var node in collection) {
+        x = collection[node].x;
+        y = collection[node].y;
+        r = collection[node].radius * 2;
+
+        if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
+            selected.push(collection[node]);
+            if (collection[node].childrenLoaded && collection[node].level < currentLevel()) {
+                selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children))
+            }
+        }
+    }
+    return selected;
+}
+
+function findNode(seg1=-1, seg2=-1, seg3=-1, seg4=-1) {
+    if (seg1 in nodeCollection) {
+        if (seg2 in nodeCollection[seg1].children) {
+            if (seg3 in nodeCollection[seg1].children[seg2].children) {
+                if (seg4 in nodeCollection[seg1].children[seg2].children[seg3].children) {
+                    return nodeCollection[seg1].children[seg2].children[seg3].children[seg4];
+                } else {
+                    return nodeCollection[seg1].children[seg2].children[seg3];
+                }
+            } else {
+                return nodeCollection[seg1].children[seg2];
+            }
+        } else {
+            return nodeCollection[seg1];
+        }
+    } else {
+        return null;
+    }
+}
+
+/*
+//Note: this function hasn't been tested.
+function findClosest(x, y, collection) {
+    var closestDist = Infinity;
+    var closest = null;
+    var dist = 0;
+    for (var node in collection) {
+        //NOTE: this is an approximation, rather than the true distance.
+        dist = Math.abs(collection[node].x - x) + Math.abs(collection[node].y - y)
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = collection[node];
+        }
+    }
+    return closest;
+}
+*/
