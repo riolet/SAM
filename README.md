@@ -14,7 +14,7 @@ MySQL - SAM will support other databases in the future:
 ## Installation
 
 1. Clone the repository
-2. Run `pip install` from within the directory
+2. Run `pip install -r requirements` from within the directory
 3. Duplicate `dbconfig.py` as `dbconfig_local.py` and fill out database credentials
 3. Run `setup.py` from command line
 
