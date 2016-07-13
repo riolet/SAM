@@ -1,8 +1,19 @@
--- SHOW TABLES;
--- DESCRIBE Syslog;
+-- Create Database
+CREATE DATABASE IF NOT EXISTS samapper;
 
-DROP TABLE IF EXISTS Links;
-DROP TABLE IF EXISTS Nodes;
+-- Optional local db user
+-- GRANT ALL PRIVILEGES ON `samapper`.* TO 'username'@'localhost' IDENTIFIED BY 'password';
+
+USE samapper;
+
+DROP TABLE IF EXISTS Links32;
+DROP TABLE IF EXISTS Links24;
+DROP TABLE IF EXISTS Links16;
+DROP TABLE IF EXISTS Links8;
+DROP TABLE IF EXISTS Nodes32;
+DROP TABLE IF EXISTS Nodes24;
+DROP TABLE IF EXISTS Nodes16;
+DROP TABLE IF EXISTS Nodes8;
 DROP TABLE IF EXISTS Syslog;
 
 CREATE TABLE Syslog
@@ -133,19 +144,3 @@ CREATE TABLE Links32
 ,CONSTRAINT FKSource32 FOREIGN KEY (source8, source16, source24, source32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
 ,CONSTRAINT FKDest32 FOREIGN KEY (dest8, dest16, dest24, dest32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
 );
-
-
-INSERT INTO Links8 (source8, dest8, links, x1, y1, x2, y2)
-SELECT source8, dest8, conns, src.x, src.y, dst.x, dst.y
-FROM
-    (SELECT SourceIP DIV 16777216 AS source8
-         , DestinationIP DIV 16777216 AS dest8
-         , COUNT(*) AS conns
-    FROM Syslog
-    GROUP BY source8, dest8) AS main
-    JOIN
-    (SELECT address, x, y FROM Nodes8) AS src
-    ON (source8 = src.address)
-    JOIN
-    (SELECT address, x, y FROM Nodes8) AS dst
-    ON (dest8 = dst.address);

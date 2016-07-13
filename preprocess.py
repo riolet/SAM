@@ -129,13 +129,13 @@ def import_nodes():
     common.db.query(query)
 
 
-def distSquared(x1, y1, x2, y2):
+def dist_squared(x1, y1, x2, y2):
     return (x2-x1)**2 + (y2-y1)**2
 
 
-def checkCollisions(node, nodelist, margin = 0):
+def check_collisions(node, nodelist, margin = 0):
     for n in nodelist:
-        if distSquared(node.x, node.y, n.x, n.y) < (node.radius + n.radius + margin)**2:
+        if dist_squared(node.x, node.y, n.x, n.y) < (node.radius + n.radius + margin)**2:
             return True
     return False
 
@@ -149,7 +149,7 @@ def position_nodes():
     if len(rows) > 0:
         placed.append(rows[0])
         for node in rows:
-            while checkCollisions(node, placed, 1000):
+            while check_collisions(node, placed, 1000):
                 node.x = random.random() * 40000 - 20000
                 node.y = random.random() * 40000 - 20000
             placed.append(node)
@@ -160,9 +160,10 @@ def position_nodes():
             SET x = $nx
               , y = $ny
             WHERE address = $nip"""
-            qvars = {'nx':node.x, 'ny':node.y, 'nip':node.address}
+            qvars = {'nx': node.x,
+                     'ny': node.y,
+                     'nip': node.address}
             common.db.query(query, vars=qvars)
-
 
     # position the /16 within each node's parent
     query = """
@@ -192,9 +193,11 @@ def position_nodes():
             SET x = $nx
               , y = $ny
             WHERE parent8 = $pip8 AND address = $nip"""
-            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'nip': node.address}
+            qvars = {'nx': node.x,
+                     'ny': node.y,
+                     'pip8': node.parent8,
+                     'nip': node.address}
             common.db.query(query, vars=qvars)
-
 
     # position the /24 within each node's parent
     query = """
@@ -226,9 +229,12 @@ def position_nodes():
             SET x = $nx
               , y = $ny
             WHERE parent8 = $pip8 AND parent16 = $pip16 AND address = $nip"""
-            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'pip16': node.parent16, 'nip': node.address}
+            qvars = {'nx': node.x,
+                     'ny': node.y,
+                     'pip8': node.parent8,
+                     'pip16': node.parent16,
+                     'nip': node.address}
             common.db.query(query, vars=qvars)
-
 
     # position the /32 within each node's parent
     query = """
@@ -260,7 +266,12 @@ def position_nodes():
             SET x = $nx
               , y = $ny
             WHERE parent8 = $pip8 AND parent16 = $pip16  AND parent24 = $pip24 AND address = $nip"""
-            qvars = {'nx': node.x, 'ny': node.y, 'pip8': node.parent8, 'pip16': node.parent16, 'pip24': node.parent24, 'nip': node.address}
+            qvars = {'nx': node.x,
+                     'ny': node.y,
+                     'pip8': node.parent8,
+                     'pip16': node.parent16,
+                     'pip24': node.parent24,
+                     'nip': node.address}
             common.db.query(query, vars=qvars)
 
 
@@ -284,7 +295,6 @@ def import_links():
         """
     common.db.query(query)
 
-
     # Populate Links16
     query = """
         INSERT INTO Links16 (source8, source16, dest8, dest16, links, x1, y1, x2, y2)
@@ -305,7 +315,6 @@ def import_links():
             ON (dest8 = dst.parent8 && dest16 = dst.address);
     """
     common.db.query(query)
-
 
     # Populate Links24
     query = """
@@ -329,7 +338,6 @@ def import_links():
             ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address);
     """
     common.db.query(query)
-
 
     # Populate Links32
     query = """

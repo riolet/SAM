@@ -23,19 +23,8 @@ def create_database():
         pw=common.dbconfig.params['passwd'],
         port=common.dbconfig.params['port'])
 
-    connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
-    connection.query("USE samapper;")
-    connection.query("DROP TABLE IF EXISTS Syslog;")
-    connection.query("""
-        CREATE TABLE Syslog (
-            entry INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            SourceIP INT UNSIGNED NOT NULL,
-            SourcePort INT NOT NULL,
-            DestinationIP INT UNSIGNED NOT NULL,
-            DestinationPort INT NOT NULL,
-            Occurances INT DEFAULT 1 NOT NULL,
-            CONSTRAINT PKSyslog PRIMARY KEY (entry))
-            ;""")
+    
+
 
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
     min = 0x00000000;
