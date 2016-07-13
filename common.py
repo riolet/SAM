@@ -20,10 +20,11 @@ render = web.template.render('templates/')
 try:
     sys.dont_write_bytecode = True
     import dbconfig_local as dbconfig
-    sys.dont_write_bytecode = False
 except Exception as e:
     print e
     import dbconfig
+finally:
+    sys.dont_write_bytecode = False
 
 db = web.database(**dbconfig.params)
 
