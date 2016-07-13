@@ -34,7 +34,7 @@ SELECT SourceIP, DestinationIP, DestinationPort, COUNT(*) AS 'Occurrences'
     HAVING Occurrences > 100
     ORDER BY Occurrences ASC
     ;
-
+-- Same as below, but without extra count()
 
 SELECT COUNT(*)
     FROM (SELECT COUNT(*)
@@ -73,4 +73,22 @@ SELECT DestinationIP, DestinationPort, COUNT(*) AS cnt
 -- HAVING cnt > 100   =>   123 rows
 -- HAVING cnt > 10    =>   519 rows
 -- HAVING cnt > 0     =>  1571 rows
+
+SELECT SourceIP DIV 16777215 AS 'Source', DestinationIP DIV 16777215 AS 'Destination', DestinationPort, COUNT(*) AS 'Occurrences'
+    FROM Syslog
+    GROUP BY Source, Destination, DestinationPort
+    ORDER BY Occurrences ASC
+    ;
+-- 230 unique connections, 7 sources, 4 destination
+
+SELECT ip, COUNT(*) AS cnt
+FROM (
+    (SELECT SourceIP AS ip
+    FROM Syslog)
+    UNION ALL
+    (SELECT DestinationIP AS ip
+    FROM Syslog)
+) as result
+GROUP BY ip;
+-- how to combine Source and Destination IP columns into one (keeping duplicates)
 

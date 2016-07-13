@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import common
+import dbaccess
 import MySQLdb
 
 try:
@@ -28,11 +29,6 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Usage:
     python {0} <input-file>
     """.format(sys.argv[0]))
-
-
-# Translate an IP address into a number, [0..2^32 - 1]
-def convert(a, b, c, d):
-  return (int(a)<<24) + (int(b)<<16) + (int(c)<<8) + int(d)
 
 
 def translate(line, lineNum):
@@ -95,7 +91,7 @@ def insert_data(rows, count):
     except Exception as e:
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
         if e[0] == 1049: # Unknown database 'samapper'
-            common.create_database()
+            dbaccess.create_database()
             insert_data(rows, count)
         elif e[0] == 1045: # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print(e[1])
