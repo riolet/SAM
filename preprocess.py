@@ -276,6 +276,11 @@ def position_nodes():
 
 
 def import_links():
+    common.db.query("DELETE FROM Links32;")
+    common.db.query("DELETE FROM Links24;")
+    common.db.query("DELETE FROM Links16;")
+    common.db.query("DELETE FROM Links8;")
+
     # Populate Links8
     query = """
         INSERT INTO Links8 (source8, dest8, links, x1, y1, x2, y2)
