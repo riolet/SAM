@@ -22,7 +22,7 @@ MySQL - SAM will support other databases in the future:
 
 1. Import log files via `import_paloalto.py`. The paloalto system log format is expected.  Other formats will be supported in the future.
 
-   For example: `SAM$ python import_paloalto.py syslog.txt`
+   For example: `python import_paloalto.py syslog.txt`
 
    Repeat this for all your data logs before moving on to the next step.
 

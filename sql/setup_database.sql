@@ -1,11 +1,3 @@
--- Create Database
-CREATE DATABASE IF NOT EXISTS samapper;
-
--- Optional local db user
--- GRANT ALL PRIVILEGES ON `samapper`.* TO 'username'@'localhost' IDENTIFIED BY 'password';
-
-USE samapper;
-
 DROP TABLE IF EXISTS Links32;
 DROP TABLE IF EXISTS Links24;
 DROP TABLE IF EXISTS Links16;
@@ -15,6 +7,8 @@ DROP TABLE IF EXISTS Nodes24;
 DROP TABLE IF EXISTS Nodes16;
 DROP TABLE IF EXISTS Nodes8;
 DROP TABLE IF EXISTS Syslog;
+
+--this is a comment in the middle
 
 CREATE TABLE Syslog
 (entry             INT UNSIGNED NOT NULL AUTO_INCREMENT
@@ -78,7 +72,6 @@ CREATE TABLE Nodes32
 ,CONSTRAINT PKNodes32 PRIMARY KEY (parent8, parent16, parent24, address)
 ,CONSTRAINT FKParent32 FOREIGN KEY (parent8, parent16, parent24) REFERENCES Nodes24 (parent8, parent16, address)
 );
-
 
 CREATE TABLE Links8
 (source8           INT NOT NULL
@@ -144,3 +137,6 @@ CREATE TABLE Links32
 ,CONSTRAINT FKSource32 FOREIGN KEY (source8, source16, source24, source32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
 ,CONSTRAINT FKDest32 FOREIGN KEY (dest8, dest16, dest24, dest32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
 );
+
+--this is a comment
+

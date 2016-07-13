@@ -8,12 +8,21 @@ import MySQLdb
 try:
     sys.dont_write_bytecode = True
     import dbconfig_local as dbconfig
-    sys.dont_write_bytecode = False
-except:
+except ImportError:
     import dbconfig
+finally:
+    sys.dont_write_bytecode = False
+
 
 def validate_file(path):
-    # TODO: check output file doesn't exist, or confirm overwrite
+    """
+    Check whether a given path is a file.
+    Args:
+        path: The path to verify is a file
+
+    Returns:
+        True or False
+    """
     if os.path.isfile(path):
         return True
     else:
@@ -31,18 +40,27 @@ Usage:
     """.format(sys.argv[0]))
 
 
-def translate(line, lineNum):
+def translate(line, line_num):
+    """
+    Converts a given syslog line into a tuple of (ip, port, ip, port)
+    Args:
+        line: The syslog line to parse
+        line_num: The line number, for error printouts
+
+    Returns:
+        A tuple consisting of (Source IP, Source Port, Dest IP, Dest Port)
+    """
     data = json.loads(line)['message']
     # TODO: this assumes the data will not have any commas embedded in strings
     split_data = data.split(',')
 
     if split_data[3] != "TRAFFIC":
-        print("Line {0}: Ignoring non-TRAFFIC entry (was {1})".format(lineNum, split_data[3]))
+        print("Line {0}: Ignoring non-TRAFFIC entry (was {1})".format(line_num, split_data[3]))
         return None
     if len(split_data) < 29:
-        print("error parsing line {0}: {1}".format(lineNum, line))
+        print("error parsing line {0}: {1}".format(line_num, line))
         return None
-    # 29 is protocol: tcp, udp, ....
+    # 29 is protocol: tcp, udp, ...
     # TODO: don't ignore everything but TCP
     if split_data[29] != 'tcp':
         # printing this is very noisy and slow
@@ -50,44 +68,63 @@ def translate(line, lineNum):
         return None
 
     # srcIP, srcPort, dstIP, dstPort
-    return (convert(*(split_data[7].split("."))),
+    return (common.IPtoInt(*(split_data[7].split("."))),
             split_data[24],
-            convert(*(split_data[8].split("."))),
+            common.IPtoInt(*(split_data[8].split("."))),
             split_data[25])
 
 
 def import_file(path_in):
-    with open(path_in) as fin:
-        lineNum = -1
-        linesInserted = 0;
-        counter = 0
-        rows = [("","","","")]*1000
-        for line in fin:
-            lineNum += 1
+    """
+    Takes a file path and attempts to import it into the database. Specifically into the samapper.Syslog table
+    Args:
+        path_in: The path to a log file to read/import
 
-            translated_line = translate(line, lineNum);
+    Returns:
+        None
+    """
+    with open(path_in) as fin:
+        line_num = -1
+        lines_inserted = 0
+        counter = 0
+        rows = [("", "", "", "")] * 1000
+        for line in fin:
+            line_num += 1
+
+            translated_line = translate(line, line_num)
             if translated_line is None:
                 continue
 
             rows[counter] = translated_line
             counter += 1
 
+            # Perform the actual insertion in batches of 1000
             if counter == 1000:
                 insert_data(rows, counter)
-                linesInserted += counter
+                lines_inserted += counter
                 counter = 0
         if counter != 0:
             insert_data(rows, counter)
-            linesInserted += counter
-        print("Done. {0} lines processed, {1} rows inserted".format(lineNum, linesInserted))
+            lines_inserted += counter
+        print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
 
 
 def insert_data(rows, count):
+    """
+    Attempt to insert the first `count` items in `rows` into the database table `samapper`.`Syslog`.
+    Exits script on critical failure.
+    Args:
+        rows: The iterable containing data to insert
+        count: The number of items from rows to insert
+
+    Returns:
+        None
+    """
     try:
         with MySQLdb.connect(**dbconfig.params) as connection:
-            truncatedRows = rows[:count]
+            truncated_rows = rows[:count]
             connection.executemany("""INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort)
-            VALUES (%s, %s, %s, %s);""", truncatedRows)
+            VALUES (%s, %s, %s, %s);""", truncated_rows)
     except Exception as e:
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
         if e[0] == 1049: # Unknown database 'samapper'
@@ -97,7 +134,10 @@ def insert_data(rows, count):
             print(e[1])
             print("Check your username / password? (dbconfig_local.py)")
             sys.exit(1)
-
+        else:
+            print("Critical failure.")
+            print(e.message)
+            sys.exit(2)
 
 
 def main(argv):

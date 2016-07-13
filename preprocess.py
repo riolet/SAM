@@ -8,14 +8,14 @@ import random
 
 
 def clean_tables():
-    common.db.query("DELETE FROM Nodes32;")
-    common.db.query("DELETE FROM Nodes24;")
-    common.db.query("DELETE FROM Nodes16;")
-    common.db.query("DELETE FROM Nodes8;")
     common.db.query("DELETE FROM Links32;")
     common.db.query("DELETE FROM Links24;")
     common.db.query("DELETE FROM Links16;")
     common.db.query("DELETE FROM Links8;")
+    common.db.query("DELETE FROM Nodes32;")
+    common.db.query("DELETE FROM Nodes24;")
+    common.db.query("DELETE FROM Nodes16;")
+    common.db.query("DELETE FROM Nodes8;")
 
 
 def import_nodes():
@@ -371,6 +371,7 @@ def preprocess_log():
     import_nodes()
     import_links()
     position_nodes()
+    import_links() # this is invoked twice intentionally
     # do something with links...
 
 
