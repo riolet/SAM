@@ -1,9 +1,14 @@
--- SHOW TABLES;
--- DESCRIBE Syslog;
-
-DROP TABLE IF EXISTS Links;
-DROP TABLE IF EXISTS Nodes;
+DROP TABLE IF EXISTS Links32;
+DROP TABLE IF EXISTS Links24;
+DROP TABLE IF EXISTS Links16;
+DROP TABLE IF EXISTS Links8;
+DROP TABLE IF EXISTS Nodes32;
+DROP TABLE IF EXISTS Nodes24;
+DROP TABLE IF EXISTS Nodes16;
+DROP TABLE IF EXISTS Nodes8;
 DROP TABLE IF EXISTS Syslog;
+
+--this is a comment in the middle
 
 CREATE TABLE Syslog
 (entry             INT UNSIGNED NOT NULL AUTO_INCREMENT
@@ -67,7 +72,6 @@ CREATE TABLE Nodes32
 ,CONSTRAINT PKNodes32 PRIMARY KEY (parent8, parent16, parent24, address)
 ,CONSTRAINT FKParent32 FOREIGN KEY (parent8, parent16, parent24) REFERENCES Nodes24 (parent8, parent16, address)
 );
-
 
 CREATE TABLE Links8
 (source8           INT NOT NULL
@@ -134,18 +138,5 @@ CREATE TABLE Links32
 ,CONSTRAINT FKDest32 FOREIGN KEY (dest8, dest16, dest24, dest32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
 );
 
+--this is a comment
 
-INSERT INTO Links8 (source8, dest8, links, x1, y1, x2, y2)
-SELECT source8, dest8, conns, src.x, src.y, dst.x, dst.y
-FROM
-    (SELECT SourceIP DIV 16777216 AS source8
-         , DestinationIP DIV 16777216 AS dest8
-         , COUNT(*) AS conns
-    FROM Syslog
-    GROUP BY source8, dest8) AS main
-    JOIN
-    (SELECT address, x, y FROM Nodes8) AS src
-    ON (source8 = src.address)
-    JOIN
-    (SELECT address, x, y FROM Nodes8) AS dst
-    ON (dest8 = dst.address);

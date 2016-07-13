@@ -5,7 +5,8 @@ import pages.stats
 
 # Manage routing from here. Regex matches URL and chooses class by name
 urls = (
-    '/', 'pages.overview.Overview',  # matched groups (in parens) are sent as arguments
+    # '/', 'pages.overview.Overview',  # matched groups (in parens) are sent as arguments
+    '/', 'pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'pages.map.Map',
     '/stats', 'pages.stats.Stats',
     '/query', 'pages.query.Query',

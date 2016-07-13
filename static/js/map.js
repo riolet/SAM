@@ -215,6 +215,14 @@ function render(x, y, scale) {
     ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, width, height);
 
+    if (Object.keys(nodeCollection).length == 0) {
+        ctx.fillStyle = "#996666";
+        ctx.font = "3em sans";
+        var size = ctx.measureText("No data available");
+        ctx.fillText("No data available", rect.width / 2 - size.width / 2, rect.height / 2);
+        return
+    }
+
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     ctx.lineWidth = 1;

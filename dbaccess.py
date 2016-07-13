@@ -24,18 +24,23 @@ def create_database():
         port=common.dbconfig.params['port'])
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
-    connection.query("USE samapper;")
-    connection.query("DROP TABLE IF EXISTS Syslog;")
-    connection.query("""
-        CREATE TABLE Syslog (
-            entry INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            SourceIP INT UNSIGNED NOT NULL,
-            SourcePort INT NOT NULL,
-            DestinationIP INT UNSIGNED NOT NULL,
-            DestinationPort INT NOT NULL,
-            Occurances INT DEFAULT 1 NOT NULL,
-            CONSTRAINT PKSyslog PRIMARY KEY (entry))
-            ;""")
+
+    with open("./sql/setup_database.sql", 'r') as file:
+        # remove comment lines
+        lines = file.readlines();
+    lines = [i for i in lines if not i.startswith("--")]
+    # join into one long string
+    script = " ".join(lines)
+    # split string into a list of commands
+    commands = script.split(";")
+
+    for command in commands:
+        # ignore empty statements (like trailing newlines)
+        if command.strip(" \n") == "":
+            continue;
+        common.db.query(command)
+
+
 
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
     min = 0x00000000;
