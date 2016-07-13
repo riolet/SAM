@@ -27,6 +27,7 @@ except Exception as e:
 
 db = web.database(dbn='mysql', user=dbconfig.params['user'], pw=dbconfig.params['passwd'], db=dbconfig.params['db'], port=dbconfig.params['port'])
 
+
 def IPtoString(ipNumber):
     """
     Converts an IP address from an integer to dotted decimal notation.
@@ -36,8 +37,6 @@ def IPtoString(ipNumber):
     Returns: The IP address as a dotted-decimal string.
 
     """
-    """Takes a given IP address as a 32 bit integer and
-    converts it to dotted decimal notation"""
     return "{0}.{1}.{2}.{3}".format(
         (ipNumber & 0xFF000000) >> 24,
         (ipNumber & 0xFF0000) >> 16,

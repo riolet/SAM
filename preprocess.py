@@ -12,6 +12,10 @@ def clean_tables():
     common.db.query("DELETE FROM Nodes24;")
     common.db.query("DELETE FROM Nodes16;")
     common.db.query("DELETE FROM Nodes8;")
+    common.db.query("DELETE FROM Links32;")
+    common.db.query("DELETE FROM Links24;")
+    common.db.query("DELETE FROM Links16;")
+    common.db.query("DELETE FROM Links8;")
 
 
 def import_nodes():
@@ -263,61 +267,93 @@ def position_nodes():
 def import_links():
     # Populate Links8
     query = """
-        INSERT INTO Links8 (source8, dest8, links)
-        SELECT SourceIP DIV 16777216 AS source8
-             , DestinationIP DIV 16777216 AS dest8
-             , COUNT(*) AS conns
-        FROM Syslog
-        GROUP BY source8, dest8;
+        INSERT INTO Links8 (source8, dest8, links, x1, y1, x2, y2)
+        SELECT source8, dest8, conns, src.x, src.y, dst.x, dst.y
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                 , DestinationIP DIV 16777216 AS dest8
+                 , COUNT(*) AS conns
+            FROM Syslog
+            GROUP BY source8, dest8) AS main
+            JOIN
+            (SELECT address, x, y FROM Nodes8) AS src
+            ON (source8 = src.address)
+            JOIN
+            (SELECT address, x, y FROM Nodes8) AS dst
+            ON (dest8 = dst.address);
         """
     common.db.query(query)
 
 
     # Populate Links16
     query = """
-        INSERT INTO Links16 (source8, source16, dest8, dest16, links)
-        SELECT SourceIP DIV 16777216 AS source8
-             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-             , DestinationIP DIV 16777216 AS dest8
-             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-             , COUNT(*) AS conns
-        FROM Syslog
-        GROUP BY source8, source16, dest8, dest16;
+        INSERT INTO Links16 (source8, source16, dest8, dest16, links, x1, y1, x2, y2)
+        SELECT source8, source16, dest8, dest16, conns, src.x, src.y, dst.x, dst.y
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                 , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                 , DestinationIP DIV 16777216 AS dest8
+                 , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                 , COUNT(*) AS conns
+            FROM Syslog
+            GROUP BY source8, source16, dest8, dest16) AS main
+            JOIN
+            (SELECT parent8, address, x, y FROM Nodes16) AS src
+            ON (source8 = src.parent8 && source16 = src.address)
+            JOIN
+            (SELECT parent8, address, x, y FROM Nodes16) AS dst
+            ON (dest8 = dst.parent8 && dest16 = dst.address);
     """
     common.db.query(query)
 
 
     # Populate Links24
     query = """
-        INSERT INTO Links24 (source8, source16, source24, dest8, dest16, dest24, links)
-        SELECT SourceIP DIV 16777216 AS source8
-             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-             , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
-             , DestinationIP DIV 16777216 AS dest8
-             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-             , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-             , COUNT(*) AS conns
-        FROM Syslog
-        GROUP BY source8, source16, source24, dest8, dest16, dest24;
+        INSERT INTO Links24 (source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2)
+        SELECT source8, source16, source24, dest8, dest16, dest24, conns, src.x, src.y, dst.x, dst.y
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                 , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                 , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+                 , DestinationIP DIV 16777216 AS dest8
+                 , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                 , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+                 , COUNT(*) AS conns
+            FROM Syslog
+            GROUP BY source8, source16, source24, dest8, dest16, dest24) AS main
+            JOIN
+            (SELECT parent8, parent16, address, x, y FROM Nodes24) AS src
+            ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+            JOIN
+            (SELECT parent8, parent16, address, x, y FROM Nodes24) AS dst
+            ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address);
     """
     common.db.query(query)
 
 
     # Populate Links32
     query = """
-        INSERT INTO Links32 (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links)
-        SELECT SourceIP DIV 16777216 AS source8
-             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-             , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
-             , (SourceIP - (SourceIP DIV 256) * 256) AS source32
-             , DestinationIP DIV 16777216 AS dest8
-             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-             , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-             , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
-             , DestinationPort AS port
-             , COUNT(*) AS conns
-        FROM Syslog
-        GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, dest32, port;
+        INSERT INTO Links32 (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2)
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                 , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                 , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+                 , (SourceIP - (SourceIP DIV 256) * 256) AS source32
+                 , DestinationIP DIV 16777216 AS dest8
+                 , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                 , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+                 , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
+                 , DestinationPort AS port
+                 , COUNT(*) AS conns
+            FROM Syslog
+            GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, dest32, port) AS main
+            JOIN
+            (SELECT parent8, parent16, parent24, address, x, y FROM Nodes32) AS src
+            ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
+            JOIN
+            (SELECT parent8, parent16, parent24, address, x, y FROM Nodes32) AS dst
+            ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address);
     """
     common.db.query(query)
 
@@ -325,11 +361,9 @@ def import_links():
 def preprocess_log():
     clean_tables()
     import_nodes()
-    position_nodes()
     import_links()
+    position_nodes()
     # do something with links...
-
-
 
 
 # If running as a script, begin by executing main.

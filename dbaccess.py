@@ -87,3 +87,46 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
                                parent16 = ipSegment2,
                                parent24 = ipSegment3)
     return rows
+
+
+def getLinks(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+    inputs = []
+
+    if ipSegment1 < 0 or ipSegment1 > 255:
+        inputs = []
+    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+        query = """
+            SELECT * FROM Links8
+            WHERE dest8 = $seg1;
+            """
+        qvars = {'seg1': str(ipSegment1)}
+        inputs = list(common.db.query(query, vars=qvars))
+    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+        query = """
+            SELECT * FROM Links16
+            WHERE dest8 = $seg1
+                && dest16 = $seg2;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2)}
+        inputs = list(common.db.query(query, vars=qvars))
+    elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
+        query = """
+            SELECT * FROM Links24
+            WHERE dest8 = $seg1
+                && dest16 = $seg2
+                && dest24 = $seg3;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3)}
+        inputs = list(common.db.query(query, vars=qvars))
+    else:
+        query = """
+            SELECT * FROM Links32
+            WHERE dest8 = $seg1
+                && dest16 = $seg2
+                && dest24 = $seg3
+                && dest32 = $seg4;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4)}
+        inputs = list(common.db.query(query, vars=qvars))
+
+    return inputs
