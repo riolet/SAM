@@ -55,7 +55,7 @@ function loadData() {
         });
 }
 
-function Node(address, alias, level, connections, x, y, radius) {
+function Node(address, alias, level, connections, x, y, radius, inputs) {
     this.address = address;
     this.alias = alias;
     this.level = level;
@@ -65,6 +65,7 @@ function Node(address, alias, level, connections, x, y, radius) {
     this.radius = radius;
     this.children = {};
     this.childrenLoaded = false;
+    this.inputs = inputs;
 }
 
 Node.prototype = {
@@ -76,7 +77,8 @@ Node.prototype = {
     y: 0,
     radius: 0,
     children: {},
-    childrenLoaded: false
+    childrenLoaded: false,
+    inputs: []
 };
 
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
@@ -96,8 +98,14 @@ function onLoadData(result) {
     console.log("rows: " + result.length);
     for (var row in result) {
         name = result[row].address;
-        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
+        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
     }
+    for (var i in nodeCollection) {
+        for (var j in nodeCollection[i].inputs) {
+            preprocessConnection(nodeCollection[i].inputs[j])
+        }
+    }
+
     renderCollection = nodeCollection;
 
     render(tx, ty, scale);
@@ -127,9 +135,65 @@ function loadChildren(node) {
         for (var row in result) {
             //console.log("Loaded " + node.alias + " -> " + result[row].address);
             name = node.alias + "." + result[row].address;
-            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius);
+            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
         }
     }});
+}
+
+function preprocessConnection(link) {
+    //TODO: move this preprocessing into the database instead of client-side.
+    var source = {};
+    var dest = {};
+    if ("source32" in link) {
+        source = findNode(link.source8, link.source16, link.source24, link.source32)
+        dest = findNode(link.dest8, link.dest16, link.dest24, link.dest32)
+    } else if ("source24" in link) {
+        source = findNode(link.source8, link.source16, link.source24)
+        dest = findNode(link.dest8, link.dest16, link.dest24)
+    } else if ("source16" in link) {
+        source = findNode(link.source8, link.source16)
+        dest = findNode(link.dest8, link.dest16)
+    } else {
+        source = findNode(link.source8)
+        dest = findNode(link.dest8)
+    }
+
+    //offset endpoints by radius
+    var dx = link.x2 - link.x1;
+    var dy = link.y2 - link.y1;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //leftward flowing
+            link.x1 -= source.radius;
+            link.x2 += dest.radius;
+            link.y1 += source.radius * 0.2;
+            link.y2 += dest.radius * 0.2;
+        } else {
+            //rightward flowing
+            link.x1 += source.radius;
+            link.x2 -= dest.radius;
+            link.y1 -= source.radius * 0.2;
+            link.y2 -= dest.radius * 0.2;
+        }
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //upward flowing
+            link.y1 -= source.radius;
+            link.y2 += dest.radius;
+            link.x1 += source.radius * 0.2;
+            link.x2 += dest.radius * 0.2;
+        } else {
+            //downward flowing
+            link.y1 += source.radius;
+            link.y2 -= dest.radius;
+            link.x1 -= source.radius * 0.2;
+            link.x2 -= dest.radius * 0.2;
+        }
+    }
+
 }
 
 //==========================================
@@ -151,7 +215,6 @@ function render(x, y, scale) {
     ctx.lineWidth = 1;
     ctx.fillStyle = "#0000FF";
     ctx.strokeStyle = "#5555CC";
-    ctx.lineWidth = 5 / scale;
 
     //TODO: replace nodeCollection with onScreen() to only render visible nodes
     renderClusters(renderCollection);
@@ -177,7 +240,9 @@ function renderClusters(collection) {
         ctx.font = Math.max(collection[node].radius / 2, 2) + "px sans";
         alpha = opacity(collection[node].level);
         ctx.globalAlpha = alpha;
+        ctx.lineWidth = 5 / scale;
         drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
+        renderLinks(collection[node])
         //if (collection[node].childrenLoaded) {
         //    renderClusters(collection[node].children);
         //}
@@ -192,55 +257,28 @@ function drawClusterNode(name, x, y, radius, opacity) {
     ctx.fillText(name, x - size.width / 2, y - radius * 1.25);
 }
 
-function drawArrow(x1, y1, x2, y2, radius = 0, thickness = 1) {
+function renderLinks(node) {
+    var link = node.inputs
+    for (var i in link) {
+        drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, findNode(link[i].source8).radius, node.radius, link[i].links);
+    }
+}
+
+function drawArrow(x1, y1, x2, y2, rStart = 0, rEnd = 0, thickness = 1) {
     var dx = x2-x1;
     var dy = y2-y1;
     if (Math.abs(dx) + Math.abs(dy) < 10) {
         return;
     }
-    //offset endpoints by radius
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //leftward flowing
-            x1 = x1 - radius;
-            x2 = x2 + radius;
-            y1 += 5;
-            y2 += 5;
-        } else {
-            //rightward flowing
-            x1 = x1 + radius;
-            x2 = x2 - radius;
-            y1 -= 5;
-            y2 -= 5;
-        }
-        dx = x2 - x1;
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //upward flowing
-            y1 = y1 - radius;
-            y2 = y2 + radius;
-            x1 += 5;
-            x2 += 5;
-        } else {
-            //downward flowing
-            y1 = y1 + radius;
-            y2 = y2 - radius;
-            x1 -= 5;
-            x2 -= 5;
-        }
-        dy = y2 - y1;
-    }
 
     ctx.beginPath();
-    ctx.lineWidth = Math.log(thickness) / 4 + 1;
+    ctx.lineWidth = (Math.log(thickness) / 4 + 1) / scale;
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
 
     var len = Math.hypot(dx, dy);
-    var xTemp = (-dx) / len * 10;
-    var yTemp = (-dy) / len * 10;
+    var xTemp = (-dx) / len * (30 / scale);
+    var yTemp = (-dy) / len * (30 / scale);
 
     var c = Math.cos(0.3);
     var s = Math.sin(0.3);
@@ -473,6 +511,25 @@ function onScreenRecursive(left, right, top, bottom, collection) {
     return selected;
 }
 
+function findNode(seg1=-1, seg2=-1, seg3=-1, seg4=-1) {
+    if (seg1 in nodeCollection) {
+        if (seg2 in nodeCollection[seg1].children) {
+            if (seg3 in nodeCollection[seg1].children[seg2].children) {
+                if (seg4 in nodeCollection[seg1].children[seg2].children[seg3].children) {
+                    return nodeCollection[seg1].children[seg2].children[seg3].children[seg4];
+                } else {
+                    return nodeCollection[seg1].children[seg2].children[seg3];
+                }
+            } else {
+                return nodeCollection[seg1].children[seg2];
+            }
+        } else {
+            return nodeCollection[seg1];
+        }
+    } else {
+        return null;
+    }
+}
 
 /*
 //Note: this function hasn't been tested.
