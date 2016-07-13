@@ -23,7 +23,7 @@ def create_database():
         pw=common.dbconfig.params['passwd'],
         port=common.dbconfig.params['port'])
 
-    
+
 
 
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
