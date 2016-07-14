@@ -14,7 +14,7 @@ var scale = 0.01;
 
 var map = {};
 
-var nodeCollection;
+var nodeCollection = {};
 var renderCollection;
 var linkCollection;
 
@@ -254,7 +254,7 @@ function renderClusters(collection) {
         alpha = opacity(collection[node].level);
         ctx.globalAlpha = alpha;
         ctx.lineWidth = 5 / scale;
-        drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, alpha);
+        drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, collection[node].level, alpha);
         renderLinks(collection[node])
         //if (collection[node].childrenLoaded) {
         //    renderClusters(collection[node].children);
@@ -262,9 +262,13 @@ function renderClusters(collection) {
     }
 }
 
-function drawClusterNode(name, x, y, radius, opacity) {
+function drawClusterNode(name, x, y, radius, level, opacity) {
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
+    if (level < 31) {
+        ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
+    } else {
+        ctx.strokeRect(x - radius, y - radius, radius*2, radius * 2);
+    }
     ctx.stroke();
     var size = ctx.measureText(name);
     ctx.fillText(name, x - size.width / 2, y - radius * 1.25);
