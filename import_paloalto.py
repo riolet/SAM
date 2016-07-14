@@ -5,15 +5,6 @@ import common
 import dbaccess
 import MySQLdb
 
-try:
-    sys.dont_write_bytecode = True
-    import dbconfig_local as dbconfig
-except ImportError:
-    import dbconfig
-finally:
-    sys.dont_write_bytecode = False
-
-
 def validate_file(path):
     """
     Check whether a given path is a file.
@@ -121,7 +112,11 @@ def insert_data(rows, count):
         None
     """
     try:
-        with MySQLdb.connect(**dbconfig.params) as connection:
+        params = common.dbconfig.params.copy()
+        params.pop('dbn')
+        pw = params.pop('pw')
+        params['passwd'] = pw
+        with MySQLdb.connect(**params) as connection:
             truncated_rows = rows[:count]
             connection.executemany("""INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort)
             VALUES (%s, %s, %s, %s);""", truncated_rows)
