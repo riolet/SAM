@@ -92,3 +92,14 @@ FROM (
 GROUP BY ip;
 -- how to combine Source and Destination IP columns into one (keeping duplicates)
 
+SELECT SourceIP AS IP
+    , SourceIP DIV 16777216 AS source8
+    , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+    , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+    , (SourceIP - (SourceIP DIV 256) * 256) AS source32
+    , COUNT(*) AS occurances
+FROM Syslog
+WHERE SourceIP IN (SELECT DestinationIP FROM Syslog)
+GROUP BY IP;
+-- IPs that show up as both sources and destinations
+-- Surprisingly, only 9 rows on test data!
