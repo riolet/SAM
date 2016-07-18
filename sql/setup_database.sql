@@ -82,8 +82,6 @@ CREATE TABLE Links8
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
 ,CONSTRAINT PKLinks8 PRIMARY KEY (source8, dest8)
-,CONSTRAINT FKSource8 FOREIGN KEY (source8) REFERENCES Nodes8 (address)
-,CONSTRAINT FKDest8 FOREIGN KEY (dest8) REFERENCES Nodes8 (address)
 );
 
 CREATE TABLE Links16
@@ -97,8 +95,6 @@ CREATE TABLE Links16
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
 ,CONSTRAINT PKLinks16 PRIMARY KEY (source8, source16, dest8, dest16)
-,CONSTRAINT FKSource16 FOREIGN KEY (source8, source16) REFERENCES Nodes16 (parent8, address)
-,CONSTRAINT FKDest16 FOREIGN KEY (dest8, dest16) REFERENCES Nodes16 (parent8, address)
 );
 
 CREATE TABLE Links24
@@ -114,8 +110,6 @@ CREATE TABLE Links24
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
 ,CONSTRAINT PKLinks24 PRIMARY KEY (source8, source16, source24, dest8, dest16, dest24)
-,CONSTRAINT FKSource24 FOREIGN KEY (source8, source16, source24) REFERENCES Nodes24 (parent8, parent16, address)
-,CONSTRAINT FKDest24 FOREIGN KEY (dest8, dest16, dest24) REFERENCES Nodes24 (parent8, parent16, address)
 );
 
 CREATE TABLE Links32
@@ -134,8 +128,6 @@ CREATE TABLE Links32
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
 ,CONSTRAINT PKLinks32 PRIMARY KEY (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port)
-,CONSTRAINT FKSource32 FOREIGN KEY (source8, source16, source24, source32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
-,CONSTRAINT FKDest32 FOREIGN KEY (dest8, dest16, dest24, dest32) REFERENCES Nodes32 (parent8, parent16, parent24, address)
 );
 
 --this is a comment

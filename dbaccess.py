@@ -3,7 +3,7 @@ import common
 
 
 def test_database():
-    result = 0;
+    result = 0
     try:
         rows = common.db.query("SELECT * FROM Syslog LIMIT 1;")
     except Exception as e:
@@ -16,6 +16,7 @@ def test_database():
         #     rows = [e[1], "Check you username / password? (dbconfig_local.py)"]
     return result
 
+
 def create_database():
     params = common.dbconfig.params.copy()
     params.pop('db')
@@ -25,7 +26,7 @@ def create_database():
 
     with open("./sql/setup_database.sql", 'r') as file:
         # remove comment lines
-        lines = file.readlines();
+        lines = file.readlines()
     lines = [i for i in lines if not i.startswith("--")]
     # join into one long string
     script = " ".join(lines)
@@ -35,20 +36,19 @@ def create_database():
     for command in commands:
         # ignore empty statements (like trailing newlines)
         if command.strip(" \n") == "":
-            continue;
+            continue
         common.db.query(command)
 
 
-
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
-    min = 0x00000000;
-    max = 0xFFFFFFFF;
-    quot = 1;
-    if ip1 != 0 and ip1 < 255 and ip1 > 0:
+    min = 0x00000000
+    max = 0xFFFFFFFF
+    quot = 1
+    if 0 <= ip1 <= 255:
         min = (ip1 << 24)   # 172.0.0.0
-        if ip2 != 0 and ip2 < 255 and ip2 > 0:
+        if 0 <= ip2 <= 255:
             min |= (ip2 << 16)  # 172.19.0.0
-            if ip3 != 0 and ip3 < 255 and ip3 > 0:
+            if 0 <= ip3 <= 255:
                 min |= (ip3 << 8)
                 max = min | 0xFF
                 quot = 0x1
@@ -133,3 +133,50 @@ def getLinks(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
         inputs = list(common.db.query(query, vars=qvars))
 
     return inputs
+
+
+def printLink(row):
+    if "source32" in row:
+        print formatLink(row.source8, row.source16, row.source24, row.source32, row.dest8, row.dest16, row.dest24, row.dest32)
+    elif "source24" in row:
+        print formatLink(row.source8, row.source16, row.source24, 0, row.dest8, row.dest16, row.dest24, 0)
+    elif "source16" in row:
+        print formatLink(row.source8, row.source16, 0, 0, row.dest8, row.dest16, 0, 0)
+    elif "source8" in row:
+        print formatLink(row.source8, 0, 0, 0, row.dest8, 0, 0, 0)
+
+
+def formatLink(src8 = 0, src16 = 0, src24 = 0, src32 = 0, dst8 = 0, dst16 = 0, dst24 = 0, dst32 = 0):
+    return "{0:>15s} --> {1:<15s}".format("{0:d}.{1:d}.{2:d}.{3:d}".format(src8, src16, src24, src32), "{0:d}.{1:d}.{2:d}.{3:d}".format(dst8, dst16, dst24, dst32))
+
+def getTableSizes():
+    tableSizes= {};
+
+    rows = common.db.select("Nodes8", what="COUNT(*)")
+    tableSizes["Nodes8"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Nodes16", what="COUNT(*)")
+    tableSizes["Nodes16"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Nodes24", what="COUNT(*)")
+    tableSizes["Nodes24"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Nodes32", what="COUNT(*)")
+    tableSizes["Nodes32"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Links8", what="COUNT(*)")
+    tableSizes["Links8"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Links16", what="COUNT(*)")
+    tableSizes["Links16"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Links24", what="COUNT(*)")
+    tableSizes["Links24"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Links32", what="COUNT(*)")
+    tableSizes["Links32"] = rows[0]["COUNT(*)"]
+
+    rows = common.db.select("Syslog", what="COUNT(*)")
+    tableSizes["Syslog"] = rows[0]["COUNT(*)"]
+
+    return tableSizes
