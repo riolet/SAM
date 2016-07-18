@@ -3,7 +3,6 @@ import os
 import json
 import common
 import dbaccess
-import MySQLdb
 
 def validate_file(path):
     """
@@ -31,15 +30,19 @@ Usage:
     """.format(sys.argv[0]))
 
 
-def translate(line, line_num):
+def translate(line, line_num, dictionary):
     """
-    Converts a given syslog line into a tuple of (ip, port, ip, port)
+    Converts a given syslog line into a dictionary of (ip, port, ip, port)
     Args:
         line: The syslog line to parse
         line_num: The line number, for error printouts
+        dictionary: The dictionary to write key/values pairs into
 
     Returns:
-        A tuple consisting of (Source IP, Source Port, Dest IP, Dest Port)
+        0 on success and non-zero on error.
+        -1 => ignoring a message that isn't network "TRAFFIC"
+        -2 => error in parsing the line. It was too short for some reason
+        -3 => The protocol wasn't TCP and was ignored.
     """
     data = json.loads(line)['message']
     # TODO: this assumes the data will not have any commas embedded in strings
@@ -47,22 +50,23 @@ def translate(line, line_num):
 
     if split_data[3] != "TRAFFIC":
         print("Line {0}: Ignoring non-TRAFFIC entry (was {1})".format(line_num, split_data[3]))
-        return None
+        return 1
     if len(split_data) < 29:
         print("error parsing line {0}: {1}".format(line_num, line))
-        return None
+        return 2
     # 29 is protocol: tcp, udp, ...
     # TODO: don't ignore everything but TCP
     if split_data[29] != 'tcp':
         # printing this is very noisy and slow
         # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
-        return None
+        return 3
 
     # srcIP, srcPort, dstIP, dstPort
-    return (common.IPtoInt(*(split_data[7].split("."))),
-            split_data[24],
-            common.IPtoInt(*(split_data[8].split("."))),
-            split_data[25])
+    dictionary['SourceIP'] = common.IPtoInt(*(split_data[7].split(".")))
+    dictionary['SourcePort'] = split_data[24]
+    dictionary['DestinationIP'] = common.IPtoInt(*(split_data[8].split(".")))
+    dictionary['DestinationPort'] = split_data[25]
+    return 0
 
 
 def import_file(path_in):
@@ -78,15 +82,14 @@ def import_file(path_in):
         line_num = -1
         lines_inserted = 0
         counter = 0
-        rows = [("", "", "", "")] * 1000
+        row = {"SourceIP":"", "SourcePort":"", "DestinationIP":"", "DestinationPort":""}
+        rows = [row.copy() for i in range(1000)]
         for line in fin:
             line_num += 1
 
-            translated_line = translate(line, line_num)
-            if translated_line is None:
+            if translate(line, line_num, rows[counter]) != 0:
                 continue
 
-            rows[counter] = translated_line
             counter += 1
 
             # Perform the actual insertion in batches of 1000
@@ -102,24 +105,21 @@ def import_file(path_in):
 
 def insert_data(rows, count):
     """
-    Attempt to insert the first `count` items in `rows` into the database table `samapper`.`Syslog`.
+    Attempt to insert the first 'count' items in 'rows' into the database table `samapper`.`Syslog`.
     Exits script on critical failure.
     Args:
-        rows: The iterable containing data to insert
+        rows: The iterable containing dictionaries to insert
+            (dictionaries must all have the same keys, matching column names)
         count: The number of items from rows to insert
 
     Returns:
         None
     """
     try:
-        params = common.dbconfig.params.copy()
-        params.pop('dbn')
-        pw = params.pop('pw')
-        params['passwd'] = pw
-        with MySQLdb.connect(**params) as connection:
-            truncated_rows = rows[:count]
-            connection.executemany("""INSERT INTO Syslog (SourceIP, SourcePort, DestinationIP, DestinationPort)
-            VALUES (%s, %s, %s, %s);""", truncated_rows)
+        truncated_rows = rows[:count]
+        # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
+        # >>> db.multiple_insert('person', values=values, _test=True)
+        common.db.multiple_insert('Syslog', values=truncated_rows)
     except Exception as e:
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
         if e[0] == 1049: # Unknown database 'samapper'
