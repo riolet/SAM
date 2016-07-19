@@ -15,4 +15,33 @@ body, html {
     position: absolute;
     width: 100%;
     height: 100%;
+    z-index: 0;
+}
+
+#sidebar {
+    position: absolute;
+    top: 2em;
+    right: 2em;
+    border-radius: 2em;
+    display: block;
+    min-width: 200px;
+    width: 25%;
+    height: 50%;
+    border: 0.5em solid lightblue;
+    background-color: white;
+    z-index: 1;
+    padding: 2em;
+}
+
+h4 {
+    text-align: center;
+    padding: 0px;
+    margin: 0px;
+}
+h5 {
+    padding: 0em;
+    text-align: center;
+    margin: 0em 0em 1em 0em;
+    font-style: italic;
+    font-weight: normal;
 }
