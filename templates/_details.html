@@ -1,0 +1,80 @@
+$def with (details)
+<div class="ui styled fluid accordion">
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Unique inbound connections: $details['unique_in']
+    </div>
+    <div class="content">
+        <div class="transition hidden">
+            <table class="ui celled table">
+                <thead>
+                    <th>Inbound Connection</th>
+                    <th>Occurrences</th>
+                </thead>
+                <tbody>
+                $for link in details['conn_in']:
+                    <tr>
+                    <td>$link['ip']</td>
+                    <td>$link['links']</td>
+                    </tr>
+                $if details['unique_in'] > len(details['conn_in']):
+                    <tr>
+                    <td>Plus $(details['unique_in'] - len(details['conn_in'])) more</td>
+                    <td>--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Unique outbound connections: $details['unique_out']
+    </div>
+    <div class="content">
+        <div class="transition hidden">
+            <table class="ui celled table">
+                <thead>
+                    <th>Outbound Connection</th>
+                    <th>Occurrences</th>
+                </thead>
+                <tbody>
+                $for link in details['conn_out']:
+                    <tr>
+                    <td>$link['ip']</td>
+                    <td>$link['links']</td>
+                    </tr>
+                $if details['unique_out'] > len(details['conn_out']):
+                    <tr>
+                    <td>Plus $(details['unique_out'] - len(details['conn_out'])) more</td>
+                    <td>--</td>
+                    </tr>
+            </table>
+        </div>
+    </div>
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Unique ports accessed: $details['unique_ports']
+    </div>
+    <div class="content">
+        <div class="transition hidden">
+            <table class="ui celled table">
+                <thead>
+                    <th>Inbound Connection</th>
+                    <th>Occurrences</th>
+                </thead>
+                <tbody>
+                $for link in details['ports_in']:
+                    <tr>
+                    <td>$link['port']</td>
+                    <td>$link['links']</td>
+                    </tr>
+                $if details['unique_ports'] > len(details['ports_in']):
+                    <tr>
+                    <td>Plus $(details['unique_ports'] - len(details['ports_in'])) more</td>
+                    <td>--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

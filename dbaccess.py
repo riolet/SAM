@@ -188,7 +188,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     query = """
         SELECT DestinationPort AS port, COUNT(*) AS links
             FROM Syslog
-            WHERE DestinationIP >= 201326592 && DestinationIP <= 218103807
+            WHERE DestinationIP >= $start && DestinationIP <= $end
             GROUP BY port
             ORDER BY links DESC
             LIMIT 50;

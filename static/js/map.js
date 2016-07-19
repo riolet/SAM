@@ -143,6 +143,8 @@ function loadChildren(node) {
                 preprocessConnection(node.children[i].inputs[j])
             }
         }
+        updateRenderRoot()
+        render(tx, ty, scale);
     }});
 }
 
@@ -199,7 +201,6 @@ function preprocessConnection(link) {
             link.x2 -= dest.radius * 0.2;
         }
     }
-
 }
 
 //==========================================
@@ -330,15 +331,16 @@ function updateSelection(node) {
     }
     document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
     document.getElementById("selectionNumber").innerHTML = node.alias;
-    content = makeParagraph("Connections: " + node.connections);
-    if (node.level != 32) {
-        if (node.childrenLoaded === true) {
-            content += makeParagraph("Children: " + Object.keys(node.children).length);
-        } else {
-            content += makeParagraph("Children: Not loaded");
-        }
-    }
-    document.getElementById("selectionInfo").innerHTML = content;
+    $.ajax({
+        url: "/details",
+        //dataType: "json",
+        type: "POST",
+        data: node.alias,
+        error: onNotLoadData,
+        success: function(result) {
+            document.getElementById("selectionInfo").innerHTML = result;
+            $('.ui.accordion').accordion();
+    }});
 }
 
 //==========================================
