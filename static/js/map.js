@@ -17,6 +17,7 @@ var map = {};
 var nodeCollection = {};
 var renderCollection;
 var linkCollection;
+var selection = null;
 
 
 function init() {
@@ -142,6 +143,8 @@ function loadChildren(node) {
                 preprocessConnection(node.children[i].inputs[j])
             }
         }
+        updateRenderRoot()
+        render(tx, ty, scale);
     }});
 }
 
@@ -198,7 +201,6 @@ function preprocessConnection(link) {
             link.x2 -= dest.radius * 0.2;
         }
     }
-
 }
 
 //==========================================
@@ -254,6 +256,11 @@ function renderClusters(collection) {
         alpha = opacity(collection[node].level);
         ctx.globalAlpha = alpha;
         ctx.lineWidth = 5 / scale;
+        if (collection[node] == selection) {
+            ctx.strokeStyle = "#BFBFFF";
+        } else {
+            ctx.strokeStyle = "#5555CC";
+        }
         drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, collection[node].level, alpha);
         renderLinks(collection[node])
         //if (collection[node].childrenLoaded) {
@@ -310,6 +317,32 @@ function drawArrow(x1, y1, x2, y2, rStart = 0, rEnd = 0, thickness = 1) {
     ctx.stroke();
 }
 
+function makeParagraph(text) {
+    return "<p>" + text + "</p>";
+}
+
+function updateSelection(node) {
+    selection = node;
+    if (node == null) {
+        document.getElementById("selectionName").innerHTML = "No selection";
+    document.getElementById("selectionNumber").innerHTML = "";
+        document.getElementById("selectionInfo").innerHTML = "";
+        return;
+    }
+    document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
+    document.getElementById("selectionNumber").innerHTML = node.alias;
+    $.ajax({
+        url: "/details",
+        //dataType: "json",
+        type: "POST",
+        data: node.alias,
+        error: onNotLoadData,
+        success: function(result) {
+            document.getElementById("selectionInfo").innerHTML = result;
+            $('.ui.accordion').accordion();
+    }});
+}
+
 //==========================================
 //  Mouse Interaction Handlers
 //==========================================
@@ -328,6 +361,13 @@ function mouseup(event) {
     ismdown = false;
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
+
+    if (mx == mdownx && my == mdowny) {
+        //mouse hasn't moved. treat this as a "pick" operation
+        selection = pick((mx - tx) / scale, (my - ty) / scale);
+        updateSelection(selection);
+    }
+
     tx = tx + mx - mdownx;
     ty = ty + my - mdowny;
     render(tx, ty, scale);
@@ -376,6 +416,34 @@ function wheel(event) {
     render(tx, ty, scale);
     checkLoD();
 }
+
+function pick(x, y) {
+    var best = null;
+    var bestDist = +Infinity;
+    var tempDist = 0;
+    for (var i in renderCollection) {
+        if (contains(renderCollection[i], x, y)) {
+            tempDist = distanceSquared(x, y, renderCollection[i].x, renderCollection[i].y)
+            if (tempDist < bestDist || renderCollection[i].level > best.level) {
+                bestDist = tempDist;
+                best = renderCollection[i];
+            }
+        }
+    }
+    return best;
+}
+
+function distanceSquared(x1, y1, x2, y2) {
+    return (x2-x1) * (x2-x1) + (y2-y1) * (y2-y1);
+}
+
+function contains(node, x, y) {
+    return x < node.x + node.radius
+        && x > node.x - node.radius
+        && y < node.y + node.radius
+        && y > node.y - node.radius;
+}
+
 
 //==========================================
 //  Other Event Handlers
