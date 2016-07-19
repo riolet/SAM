@@ -40,7 +40,7 @@ def create_database():
         common.db.query(command)
 
 
-def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
+def determineRange(ip1 = -1, ip2 = -1, ip3 = -1, ip4 = -1):
     min = 0x00000000
     max = 0xFFFFFFFF
     quot = 1
@@ -50,8 +50,12 @@ def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
             min |= (ip2 << 16)  # 172.19.0.0
             if 0 <= ip3 <= 255:
                 min |= (ip3 << 8)
-                max = min | 0xFF
-                quot = 0x1
+                if 0 <= ip4 <= 255:
+                    min |= ip4
+                    max = min
+                else:
+                    max = min | 0xFF
+                    quot = 0x1
             else:
                 max = min | 0xFFFF
                 quot = 0x100
@@ -61,11 +65,6 @@ def determineRange(ip1 = -1, ip2 = -1, ip3 = -1):
     else:
         quot = 0x1000000
     return (min, max, quot)
-
-
-def connections():
-    rows = common.db.select("Nodes8")
-    return rows
 
 
 def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
@@ -133,6 +132,71 @@ def getLinks(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
         inputs = list(common.db.query(query, vars=qvars))
 
     return inputs
+
+
+def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+    details = {}
+    ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ipSegment1, ipSegment2, ipSegment3, ipSegment4)
+
+    query = """
+        SELECT tableA.unique_in, tableB.unique_out, tableC.unique_ports
+        FROM
+            (SELECT COUNT(DISTINCT(SourceIP)) AS 'unique_in'
+            FROM Syslog
+            WHERE DestinationIP >= $start && DestinationIP <= $end)
+            AS tableA
+        JOIN
+            (SELECT COUNT(DISTINCT(DestinationIP)) AS 'unique_out'
+            FROM Syslog
+            WHERE SourceIP >= $start && SourceIP <= $end)
+            AS tableB
+        JOIN
+            (SELECT COUNT(DISTINCT(DestinationPort)) AS 'unique_ports'
+            FROM Syslog
+            WHERE DestinationIP >= $start && DestinationIP <= $end)
+            AS tableC;
+    """
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    rows = common.db.query(query, vars=qvars)
+    row = rows[0]
+    details['unique_out'] = row.unique_out
+    details['unique_in'] = row.unique_in
+    details['unique_ports'] = row.unique_ports
+
+    query = """
+        SELECT SourceIP AS 'ip', COUNT(*) AS links
+            FROM Syslog
+            WHERE DestinationIP >= $start && DestinationIP <= $end
+            GROUP BY ip
+            ORDER BY links DESC
+            LIMIT 50;
+    """
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    details['conn_in'] = list(common.db.query(query, vars=qvars))
+
+    query = """
+        SELECT DestinationIP AS 'ip', COUNT(*) AS links
+            FROM Syslog
+            WHERE SourceIP >= $start && SourceIP <= $end
+            GROUP BY ip
+            ORDER BY links DESC
+            LIMIT 50;
+    """
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    details['conn_out'] = list(common.db.query(query, vars=qvars))
+
+    query = """
+        SELECT DestinationPort AS port, COUNT(*) AS links
+            FROM Syslog
+            WHERE DestinationIP >= 201326592 && DestinationIP <= 218103807
+            GROUP BY port
+            ORDER BY links DESC
+            LIMIT 50;
+    """
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    details['ports_in'] = list(common.db.query(query, vars=qvars))
+
+    return details
 
 
 def printLink(row):
