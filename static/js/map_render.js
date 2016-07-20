@@ -116,44 +116,44 @@ function drawArrow(x1, y1, x2, y2, thickness = 1) {
 //Given a node's level (subnet) return the opacity to render it at.
 function opacity(level) {
     if (level == 8) {
-        if (scale <= 0.07) {
+        if (scale <= zoom8) {
             return 1.0;
-        } else if (scale >= 0.14) {
+        } else if (scale >= zoom8*2) {
             return 0.0;
         } else {
-            return (scale - 0.14) / (-0.07);
+            return (scale - zoom8*2) / (-zoom8);
         }
     } else if (level == 16) {
-        if (scale <= 0.07) {
+        if (scale <= zoom8) {
             return 0.0;
-        } else if (scale >= 1.0) {
+        } else if (scale >= zoom16*2) {
             return 0.0;
-        } else if (scale >= 0.14 && scale <= 0.5) {
+        } else if (scale >= zoom8*2 && scale <= zoom16) {
             return 1.0;
-        } else if (scale < 0.14) {
-            return 1 - (scale - 0.14) / (-0.07);
-        } else if (scale > 0.5) {
-            return (scale - 1.0) / (-0.5);
+        } else if (scale < zoom8*2) {
+            return 1 - (scale - zoom8*2) / (-zoom8);
+        } else if (scale > zoom16) {
+            return (scale - zoom16*2) / (-zoom16);
         }
     } else if (level == 24) {
-        if (scale <= 0.5) {
+        if (scale <= zoom16) {
             return 0.0;
-        } else if (scale >= 7.0) {
+        } else if (scale >= zoom24*2) {
             return 0.0;
-        } else if (scale >= 1.0 && scale <= 3.5) {
+        } else if (scale >= zoom16*2 && scale <= zoom24) {
             return 1.0;
-        } else if (scale < 1.0) {
-            return 1 - (scale - 1.0) / (-0.5);
-        } else if (scale > 3.5) {
-            return (scale - 7.0) / (-3.5);
+        } else if (scale < zoom16*2) {
+            return 1 - (scale - zoom16*2) / (-zoom16);
+        } else if (scale > zoom24) {
+            return (scale - zoom24*2) / (-zoom24);
         }
     } else if (level == 32) {
-        if (scale <= 3.5) {
+        if (scale <= zoom24) {
             return 0.0;
-        } else if (scale >= 7.0) {
+        } else if (scale >= zoom24*2) {
             return 1.0;
-        } else if (scale < 7.0) {
-            return 1 - (scale - 7.0) / (-3.5);
+        } else if (scale < zoom24*2) {
+            return 1 - (scale - zoom24*2) / (-zoom24);
         }
     } else {
         return 0.0;

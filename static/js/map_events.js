@@ -40,7 +40,7 @@ function wheel(event) {
     my = event.clientY - rect.top;
 
     if (event.deltaY < 0) { // Zoom in
-        if (scale >= 49.0) {
+        if (scale >= 60.0) {
             return;
         }
         tx -= mx;
@@ -51,7 +51,7 @@ function wheel(event) {
         tx += mx;
         ty += my;
     } else if (event.deltaY > 0) { // Zoom out
-        if (scale <= 0.01) {
+        if (scale <= 0.0005) {
             return;
         }
         tx -= mx;
@@ -66,6 +66,18 @@ function wheel(event) {
     }
     render(tx, ty, scale);
     checkLoD();
+}
+
+function keydown(event) {
+    //if key is 'f', reset the view
+    if (event.keyCode == 70) {
+        scale = 0.001;
+        tx = rect.width / 2;
+        ty = rect.height / 2;
+        updateRenderRoot();
+        render(tx, ty, scale);
+    }
+    return;
 }
 
 //For onMouseUp, returns node if a node was clicked on, else null.

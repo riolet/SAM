@@ -10,13 +10,17 @@ var mdownx, mdowny;
 var mx, my;
 var tx = 532;
 var ty = 288;
-var scale = 0.01;
+var scale = 0.001;
 
 var map = {};
 
 var nodeCollection = {};
 var renderCollection;
 var selection = null;
+
+var zoom8 = 0.012;
+var zoom16 = 0.3;
+var zoom24 = 7.5;
 
 
 function init() {
@@ -28,6 +32,8 @@ function init() {
     width = canvas.width;
     height = canvas.height;
     rect = canvas.getBoundingClientRect();
+    tx = rect.width / 2;
+    ty = rect.height / 2;
     ctx = canvas.getContext("2d");
     ctx.lineJoin = "bevel";
 
@@ -36,7 +42,9 @@ function init() {
     canvas.addEventListener('mousedown', mousedown);
     canvas.addEventListener('mousemove', mousemove);
     canvas.addEventListener('mouseup', mouseup);
+    canvas.addEventListener('keydown', mouseup);
     canvas.addEventListener('wheel', wheel);
+    window.addEventListener('keydown',keydown,false);
 
     loadData();
 
@@ -44,13 +52,13 @@ function init() {
 }
 
 function currentLevel() {
-    if (scale < 0.07) {
+    if (scale < zoom8) {
         return 8;
     }
-    if (scale < 0.5) {
+    if (scale < zoom16) {
         return 16;
     }
-    if (scale < 3.5) {
+    if (scale < zoom24) {
         return 24;
     }
     return 32;

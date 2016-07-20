@@ -21,13 +21,19 @@ def clean_tables():
 
 def import_nodes():
 
+    # count(children) / 127.5 + 0.5) gives a number between 0.5 and 2.5
+    # radius used to be:
+    #    (COUNT(cluster.child) / 127.5 + 0.5) * 6000
+    # instead of:
+    #    6000
+
     # Get all /8 nodes. Load them into Nodes8
     query = """
     INSERT INTO Nodes8 (address, connections, children, radius)
     SELECT cluster.nip AS address
         , SUM(cluster.conns) AS connections
         , COUNT(cluster.child) AS children
-        , (COUNT(cluster.child) / 127.5 + 0.5) * 2000
+        , 20736
     FROM
         (SELECT ip DIV 16777216 AS 'nip'
             , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'child'
@@ -52,7 +58,7 @@ def import_nodes():
             , cluster.nip AS address
             , SUM(cluster.conns) AS connections
             , COUNT(cluster.child) AS children
-            , (COUNT(cluster.child) / 127.5 + 0.5) * 200
+            , 864
         FROM
             (SELECT ip DIV 16777216 AS 'pip8'
                 , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'nip'
@@ -79,7 +85,7 @@ def import_nodes():
             , cluster.nip AS address
             , SUM(cluster.conns) AS connections
             , COUNT(cluster.child) AS children
-            , (COUNT(cluster.child) / 127.5 + 0.5) * 20
+            , 36
         FROM
             (SELECT ip DIV 16777216 AS 'pip8'
                 , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'pip16'
@@ -108,7 +114,7 @@ def import_nodes():
             , cluster.nip AS address
             , SUM(cluster.conns) AS connections
             , COUNT(cluster.child) AS children
-            , (COUNT(cluster.child) / 127.5 + 0.5) * 2
+            , 1.5
         FROM
             (SELECT ip DIV 16777216 AS 'pip8'
                 , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'pip16'
@@ -176,6 +182,22 @@ def layout_nodes(nodes):
         node.y = node.py
         placed.append(node)
 
+    elif len(nodes) < 255:
+        nodesWide = 16
+        w = nodes[0].pr * 1.8
+        left = nodes[0].px - w/2
+        top = nodes[0].py - w/2
+        step = w / (nodesWide - 1)
+        for node in nodes:
+            x = left + (node.address % nodesWide) * step
+            y = top + (node.address / nodesWide) * step
+            node.x = x
+            node.y = y
+            x += step
+            placed.append(node)
+
+    # TODO: the rest of this if statement is dead because of the above statement overriding it.
+
     elif len(nodes) < 6:  # 1..6 => circle
         i = 0.0
         limit = len(nodes)
@@ -234,7 +256,7 @@ def position_nodes():
     # arrangement radius is 20000
     # node radius is 2000
     query = """
-        SELECT 1 AS parent, address, connections, 0 AS px, 0 AS py, 20000 AS pr, x, y
+        SELECT 1 AS parent, address, connections, 0 AS px, 0 AS py, 331776 AS pr, x, y
         FROM
             Nodes8
         ORDER BY connections DESC;
