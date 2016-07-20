@@ -22,10 +22,10 @@ function render(x, y, scale) {
     ctx.fillStyle = "#0000FF";
     ctx.strokeStyle = "#5555CC";
 
-    renderClusters(renderCollection);
+    renderClusters(renderCollection, x, y);
 }
 
-function renderClusters(collection) {
+function renderClusters(collection, x, y) {
     var level = currentLevel();
     var alpha = 1.0;
 
@@ -33,9 +33,7 @@ function renderClusters(collection) {
         if (collection[node].level > level) {
             return;
         }
-        //Font size below 2 pixels: the letter spacing is broken.
-        //Font size above 2000 pixels: letters stop getting bigger.
-        ctx.font = Math.max(collection[node].radius / 2, 2) + "px sans";
+
         alpha = opacity(collection[node].level);
         ctx.globalAlpha = alpha;
         ctx.lineWidth = 5 / scale;
@@ -44,12 +42,32 @@ function renderClusters(collection) {
         } else {
             ctx.strokeStyle = "#5555CC";
         }
-        drawClusterNode(collection[node].alias, collection[node].x, collection[node].y, collection[node].radius, collection[node].level, alpha);
+        drawClusterNode(collection[node].x, collection[node].y, collection[node].radius, collection[node].level);
         renderLinks(collection[node]);
+    }
+    for (var node in collection) {
+        //Font size below 2 pixels: the letter spacing is broken.
+        //Font size above 2000 pixels: letters stop getting bigger.
+        var text = collection[node].alias;
+
+        ctx.resetTransform();
+        ctx.font = "1.5em sans";
+        var size = ctx.measureText(text);
+        var px = collection[node].x * scale + x - size.width / 2;
+        var py = (collection[node].y - collection[node].radius) * scale + y - 5;
+        var alpha = opacity(collection[node].level);
+
+        //ctx.font = fontsize + "em sans";
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(px, py + 2, size.width, -21);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#000000";
+        ctx.fillText(text, px, py);
     }
 }
 
-function drawClusterNode(name, x, y, radius, level, opacity) {
+function drawClusterNode(x, y, radius, level) {
     ctx.beginPath();
     if (level < 31) {
         ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
@@ -57,8 +75,6 @@ function drawClusterNode(name, x, y, radius, level, opacity) {
         ctx.strokeRect(x - radius, y - radius, radius*2, radius * 2);
     }
     ctx.stroke();
-    var size = ctx.measureText(name);
-    ctx.fillText(name, x - size.width / 2, y - radius * 1.25);
 }
 
 function renderLinks(node) {
