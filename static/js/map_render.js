@@ -151,8 +151,16 @@ function drawClusterNode(node) {
 
 function renderLinks(node) {
     var link = node.inputs
-    for (var i in link) {
-        drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+    if (config.show_in) {
+        for (var i in link) {
+            drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+        }
+    }
+    if (config.show_out) {
+        link = node.outputs
+        for (var i in link) {
+            drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+        }
     }
 }
 
