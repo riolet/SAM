@@ -5,9 +5,58 @@ $# "$def with (arg1, ...)" MUST be the first line. See template.py for details
 <div id="output">
     <canvas id="canvas"></canvas>
     <div id="sidebar">
-    <h4 id="selectionName">No selection</h4>
-    <h5 id="selectionNumber"></h5>
-    <div id="selectionInfo"></div>
+        <h4 id="selectionName">No selection</h4>
+        <h5 id="selectionNumber"></h5>
+        <div id="selectionInfo" class="ui styled fluid accordion">
+            <div class="title">
+                <i class="dropdown icon"></i>
+                Unique inbound connections: <span id="unique_in">0</span>
+            </div>
+            <div class="content">
+                <div class="transition hidden">
+                    <table class="ui celled table">
+                        <thead>
+                            <th>Inbound Connection</th>
+                            <th>Occurrences</th>
+                        </thead>
+                        <tbody id="conn_in">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="title">
+                <i class="dropdown icon"></i>
+                Unique outbound connections: <span id="unique_out">0</span>
+            </div>
+            <div class="content">
+                <div class="transition hidden">
+                    <table class="ui celled table">
+                        <thead>
+                            <th>Outbound Connection</th>
+                            <th>Occurrences</th>
+                        </thead>
+                        <tbody id="conn_out">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="title">
+                <i class="dropdown icon"></i>
+                Unique ports accessed: <span id="unique_ports">0</span>
+            </div>
+            <div class="content">
+                <div class="transition hidden">
+                    <table class="ui celled table">
+                        <thead>
+                            <th>Port Accessed</th>
+                            <th>Occurrences</th>
+                        </thead>
+                        <tbody id="ports_in">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script type="application/javascript">

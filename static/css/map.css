@@ -20,17 +20,17 @@ body, html {
 
 #sidebar {
     position: absolute;
-    top: 2em;
-    right: 2em;
-    border-radius: 2em;
+    right: 20px;
+    top: 20px;
+    border-radius: 20px;
     display: block;
     min-width: 200px;
     width: 25%;
-    max-height: calc(100% - 4em);
-    border: 0.5em solid lightblue;
+    min-width: 300px;
+    border: 5px solid lightblue;
     background-color: white;
     z-index: 1;
-    padding: 2em;
+    padding: 10px 0 0 0;
     overflow-y: hidden;
     overflow-x: hidden;
 }
@@ -41,9 +41,9 @@ h4 {
     margin: 0px;
 }
 h5 {
-    padding: 0em;
+    padding: 0em 0em 1em 0em;
+    margin: 0em;
     text-align: center;
-    margin: 0em 0em 1em 0em;
     font-style: italic;
     font-weight: normal;
 }

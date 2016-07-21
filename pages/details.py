@@ -13,7 +13,7 @@ class Details:
         # data is a string.
         # if the post data was a js object, it looks like "key1=val1&key2=val2&key3=val3"
 
-        web.header("Content-Type", "text/html");
+        web.header("Content-Type", "application/json")
 
         # data is expected to be something like 12.34.192
         ips = data.split(".")
@@ -31,6 +31,6 @@ class Details:
         for connection in details['conn_out']:
             connection.ip = common.IPtoString(connection.ip)
 
-        # return json.dumps(details)
-        return common.render._details(details)
+        return json.dumps(details)
+        # return common.render._details(details)
 

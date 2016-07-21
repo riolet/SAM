@@ -119,6 +119,29 @@ function onResize() {
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);
     checkLoD();
+    updateFloatingPanel();
+}
+
+function updateFloatingPanel() {
+    var side = document.getElementById("sidebar");
+    var heightAvailable = rect.height - 40;
+    side.style.maxHeight = heightAvailable + "px";
+
+    heightAvailable -= 10; //for padding
+    heightAvailable -= 10; //for borders
+
+    contentTitles = $("#selectionInfo div.title");
+    for (var i = 0; i < contentTitles.length; i++) {
+        //offsetHeight is height + vertical padding + vertical borders
+        heightAvailable -= contentTitles[i].offsetHeight;
+    }
+    heightAvailable -= document.getElementById('selectionName').offsetHeight;
+    heightAvailable -= document.getElementById('selectionNumber').offsetHeight;
+
+    contentBlocks = $("#selectionInfo div.content");
+    for (var i = 0; i < contentBlocks.length; i++) {
+        contentBlocks[i].style.maxHeight = heightAvailable + "px";
+    }
 }
 
 (function() {

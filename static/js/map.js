@@ -49,6 +49,11 @@ function init() {
     canvas.addEventListener('wheel', wheel);
     window.addEventListener('keydown',keydown,false);
 
+    updateFloatingPanel();
+
+
+    $('.ui.accordion').accordion();
+
     loadData();
 
     render(tx, ty, scale);
