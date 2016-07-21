@@ -17,6 +17,7 @@ Node.prototype = {
     children: {},
     childrenLoaded: false,
     inputs: [],
+    outputs: [],
     ports: {}
 };
 
@@ -31,6 +32,7 @@ function Node(address, alias, level, connections, x, y, radius, inputs) {
     this.children = {};
     this.childrenLoaded = false;
     this.inputs = inputs;
+    this.outputs = [];
     this.ports = {};
 }
 
@@ -46,9 +48,6 @@ function onLoadData(result) {
     // I am expecting `result` to be an array of objects
     // where each object has address, alias, connections, x, y, radius,
     nodeCollection = {};
-    console.log("Loaded base data:");
-    console.log(result);
-    console.log("rows: " + result.length);
     for (var row in result) {
         name = result[row].address;
         nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
@@ -287,11 +286,11 @@ function updateSelection(node) {
         document.getElementById("selectionName").innerHTML = "No selection";
         document.getElementById("selectionNumber").innerHTML = "";
         document.getElementById("unique_in").innerHTML = "0";
-        document.getElementById("full_unique_in").innerHTML = "";
+        document.getElementById("conn_in").innerHTML = "";
         document.getElementById("unique_out").innerHTML = "0";
-        document.getElementById("full_unique_out").innerHTML = "";
+        document.getElementById("conn_out").innerHTML = "";
         document.getElementById("unique_ports").innerHTML = "0";
-        document.getElementById("full_unique_ports").innerHTML = "";
+        document.getElementById("ports_in").innerHTML = "";
         return;
     }
     document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";

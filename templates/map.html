@@ -13,25 +13,25 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 <div class="menu">
                     <div class="item">
                         <div class="ui toggle checkbox">
-                            <input name="show_clients" checked = "" type="checkbox">
+                            <input id="show_clients" name="show_clients" checked = "" type="checkbox">
                             <label>Show Clients</label>
                         </div>
                     </div>
                     <div class="item">
                         <div class="ui toggle checkbox">
-                            <input name="show_servers" checked = "" type="checkbox">
+                            <input id="show_servers" name="show_servers" checked = "" type="checkbox">
                             <label>Show Servers</label>
                         </div>
                     </div>
                     <div class="item">
-                        <div class="ui toggle checkbox">
-                            <input name="show_servers" checked = "" type="checkbox">
+                        <div class="ui disabled toggle checkbox">
+                            <input id="show_out" name="show_out" checked = "" type="checkbox" disabled>
                             <label>Show Outbound Traffic</label>
                         </div>
                     </div>
                     <div class="item">
-                        <div class="ui toggle checkbox">
-                            <input name="show_servers" type="checkbox">
+                        <div class="ui disabled toggle checkbox">
+                            <input id="show_in" name="show_in" type="checkbox" disabled>
                             <label>Show Inbound Traffic</label>
                         </div>
                     </div>

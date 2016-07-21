@@ -250,7 +250,15 @@ function onScreen() {
     if (visible.length == 0) {
         console.log("Cannot see any nodes");
     }
-    return visible;
+
+    var filtered = [];
+    for (var node in visible) {
+        if ((visible[node].inputs.length > 0 || config.show_clients)
+            && (visible[node].outputs.length > 0 || config.show_servers)) {
+            filtered.push(visible[node]);
+            }
+    }
+    return filtered;
 }
 
 function onScreenRecursive(left, right, top, bottom, collection) {

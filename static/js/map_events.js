@@ -122,6 +122,15 @@ function onResize() {
     updateFloatingPanel();
 }
 
+function updateConfig(text, value){
+    config.show_clients = document.getElementById("show_clients").checked;
+    config.show_servers = document.getElementById("show_servers").checked;
+    config.show_in = document.getElementById("show_in").checked;
+    config.show_out = document.getElementById("show_out").checked;
+    updateRenderRoot();
+    render(tx, ty, scale);
+}
+
 function updateFloatingPanel() {
     var side = document.getElementById("sidebar");
     var heightAvailable = rect.height - 40;
