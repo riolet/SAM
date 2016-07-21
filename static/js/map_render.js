@@ -168,22 +168,21 @@ function drawArrow(x1, y1, x2, y2, thickness = 1) {
         return;
     }
 
-    ctx.beginPath();
-    ctx.lineWidth = (Math.log(thickness) / 4 + 1) / scale;
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-
     var len = Math.hypot(dx, dy);
-    var xTemp = (-dx) / len * (30 / scale);
+    var xTemp = (-dx) / len * (30 / scale); //make the arrowhead 30 screen pixels in size
     var yTemp = (-dy) / len * (30 / scale);
 
-    var c = Math.cos(0.3);
+    var c = Math.cos(0.3); //0.3 is half angle of arrowhead in radians
     var s = Math.sin(0.3);
     var x3 = xTemp * c - yTemp * s + x2;
     var y3 = xTemp * s + yTemp * c + y2;
     var x4 = xTemp * c - yTemp * -s + x2;
     var y4 = xTemp * -s + yTemp * c + y2;
 
+    ctx.beginPath();
+    ctx.lineWidth = (Math.log(thickness) / 4 + 2) / scale;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
     ctx.lineTo(x3, y3);
     ctx.lineTo(x4, y4);
     ctx.lineTo(x2, y2);
