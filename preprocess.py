@@ -704,8 +704,7 @@ def preprocess_log():
     clean_tables()
     import_nodes()
     position_nodes()
-    import_links_in()
-    import_links_out()
+    import_links()
     print("Pre-processing completed successfully.")
 
 # If running as a script, begin by executing main.
