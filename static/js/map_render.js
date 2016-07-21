@@ -22,10 +22,10 @@ function render(x, y, scale) {
     ctx.fillStyle = "#0000FF";
     ctx.strokeStyle = "#5555CC";
 
-    renderClusters(renderCollection, x, y);
+    renderClusters(renderCollection, x, y, scale);
 }
 
-function renderClusters(collection, x, y) {
+function renderClusters(collection, x, y, scale) {
     var level = currentLevel();
     var alpha = 1.0;
 
@@ -42,19 +42,62 @@ function renderClusters(collection, x, y) {
         } else {
             ctx.strokeStyle = "#5555CC";
         }
-        drawClusterNode(collection[node].x, collection[node].y, collection[node].radius, collection[node].level);
+        drawClusterNode(collection[node]);
         renderLinks(collection[node]);
     }
-    for (var node in collection) {
-        //Font size below 2 pixels: the letter spacing is broken.
-        //Font size above 2000 pixels: letters stop getting bigger.
-        var text = collection[node].alias;
+    renderLabels(collection, x, y, scale);
+}
 
-        ctx.resetTransform();
-        ctx.font = "1.5em sans";
+function renderLabels(collection, x, y, scale) {
+    ctx.resetTransform();
+    ctx.font = "1.5em sans";
+    ctx.fillStyle = "#000000";
+    if (scale > 35) {
+        for (var node in collection) {
+            //Draw port labels here
+            for (var p in collection[node].ports) {
+                var text = p;
+                var size = ctx.measureText(text);
+                //node.ports[p].x
+                if (collection[node].ports[p].side == "left") {
+                    var px = collection[node].ports[p].x * scale + x - size.width / 2 - 0.4 * scale;
+                    var py = collection[node].ports[p].y * scale + y + 8;
+                    ctx.fillText(text, px, py);
+                } else if (collection[node].ports[p].side == "right") {
+                    var px = collection[node].ports[p].x * scale + x - size.width / 2 + 0.4 * scale;
+                    var py = collection[node].ports[p].y * scale + y + 8;
+                    ctx.fillText(text, px, py);
+                } else if (collection[node].ports[p].side == "top") {
+                    var px = collection[node].ports[p].x * scale + x;
+                    var py = collection[node].ports[p].y * scale + y - 0.4 * scale;
+                    ctx.save()
+                    ctx.translate(px, py);
+                    ctx.rotate(Math.PI/2);
+                    ctx.fillText(text, -size.width / 2, +8);
+                    ctx.restore();
+                } else if (collection[node].ports[p].side == "bottom") {
+                    var px = collection[node].ports[p].x * scale + x;
+                    var py = collection[node].ports[p].y * scale + y + 0.4 * scale;
+                    ctx.save()
+                    ctx.translate(px, py);
+                    ctx.rotate(Math.PI/2);
+                    ctx.fillText(text, -size.width / 2, +8);
+                    ctx.restore();
+                }
+            }
+        }
+    }
+    for (var node in collection) {
+        //Draw node labels here
+        var text = collection[node].alias;
         var size = ctx.measureText(text);
         var px = collection[node].x * scale + x - size.width / 2;
-        var py = (collection[node].y - collection[node].radius) * scale + y - 5;
+        var py;
+        if (collection[node].level == 32) {
+            py = collection[node].y * scale + y + 10;
+        } else {
+            py = (collection[node].y - collection[node].radius) * scale + y - 5;
+        }
         var alpha = opacity(collection[node].level);
 
         //ctx.font = fontsize + "em sans";
@@ -67,14 +110,43 @@ function renderClusters(collection, x, y) {
     }
 }
 
-function drawClusterNode(x, y, radius, level) {
-    ctx.beginPath();
-    if (level < 31) {
-        ctx.arc(x, y, radius, 0, Math.PI * 2, 0);
+function drawClusterNode(node) {
+    ctx.fillStyle = "#FFFFFF";
+    if (node.level < 31) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
+        ctx.stroke();
     } else {
-        ctx.strokeRect(x - radius, y - radius, radius*2, radius * 2);
+        //terminal node (final IP address)
+        ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius*2, node.radius * 2);
+        for (var p in node.ports) {
+            if (node.ports[p].side == "left") {
+                //if the port is on the left side
+                ctx.fillRect( node.ports[p].x - 1.2, node.ports[p].y - 0.4,
+                              1.6, 0.8);
+                ctx.strokeRect( node.ports[p].x - 1.2, node.ports[p].y - 0.4,
+                                1.6, 0.8);
+            } else if (node.ports[p].side == "right") {
+                //if the port is on the right side
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
+                              1.6, 0.8);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
+                                1.6, 0.8);
+            } else if (node.ports[p].side == "bottom") {
+                //if the port is on the bottom side
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
+                              0.8, 1.6);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
+                                0.8, 1.6);
+            } else {
+                //the port must be on the top side
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 1.2,
+                              0.8, 1.6);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 1.2,
+                                0.8, 1.6);
+            }
+        }
     }
-    ctx.stroke();
 }
 
 function renderLinks(node) {
