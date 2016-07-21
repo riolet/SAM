@@ -21,7 +21,7 @@ Node.prototype = {
     ports: {}
 };
 
-function Node(address, alias, level, connections, x, y, radius, inputs) {
+function Node(address, alias, level, connections, x, y, radius, inputs, outputs) {
     this.address = address;
     this.alias = alias;
     this.level = level;
@@ -32,7 +32,7 @@ function Node(address, alias, level, connections, x, y, radius, inputs) {
     this.children = {};
     this.childrenLoaded = false;
     this.inputs = inputs;
-    this.outputs = [];
+    this.outputs = outputs;
     this.ports = {};
 }
 
@@ -50,7 +50,7 @@ function onLoadData(result) {
     nodeCollection = {};
     for (var row in result) {
         name = result[row].address;
-        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
+        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
     }
     for (var i in nodeCollection) {
         for (var j in nodeCollection[i].inputs) {
@@ -87,7 +87,7 @@ function loadChildren(node) {
         for (var row in result) {
             //console.log("Loaded " + node.alias + " -> " + result[row].address);
             name = node.alias + "." + result[row].address;
-            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
+            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
         }
         // process the connections
         for (var i in node.children) {
