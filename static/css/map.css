@@ -35,6 +35,13 @@ body, html {
     overflow-x: hidden;
 }
 
+#searchbar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1;
+}
+
 h4 {
     text-align: center;
     padding: 0px;

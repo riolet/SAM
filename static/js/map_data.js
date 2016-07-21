@@ -56,6 +56,9 @@ function onLoadData(result) {
         for (var j in nodeCollection[i].inputs) {
             preprocessConnection(nodeCollection[i].inputs[j])
         }
+        for (var j in nodeCollection[i].outputs) {
+            preprocessConnection(nodeCollection[i].outputs[j])
+        }
     }
 
     renderCollection = nodeCollection;
@@ -92,14 +95,18 @@ function loadChildren(node) {
         // process the connections
         for (var i in node.children) {
             if (node.children[i].level == 32) {
-                preprocessConnection32(node.children[i].inputs)
+                preprocessConnection32(node.children[i].inputs);
+                //preprocessConnection(node.children[i].outputs);
             } else {
                 for (var j in node.children[i].inputs) {
-                    preprocessConnection(node.children[i].inputs[j])
+                    preprocessConnection(node.children[i].inputs[j]);
                 }
             }
+            for (var j in node.children[i].outputs) {
+                preprocessConnection(node.children[i].outputs[j])
+            }
         }
-        updateRenderRoot()
+        updateRenderRoot();
         render(tx, ty, scale);
     }});
 }
