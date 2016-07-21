@@ -93,3 +93,6 @@ ENV/
 
 # database root access
 dbconfig_local.*
+
+# data dump folder
+data/
