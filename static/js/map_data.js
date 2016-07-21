@@ -109,36 +109,9 @@ function preprocessConnection32(links) {
     if (links.length == 0) {
         return
     }
-    var ports = {}
-    //for (var j in links) {
-    //    ports.add(links[j].port);
-    //}
 
-    var portsToDisplay = Math.min(ports.size, 8);
     var destination = findNode(links[0].dest8, links[0].dest16,
                                links[0].dest24, links[0].dest32);
-
-    /*
-    ports.add(88888);
-    ports.add(77777);
-    ports.add(66666);
-    ports.add(55555);
-    ports.add(44444);
-    ports.add(33333);
-    ports.add(22222);
-    ports.add(11111);
-    for (let port of ports) {
-        destination.ports[port] = {'x':destination.x, 'y':destination.x};
-    }
-    */
-    ports['88888'] = false;
-    ports['77777'] = false;
-    ports['66666'] = false;
-    ports['55555'] = false;
-    ports['44444'] = false;
-    ports['33333'] = false;
-    ports['22222'] = false;
-    ports['11111'] = false;
 
     // I apologize for doing this this way...
     //
@@ -158,9 +131,15 @@ function preprocessConnection32(links) {
                 , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'side': 'bottom'}
                 ];
 
-    for (var port in ports) {
-        destination.ports[port] = locations[port / 11111 - 1];
+    var ports = {}
+    for (var j in links) {
+        if (links[j].port in ports) continue;
+        var choice = closestEmptyPort(links[j], used);
+        ports[links[j].port] = locations[choice];
+        used[choice] = true;
+        if (Object.keys(ports).length >= 8) break;
     }
+    destination.ports = ports;
 
     for (let link of links) {
         var source = findNode(link.source8, link.source16,
@@ -170,22 +149,81 @@ function preprocessConnection32(links) {
         var dx = link.x2 - link.x1;
         var dy = link.y2 - link.y1;
 
-        //align to corners
-        if (dx > 0) {
-            link.x1 += source.radius;
-            link.x2 -= destination.radius;
+        if (link.port in ports) {
+            if (ports[link.port].side == "top") {
+                link.x2 = ports[link.port].x;
+                link.y2 = ports[link.port].y - 0.6;
+            } else if (ports[link.port].side == "left") {
+                link.x2 = ports[link.port].x - 0.6;
+                link.y2 = ports[link.port].y;
+            } else if (ports[link.port].side == "right") {
+                link.x2 = ports[link.port].x + 0.6;
+                link.y2 = ports[link.port].y;
+            } else if (ports[link.port].side == "bottom") {
+                link.x2 = ports[link.port].x;
+                link.y2 = ports[link.port].y + 0.6;
+            } else {
+                //this should never execute
+                link.x2 = ports[link.port].x;
+                link.y2 = ports[link.port].y;
+            }
         } else {
-            link.x1 -= source.radius;
-            link.x2 += destination.radius;
-        }
-        if (dy > 0) {
-            link.y1 += source.radius;
-            link.y2 -= destination.radius;
-        } else {
-            link.y1 -= source.radius;
-            link.y2 += destination.radius;
+            //align to corners
+            if (dx > 0) {
+                link.x1 += source.radius;
+                link.x2 -= destination.radius;
+            } else {
+                link.x1 -= source.radius;
+                link.x2 += destination.radius;
+            }
+            if (dy > 0) {
+                link.y1 += source.radius;
+                link.y2 -= destination.radius;
+            } else {
+                link.y1 -= source.radius;
+                link.y2 += destination.radius;
+            }
         }
     }
+}
+
+function closestEmptyPort(link, used) {
+    var right = [1, 0, 2, 7, 3, 6, 4, 5];
+    var top = [3, 2, 4, 1, 5, 0, 6, 7];
+    var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
+    var left = [4, 5, 3, 6, 2, 7, 1, 0];
+
+    var dx = link.x2 - link.x1;
+    var dy = link.y2 - link.y1;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //port on right
+            for (let i of right) {
+                if (used[i] == false) return i;
+            }
+        } else {
+            //port on left
+            for (let i of left) {
+                if (used[i] == false) return i;
+            }
+        }
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //port on bottom
+            for (let i of bottom) {
+                if (used[i] == false) return i;
+            }
+        } else {
+            //port on top
+            for (let i of top) {
+                if (used[i] == false) return i;
+            }
+        }
+    }
+    return -1;
 }
 
 function preprocessConnection(link) {

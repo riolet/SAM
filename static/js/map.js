@@ -18,9 +18,12 @@ var nodeCollection = {};
 var renderCollection;
 var selection = null;
 
-var zoom8 = 0.012;
-var zoom16 = 0.3;
-var zoom24 = 7.5;
+// var zoom8 = 0.012;
+// var zoom16 = 0.3;
+// var zoom24 = 7.5;
+var zoom8 = 0.0108;
+var zoom16 = 0.27;
+var zoom24 = 6.75;
 
 
 function init() {

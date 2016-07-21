@@ -60,25 +60,25 @@ function renderLabels(collection, x, y, scale) {
                 var size = ctx.measureText(text);
                 //node.ports[p].x
                 if (collection[node].ports[p].side == "left") {
-                    var px = collection[node].ports[p].x * scale + x - size.width / 2 - 0.4 * scale;
+                    var px = collection[node].ports[p].x * scale + x - size.width / 2;
                     var py = collection[node].ports[p].y * scale + y + 8;
                     ctx.fillText(text, px, py);
                 } else if (collection[node].ports[p].side == "right") {
-                    var px = collection[node].ports[p].x * scale + x - size.width / 2 + 0.4 * scale;
+                    var px = collection[node].ports[p].x * scale + x - size.width / 2;
                     var py = collection[node].ports[p].y * scale + y + 8;
                     ctx.fillText(text, px, py);
                 } else if (collection[node].ports[p].side == "top") {
                     var px = collection[node].ports[p].x * scale + x;
-                    var py = collection[node].ports[p].y * scale + y - 0.4 * scale;
-                    ctx.save()
+                    var py = collection[node].ports[p].y * scale + y;
+                    ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(Math.PI/2);
                     ctx.fillText(text, -size.width / 2, +8);
                     ctx.restore();
                 } else if (collection[node].ports[p].side == "bottom") {
                     var px = collection[node].ports[p].x * scale + x;
-                    var py = collection[node].ports[p].y * scale + y + 0.4 * scale;
-                    ctx.save()
+                    var py = collection[node].ports[p].y * scale + y;
+                    ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(Math.PI/2);
                     ctx.fillText(text, -size.width / 2, +8);
@@ -122,28 +122,28 @@ function drawClusterNode(node) {
         for (var p in node.ports) {
             if (node.ports[p].side == "left") {
                 //if the port is on the left side
-                ctx.fillRect( node.ports[p].x - 1.2, node.ports[p].y - 0.4,
-                              1.6, 0.8);
-                ctx.strokeRect( node.ports[p].x - 1.2, node.ports[p].y - 0.4,
-                                1.6, 0.8);
+                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
+                              1.2, 0.8);
+                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
+                                1.2, 0.8);
             } else if (node.ports[p].side == "right") {
                 //if the port is on the right side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
-                              1.6, 0.8);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
-                                1.6, 0.8);
+                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
+                              1.2, 0.8);
+                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
+                                1.2, 0.8);
             } else if (node.ports[p].side == "bottom") {
                 //if the port is on the bottom side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
-                              0.8, 1.6);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.4,
-                                0.8, 1.6);
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
+                              0.8, 1.2);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
+                                0.8, 1.2);
             } else {
                 //the port must be on the top side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 1.2,
-                              0.8, 1.6);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 1.2,
-                                0.8, 1.6);
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
+                              0.8, 1.2);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
+                                0.8, 1.2);
             }
         }
     }
