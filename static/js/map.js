@@ -53,6 +53,10 @@ function init() {
 
 
     $('.ui.accordion').accordion();
+    $('.ui.dropdown')
+    .dropdown({
+        action: 'none'
+    });
 
     loadData();
 

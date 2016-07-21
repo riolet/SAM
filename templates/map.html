@@ -1,9 +1,46 @@
 $def with ()
-$# "$def with (arg1, ...)" MUST be the first line. See template.py for details
+$# "$def with (arg1, ...)" MUST be the first line. See documentation on web/template.py for details
 <script src="/static/js/map.js"></script>
 <h3 class="ui center aligned header">Map</h3>
 <div id="output">
     <canvas id="canvas"></canvas>
+    <div id="searchbar">
+
+
+        <div class="ui text menu">
+            <div class="ui left dropdown item">
+                <i class="setting icon large"></i>
+                <div class="menu">
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input name="show_clients" checked = "" type="checkbox">
+                            <label>Show Clients</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input name="show_servers" checked = "" type="checkbox">
+                            <label>Show Servers</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input name="show_servers" checked = "" type="checkbox">
+                            <label>Show Outbound Traffic</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input name="show_servers" type="checkbox">
+                            <label>Show Inbound Traffic</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
     <div id="sidebar">
         <h4 id="selectionName">No selection</h4>
         <h5 id="selectionNumber"></h5>
