@@ -1,5 +1,6 @@
 function updateRenderRoot() {
     renderCollection = onScreen();
+    currentSubnet = location();
 }
 
 function render(x, y, scale) {
@@ -115,16 +116,15 @@ function renderLabels(collection, x, y, scale) {
     }
     //Draw region label
     ctx.font = "3em sans";
-    var text = "12.34"
-    var size = ctx.measureText(text);
+    var size = ctx.measureText(currentSubnet);
     ctx.fillStyle = "#FFFFFF";
-    ctx.strokeStyle = "#CBDCF";
+    ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 3;
     ctx.globalAlpha = 1.0 - opacity(8);
     ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.fillStyle = "#000000";
-    ctx.fillText(text, (rect.width - size.width) / 2, 55);
+    ctx.fillText(currentSubnet, (rect.width - size.width) / 2, 55);
 
 }
 
@@ -247,6 +247,36 @@ function opacity(level) {
     } else {
         return 0.0;
     }
+}
+
+function location() {
+    var level = currentLevel();
+    if (level == 8) {
+        return "";
+    }
+    var closest = null;
+    var dist = Infinity;
+    var tempDist;
+    for (var i in renderCollection) {
+        if (renderCollection[i].level != level - 8) {
+            continue;
+        }
+        tempDist = magnitudeSquared(
+            renderCollection[i].x * scale + tx - rect.width / 2,
+            renderCollection[i].y * scale + ty - rect.height / 2);
+        if (tempDist < dist) {
+            dist = tempDist;
+            closest = renderCollection[i];
+        }
+    }
+    if (closest == null) {
+        return "";
+    }
+    return closest.address;
+}
+
+function magnitudeSquared(x, y) {
+    return x*x+y*y;
 }
 
 //build a collection of all nodes currently visible in the window.

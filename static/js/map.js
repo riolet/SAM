@@ -16,6 +16,7 @@ var map = {};
 
 var nodeCollection = {};
 var renderCollection;
+var currentSubnet;
 var selection = null;
 var config = {
     "show_clients": true,
