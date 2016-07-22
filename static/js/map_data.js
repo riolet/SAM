@@ -1,29 +1,34 @@
 function loadData() {
     $.ajax({
         url: "/query",
+        data: {"filter":filter},
         success: onLoadData,
         error: onNotLoadData
         });
 }
 
 Node.prototype = {
-    alias: "",
-    address: 0,
-    level: 8,
-    connections: 0,
-    x: 0,
-    y: 0,
-    radius: 0,
-    children: {},
-    childrenLoaded: false,
-    inputs: [],
-    outputs: [],
-    ports: {}
+    alias: "",             //DNS translation
+    address: "0",          //address: 12.34.56.78
+    number: 0,             //ip segment number: 78
+    level: 8,              //ip segment/subnet: 8, 16, 24, or 32
+    connections: 0,        //number of connections (not unique) this node is involved in
+    x: 0,                  //render: x position in graph
+    y: 0,                  //render: y position in graph
+    radius: 0,             //render: radius
+    children: {},          //child (subnet) nodes (if this is level 8, 16, or 24)
+    childrenLoaded: false, //whether the children have been loaded
+    inputs: [],            //input connections
+    outputs: [],           //output connections
+    ports: {},             //ports by which other nodes connect to this one ( /32 only)
+    client: false,         //whether this node acts as a client
+    server: false          //whether this node acts as a server
 };
 
-function Node(address, alias, level, connections, x, y, radius, inputs, outputs) {
-    this.address = address;
+function Node(alias, address, number, level, connections, x, y, radius, inputs, outputs) {
     this.alias = alias;
+    this.address = address;
+    this.number = number;
     this.level = level;
     this.connections = connections;
     this.x = x;
@@ -34,6 +39,12 @@ function Node(address, alias, level, connections, x, y, radius, inputs, outputs)
     this.inputs = inputs;
     this.outputs = outputs;
     this.ports = {};
+    if (inputs.length > 0) {
+        this.server = true;
+    }
+    if (outputs.length > 0) {
+        this.client = true;
+    }
 }
 
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
@@ -50,7 +61,7 @@ function onLoadData(result) {
     nodeCollection = {};
     for (var row in result) {
         name = result[row].address;
-        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
+        nodeCollection[result[row].address] = new Node(name, name, result[row].address, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
     }
     for (var i in nodeCollection) {
         for (var j in nodeCollection[i].inputs) {
@@ -61,7 +72,7 @@ function onLoadData(result) {
         }
     }
 
-    renderCollection = nodeCollection;
+    updateRenderRoot();
 
     render(tx, ty, scale);
 }
@@ -81,16 +92,25 @@ function checkLoD() {
 
 function loadChildren(node) {
     node.childrenLoaded = true;
-    //console.log("Dynamically loading children of " + node.alias);
+    //console.log("Loading children of " + node.address);
+    var temp = node.address.split(".");
+    requestData = {};
+    if (0 in temp) requestData.ipA = temp[0]; else requestData.ipA = -1;
+    if (1 in temp) requestData.ipB = temp[1]; else requestData.ipB = -1;
+    if (2 in temp) requestData.ipC = temp[2]; else requestData.ipC = -1;
+    requestData.filter = filter;
+
     $.ajax({
-        url: "/query/" + node.alias.split(".").join("/"),
+        url: "/query",
+        type: "GET",
+        data: requestData,
         dataType: "json",
         error: onNotLoadData,
         success: function(result) {
         for (var row in result) {
             //console.log("Loaded " + node.alias + " -> " + result[row].address);
             name = node.alias + "." + result[row].address;
-            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
+            node.children[result[row].address] = new Node(name, name, result[row].address, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
         }
         // process the connections
         for (var i in node.children) {

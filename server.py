@@ -11,9 +11,6 @@ urls = (
     '/map', 'pages.map.Map',
     '/stats', 'pages.stats.Stats',
     '/query', 'pages.query.Query',
-    '/query/([0-9]+)', 'pages.query.Query',
-    '/query/([0-9]+)/([0-9]+)', 'pages.query.Query',
-    '/query/([0-9]+)/([0-9]+)/([0-9]+)', 'pages.query.Query',
     '/details', 'pages.details.Details'
 )
 

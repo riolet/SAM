@@ -1,5 +1,6 @@
 function updateRenderRoot() {
     renderCollection = onScreen();
+    currentSubnet = location();
 }
 
 function render(x, y, scale) {
@@ -54,12 +55,12 @@ function renderLabels(collection, x, y, scale) {
     ctx.font = "1.5em sans";
     ctx.fillStyle = "#000000";
     if (scale > 35) {
+        //Draw port labels here
         for (var node in collection) {
             if (collection[node].level > level) {
                 return;
             }
             ctx.globalAlpha = opacity(collection[node].level);
-            //Draw port labels here
             for (var p in collection[node].ports) {
                 var text = p;
                 var size = ctx.measureText(text);
@@ -94,7 +95,7 @@ function renderLabels(collection, x, y, scale) {
     }
     for (var node in collection) {
         //Draw node labels here
-        var text = collection[node].alias;
+        var text = collection[node].number;
         var size = ctx.measureText(text);
         var px = collection[node].x * scale + x - size.width / 2;
         var py;
@@ -113,6 +114,18 @@ function renderLabels(collection, x, y, scale) {
         ctx.fillStyle = "#000000";
         ctx.fillText(text, px, py);
     }
+    //Draw region label
+    ctx.font = "3em sans";
+    var size = ctx.measureText(currentSubnet);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.strokeStyle = "#5555CC";
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 1.0 - opacity(8);
+    ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.fillStyle = "#000000";
+    ctx.fillText(currentSubnet, (rect.width - size.width) / 2, 55);
+
 }
 
 function drawClusterNode(node) {
@@ -236,6 +249,36 @@ function opacity(level) {
     }
 }
 
+function location() {
+    var level = currentLevel();
+    if (level == 8) {
+        return "";
+    }
+    var closest = null;
+    var dist = Infinity;
+    var tempDist;
+    for (var i in renderCollection) {
+        if (renderCollection[i].level != level - 8) {
+            continue;
+        }
+        tempDist = magnitudeSquared(
+            renderCollection[i].x * scale + tx - rect.width / 2,
+            renderCollection[i].y * scale + ty - rect.height / 2);
+        if (tempDist < dist) {
+            dist = tempDist;
+            closest = renderCollection[i];
+        }
+    }
+    if (closest == null) {
+        return "";
+    }
+    return closest.address;
+}
+
+function magnitudeSquared(x, y) {
+    return x*x+y*y;
+}
+
 //build a collection of all nodes currently visible in the window.
 function onScreen() {
     var left = -tx/scale;
@@ -257,10 +300,11 @@ function onScreen() {
 
     var filtered = [];
     for (var node in visible) {
-        if ((visible[node].inputs.length > 0 || config.show_clients)
-            && (visible[node].outputs.length > 0 || config.show_servers)) {
+        if ((visible[node].client == true && config.show_clients) ||
+            (visible[node].server == true && config.show_servers) ||
+            (visible[node].client == true && visible[node].server == true)) {
             filtered.push(visible[node]);
-            }
+        }
     }
     return filtered;
 }

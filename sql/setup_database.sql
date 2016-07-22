@@ -8,8 +8,6 @@ DROP TABLE IF EXISTS Nodes16;
 DROP TABLE IF EXISTS Nodes8;
 DROP TABLE IF EXISTS Syslog;
 
---this is a comment in the middle
-
 CREATE TABLE Syslog
 (entry             INT UNSIGNED NOT NULL AUTO_INCREMENT
 ,SourceIP          INT UNSIGNED NOT NULL
@@ -76,12 +74,13 @@ CREATE TABLE Nodes32
 CREATE TABLE Links8
 (source8           INT NOT NULL
 ,dest8             INT NOT NULL
+,port              INT NOT NULL
 ,links             INT DEFAULT 1
 ,x1                FLOAT(12,3) DEFAULT 0
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks8 PRIMARY KEY (source8, dest8)
+,CONSTRAINT PKLinks8 PRIMARY KEY (source8, dest8, port)
 );
 
 CREATE TABLE Links16
@@ -89,12 +88,13 @@ CREATE TABLE Links16
 ,source16          INT NOT NULL
 ,dest8             INT NOT NULL
 ,dest16            INT NOT NULL
+,port              INT NOT NULL
 ,links             INT DEFAULT 1
 ,x1                FLOAT(12,3) DEFAULT 0
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks16 PRIMARY KEY (source8, source16, dest8, dest16)
+,CONSTRAINT PKLinks16 PRIMARY KEY (source8, source16, dest8, dest16, port)
 );
 
 CREATE TABLE Links24
@@ -104,12 +104,13 @@ CREATE TABLE Links24
 ,dest8             INT NOT NULL
 ,dest16            INT NOT NULL
 ,dest24            INT NOT NULL
+,port              INT NOT NULL
 ,links             INT DEFAULT 1
 ,x1                FLOAT(12,3) DEFAULT 0
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks24 PRIMARY KEY (source8, source16, source24, dest8, dest16, dest24)
+,CONSTRAINT PKLinks24 PRIMARY KEY (source8, source16, source24, dest8, dest16, dest24, port)
 );
 
 CREATE TABLE Links32
@@ -129,6 +130,3 @@ CREATE TABLE Links32
 ,y2                FLOAT(12,3) DEFAULT 0
 ,CONSTRAINT PKLinks32 PRIMARY KEY (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port)
 );
-
---this is a comment
-

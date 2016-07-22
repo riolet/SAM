@@ -10,13 +10,15 @@ var mdownx, mdowny;
 var mx, my;
 var tx = 532;
 var ty = 288;
-var scale = 0.001;
+var scale = 0.0007;
 
 var map = {};
 
 var nodeCollection = {};
 var renderCollection;
+var currentSubnet = "";
 var selection = null;
+var filter = "";
 var config = {
     "show_clients": true,
     "show_servers": true,
@@ -54,6 +56,10 @@ function init() {
     canvas.addEventListener('wheel', wheel);
     window.addEventListener('keydown',keydown,false);
 
+    filterElement = document.getElementById("filter");
+    filterElement.oninput = onfilter;
+    filter = filterElement.value;
+
     updateFloatingPanel();
 
 
@@ -63,6 +69,7 @@ function init() {
         //action: 'none'
         action: updateConfig
     });
+    $('.input.icon').popup();
 
     loadData();
 

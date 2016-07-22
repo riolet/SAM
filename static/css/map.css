@@ -22,15 +22,18 @@ body, html {
     position: absolute;
     right: 20px;
     top: 20px;
-    border-radius: 20px;
-    display: block;
+    padding: 10px 0 0 0;
+    margin: 0;
+    z-index: 1;
     min-width: 200px;
     width: 25%;
     min-width: 300px;
-    border: 5px solid lightblue;
+    border-radius: 4px;
+    box-shadow: rgba(34, 36, 38, 0.15) 0px 1px 2px 0px;
+    box-sizing: border-box;
+    display: block;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     background-color: white;
-    z-index: 1;
-    padding: 10px 0 0 0;
     overflow-y: hidden;
     overflow-x: hidden;
 }
@@ -57,5 +60,5 @@ h5 {
 
 #selectionInfo div.content {
     max-height: 500px;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
