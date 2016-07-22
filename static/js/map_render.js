@@ -54,12 +54,12 @@ function renderLabels(collection, x, y, scale) {
     ctx.font = "1.5em sans";
     ctx.fillStyle = "#000000";
     if (scale > 35) {
+        //Draw port labels here
         for (var node in collection) {
             if (collection[node].level > level) {
                 return;
             }
             ctx.globalAlpha = opacity(collection[node].level);
-            //Draw port labels here
             for (var p in collection[node].ports) {
                 var text = p;
                 var size = ctx.measureText(text);
@@ -94,7 +94,7 @@ function renderLabels(collection, x, y, scale) {
     }
     for (var node in collection) {
         //Draw node labels here
-        var text = collection[node].alias;
+        var text = collection[node].number;
         var size = ctx.measureText(text);
         var px = collection[node].x * scale + x - size.width / 2;
         var py;
@@ -113,6 +113,19 @@ function renderLabels(collection, x, y, scale) {
         ctx.fillStyle = "#000000";
         ctx.fillText(text, px, py);
     }
+    //Draw region label
+    ctx.font = "3em sans";
+    var text = "12.34"
+    var size = ctx.measureText(text);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.strokeStyle = "#CBDCF";
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 1.0 - opacity(8);
+    ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.fillStyle = "#000000";
+    ctx.fillText(text, (rect.width - size.width) / 2, 55);
+
 }
 
 function drawClusterNode(node) {
