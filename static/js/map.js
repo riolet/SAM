@@ -16,7 +16,7 @@ var map = {};
 
 var nodeCollection = {};
 var renderCollection;
-var currentSubnet;
+var currentSubnet = "";
 var selection = null;
 var filter = "";
 var config = {

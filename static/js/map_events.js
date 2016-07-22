@@ -135,7 +135,15 @@ function onfilter(event) {
 function applyfilter(event=null) {
     filterElement = document.getElementById("filter");
     filter = filterElement.value;
-    console.log("Applying filter: " + filter);
+
+    updateSelection(null);
+    nodeCollection = null;
+    currentSubnet = "";
+    scale = 0.0007;
+    tx = rect.width / 2;
+    ty = rect.height / 2;
+    updateRenderRoot();
+    loadData();
 }
 
 function onResize() {

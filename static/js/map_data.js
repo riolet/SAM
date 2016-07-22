@@ -1,6 +1,7 @@
 function loadData() {
     $.ajax({
         url: "/query",
+        data: {"filter":filter},
         success: onLoadData,
         error: onNotLoadData
         });

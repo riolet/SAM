@@ -91,87 +91,185 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
     return rows
 
 
-def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, filter=-1):
     inputs = []
 
     if ipSegment1 < 0 or ipSegment1 > 255:
         inputs = []
     elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
-        query = """
-            SELECT * FROM Links8
-            WHERE dest8 = $seg1;
-            """
-        qvars = {'seg1': str(ipSegment1)}
+        if filter == -1:
+            query = """
+                SELECT source8, dest8
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links8
+                WHERE dest8 = $seg1
+                GROUP BY source8, dest8;
+                """
+        else:
+            query = """
+                SELECT source8, dest8, links, x1, y1, x2, y2
+                FROM Links8
+                WHERE dest8 = $seg1
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'filter':filter}
         inputs = list(common.db.query(query, vars=qvars))
     elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
-        query = """
-            SELECT * FROM Links16
-            WHERE dest8 = $seg1
-                && dest16 = $seg2;
-            """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2)}
+        if filter == -1:
+            query = """
+                SELECT source8, source16, dest8, dest16
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links16
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                GROUP BY source8, source16, dest8, dest16;
+                """
+        else:
+            query = """
+                SELECT source8, source16, dest8, dest16, links, x1, y1, x2, y2
+                FROM Links16
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'filter':filter}
         inputs = list(common.db.query(query, vars=qvars))
     elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
-        query = """
-            SELECT * FROM Links24
-            WHERE dest8 = $seg1
-                && dest16 = $seg2
-                && dest24 = $seg3;
-            """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3)}
+        if filter == -1:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links24
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && dest24 = $seg3
+                GROUP BY source8, source16, source24, dest8, dest16, dest24;
+                """
+        else:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2
+                FROM Links24
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && dest24 = $seg3
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'filter': filter}
         inputs = list(common.db.query(query, vars=qvars))
     else:
-        query = """
-            SELECT * FROM Links32
-            WHERE dest8 = $seg1
-                && dest16 = $seg2
-                && dest24 = $seg3
-                && dest32 = $seg4;
-            """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4)}
+        if filter == -1:
+            query = """
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port
+                    , links, x1, y1, x2, y2
+                FROM Links32
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && dest24 = $seg3
+                    && dest32 = $seg4
+                """
+        else:
+            query = """
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2
+                FROM Links32
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && dest24 = $seg3
+                    && dest32 = $seg4
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
         inputs = list(common.db.query(query, vars=qvars))
 
     return inputs
 
 
-def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, filter=-1):
     outputs = []
 
     if ipSegment1 < 0 or ipSegment1 > 255:
         outputs = []
     elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
-        query = """
-            SELECT * FROM Links8
-            WHERE source8 = $seg1;
-            """
-        qvars = {'seg1': str(ipSegment1)}
+        if filter == -1:
+            query = """
+                SELECT source8, dest8
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links8
+                WHERE source8 = $seg1
+                GROUP BY source8, dest8;
+                """
+        else:
+            query = """
+                SELECT source8, dest8, links, x1, y1, x2, y2
+                FROM Links8
+                WHERE source8 = $seg1
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
     elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
-        query = """
-            SELECT * FROM Links16
-            WHERE source8 = $seg1
-                && source16 = $seg2;
-            """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2)}
+        if filter == -1:
+            query = """
+                SELECT source8, source16, dest8, dest16
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links16
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                GROUP BY source8, source16, dest8, dest16;
+                """
+        else:
+            query = """
+                SELECT source8, source16, dest8, dest16, links, x1, y1, x2, y2
+                FROM Links16
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
     elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
-        query = """
-            SELECT * FROM Links24
-            WHERE source8 = $seg1
-                && source16 = $seg2
-                && source24 = $seg3;
-            """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3)}
+        if filter == -1:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links24
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && source24 = $seg3
+                GROUP BY source8, source16, source24, dest8, dest16, dest24;
+                """
+        else:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2
+                FROM Links24
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && source24 = $seg3
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
     else:
-        query = """
-            SELECT * FROM Links32
-            WHERE source8 = $seg1
-                && source16 = $seg2
-                && source24 = $seg3
-                && source32 = $seg4;
-            """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4)}
+        if filter == -1:
+            query = """
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port
+                    , links, x1, y1, x2, y2
+                FROM Links32
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && source24 = $seg3
+                    && source32 = $seg4
+                """
+        else:
+            query = """
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2
+                FROM Links32
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && source24 = $seg3
+                    && source32 = $seg4
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
 
     return outputs
@@ -255,6 +353,7 @@ def printLink(row):
 
 def formatLink(src8 = 0, src16 = 0, src24 = 0, src32 = 0, dst8 = 0, dst16 = 0, dst24 = 0, dst32 = 0):
     return "{0:>15s} --> {1:<15s}".format("{0:d}.{1:d}.{2:d}.{3:d}".format(src8, src16, src24, src32), "{0:d}.{1:d}.{2:d}.{3:d}".format(dst8, dst16, dst24, dst32))
+
 
 def getTableSizes():
     tableSizes= {};
