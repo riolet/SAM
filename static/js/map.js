@@ -18,6 +18,7 @@ var nodeCollection = {};
 var renderCollection;
 var currentSubnet;
 var selection = null;
+var filter = "";
 var config = {
     "show_clients": true,
     "show_servers": true,
@@ -55,8 +56,9 @@ function init() {
     canvas.addEventListener('wheel', wheel);
     window.addEventListener('keydown',keydown,false);
 
-    filter = document.getElementById("filter");
-    filter.oninput = onfilter;
+    filterElement = document.getElementById("filter");
+    filterElement.oninput = onfilter;
+    filter = filterElement.value;
 
     updateFloatingPanel();
 

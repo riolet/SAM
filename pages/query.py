@@ -5,12 +5,17 @@ import web
 
 class Query:
     # TODO: convert to POST data like pages/details
-    def GET(self, ipA=-1, ipB=-1, ipC=-1):
+    def GET(self):
         web.header("Content-Type", "application/json")
+
+        get_data = web.input()
 
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
-        result = dbaccess.getNodes(int(ipA), int(ipB), int(ipC))
+        result = dbaccess.getNodes(
+            int(get_data.get('ipA', -1)),
+            int(get_data.get('ipB', -1)),
+            int(get_data.get('ipC', -1)))
 
         rows = list(result)
 

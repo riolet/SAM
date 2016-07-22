@@ -83,9 +83,18 @@ function checkLoD() {
 
 function loadChildren(node) {
     node.childrenLoaded = true;
-    //console.log("Dynamically loading children of " + node.alias);
+    //console.log("Loading children of " + node.address);
+    var temp = node.address.split(".");
+    requestData = {};
+    if (0 in temp) requestData.ipA = temp[0]; else requestData.ipA = -1;
+    if (1 in temp) requestData.ipB = temp[1]; else requestData.ipB = -1;
+    if (2 in temp) requestData.ipC = temp[2]; else requestData.ipC = -1;
+    requestData.filter = filter;
+
     $.ajax({
-        url: "/query/" + node.address.split(".").join("/"),
+        url: "/query",
+        type: "GET",
+        data: requestData,
         dataType: "json",
         error: onNotLoadData,
         success: function(result) {

@@ -133,8 +133,9 @@ function onfilter(event) {
 }
 
 function applyfilter(event=null) {
-    filter = document.getElementById("filter");
-    console.log("Applying filter: " + filter.value);
+    filterElement = document.getElementById("filter");
+    filter = filterElement.value;
+    console.log("Applying filter: " + filter);
 }
 
 function onResize() {
