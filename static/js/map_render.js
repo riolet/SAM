@@ -300,10 +300,11 @@ function onScreen() {
 
     var filtered = [];
     for (var node in visible) {
-        if ((visible[node].inputs.length > 0 || config.show_clients)
-            && (visible[node].outputs.length > 0 || config.show_servers)) {
+        if ((visible[node].client == true && config.show_clients) ||
+            (visible[node].server == true && config.show_servers) ||
+            (visible[node].client == true && visible[node].server == true)) {
             filtered.push(visible[node]);
-            }
+        }
     }
     return filtered;
 }

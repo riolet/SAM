@@ -8,35 +8,43 @@ function loadData() {
 }
 
 Node.prototype = {
-    alias: "",
-    address: "0",
-    number: 0,
-    level: 8,
-    connections: 0,
-    x: 0,
-    y: 0,
-    radius: 0,
-    children: {},
-    childrenLoaded: false,
-    inputs: [],
-    outputs: [],
-    ports: {}
+    alias: "",             //DNS translation
+    address: "0",          //address: 12.34.56.78
+    number: 0,             //ip segment number: 78
+    level: 8,              //ip segment/subnet: 8, 16, 24, or 32
+    connections: 0,        //number of connections (not unique) this node is involved in
+    x: 0,                  //render: x position in graph
+    y: 0,                  //render: y position in graph
+    radius: 0,             //render: radius
+    children: {},          //child (subnet) nodes (if this is level 8, 16, or 24)
+    childrenLoaded: false, //whether the children have been loaded
+    inputs: [],            //input connections
+    outputs: [],           //output connections
+    ports: {},             //ports by which other nodes connect to this one ( /32 only)
+    client: false,         //whether this node acts as a client
+    server: false          //whether this node acts as a server
 };
 
 function Node(alias, address, number, level, connections, x, y, radius, inputs, outputs) {
-    this.alias = alias;     //DNS translation
-    this.address = address; //address: 12.34.56.78
-    this.number = number;   //ip segment number: 78
-    this.level = level;     //ip segment/subnet: 8, 16, 24, or 32
-    this.connections = connections;  //number of connections (not unique) this node is involved in
-    this.x = x;             //render: x position in graph
-    this.y = y;             //render: y position in graph
-    this.radius = radius;   //render: radius
-    this.children = {};     //child (subnet) nodes (if this is level 8, 16, or 24)
-    this.childrenLoaded = false; //whether the children have been loaded
-    this.inputs = inputs;   //input connections
-    this.outputs = outputs; //output connections
-    this.ports = {};        //ports by which other nodes connect to this one ( /32 only)
+    this.alias = alias;
+    this.address = address;
+    this.number = number;
+    this.level = level;
+    this.connections = connections;
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.children = {};
+    this.childrenLoaded = false;
+    this.inputs = inputs;
+    this.outputs = outputs;
+    this.ports = {};
+    if (inputs.length > 0) {
+        this.server = true;
+    }
+    if (outputs.length > 0) {
+        this.client = true;
+    }
 }
 
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
@@ -64,7 +72,7 @@ function onLoadData(result) {
         }
     }
 
-    renderCollection = nodeCollection;
+    updateRenderRoot();
 
     render(tx, ty, scale);
 }
