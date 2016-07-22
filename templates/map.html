@@ -1,13 +1,95 @@
 $def with ()
-$# "$def with (arg1, ...)" MUST be the first line. See template.py for details
+$# "$def with (arg1, ...)" MUST be the first line. See documentation on web/template.py for details
 <script src="/static/js/map.js"></script>
 <h3 class="ui center aligned header">Map</h3>
 <div id="output">
     <canvas id="canvas"></canvas>
+    <div id="searchbar">
+        <div class="ui icon menu">
+            <div class="ui left dropdown item">
+                <i class="setting icon large"></i>
+                <div class="menu">
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input id="show_clients" name="show_clients" checked = "" type="checkbox">
+                            <label>Show Clients</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input id="show_servers" name="show_servers" checked = "" type="checkbox">
+                            <label>Show Servers</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input id="show_out" name="show_out" type="checkbox">
+                            <label>Show Outbound Traffic</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui toggle checkbox">
+                            <input id="show_in" name="show_in" checked = "" type="checkbox">
+                            <label>Show Inbound Traffic</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="sidebar">
-    <h4 id="selectionName">No selection</h4>
-    <h5 id="selectionNumber"></h5>
-    <div id="selectionInfo"></div>
+        <h4 id="selectionName">No selection</h4>
+        <h5 id="selectionNumber"></h5>
+        <div id="selectionInfo" class="ui styled fluid accordion">
+            <div class="title">
+                <i class="dropdown icon"></i>
+                Unique inbound connections: <span id="unique_in">0</span>
+            </div>
+            <div class="content">
+                <div class="transition hidden">
+                    <table class="ui celled table">
+                        <thead>
+                            <th>Inbound Connection</th>
+                            <th>Occurrences</th>
+                        </thead>
+                        <tbody id="conn_in">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="title">
+                <i class="dropdown icon"></i>
+                Unique outbound connections: <span id="unique_out">0</span>
+            </div>
+            <div class="content">
+                <div class="transition hidden">
+                    <table class="ui celled table">
+                        <thead>
+                            <th>Outbound Connection</th>
+                            <th>Occurrences</th>
+                        </thead>
+                        <tbody id="conn_out">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="title">
+                <i class="dropdown icon"></i>
+                Unique ports accessed: <span id="unique_ports">0</span>
+            </div>
+            <div class="content">
+                <div class="transition hidden">
+                    <table class="ui celled table">
+                        <thead>
+                            <th>Port Accessed</th>
+                            <th>Occurrences</th>
+                        </thead>
+                        <tbody id="ports_in">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script type="application/javascript">

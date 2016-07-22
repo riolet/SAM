@@ -45,6 +45,7 @@ function renderClusters(collection, x, y, scale) {
         drawClusterNode(collection[node]);
         renderLinks(collection[node]);
     }
+
     renderLabels(collection, x, y, scale);
 }
 
@@ -54,6 +55,10 @@ function renderLabels(collection, x, y, scale) {
     ctx.fillStyle = "#000000";
     if (scale > 35) {
         for (var node in collection) {
+            if (collection[node].level > level) {
+                return;
+            }
+            ctx.globalAlpha = opacity(collection[node].level);
             //Draw port labels here
             for (var p in collection[node].ports) {
                 var text = p;
@@ -122,28 +127,20 @@ function drawClusterNode(node) {
         for (var p in node.ports) {
             if (node.ports[p].side == "left") {
                 //if the port is on the left side
-                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
-                              1.2, 0.8);
-                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
-                                1.2, 0.8);
+                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
+                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
             } else if (node.ports[p].side == "right") {
                 //if the port is on the right side
-                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
-                              1.2, 0.8);
-                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4,
-                                1.2, 0.8);
+                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
+                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
             } else if (node.ports[p].side == "bottom") {
                 //if the port is on the bottom side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
-                              0.8, 1.2);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
-                                0.8, 1.2);
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, 0.8, 1.2);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, .8, 1.2);
             } else {
                 //the port must be on the top side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
-                              0.8, 1.2);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6,
-                                0.8, 1.2);
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, 0.8, 1.2);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, 0.8, 1.2);
             }
         }
     }
@@ -151,8 +148,16 @@ function drawClusterNode(node) {
 
 function renderLinks(node) {
     var link = node.inputs
-    for (var i in link) {
-        drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+    if (config.show_in) {
+        for (var i in link) {
+            drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+        }
+    }
+    if (config.show_out) {
+        link = node.outputs
+        for (var i in link) {
+            drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+        }
     }
 }
 
@@ -163,22 +168,21 @@ function drawArrow(x1, y1, x2, y2, thickness = 1) {
         return;
     }
 
-    ctx.beginPath();
-    ctx.lineWidth = (Math.log(thickness) / 4 + 1) / scale;
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-
     var len = Math.hypot(dx, dy);
-    var xTemp = (-dx) / len * (30 / scale);
+    var xTemp = (-dx) / len * (30 / scale); //make the arrowhead 30 screen pixels in size
     var yTemp = (-dy) / len * (30 / scale);
 
-    var c = Math.cos(0.3);
+    var c = Math.cos(0.3); //0.3 is half angle of arrowhead in radians
     var s = Math.sin(0.3);
     var x3 = xTemp * c - yTemp * s + x2;
     var y3 = xTemp * s + yTemp * c + y2;
     var x4 = xTemp * c - yTemp * -s + x2;
     var y4 = xTemp * -s + yTemp * c + y2;
 
+    ctx.beginPath();
+    ctx.lineWidth = (Math.log(thickness) / 4 + 2) / scale;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
     ctx.lineTo(x3, y3);
     ctx.lineTo(x4, y4);
     ctx.lineTo(x2, y2);
@@ -250,7 +254,15 @@ function onScreen() {
     if (visible.length == 0) {
         console.log("Cannot see any nodes");
     }
-    return visible;
+
+    var filtered = [];
+    for (var node in visible) {
+        if ((visible[node].inputs.length > 0 || config.show_clients)
+            && (visible[node].outputs.length > 0 || config.show_servers)) {
+            filtered.push(visible[node]);
+            }
+    }
+    return filtered;
 }
 
 function onScreenRecursive(left, right, top, bottom, collection) {

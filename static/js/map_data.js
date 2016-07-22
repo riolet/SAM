@@ -17,10 +17,11 @@ Node.prototype = {
     children: {},
     childrenLoaded: false,
     inputs: [],
+    outputs: [],
     ports: {}
 };
 
-function Node(address, alias, level, connections, x, y, radius, inputs) {
+function Node(address, alias, level, connections, x, y, radius, inputs, outputs) {
     this.address = address;
     this.alias = alias;
     this.level = level;
@@ -31,6 +32,7 @@ function Node(address, alias, level, connections, x, y, radius, inputs) {
     this.children = {};
     this.childrenLoaded = false;
     this.inputs = inputs;
+    this.outputs = outputs;
     this.ports = {};
 }
 
@@ -46,16 +48,16 @@ function onLoadData(result) {
     // I am expecting `result` to be an array of objects
     // where each object has address, alias, connections, x, y, radius,
     nodeCollection = {};
-    console.log("Loaded base data:");
-    console.log(result);
-    console.log("rows: " + result.length);
     for (var row in result) {
         name = result[row].address;
-        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
+        nodeCollection[result[row].address] = new Node(result[row].address, name, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
     }
     for (var i in nodeCollection) {
         for (var j in nodeCollection[i].inputs) {
             preprocessConnection(nodeCollection[i].inputs[j])
+        }
+        for (var j in nodeCollection[i].outputs) {
+            preprocessConnection(nodeCollection[i].outputs[j])
         }
     }
 
@@ -88,19 +90,23 @@ function loadChildren(node) {
         for (var row in result) {
             //console.log("Loaded " + node.alias + " -> " + result[row].address);
             name = node.alias + "." + result[row].address;
-            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs);
+            node.children[result[row].address] = new Node(result[row].address, name, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
         }
         // process the connections
         for (var i in node.children) {
             if (node.children[i].level == 32) {
-                preprocessConnection32(node.children[i].inputs)
+                preprocessConnection32(node.children[i].inputs);
+                //preprocessConnection(node.children[i].outputs);
             } else {
                 for (var j in node.children[i].inputs) {
-                    preprocessConnection(node.children[i].inputs[j])
+                    preprocessConnection(node.children[i].inputs[j]);
                 }
             }
+            for (var j in node.children[i].outputs) {
+                preprocessConnection(node.children[i].outputs[j])
+            }
         }
-        updateRenderRoot()
+        updateRenderRoot();
         render(tx, ty, scale);
     }});
 }
@@ -285,8 +291,13 @@ function updateSelection(node) {
     selection = node;
     if (node == null) {
         document.getElementById("selectionName").innerHTML = "No selection";
-    document.getElementById("selectionNumber").innerHTML = "";
-        document.getElementById("selectionInfo").innerHTML = "";
+        document.getElementById("selectionNumber").innerHTML = "";
+        document.getElementById("unique_in").innerHTML = "0";
+        document.getElementById("conn_in").innerHTML = "";
+        document.getElementById("unique_out").innerHTML = "0";
+        document.getElementById("conn_out").innerHTML = "";
+        document.getElementById("unique_ports").innerHTML = "0";
+        document.getElementById("ports_in").innerHTML = "";
         return;
     }
     document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
@@ -298,7 +309,36 @@ function updateSelection(node) {
         data: node.alias,
         error: onNotLoadData,
         success: function(result) {
-            document.getElementById("selectionInfo").innerHTML = result;
-            $('.ui.accordion').accordion();
+            document.getElementById("unique_in").innerHTML = result.unique_in;
+            document.getElementById("unique_out").innerHTML = result.unique_out;
+            document.getElementById("unique_ports").innerHTML = result.unique_ports;
+
+            var conn_in = "";
+            var conn_out = "";
+            var ports_in = "";
+            for (var i in result.conn_in) {
+                conn_in += "<tr><td>" + result.conn_in[i].ip + "</td><td>" + result.conn_in[i].links + "</td></tr>";
+            }
+            for (var i in result.conn_out) {
+                conn_out += "<tr><td>" + result.conn_out[i].ip + "</td><td>" + result.conn_out[i].links + "</td></tr>";
+            }
+            for (var i in result.ports_in) {
+                ports_in += "<tr><td>" + result.ports_in[i].port + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+            }
+
+            if (result.conn_in.length < result.unique_in) {
+                conn_in += "<tr><td>Plus " + (result.unique_in - result.conn_in.length) + " more...</td><td>--</td></tr>";
+            }
+            if (result.conn_out.length < result.unique_out) {
+                conn_out += "<tr><td>Plus " + (result.unique_out - result.conn_out.length) + " more...</td><td>--</td></tr>";
+            }
+            if (result.ports_in.length < result.unique_ports) {
+                ports_in += "<tr><td>Plus " + (result.unique_ports - result.ports_in.length) + " more...</td><td>--</td></tr>";
+            }
+
+            document.getElementById("conn_in").innerHTML = conn_in;
+            document.getElementById("conn_out").innerHTML = conn_out;
+            document.getElementById("ports_in").innerHTML = ports_in;
+            updateFloatingPanel();
     }});
 }

@@ -17,6 +17,11 @@ var map = {};
 var nodeCollection = {};
 var renderCollection;
 var selection = null;
+var config = {
+    "show_clients": true,
+    "show_servers": true,
+    "show_in": true,
+    "show_out": false};
 
 // var zoom8 = 0.012;
 // var zoom16 = 0.3;
@@ -48,6 +53,16 @@ function init() {
     canvas.addEventListener('keydown', mouseup);
     canvas.addEventListener('wheel', wheel);
     window.addEventListener('keydown',keydown,false);
+
+    updateFloatingPanel();
+
+
+    $('.ui.accordion').accordion();
+    $('.ui.dropdown')
+    .dropdown({
+        //action: 'none'
+        action: updateConfig
+    });
 
     loadData();
 

@@ -91,7 +91,7 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
     return rows
 
 
-def getLinks(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     inputs = []
 
     if ipSegment1 < 0 or ipSegment1 > 255:
@@ -132,6 +132,49 @@ def getLinks(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
         inputs = list(common.db.query(query, vars=qvars))
 
     return inputs
+
+
+def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+    outputs = []
+
+    if ipSegment1 < 0 or ipSegment1 > 255:
+        outputs = []
+    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+        query = """
+            SELECT * FROM Links8
+            WHERE source8 = $seg1;
+            """
+        qvars = {'seg1': str(ipSegment1)}
+        outputs = list(common.db.query(query, vars=qvars))
+    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+        query = """
+            SELECT * FROM Links16
+            WHERE source8 = $seg1
+                && source16 = $seg2;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2)}
+        outputs = list(common.db.query(query, vars=qvars))
+    elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
+        query = """
+            SELECT * FROM Links24
+            WHERE source8 = $seg1
+                && source16 = $seg2
+                && source24 = $seg3;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3)}
+        outputs = list(common.db.query(query, vars=qvars))
+    else:
+        query = """
+            SELECT * FROM Links32
+            WHERE source8 = $seg1
+                && source16 = $seg2
+                && source24 = $seg3
+                && source32 = $seg4;
+            """
+        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4)}
+        outputs = list(common.db.query(query, vars=qvars))
+
+    return outputs
 
 
 def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):

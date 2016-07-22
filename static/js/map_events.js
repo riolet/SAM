@@ -1,7 +1,20 @@
 function mousedown(event) {
+    deselectText();
     mdownx = event.clientX - rect.left;
     mdowny = event.clientY - rect.top;
     ismdown = true;
+}
+
+function deselectText() {
+    if (window.getSelection) {
+      if (window.getSelection().empty) {  // Chrome
+        window.getSelection().empty();
+      } else if (window.getSelection().removeAllRanges) {  // Firefox
+        window.getSelection().removeAllRanges();
+      }
+    } else if (document.selection) {  // IE?
+      document.selection.empty();
+    }
 }
 
 function mouseup(event) {
@@ -119,6 +132,38 @@ function onResize() {
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);
     checkLoD();
+    updateFloatingPanel();
+}
+
+function updateConfig(text, value){
+    config.show_clients = document.getElementById("show_clients").checked;
+    config.show_servers = document.getElementById("show_servers").checked;
+    config.show_in = document.getElementById("show_in").checked;
+    config.show_out = document.getElementById("show_out").checked;
+    updateRenderRoot();
+    render(tx, ty, scale);
+}
+
+function updateFloatingPanel() {
+    var side = document.getElementById("sidebar");
+    var heightAvailable = rect.height - 40;
+    side.style.maxHeight = heightAvailable + "px";
+
+    heightAvailable -= 10; //for padding
+    heightAvailable -= 10; //for borders
+
+    contentTitles = $("#selectionInfo div.title");
+    for (var i = 0; i < contentTitles.length; i++) {
+        //offsetHeight is height + vertical padding + vertical borders
+        heightAvailable -= contentTitles[i].offsetHeight;
+    }
+    heightAvailable -= document.getElementById('selectionName').offsetHeight;
+    heightAvailable -= document.getElementById('selectionNumber').offsetHeight;
+
+    contentBlocks = $("#selectionInfo div.content");
+    for (var i = 0; i < contentBlocks.length; i++) {
+        contentBlocks[i].style.maxHeight = heightAvailable + "px";
+    }
 }
 
 (function() {
