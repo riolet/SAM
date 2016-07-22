@@ -625,7 +625,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 0, 0, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 0, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -634,12 +634,13 @@ def import_links():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+                     , DestinationPort AS port
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 != (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
-                GROUP BY source8, source16, source24, source32, dest8, dest16, dest24) AS main
+                GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, port) AS main
             JOIN
                 (SELECT parent8, parent16, parent24, address, x, y
                 FROM Nodes32)
@@ -651,7 +652,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, 0, 0, 0, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, 0, 0, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -659,11 +660,12 @@ def import_links():
                      , (SourceIP - (SourceIP DIV 256) * 256) AS source32
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , DestinationPort AS port
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, source24, source32, dest8, dest16) AS main
+                GROUP BY source8, source16, source24, source32, dest8, dest16, port) AS main
             JOIN
                 (SELECT parent8, parent16, parent24, address, x, y
                 FROM Nodes32)
@@ -675,17 +677,18 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, 0, 0, 0, 0, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, 0, 0, 0, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
                      , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
                      , (SourceIP - (SourceIP DIV 256) * 256) AS source32
                      , DestinationIP DIV 16777216 AS dest8
+                     , DestinationPort AS port
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, source24, source32, dest8) AS main
+                GROUP BY source8, source16, source24, source32, dest8, port) AS main
             JOIN
                 (SELECT parent8, parent16, parent24, address, x, y
                 FROM Nodes32)
@@ -698,6 +701,12 @@ def import_links():
                 ON (dest8 = dst.address);
     """
     common.db.query(query)
+
+    # remove connections to self?
+    # query = "DELETE FROM Links8 WHERE source8=dest8;"
+    # common.db.query(query)
+    # query = "DELETE FROM Links16 WHERE source8=dest8 && source16=dest16;"
+    # common.db.query(query)
 
 
 def preprocess_log():
