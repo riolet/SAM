@@ -84,7 +84,7 @@ function wheel(event) {
 function keydown(event) {
     //if key is 'f', reset the view
     if (event.keyCode == 70) {
-        scale = 0.001;
+        scale = 0.0007;
         tx = rect.width / 2;
         ty = rect.height / 2;
         updateRenderRoot();
@@ -121,6 +121,20 @@ function contains(node, x, y) {
         && x > node.x - node.radius
         && y < node.y + node.radius
         && y > node.y - node.radius;
+}
+
+
+var g_timer = null;
+function onfilter(event) {
+    if (g_timer != null) {
+        clearTimeout(g_timer);
+    }
+    g_timer = setTimeout(applyfilter, 700);
+}
+
+function applyfilter(event=null) {
+    filter = document.getElementById("filter");
+    console.log("Applying filter: " + filter.value);
 }
 
 function onResize() {

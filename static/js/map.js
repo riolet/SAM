@@ -10,7 +10,7 @@ var mdownx, mdowny;
 var mx, my;
 var tx = 532;
 var ty = 288;
-var scale = 0.001;
+var scale = 0.0007;
 
 var map = {};
 
@@ -54,6 +54,9 @@ function init() {
     canvas.addEventListener('wheel', wheel);
     window.addEventListener('keydown',keydown,false);
 
+    filter = document.getElementById("filter");
+    filter.oninput = onfilter;
+
     updateFloatingPanel();
 
 
@@ -63,6 +66,7 @@ function init() {
         //action: 'none'
         action: updateConfig
     });
+    $('.input.icon').popup();
 
     loadData();
 
