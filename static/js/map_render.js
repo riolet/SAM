@@ -1,6 +1,6 @@
 function updateRenderRoot() {
     renderCollection = onScreen();
-    currentSubnet = location();
+    currentSubnet = getSubnet();
 }
 
 function render(x, y, scale) {
@@ -249,7 +249,7 @@ function opacity(level) {
     }
 }
 
-function location() {
+function getSubnet() {
     var level = currentLevel();
     if (level == 8) {
         return "";
