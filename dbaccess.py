@@ -25,8 +25,8 @@ def create_database():
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
 
     with open("./sql/setup_database.sql", 'r') as file:
-        # remove comment lines
         lines = file.readlines()
+    # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
     # join into one long string
     script = " ".join(lines)
