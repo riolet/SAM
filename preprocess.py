@@ -9,14 +9,29 @@ import math
 
 
 def clean_tables():
-    common.db.query("DELETE FROM Links32;")
-    common.db.query("DELETE FROM Links24;")
-    common.db.query("DELETE FROM Links16;")
-    common.db.query("DELETE FROM Links8;")
-    common.db.query("DELETE FROM Nodes32;")
-    common.db.query("DELETE FROM Nodes24;")
-    common.db.query("DELETE FROM Nodes16;")
-    common.db.query("DELETE FROM Nodes8;")
+    common.db.query("DROP TABLE IF EXISTS Links32;")
+    common.db.query("DROP TABLE IF EXISTS Links24;")
+    common.db.query("DROP TABLE IF EXISTS Links16;")
+    common.db.query("DROP TABLE IF EXISTS Links8;")
+    common.db.query("DROP TABLE IF EXISTS Nodes32;")
+    common.db.query("DROP TABLE IF EXISTS Nodes24;")
+    common.db.query("DROP TABLE IF EXISTS Nodes16;")
+    common.db.query("DROP TABLE IF EXISTS Nodes8;")
+
+    with open("./sql/setup_tables.sql", 'r') as file:
+        lines = file.readlines()
+    # remove comment lines
+    lines = [i for i in lines if not i.startswith("--")]
+    # join into one long string
+    script = " ".join(lines)
+    # split string into a list of commands
+    commands = script.split(";")
+
+    for command in commands:
+        # ignore empty statements (like trailing newlines)
+        if command.strip(" \n") == "":
+            continue
+        common.db.query(command)
 
 
 def import_nodes():
