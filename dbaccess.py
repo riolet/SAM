@@ -39,6 +39,7 @@ def create_database():
         if command.strip(" \n") == "":
             continue
         common.db.query(command)
+    reset_port_names()
 
 
 def reset_port_names():
