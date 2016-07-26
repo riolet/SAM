@@ -1,5 +1,6 @@
 import web
 import common
+import json
 
 
 def test_database():
@@ -24,7 +25,13 @@ def create_database():
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
 
-    with open("./sql/setup_database.sql", 'r') as file:
+    exec_sql("./sql/setup_database.sql")
+
+    reset_port_names()
+
+
+def exec_sql(path):
+    with open(path, 'r') as file:
         lines = file.readlines()
     # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
@@ -38,6 +45,23 @@ def create_database():
         if command.strip(" \n") == "":
             continue
         common.db.query(command)
+
+
+def reset_port_names():
+    # drop and recreate the table
+    exec_sql("./sql/setup_LUTs.sql")
+
+    with open("./sql/default_port_data.json", 'rb') as f:
+        port_data = json.loads("".join(f.readlines()))
+
+    ports = port_data["ports"].values()
+    for port in ports:
+        if len(port['shortname']) > 10:
+            port['shortname'] = port['shortname'][:10]
+        if len(port['longname']) > 255:
+            port['longname'] = port['longname'][:255]
+
+    common.db.multiple_insert('portLUT', values=ports)
 
 
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1, ip4 = -1):
@@ -159,9 +183,11 @@ def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, fi
     else:
         if filter == -1:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port
-                    , links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
+                LEFT JOIN portLUT
+                ON Links32.port = portLUT.port
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
                     && dest24 = $seg3
@@ -169,13 +195,16 @@ def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, fi
                 """
         else:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
+                LEFT JOIN portLUT
+                ON Links32.port = portLUT.port
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
                     && dest24 = $seg3
                     && dest32 = $seg4
-                    && port = $filter;
+                    && Links32.port = $filter;
                 """
         qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
         inputs = list(common.db.query(query, vars=qvars))
@@ -251,9 +280,11 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
     else:
         if filter == -1:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port
-                    , links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
+                LEFT JOIN portLUT
+                ON Links32.port = portLUT.port
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
@@ -261,13 +292,16 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
                 """
         else:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
+                LEFT JOIN portLUT
+                ON Links32.port = portLUT.port
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
                     && source32 = $seg4
-                    && port = $filter;
+                    && Links32.port = $filter;
                 """
         qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
@@ -305,34 +339,53 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['unique_ports'] = row.unique_ports
 
     query = """
-        SELECT SourceIP AS 'ip', COUNT(*) AS links
+        SELECT ip, temp.port, links, shortname, longname
+        FROM
+            (SELECT Syslog.SourceIP AS 'ip'
+                , Syslog.DestinationPort as 'port'
+                , COUNT(*) AS 'links'
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
-            GROUP BY ip
-            ORDER BY links DESC
-            LIMIT 50;
+            GROUP BY Syslog.SourceIP, Syslog.DestinationPort)
+            AS temp
+            LEFT JOIN portLUT
+            ON temp.port = portLUT.port
+        ORDER BY links DESC
+        LIMIT 50;
     """
     qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT DestinationIP AS 'ip', COUNT(*) AS links
+        SELECT ip, temp.port, links, shortname, longname
+        FROM
+            (SELECT Syslog.DestinationIP AS 'ip'
+                , Syslog.DestinationPort as 'port'
+                , COUNT(*) AS 'links'
             FROM Syslog
             WHERE SourceIP >= $start && SourceIP <= $end
-            GROUP BY ip
-            ORDER BY links DESC
-            LIMIT 50;
+            GROUP BY Syslog.DestinationIP, Syslog.DestinationPort)
+            AS temp
+            LEFT JOIN portLUT
+            ON temp.port = portLUT.port
+        ORDER BY links DESC
+        LIMIT 50;
     """
     qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT DestinationPort AS port, COUNT(*) AS links
+        SELECT temp.port, links, shortname, longname
+        FROM
+            (SELECT DestinationPort AS port, COUNT(*) AS links
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
             GROUP BY port
-            ORDER BY links DESC
-            LIMIT 50;
+            ) AS temp
+            LEFT JOIN portLUT
+            ON portLUT.port = temp.port
+        ORDER BY links DESC
+        LIMIT 50;
     """
     qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
     details['ports_in'] = list(common.db.query(query, vars=qvars))

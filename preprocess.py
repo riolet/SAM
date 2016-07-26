@@ -44,40 +44,16 @@ def import_nodes():
 
     # Get all /8 nodes. Load them into Nodes8
     query = """
-    INSERT INTO Nodes8 (address, connections, children, radius)
-    SELECT cluster.nip AS address
-        , SUM(cluster.conns) AS connections
-        , COUNT(cluster.child) AS children
-        , 20736
-    FROM
-        (SELECT ip DIV 16777216 AS 'nip'
-            , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'child'
-            , COUNT(*) AS 'conns'
-        FROM (
-            (SELECT SourceIP AS ip
-            FROM Syslog)
-            UNION ALL
-            (SELECT DestinationIP AS ip
-            FROM Syslog)
-        ) AS result
-        GROUP BY nip, child
-    ) AS cluster
-    GROUP BY address;
-    """
-    common.db.query(query)
-
-    # Get all the /16 nodes. Load these into Nodes16
-    query = """
-        INSERT INTO Nodes16 (parent8, address, connections, children, radius)
-        SELECT cluster.pip8 AS parent8
-            , cluster.nip AS address
+        INSERT INTO Nodes8 (address, connections, children, x, y, radius)
+        SELECT cluster.nip AS address
             , SUM(cluster.conns) AS connections
             , COUNT(cluster.child) AS children
-            , 864
+            , (331776 * (cluster.nip % 16) / 7.5 - 331776) as x
+            , (331776 * (cluster.nip DIV 16) / 7.5 - 331776) as y
+            , 20736 as radius
         FROM
-            (SELECT ip DIV 16777216 AS 'pip8'
-                , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'nip'
-                , (ip - (ip DIV 65536) * 65536) DIV 256 AS 'child'
+            (SELECT ip DIV 16777216 AS 'nip'
+                , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'child'
                 , COUNT(*) AS 'conns'
             FROM (
                 (SELECT SourceIP AS ip
@@ -85,68 +61,108 @@ def import_nodes():
                 UNION ALL
                 (SELECT DestinationIP AS ip
                 FROM Syslog)
-            ) as result
-            GROUP BY pip8, nip, child
+            ) AS result
+            GROUP BY nip, child
         ) AS cluster
-        GROUP BY parent8, address;
+        GROUP BY address;
+    """
+    qvars = {"radius": 331776}
+    common.db.query(query, vars=qvars)
+
+    # Get all the /16 nodes. Load these into Nodes16
+    query = """
+        INSERT INTO Nodes16 (parent8, address, connections, children, x, y, radius)
+        SELECT cluster.parent8, cluster.address, cluster.connections, cluster.children
+            , ((Nodes8.radius * (cluster.address MOD 16) / 7.5 - Nodes8.radius) + Nodes8.x) as x
+            , ((Nodes8.radius * (cluster.address DIV 16) / 7.5 - Nodes8.radius) + Nodes8.y) as y
+            , 864 as radius
+        FROM
+            (SELECT aggregate.pip8 AS parent8, aggregate.nip AS address
+                , SUM(aggregate.conns) AS connections, COUNT(aggregate.child) AS children
+            FROM
+                (SELECT ip DIV 16777216 AS 'pip8'
+                    , (ip MOD 16777216) DIV 65536 AS 'nip'
+                    , (ip MOD 65536) DIV 256 AS 'child'
+                    , COUNT(*) AS 'conns'
+                FROM (
+                    (SELECT SourceIP AS ip
+                    FROM Syslog)
+                    UNION ALL
+                    (SELECT DestinationIP AS ip
+                    FROM Syslog)
+                ) as result
+                GROUP BY pip8, nip, child
+            ) AS aggregate
+            GROUP BY parent8, address) as cluster
+            JOIN Nodes8
+            ON Nodes8.address = cluster.parent8
         """
     common.db.query(query)
 
     # Get all the /24 nodes. Load these into Nodes24
     query = """
-        INSERT INTO Nodes24 (parent8, parent16, address, connections, children, radius)
-        SELECT cluster.pip8 AS parent8
-            , cluster.pip16 AS parent16
-            , cluster.nip AS address
-            , SUM(cluster.conns) AS connections
-            , COUNT(cluster.child) AS children
-            , 36
+        INSERT INTO Nodes24 (parent8, parent16, address, connections, children, x, y, radius)
+        SELECT cluster.parent8, cluster.parent16, cluster.address, cluster.connections, cluster.children
+            , ((Nodes16.radius * (cluster.address MOD 16) / 7.5 - Nodes16.radius) + Nodes16.x) as x
+            , ((Nodes16.radius * (cluster.address DIV 16) / 7.5 - Nodes16.radius) + Nodes16.y) as y
+            , 36 as radius
         FROM
-            (SELECT ip DIV 16777216 AS 'pip8'
-                , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'pip16'
-                , (ip - (ip DIV 65536) * 65536) DIV 256 AS 'nip'
-                , (ip - (ip DIV 256) * 256) AS 'child'
-                , COUNT(*) AS 'conns'
-            FROM (
-                (SELECT SourceIP AS ip
-                FROM Syslog)
-                UNION ALL
-                (SELECT DestinationIP AS ip
-                FROM Syslog)
-            ) as result
-            GROUP BY pip8, pip16, nip, child
-        ) AS cluster
-        GROUP BY parent8, parent16, address;
+            (SELECT aggregate.pip8 AS parent8, aggregate.pip16 AS parent16, aggregate.nip AS address
+                , SUM(aggregate.conns) AS connections, COUNT(aggregate.child) AS children
+            FROM
+                (SELECT ip DIV 16777216 AS 'pip8'
+                    , (ip MOD 16777216) DIV 65536 AS 'pip16'
+                    , (ip MOD 65536) DIV 256 AS 'nip'
+                    , (ip MOD 256) AS 'child'
+                    , COUNT(*) AS 'conns'
+                FROM (
+                    (SELECT SourceIP AS ip
+                    FROM Syslog)
+                    UNION ALL
+                    (SELECT DestinationIP AS ip
+                    FROM Syslog)
+                ) as result
+                GROUP BY pip8, pip16, nip, child
+            ) AS aggregate
+            GROUP BY parent8, parent16, address) AS cluster
+            JOIN Nodes16
+            ON Nodes16.address = cluster.parent16 && Nodes16.parent8 = cluster.parent8;
         """
     common.db.query(query)
 
     # Get all the /32 nodes. Load these into Nodes32
     query = """
-        INSERT INTO Nodes32 (parent8, parent16, parent24, address, connections, children, radius)
-        SELECT cluster.pip8 AS parent8
-            , cluster.pip16 AS parent16
-            , cluster.pip24 AS parent24
-            , cluster.nip AS address
-            , SUM(cluster.conns) AS connections
-            , COUNT(cluster.child) AS children
-            , 1.5
+        INSERT INTO Nodes32 (parent8, parent16, parent24, address, connections, children, x, y, radius)
+        SELECT cluster.parent8, cluster.parent16, cluster.parent24, cluster.address, cluster.connections, cluster.children
+            , ((Nodes24.radius * (cluster.address MOD 16) / 7.5 - Nodes24.radius) + Nodes24.x) as x
+            , ((Nodes24.radius * (cluster.address DIV 16) / 7.5 - Nodes24.radius) + Nodes24.y) as y
+            , 1.5 as radius
         FROM
-            (SELECT ip DIV 16777216 AS 'pip8'
-                , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'pip16'
-                , (ip - (ip DIV 65536) * 65536) DIV 256 AS 'pip24'
-                , (ip - (ip DIV 256) * 256) AS 'nip'
-                , 0 AS 'child'
-                , COUNT(*) AS 'conns'
-            FROM (
-                (SELECT SourceIP AS ip
-                FROM Syslog)
-                UNION ALL
-                (SELECT DestinationIP AS ip
-                FROM Syslog)
-            ) as result
-            GROUP BY pip8, pip16, pip24, nip, child
-        ) AS cluster
-        GROUP BY parent8, parent16, parent24, address;
+            (SELECT aggregate.pip8 AS parent8
+                , aggregate.pip16 AS parent16
+                , aggregate.pip24 AS parent24
+                , aggregate.nip AS address
+                , SUM(aggregate.conns) AS connections
+                , COUNT(aggregate.child) AS children
+            FROM
+                (SELECT ip DIV 16777216 AS 'pip8'
+                    , (ip MOD 16777216) DIV 65536 AS 'pip16'
+                    , (ip MOD 65536) DIV 256 AS 'pip24'
+                    , (ip MOD 256) AS 'nip'
+                    , 0 AS 'child'
+                    , COUNT(*) AS 'conns'
+                FROM (
+                    (SELECT SourceIP AS ip
+                    FROM Syslog)
+                    UNION ALL
+                    (SELECT DestinationIP AS ip
+                    FROM Syslog)
+                ) as result
+                GROUP BY pip8, pip16, pip24, nip, child
+            ) AS aggregate
+            GROUP BY parent8, parent16, parent24, address) AS cluster
+            JOIN Nodes24
+            ON Nodes24.address = cluster.parent24 && Nodes24.parent16 = cluster.parent16 && Nodes24.parent8 = cluster.parent8;
         """
     common.db.query(query)
 
@@ -736,7 +752,9 @@ def import_links():
 def preprocess_log():
     clean_tables()
     import_nodes()
-    position_nodes()
+    # grid-based positioning is being handled within import_nodes() now.
+    # related functions are retained in case of non-grid layouts in the future.
+    # position_nodes()
     import_links()
     print("Pre-processing completed successfully.")
 
@@ -752,6 +770,5 @@ if __name__ == "__main__":
 
 
 # time python preprocess.py >/dev/null 2>/dev/null
-# is 28 seconds
+# is about half of
 # time python preprocess.py
-# is 51 seconds

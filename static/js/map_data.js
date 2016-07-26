@@ -95,9 +95,9 @@ function loadChildren(node) {
     //console.log("Loading children of " + node.address);
     var temp = node.address.split(".");
     requestData = {};
-    if (0 in temp) requestData.ipA = temp[0]; else requestData.ipA = -1;
-    if (1 in temp) requestData.ipB = temp[1]; else requestData.ipB = -1;
-    if (2 in temp) requestData.ipC = temp[2]; else requestData.ipC = -1;
+    if (0 in temp) requestData.ip8 = temp[0]; else requestData.ip8 = -1;
+    if (1 in temp) requestData.ip16 = temp[1]; else requestData.ip16 = -1;
+    if (2 in temp) requestData.ip24 = temp[2]; else requestData.ip24 = -1;
     requestData.filter = filter;
 
     $.ajax({
@@ -147,14 +147,14 @@ function preprocessConnection32(links) {
     //    6 7
     //
     used = [false, false, false, false, false, false, false, false];
-    locations = [ {'x':destination.x + destination.radius, 'y':destination.y + destination.radius/3, 'side': 'right'}
-                , {'x':destination.x + destination.radius, 'y':destination.y - destination.radius/3, 'side': 'right'}
-                , {'x':destination.x + destination.radius/3, 'y':destination.y - destination.radius, 'side': 'top'}
-                , {'x':destination.x - destination.radius/3, 'y':destination.y - destination.radius, 'side': 'top'}
-                , {'x':destination.x - destination.radius, 'y':destination.y - destination.radius/3, 'side': 'left'}
-                , {'x':destination.x - destination.radius, 'y':destination.y + destination.radius/3, 'side': 'left'}
-                , {'x':destination.x - destination.radius/3, 'y':destination.y + destination.radius, 'side': 'bottom'}
-                , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'side': 'bottom'}
+    locations = [ {'x':destination.x + destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'right'}
+                , {'x':destination.x + destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'right'}
+                , {'x':destination.x + destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
+                , {'x':destination.x - destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
+                , {'x':destination.x - destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'left'}
+                , {'x':destination.x - destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'left'}
+                , {'x':destination.x - destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
+                , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
                 ];
 
     var ports = {}
@@ -162,6 +162,9 @@ function preprocessConnection32(links) {
         if (links[j].port in ports) continue;
         var choice = closestEmptyPort(links[j], used);
         ports[links[j].port] = locations[choice];
+        if (links[j].shortname !== null) {
+            ports[links[j].port].alias = links[j].shortname;
+        }
         used[choice] = true;
         if (Object.keys(ports).length >= 8) break;
     }
@@ -309,26 +312,35 @@ function preprocessConnection(link) {
 
 function updateSelection(node) {
     selection = node;
+    document.getElementById("unique_in").innerHTML = "0";
+    document.getElementById("conn_in").innerHTML = "";
+    document.getElementById("unique_out").innerHTML = "0";
+    document.getElementById("conn_out").innerHTML = "";
+    document.getElementById("unique_ports").innerHTML = "0";
+    document.getElementById("ports_in").innerHTML = "";
+    document.getElementById("selectionNumber").innerHTML = "";
     if (node == null) {
         document.getElementById("selectionName").innerHTML = "No selection";
-        document.getElementById("selectionNumber").innerHTML = "";
-        document.getElementById("unique_in").innerHTML = "0";
-        document.getElementById("conn_in").innerHTML = "";
-        document.getElementById("unique_out").innerHTML = "0";
-        document.getElementById("conn_out").innerHTML = "";
-        document.getElementById("unique_ports").innerHTML = "0";
-        document.getElementById("ports_in").innerHTML = "";
         return;
     }
-    document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
-    document.getElementById("selectionNumber").innerHTML = node.alias;
+    document.getElementById("selectionName").innerHTML = "Loading details...";
+
+    var temp = node.address.split(".");
+    requestData = {};
+    if (0 in temp) requestData.ip8 = temp[0]; else requestData.ip8 = -1;
+    if (1 in temp) requestData.ip16 = temp[1]; else requestData.ip16 = -1;
+    if (2 in temp) requestData.ip24 = temp[2]; else requestData.ip24 = -1;
+    if (3 in temp) requestData.ip32 = temp[3]; else requestData.ip32 = -1;
+
     $.ajax({
         url: "/details",
         //dataType: "json",
-        type: "POST",
-        data: node.alias,
+        type: "GET",
+        data: requestData,
         error: onNotLoadData,
         success: function(result) {
+            document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
+            document.getElementById("selectionNumber").innerHTML = node.address;
             document.getElementById("unique_in").innerHTML = result.unique_in;
             document.getElementById("unique_out").innerHTML = result.unique_out;
             document.getElementById("unique_ports").innerHTML = result.unique_ports;
@@ -343,7 +355,12 @@ function updateSelection(node) {
                 conn_out += "<tr><td>" + result.conn_out[i].ip + "</td><td>" + result.conn_out[i].links + "</td></tr>";
             }
             for (var i in result.ports_in) {
-                ports_in += "<tr><td>" + result.ports_in[i].port + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+                // ports_in += "<tr><td><div class=\"content\">" + result.ports_in[i].port + "<div class=\"sub header\">" + result.ports_in[i].shortname + "</div></div></td><td>" + result.ports_in[i].links + "</td></tr>";
+                if (result.ports_in[i].shortname === null) {
+                    ports_in += "<tr><td>" + result.ports_in[i].port + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+                } else {
+                    ports_in += "<tr><td>" + result.ports_in[i].port + " - " + result.ports_in[i].shortname + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+                }
             }
 
             if (result.conn_in.length < result.unique_in) {

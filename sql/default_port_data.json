@@ -1,0 +1,1719 @@
+{
+  "ports": {
+    "1": {
+      "port": 1,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TCPMUX",
+      "longname": "TCP Port Service Multiplexer (TCPMUX)"
+    },
+    "2": {
+      "port": 2,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "CompressNet",
+      "longname": "CompressNET Management Utility"
+    },
+    "3": {
+      "port": 3,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "CompressNet",
+      "longname": "CompressNET Compression Process"
+    },
+    "5": {
+      "port": 5,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RJOB",
+      "longname": "Remote job entry"
+    },
+    "7": {
+      "port": 7,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ECHO",
+      "longname": "Echo Protocol"
+    },
+    "9": {
+      "port": 9,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DISCRD",
+      "longname": "Discard Protocol"
+    },
+    "11": {
+      "port": 11,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SYSTAT",
+      "longname": "Active Users (systat service)"
+    },
+    "13": {
+      "port": 13,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DATE",
+      "longname": "Daytime Protocol"
+    },
+    "15": {
+      "port": 15,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NTSTAT",
+      "longname": "Previously netstat service"
+    },
+    "17": {
+      "port": 17,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "QotD",
+      "longname": "Quote Of The Day"
+    },
+    "18": {
+      "port": 18,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MSG",
+      "longname": "Message Send Protocol"
+    },
+    "19": {
+      "port": 19,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "CHAR",
+      "longname": "Character Generator Protocol"
+    },
+    "20": {
+      "port": 20,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FTP",
+      "longname": "FTP data transfer"
+    },
+    "21": {
+      "port": 21,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FTP",
+      "longname": "FTP control (command)"
+    },
+    "22": {
+      "port": 22,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SSH",
+      "longname": "Secure Shell (SSH), secure logins, file transfers (scp, sftp) and port forwarding"
+    },
+    "23": {
+      "port": 23,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TELNET",
+      "longname": "Telnet protocol--unencrypted text communications"
+    },
+    "24": {
+      "port": 24,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MAIL",
+      "longname": "Priv-mail, any private mail system"
+    },
+    "25": {
+      "port": 25,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SMTP",
+      "longname": "Simple Mail Transfer Protocol (SMTP), used for e-mail routing between mail servers"
+    },
+    "27": {
+      "port": 27,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NSWFE",
+      "longname": "NSW User System FE"
+    },
+    "29": {
+      "port": 29,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ICP",
+      "longname": "Internet Cache Protocol"
+    },
+    "33": {
+      "port": 33,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "display",
+      "longname": "Display Support Protocol"
+    },
+    "35": {
+      "port": 35,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "print",
+      "longname": "Any private printer server protocol"
+    },
+    "37": {
+      "port": 37,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TIME",
+      "longname": "Time Protocol"
+    },
+    "39": {
+      "port": 39,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RLP",
+      "longname": "Resource Location Protocol--used for determining the location of higher level services from hosts on a network"
+    },
+    "42": {
+      "port": 42,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "WINS",
+      "longname": "Windows Internet Name Service"
+    },
+    "43": {
+      "port": 43,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "WHOIS",
+      "longname": "WHOIS protocol"
+    },
+    "47": {
+      "port": 47,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FTP",
+      "longname": "NI FTP"
+    },
+    "49": {
+      "port": 49,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TACACS",
+      "longname": "TACACS+ Login Host protocol"
+    },
+    "50": {
+      "port": 50,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MAIL",
+      "longname": "Remote Mail Checking Protocol"
+    },
+    "51": {
+      "port": 51,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IMP",
+      "longname": "IMP Logical Address Maintenance"
+    },
+    "52": {
+      "port": 52,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TIME",
+      "longname": "XNS (Xerox Network Systems) Time Protocol"
+    },
+    "53": {
+      "port": 53,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DNS",
+      "longname": "Domain Name System"
+    },
+    "54": {
+      "port": 54,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "XNS",
+      "longname": "Xerox Network Systems (XNS) clearinghouse"
+    },
+    "55": {
+      "port": 55,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ISIGL",
+      "longname": "ISI Graphics Language"
+    },
+    "56": {
+      "port": 56,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RAP",
+      "longname": "Route Access Protocol"
+    },
+    "57": {
+      "port": 57,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TERM",
+      "longname": "Any private terminal access"
+    },
+    "58": {
+      "port": 58,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "XNS",
+      "longname": "Xerox Network Systems (XNS) Mail"
+    },
+    "64": {
+      "port": 64,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "CI",
+      "longname": "CI (Travelport) (formerly Covia) Comms Integrator"
+    },
+    "67": {
+      "port": 67,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "BOOTP",
+      "longname": "Bootstrap Protocol (BOOTP) server; also used by Dynamic Host Configuration Protocol (DHCP)"
+    },
+    "68": {
+      "port": 68,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "BOOTP",
+      "longname": "Bootstrap Protocol (BOOTP) client; also used by Dynamic Host Configuration Protocol (DHCP)"
+    },
+    "69": {
+      "port": 69,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TFTP",
+      "longname": "Trivial File Transfer Protocol (TFTP)"
+    },
+    "70": {
+      "port": 70,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "GOPHER",
+      "longname": "Gopher protocol"
+    },
+    "71": {
+      "port": 71,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETRJS",
+      "longname": "NETRJS protocol"
+    },
+    "72": {
+      "port": 72,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETRJS",
+      "longname": "NETRJS protocol"
+    },
+    "73": {
+      "port": 73,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETRJS",
+      "longname": "NETRJS protocol"
+    },
+    "74": {
+      "port": 74,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETRJS",
+      "longname": "NETRJS protocol"
+    },
+    "77": {
+      "port": 77,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RJOB",
+      "longname": "Any private Remote job entry"
+    },
+    "79": {
+      "port": 79,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FINGER",
+      "longname": "Finger protocol"
+    },
+    "80": {
+      "port": 80,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "HTTP",
+      "longname": "Hypertext Transfer Protocol (HTTP)"
+    },
+    "81": {
+      "port": 81,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "TOR",
+      "longname": "Torpark onion routing"
+    },
+    "82": {
+      "port": 82,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "TOR",
+      "longname": "Torpark control"
+    },
+    "88": {
+      "port": 88,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "Kerberos authentication system"
+    },
+    "90": {
+      "port": 90,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DNSIX",
+      "longname": "(DoD Network Security for Information eXchange) Security Attribute Token Map"
+    },
+    "99": {
+      "port": 99,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "MSG",
+      "longname": "WIP Message protocol"
+    },
+    "100": {
+      "port": 100,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "CyberGate",
+      "longname": "CyberGate RAT protocol"
+    },
+    "101": {
+      "port": 101,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NICSN",
+      "longname": "NIC host name"
+    },
+    "102": {
+      "port": 102,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TSAP",
+      "longname": "ISO Transport Service Access Point (TSAP) Class 0 protocol; also used by Digital Equipment Corporation DECnet (Phase V+) over TCP/IP"
+    },
+    "104": {
+      "port": 104,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DICOM",
+      "longname": "ACR/NEMA Digital Imaging and Communications in Medicine (DICOM)"
+    },
+    "105": {
+      "port": 105,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "CCSO",
+      "longname": "CCSO Nameserver Protocol (Qi/Ph)"
+    },
+    "107": {
+      "port": 107,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TELNET",
+      "longname": "Remote Telnet Service protocol"
+    },
+    "108": {
+      "port": 108,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SNA",
+      "longname": "SNA Gateway Access Server"
+    },
+    "109": {
+      "port": 109,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "POP2",
+      "longname": "Post Office Protocol v2 (POP2)"
+    },
+    "110": {
+      "port": 110,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "POP3",
+      "longname": "Post Office Protocol v3 (POP3)"
+    },
+    "111": {
+      "port": 111,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RPS",
+      "longname": "ONC RPC (Sun RPC)"
+    },
+    "113": {
+      "port": 113,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Ident",
+      "longname": "Ident, authentication service/identification protocol, used by IRC servers to identify users"
+    },
+    "115": {
+      "port": 115,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "SFTP",
+      "longname": "Simple File Transfer Protocol"
+    },
+    "117": {
+      "port": 117,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "UUCP",
+      "longname": "UUCP Path Service"
+    },
+    "118": {
+      "port": 118,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SQL",
+      "longname": "Structured Query Language Services"
+    },
+    "119": {
+      "port": 119,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "NNTP",
+      "longname": "Network News Transfer Protocol, retrieval of newsgroup messages"
+    },
+    "123": {
+      "port": 123,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NTP",
+      "longname": "Network Time Protocol, used for time synchronization"
+    },
+    "126": {
+      "port": 126,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Unisys",
+      "longname": "Formerly Unisys Unitary Login, renamed by Unisys to NXEdit. Used by Unisys Programmer's Workbench for Clearpath MCP, an IDE for Unisys MCP software development"
+    },
+    "135": {
+      "port": 135,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DCOM",
+      "longname": "Microsoft's DCOM (Distributed, i.e. networked, COM) Service Control Manager (also known as the RPC Endpoint Mapper)"
+    },
+    "137": {
+      "port": 137,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NetBT",
+      "longname": "NetBIOS Name Service"
+    },
+    "138": {
+      "port": 138,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NetBT",
+      "longname": "NetBIOS Datagram Service"
+    },
+    "139": {
+      "port": 139,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NetBT",
+      "longname": "NetBIOS Session Service"
+    },
+    "143": {
+      "port": 143,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "IMAP",
+      "longname": "Internet Message Access Protocol"
+    },
+    "152": {
+      "port": 152,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "BFTP",
+      "longname": "Background File Transfer Program"
+    },
+    "153": {
+      "port": 153,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SGMP",
+      "longname": "Simple Gateway Monitoring Protocol"
+    },
+    "156": {
+      "port": 156,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SQL",
+      "longname": "SQL Service"
+    },
+    "158": {
+      "port": 158,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DMSP",
+      "longname": "Distributed Mail Service Protocol"
+    },
+    "161": {
+      "port": 161,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "SNMP",
+      "longname": "Simple Network Management Protocol"
+    },
+    "162": {
+      "port": 162,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SNMPT",
+      "longname": "Simple Network Management Protocol Trap"
+    },
+    "170": {
+      "port": 170,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "print",
+      "longname": "Print-srv, Network PostScript"
+    },
+    "175": {
+      "port": 175,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "NJE",
+      "longname": "VMNET (IBM z/VM, z/OS & z/VSE-Network Job Entry)"
+    },
+    "177": {
+      "port": 177,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "XDMCP",
+      "longname": "X Display Manager Control Protocol"
+    },
+    "179": {
+      "port": 179,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "BGP",
+      "longname": "Border Gateway Protocol "
+    },
+    "194": {
+      "port": 194,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IRC",
+      "longname": "Internet Relay Chat"
+    },
+    "199": {
+      "port": 199,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SMUX",
+      "longname": "SMUX, SNMP Unix Multiplexer"
+    },
+    "201": {
+      "port": 201,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "AppleTalk",
+      "longname": "AppleTalk Routing Maintenance"
+    },
+    "209": {
+      "port": 209,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "QMAIL",
+      "longname": "Quick Mail Transfer Protocol"
+    },
+    "210": {
+      "port": 210,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Z39.50",
+      "longname": "ANSI Z39.50"
+    },
+    "213": {
+      "port": 213,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IPX",
+      "longname": "Internetwork Packet Exchange "
+    },
+    "218": {
+      "port": 218,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MPP",
+      "longname": "Message posting protocol"
+    },
+    "220": {
+      "port": 220,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IMAP",
+      "longname": "Internet Message Access Protocol, version 3"
+    },
+    "259": {
+      "port": 259,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ESRO",
+      "longname": "Efficient Short Remote Operations"
+    },
+    "262": {
+      "port": 262,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Arcisdms",
+      "longname": "Arcisdms"
+    },
+    "264": {
+      "port": 264,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "BGMP",
+      "longname": "Border Gateway Multicast Protocol"
+    },
+    "280": {
+      "port": 280,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "mgmt",
+      "longname": "http-mgmt"
+    },
+    "300": {
+      "port": 300,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "ThinLinc",
+      "longname": "ThinLinc Web Access"
+    },
+    "308": {
+      "port": 308,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Novastor",
+      "longname": "Novastor Online Backup"
+    },
+    "311": {
+      "port": 311,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "OSXAdmin",
+      "longname": "Mac OS X Server Admin (officially AppleShare IP Web administration)"
+    },
+    "318": {
+      "port": 318,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TSP",
+      "longname": "PKIX Time Stamp Protocol"
+    },
+    "319": {
+      "port": 319,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "PTP",
+      "longname": "Precision Time Protocol event messages"
+    },
+    "320": {
+      "port": 320,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "PTP",
+      "longname": "Precision Time Protocol general messages"
+    },
+    "350": {
+      "port": 350,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MATIP",
+      "longname": "Mapping of Airline Traffic over Internet Protocol type A"
+    },
+    "351": {
+      "port": 351,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MATIP",
+      "longname": "Mapping of Airline Traffic over Internet Protocol type B"
+    },
+    "356": {
+      "port": 356,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Cloanto",
+      "longname": "cloanto-net-1 (used by Cloanto Amiga Explorer and VMs)"
+    },
+    "366": {
+      "port": 366,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ODMR",
+      "longname": "On-Demand Mail Relay"
+    },
+    "369": {
+      "port": 369,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "portmap",
+      "longname": "Rpc2portmap"
+    },
+    "370": {
+      "port": 370,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "CodaAuth",
+      "longname": "codaauth2, Coda authentication server"
+    },
+    "371": {
+      "port": 371,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ClearCase",
+      "longname": "ClearCase albd"
+    },
+    "383": {
+      "port": 383,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "HPMngr",
+      "longname": "HP data alarm manager"
+    },
+    "384": {
+      "port": 384,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RNSS",
+      "longname": "A Remote Network Server System"
+    },
+    "387": {
+      "port": 387,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "AppleTalk",
+      "longname": "AppleTalk Update-based Routing Protocol"
+    },
+    "389": {
+      "port": 389,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "LDAP",
+      "longname": "Lightweight Directory Access Protocol"
+    },
+    "399": {
+      "port": 399,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DECnet",
+      "longname": "Digital Equipment Corporation DECnet (Phase V+) over TCP/IP"
+    },
+    "401": {
+      "port": 401,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "UPS",
+      "longname": "Uninterruptible power supply"
+    },
+    "427": {
+      "port": 427,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SLP",
+      "longname": "Service Location Protocol"
+    },
+    "433": {
+      "port": 433,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NNSP",
+      "longname": "part of Network News Transfer Protocol"
+    },
+    "434": {
+      "port": 434,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MIPA",
+      "longname": "Mobile IP Agent (RFC 5944)"
+    },
+    "443": {
+      "port": 443,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "HTTPS",
+      "longname": "Hypertext Transfer Protocol over TLS/SSL"
+    },
+    "444": {
+      "port": 444,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SNPP",
+      "longname": "Simple Network Paging Protocol, RFC 1568"
+    },
+    "445": {
+      "port": 445,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "ActiveDir",
+      "longname": "Microsoft-DS Active Directory, Windows shares"
+    },
+    "464": {
+      "port": 464,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "Kerberos Change/Set password"
+    },
+    "465": {
+      "port": 465,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "SMTPS",
+      "longname": "Simple Mail Transfer Protocol over TLS/SSL"
+    },
+    "475": {
+      "port": 475,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Aladdin",
+      "longname": "tcpnethaspsrv, Aladdin Knowledge Systems Hasp services"
+    },
+    "491": {
+      "port": 491,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "GO",
+      "longname": "GO-Global remote access and application publishing software"
+    },
+    "497": {
+      "port": 497,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Dantz",
+      "longname": "Dantz Retrospect"
+    },
+    "500": {
+      "port": 500,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IKE",
+      "longname": "Internet Security Association and Key Management Protocol (ISAKMP) / Internet Key Exchange"
+    },
+    "502": {
+      "port": 502,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Modbus",
+      "longname": "Modbus Protocol"
+    },
+    "504": {
+      "port": 504,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Citadel",
+      "longname": "Citadel, multiservice protocol for dedicated clients for the Citadel groupware system"
+    },
+    "510": {
+      "port": 510,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FCP",
+      "longname": "FirstClass Protocol, used by FirstClass client/server groupware system"
+    },
+    "512": {
+      "port": 512,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Rexec",
+      "longname": "Rexec, Remote Process Execution"
+    },
+    "513": {
+      "port": 513,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "Who",
+      "longname": "Who"
+    },
+    "514": {
+      "port": 514,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "RSH",
+      "longname": "Remote Shell, used to execute non-interactive commands on a remote system (Remote Shell, rsh, remsh)"
+    },
+    "515": {
+      "port": 515,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "LPD",
+      "longname": "Line Printer Daemon, print service"
+    },
+    "517": {
+      "port": 517,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "Talk",
+      "longname": "Talk"
+    },
+    "518": {
+      "port": 518,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "NTalk",
+      "longname": "NTalk"
+    },
+    "520": {
+      "port": 520,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "RIP",
+      "longname": "Routing Information Protocol"
+    },
+    "521": {
+      "port": 521,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "RIPng",
+      "longname": "Routing Information Protocol Next Generation"
+    },
+    "524": {
+      "port": 524,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NCP",
+      "longname": "NetWare Core Protocol is used for a variety things such as access to primary NetWare server resources, Time Synchronization, etc."
+    },
+    "525": {
+      "port": 525,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "Time",
+      "longname": "Timed, Timeserver"
+    },
+    "530": {
+      "port": 530,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RPC",
+      "longname": "Remote procedure call"
+    },
+    "531": {
+      "port": 531,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "AOL",
+      "longname": "AOL Instant Messenger"
+    },
+    "532": {
+      "port": 532,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "netnews",
+      "longname": "netnews"
+    },
+    "533": {
+      "port": 533,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "netwall",
+      "longname": "netwall, For Emergency Broadcasts"
+    },
+    "540": {
+      "port": 540,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "UUCP",
+      "longname": "Unix-to-Unix Copy Protocol"
+    },
+    "542": {
+      "port": 542,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "commerce",
+      "longname": "commerce (Commerce Applications)"
+    },
+    "543": {
+      "port": 543,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "klogin",
+      "longname": "Kerberos login"
+    },
+    "544": {
+      "port": 544,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "kshell",
+      "longname": "Kerberos Remote shell"
+    },
+    "545": {
+      "port": 545,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "VMS",
+      "longname": "OSIsoft PI, OSISoft PI Server Client Access"
+    },
+    "546": {
+      "port": 546,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DHCP",
+      "longname": "DHCPv6 client"
+    },
+    "547": {
+      "port": 547,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DHCP",
+      "longname": "DHCPv6 server"
+    },
+    "548": {
+      "port": 548,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "AFP",
+      "longname": "Apple Filing Protocol over TCP"
+    },
+    "550": {
+      "port": 550,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "who",
+      "longname": "new-rwho, new-who"
+    },
+    "554": {
+      "port": 554,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RTSP",
+      "longname": "Real Time Streaming Protocol"
+    },
+    "556": {
+      "port": 556,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "RFS",
+      "longname": "Remotefs, RFS, rfs_server"
+    },
+    "560": {
+      "port": 560,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "rmon",
+      "longname": "rmonitor, Remote Monitor"
+    },
+    "561": {
+      "port": 561,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "mon",
+      "longname": "monitor"
+    },
+    "563": {
+      "port": 563,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NNTPS",
+      "longname": "NNTP over TLS/SSL"
+    },
+    "564": {
+      "port": 564,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "9P",
+      "longname": "Plan 9"
+    },
+    "587": {
+      "port": 587,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "SMTP",
+      "longname": "e-mail message submission"
+    },
+    "591": {
+      "port": 591,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "HTTP",
+      "longname": "FileMaker 6.0 (and later) Web Sharing (HTTP Alternatate)"
+    },
+    "593": {
+      "port": 593,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RPC",
+      "longname": "HTTP RPC EP Map, Remote procedure call over HTTP, often used by DCOM services and Microsoft Exchange Server"
+    },
+    "601": {
+      "port": 601,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "syslog",
+      "longname": "Reliable Syslog Service -- used for system logging"
+    },
+    "604": {
+      "port": 604,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "tunnel",
+      "longname": "TUNNEL profile, a protocol for BEEP peers to form an application layer tunnel"
+    },
+    "623": {
+      "port": 623,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "ASF",
+      "longname": "ASF Remote Management and Control Protocol & IPMI Remote Management Protocol"
+    },
+    "625": {
+      "port": 625,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "ODProxy",
+      "longname": "Open Directory Proxy (ODProxy)"
+    },
+    "631": {
+      "port": 631,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IPP",
+      "longname": "Internet Printing Protocol (IPP)"
+    },
+    "635": {
+      "port": 635,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RLZdb",
+      "longname": "RLZ DBase"
+    },
+    "636": {
+      "port": 636,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "LDAPS",
+      "longname": "Lightweight Directory Access Protocol over TLS/SSL"
+    },
+    "639": {
+      "port": 639,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MSDP",
+      "longname": "Multicast Source Discovery Protocol"
+    },
+    "641": {
+      "port": 641,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SSNRC",
+      "longname": "SupportSoft Nexus Remote Command (control/listening), a proxy gateway connecting remote control traffic"
+    },
+    "643": {
+      "port": 643,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SAN",
+      "longname": "SANity"
+    },
+    "646": {
+      "port": 646,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "LDP",
+      "longname": "Label Distribution Protocol, a routing protocol used in MPLS networks"
+    },
+    "647": {
+      "port": 647,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "DHCP",
+      "longname": "DHCP Failover protocol"
+    },
+    "648": {
+      "port": 648,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "RRP",
+      "longname": "Registry Registrar Protocol"
+    },
+    "651": {
+      "port": 651,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MMS",
+      "longname": "IEEE-MMS"
+    },
+    "653": {
+      "port": 653,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "SSNRC",
+      "longname": "SupportSoft Nexus Remote Command, a proxy gateway connecting remote control traffic"
+    },
+    "654": {
+      "port": 654,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "MMP",
+      "longname": "Media Management System (MMS) & Media Management Protocol"
+    },
+    "655": {
+      "port": 655,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "VPN",
+      "longname": "Tinc VPN daemon"
+    },
+    "657": {
+      "port": 657,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "LPAR",
+      "longname": "IBM RMC (Remote monitoring and Control) protocol, used by System p5 AIX Integrated Virtualization Manager (IVM) and Hardware Management Console"
+    },
+    "660": {
+      "port": 660,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "OSXsrv",
+      "longname": "Mac OS X Server administration"
+    },
+    "666": {
+      "port": 666,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Doom",
+      "longname": "Doom, first online first-person shooter"
+    },
+    "674": {
+      "port": 674,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "ACAP",
+      "longname": "Application Configuration Access Protocol"
+    },
+    "688": {
+      "port": 688,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "RUSD",
+      "longname": "REALM-RUSD (ApplianceWare Server Appliance Management Protocol)"
+    },
+    "690": {
+      "port": 690,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "VATP",
+      "longname": "Velneo Application Transfer Protocol"
+    },
+    "691": {
+      "port": 691,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Exchange",
+      "longname": "MS Exchange Routing"
+    },
+    "694": {
+      "port": 694,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Heart",
+      "longname": "Linux-HA high-availability heartbeat"
+    },
+    "695": {
+      "port": 695,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "MMS",
+      "longname": "IEEE Media Management System over SSL"
+    },
+    "698": {
+      "port": 698,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "OLSR",
+      "longname": "Optimized Link State Routing"
+    },
+    "700": {
+      "port": 700,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "EPP",
+      "longname": "Extensible Provisioning Protocol, a protocol for communication between domain name registries and registrars (RFC 5734)"
+    },
+    "701": {
+      "port": 701,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "LMP",
+      "longname": "Link Management Protocol (LMP), a protocol that runs between a pair of nodes and is used to manage traffic engineering (TE) links"
+    },
+    "702": {
+      "port": 702,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "IRIS",
+      "longname": "Internet Registry Information Service over BEEP (Blocks Extensible Exchange Protocol) (RFC 3983)"
+    },
+    "706": {
+      "port": 706,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "SILC",
+      "longname": "Secure Internet Live Conferencing"
+    },
+    "711": {
+      "port": 711,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Cisco",
+      "longname": "Cisco Tag Distribution Protocol--being replaced by the MPLS Label Distribution Protocol"
+    },
+    "712": {
+      "port": 712,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "TBRPF",
+      "longname": "Topology Broadcast based on Reverse-Path Forwarding routing protocol (RFC 3684)"
+    },
+    "749": {
+      "port": 749,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "Kerberos (protocol) administration"
+    },
+    "750": {
+      "port": 750,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "kerberos-iv, Kerberos version IV"
+    },
+    "751": {
+      "port": 751,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "kerberos_master, Kerberos authentication"
+    },
+    "752": {
+      "port": 752,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "passwd_server, Kerberos password (kpasswd) server"
+    },
+    "753": {
+      "port": 753,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "RRH",
+      "longname": "Reverse Routing Header"
+    },
+    "754": {
+      "port": 754,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "tell",
+      "longname": "tell send"
+    },
+    "760": {
+      "port": 760,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Kerberos",
+      "longname": "krbupdate [kreg], Kerberos registration"
+    },
+    "782": {
+      "port": 782,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Conserver",
+      "longname": "Conserver serial-console management server"
+    },
+    "783": {
+      "port": 783,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "spamd",
+      "longname": "SpamAssassin spamd daemon"
+    },
+    "800": {
+      "port": 800,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "MDBS",
+      "longname": "mdbs-daemon"
+    },
+    "808": {
+      "port": 808,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Net.TCP",
+      "longname": "Microsoft Net.TCP Port Sharing Service"
+    },
+    "829": {
+      "port": 829,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Cert",
+      "longname": "Certificate Management Protocol"
+    },
+    "830": {
+      "port": 830,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETCNF",
+      "longname": "NETCONF over SSH"
+    },
+    "831": {
+      "port": 831,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETCNF",
+      "longname": "NETCONF over BEEP"
+    },
+    "832": {
+      "port": 832,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETCNF",
+      "longname": "NETCONF for SOAP over HTTPS"
+    },
+    "833": {
+      "port": 833,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NETCNF",
+      "longname": "NETCONF for SOAP over BEEP"
+    },
+    "843": {
+      "port": 843,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Flash",
+      "longname": "Adobe Flash"
+    },
+    "847": {
+      "port": 847,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "DHCP",
+      "longname": "DHCP Failover protocol"
+    },
+    "848": {
+      "port": 848,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "GDOI",
+      "longname": "Group Domain Of Interpretation protocol"
+    },
+    "853": {
+      "port": 853,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DNS",
+      "longname": "DNS over TLS (RFC 7858)"
+    },
+    "860": {
+      "port": 860,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "iSCSI",
+      "longname": "iSCSI (RFC 3720)"
+    },
+    "861": {
+      "port": 861,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "OWAMP",
+      "longname": "OWAMP control (RFC 4656)"
+    },
+    "862": {
+      "port": 862,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TWAMP",
+      "longname": "TWAMP control (RFC 5357)"
+    },
+    "873": {
+      "port": 873,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "rsync",
+      "longname": "rsync file synchronization protocol"
+    },
+    "888": {
+      "port": 888,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "CDDBP",
+      "longname": "CD DataBase (CDDB) protocol"
+    },
+    "897": {
+      "port": 897,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Brocade",
+      "longname": "Brocade SMI-S RPC"
+    },
+    "898": {
+      "port": 898,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "Brocade",
+      "longname": "Brocade SMI-S RPC SSL"
+    },
+    "901": {
+      "port": 901,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "VMware",
+      "longname": "VMware Virtual Infrastructure Client (from managed device to management console)"
+    },
+    "902": {
+      "port": 902,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "VMware",
+      "longname": "VMware Server Console (from management console to managed device)"
+    },
+    "903": {
+      "port": 903,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "VMware",
+      "longname": "VMware Remote Console"
+    },
+    "904": {
+      "port": 904,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "VMware",
+      "longname": "VMware Server alternate"
+    },
+    "905": {
+      "port": 905,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "ACON",
+      "longname": "ACON Systems"
+    },
+    "911": {
+      "port": 911,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "NCA",
+      "longname": "Network Console on Acid, local tty redirection over OpenSSH"
+    },
+    "944": {
+      "port": 944,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "NFSS",
+      "longname": "Network File System Service"
+    },
+    "953": {
+      "port": 953,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "DNS",
+      "longname": "Domain Name System RNDC Service"
+    },
+    "973": {
+      "port": 973,
+      "tcp": 0,
+      "udp": 1,
+      "shortname": "NFSS",
+      "longname": "Network File System over IPv6 Service"
+    },
+    "981": {
+      "port": 981,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "SofaWare",
+      "longname": "SofaWare Technologies Remote HTTPS management for firewall devices running embedded Check Point FireWall-TCP software"
+    },
+    "987": {
+      "port": 987,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "SharePoint",
+      "longname": "Microsoft Windows SBS SharePoint"
+    },
+    "989": {
+      "port": 989,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FTPS",
+      "longname": "FTPS Protocol (data), FTP over TLS/SSL"
+    },
+    "990": {
+      "port": 990,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "FTPS",
+      "longname": "FTPS Protocol (control), FTP over TLS/SSL"
+    },
+    "991": {
+      "port": 991,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "NAS",
+      "longname": "Netnews Administration System"
+    },
+    "992": {
+      "port": 992,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "TLS",
+      "longname": "Telnet protocol over TLS/SSL"
+    },
+    "993": {
+      "port": 993,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "IMAPS",
+      "longname": "Internet Message Access Protocol over TLS/SSL"
+    },
+    "994": {
+      "port": 994,
+      "tcp": 1,
+      "udp": 1,
+      "shortname": "IRCS",
+      "longname": "Internet Relay Chat over TLS/SSL"
+    },
+    "995": {
+      "port": 995,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "POP3S",
+      "longname": "Post Office Protocol 3 over TLS/SSL"
+    },
+    "999": {
+      "port": 999,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "ScimoreDB",
+      "longname": "ScimoreDB Database System"
+    },
+    "1002": {
+      "port": 1002,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "cogbot",
+      "longname": "Opsware agent (aka cogbot)"
+    },
+    "1010": {
+      "port": 1010,
+      "tcp": 1,
+      "udp": 0,
+      "shortname": "Thinlinc",
+      "longname": "ThinLinc Web Administration"
+    }
+  }
+}

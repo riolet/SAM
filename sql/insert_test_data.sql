@@ -52,9 +52,9 @@ GROUP BY col;
 
 
 SELECT SourceIP DIV 16777216 AS source8
-     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+     , (SourceIP MOD 16777216) DIV 65536 AS source16
      , DestinationIP DIV 16777216 AS dest8
-     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+     , (DestinationIP MOD 16777216) DIV 65536 AS dest16
      , COUNT(*) AS conns
 FROM Syslog
 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
