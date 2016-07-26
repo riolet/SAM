@@ -501,8 +501,8 @@
       "port": 135,
       "tcp": 1,
       "udp": 1,
-      "shortname": "EPMAP",
-      "longname": "Microsoft End Point Mapper. Also DCE, RPC Locator)"
+      "shortname": "DCOM",
+      "longname": "Microsoft's DCOM (Distributed, i.e. networked, COM) Service Control Manager (also known as the RPC Endpoint Mapper)"
     },
     "137": {
       "port": 137,
@@ -858,7 +858,7 @@
       "port": 445,
       "tcp": 1,
       "udp": 0,
-      "shortname": "MSActDir",
+      "shortname": "ActiveDir",
       "longname": "Microsoft-DS Active Directory, Windows shares"
     },
     "464": {

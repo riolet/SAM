@@ -46,7 +46,6 @@ function renderClusters(collection, x, y, scale) {
         drawClusterNode(collection[node]);
         renderLinks(collection[node]);
     }
-
     renderLabels(collection, x, y, scale);
 }
 
@@ -54,7 +53,7 @@ function renderLabels(collection, x, y, scale) {
     ctx.resetTransform();
     ctx.font = "1.5em sans";
     ctx.fillStyle = "#000000";
-    if (scale > 35) {
+    if (scale > 25) {
         //Draw port labels here
         for (var node in collection) {
             if (collection[node].level > level) {
@@ -63,19 +62,25 @@ function renderLabels(collection, x, y, scale) {
             ctx.globalAlpha = opacity(collection[node].level);
             for (var p in collection[node].ports) {
                 var text = p;
-                //TODO: this is not working.
                 if (collection[node].ports[p].alias != '') {
                     text = collection[node].ports[p].alias;
                 }
-                var size = ctx.measureText(text);
+                ctx.font = "1.5em sans";
+                var sizeMin = ctx.measureText("mmmmm");
+                var size = Math.max(ctx.measureText(text).width, sizeMin.width);
+                var hOffset = sizeMin.width * 0.07;
+
+                var newSize = (1.2 * scale) / size * 1.6;
+                ctx.font = newSize.toString() + "em sans";
+                size = ctx.measureText(text).width;
                 //node.ports[p].x
                 if (collection[node].ports[p].side == "left") {
-                    var px = collection[node].ports[p].x * scale + x - size.width / 2;
-                    var py = collection[node].ports[p].y * scale + y + 8;
+                    var px = collection[node].ports[p].x * scale + x - size / 2;
+                    var py = collection[node].ports[p].y * scale + y + hOffset;
                     ctx.fillText(text, px, py);
                 } else if (collection[node].ports[p].side == "right") {
-                    var px = collection[node].ports[p].x * scale + x - size.width / 2;
-                    var py = collection[node].ports[p].y * scale + y + 8;
+                    var px = collection[node].ports[p].x * scale + x - size / 2;
+                    var py = collection[node].ports[p].y * scale + y + hOffset;
                     ctx.fillText(text, px, py);
                 } else if (collection[node].ports[p].side == "top") {
                     var px = collection[node].ports[p].x * scale + x;
@@ -83,7 +88,7 @@ function renderLabels(collection, x, y, scale) {
                     ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(Math.PI/2);
-                    ctx.fillText(text, -size.width / 2, +8);
+                    ctx.fillText(text, -size / 2, hOffset);
                     ctx.restore();
                 } else if (collection[node].ports[p].side == "bottom") {
                     var px = collection[node].ports[p].x * scale + x;
@@ -91,12 +96,13 @@ function renderLabels(collection, x, y, scale) {
                     ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(Math.PI/2);
-                    ctx.fillText(text, -size.width / 2, +8);
+                    ctx.fillText(text, -size / 2, hOffset);
                     ctx.restore();
                 }
             }
         }
     }
+    ctx.font = "1.5em sans";
     for (var node in collection) {
         //Draw node labels here
         var text = collection[node].number;
@@ -141,23 +147,26 @@ function drawClusterNode(node) {
     } else {
         //terminal node (final IP address)
         ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius*2, node.radius * 2);
+        //draw ports
+        var width = 1.2;
+        var height = 0.8;
         for (var p in node.ports) {
             if (node.ports[p].side == "left") {
                 //if the port is on the left side
-                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
-                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
+                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
+                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
             } else if (node.ports[p].side == "right") {
                 //if the port is on the right side
-                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
-                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, 1.2, 0.8);
+                ctx.fillRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
+                ctx.strokeRect( node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
             } else if (node.ports[p].side == "bottom") {
                 //if the port is on the bottom side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, 0.8, 1.2);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, .8, 1.2);
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
             } else {
                 //the port must be on the top side
-                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, 0.8, 1.2);
-                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, 0.8, 1.2);
+                ctx.fillRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
+                ctx.strokeRect( node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
             }
         }
     }
