@@ -147,14 +147,14 @@ function preprocessConnection32(links) {
     //    6 7
     //
     used = [false, false, false, false, false, false, false, false];
-    locations = [ {'x':destination.x + destination.radius, 'y':destination.y + destination.radius/3, 'side': 'right'}
-                , {'x':destination.x + destination.radius, 'y':destination.y - destination.radius/3, 'side': 'right'}
-                , {'x':destination.x + destination.radius/3, 'y':destination.y - destination.radius, 'side': 'top'}
-                , {'x':destination.x - destination.radius/3, 'y':destination.y - destination.radius, 'side': 'top'}
-                , {'x':destination.x - destination.radius, 'y':destination.y - destination.radius/3, 'side': 'left'}
-                , {'x':destination.x - destination.radius, 'y':destination.y + destination.radius/3, 'side': 'left'}
-                , {'x':destination.x - destination.radius/3, 'y':destination.y + destination.radius, 'side': 'bottom'}
-                , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'side': 'bottom'}
+    locations = [ {'x':destination.x + destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'right'}
+                , {'x':destination.x + destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'right'}
+                , {'x':destination.x + destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
+                , {'x':destination.x - destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
+                , {'x':destination.x - destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'left'}
+                , {'x':destination.x - destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'left'}
+                , {'x':destination.x - destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
+                , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
                 ];
 
     var ports = {}
@@ -162,6 +162,9 @@ function preprocessConnection32(links) {
         if (links[j].port in ports) continue;
         var choice = closestEmptyPort(links[j], used);
         ports[links[j].port] = locations[choice];
+        if (links[j].shortname !== null) {
+            ports[links[j].port].alias = links[j].shortname;
+        }
         used[choice] = true;
         if (Object.keys(ports).length >= 8) break;
     }

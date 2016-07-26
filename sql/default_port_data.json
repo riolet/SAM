@@ -42,13 +42,6 @@
       "shortname": "DISCRD",
       "longname": "Discard Protocol"
     },
-    "9": {
-      "port": 9,
-      "tcp": 0,
-      "udp": 1,
-      "shortname": "WAKE",
-      "longname": "Wake-on-LAN"
-    },
     "11": {
       "port": 11,
       "tcp": 1,
@@ -1715,12 +1708,12 @@
       "shortname": "cogbot",
       "longname": "Opsware agent (aka cogbot)"
     },
-    "1002": {
-      "port": 1002,
+    "1010": {
+      "port": 1010,
       "tcp": 1,
       "udp": 0,
-      "shortname": "cogbot",
-      "longname": "Opsware agent (aka cogbot)"
+      "shortname": "Thinlinc",
+      "longname": "ThinLinc Web Administration"
     }
   }
 }

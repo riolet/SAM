@@ -63,6 +63,10 @@ function renderLabels(collection, x, y, scale) {
             ctx.globalAlpha = opacity(collection[node].level);
             for (var p in collection[node].ports) {
                 var text = p;
+                //TODO: this is not working.
+                if (collection[node].ports[p].alias != '') {
+                    text = collection[node].ports[p].alias;
+                }
                 var size = ctx.measureText(text);
                 //node.ports[p].x
                 if (collection[node].ports[p].side == "left") {

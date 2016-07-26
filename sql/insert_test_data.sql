@@ -61,6 +61,14 @@ WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
 GROUP BY source8, source16, dest8, dest16
 ;
 
+SELECT source8, source16, dest8, dest16, Links32.port, shortname, longname
+FROM Links32
+    LEFT JOIN portLUT
+    ON Links32.port = portLUT.port
+WHERE dest8 = 172
+    && dest16 = 19
+    && dest24 = 46
+    && dest32 = 26;
 
 
 
