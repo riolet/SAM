@@ -355,7 +355,12 @@ function updateSelection(node) {
                 conn_out += "<tr><td>" + result.conn_out[i].ip + "</td><td>" + result.conn_out[i].links + "</td></tr>";
             }
             for (var i in result.ports_in) {
-                ports_in += "<tr><td>" + result.ports_in[i].port + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+                // ports_in += "<tr><td><div class=\"content\">" + result.ports_in[i].port + "<div class=\"sub header\">" + result.ports_in[i].shortname + "</div></div></td><td>" + result.ports_in[i].links + "</td></tr>";
+                if (result.ports_in[i].shortname === null) {
+                    ports_in += "<tr><td>" + result.ports_in[i].port + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+                } else {
+                    ports_in += "<tr><td>" + result.ports_in[i].port + " - " + result.ports_in[i].shortname + "</td><td>" + result.ports_in[i].links + "</td></tr>";
+                }
             }
 
             if (result.conn_in.length < result.unique_in) {

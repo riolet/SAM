@@ -17,6 +17,7 @@ class Details:
             ]
 
         details = dbaccess.getDetails(*ips)
+
         for connection in details['conn_in']:
             connection.ip = common.IPtoString(connection.ip)
         for connection in details['conn_out']:
