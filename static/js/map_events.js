@@ -84,10 +84,9 @@ function wheel(event) {
 function keydown(event) {
     //if key is 'f', reset the view
     if (event.keyCode == 70) {
-        scale = 0.0007;
-        tx = rect.width / 2;
-        ty = rect.height / 2;
+        resetViewport(nodeCollection);
         updateRenderRoot();
+        resetViewport(renderCollection);
         render(tx, ty, scale);
     }
     return;
@@ -139,9 +138,6 @@ function applyfilter(event=null) {
     updateSelection(null);
     nodeCollection = null;
     currentSubnet = "";
-    scale = 0.0007;
-    tx = rect.width / 2;
-    ty = rect.height / 2;
     updateRenderRoot();
     loadData();
 }

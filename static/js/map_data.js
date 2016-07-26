@@ -73,7 +73,7 @@ function onLoadData(result) {
     }
 
     updateRenderRoot();
-
+    resetViewport(renderCollection)
     render(tx, ty, scale);
 }
 
