@@ -1,5 +1,6 @@
 import web
 import common
+import json
 
 
 def test_database():
@@ -38,6 +39,21 @@ def create_database():
         if command.strip(" \n") == "":
             continue
         common.db.query(command)
+
+
+def reset_port_names():
+    common.db.query("DELETE FROM portLUT;");
+    with open("./sql/default_port_data.json", 'rb') as f:
+        port_data = json.loads("".join(f.readlines()))
+
+    ports = port_data["ports"].values()
+    for port in ports:
+        if len(port['shortname']) > 10:
+            port['shortname'] = port['shortname'][:10]
+        if len(port['longname']) > 255:
+            port['longname'] = port['longname'][:255]
+
+    common.db.multiple_insert('portLUT', values=ports)
 
 
 def determineRange(ip1 = -1, ip2 = -1, ip3 = -1, ip4 = -1):
