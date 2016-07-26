@@ -338,3 +338,27 @@ function onScreenRecursive(left, right, top, bottom, collection) {
     }
     return selected;
 }
+
+function resetViewport(collection) {
+        var bbox = {'left': Infinity, 'right': -Infinity, 'top': Infinity, 'bottom': -Infinity};
+        for (var i in collection) {
+            var node = collection[i];
+            if (node.x - node.radius < bbox.left) {
+                bbox.left = node.x - node.radius;
+            }
+            if (node.x + node.radius > bbox.right) {
+                bbox.right = node.x + node.radius;
+            }
+            if (node.y - node.radius < bbox.top) {
+                bbox.top = node.y - node.radius;
+            }
+            if (node.y + node.radius > bbox.bottom) {
+                bbox.bottom = node.y + node.radius;
+            }
+        }
+        var scaleA = 0.92 * rect.width / (bbox.right - bbox.left);
+        var scaleB = 0.92 * rect.height / (bbox.bottom - bbox.top);
+        scale = Math.min(scaleA, scaleB);
+        tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * scale;
+        ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * scale;
+}
