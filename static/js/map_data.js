@@ -95,9 +95,9 @@ function loadChildren(node) {
     //console.log("Loading children of " + node.address);
     var temp = node.address.split(".");
     requestData = {};
-    if (0 in temp) requestData.ipA = temp[0]; else requestData.ipA = -1;
-    if (1 in temp) requestData.ipB = temp[1]; else requestData.ipB = -1;
-    if (2 in temp) requestData.ipC = temp[2]; else requestData.ipC = -1;
+    if (0 in temp) requestData.ip8 = temp[0]; else requestData.ip8 = -1;
+    if (1 in temp) requestData.ip16 = temp[1]; else requestData.ip16 = -1;
+    if (2 in temp) requestData.ip24 = temp[2]; else requestData.ip24 = -1;
     requestData.filter = filter;
 
     $.ajax({
@@ -312,26 +312,35 @@ function preprocessConnection(link) {
 
 function updateSelection(node) {
     selection = node;
+    document.getElementById("unique_in").innerHTML = "0";
+    document.getElementById("conn_in").innerHTML = "";
+    document.getElementById("unique_out").innerHTML = "0";
+    document.getElementById("conn_out").innerHTML = "";
+    document.getElementById("unique_ports").innerHTML = "0";
+    document.getElementById("ports_in").innerHTML = "";
+    document.getElementById("selectionNumber").innerHTML = "";
     if (node == null) {
         document.getElementById("selectionName").innerHTML = "No selection";
-        document.getElementById("selectionNumber").innerHTML = "";
-        document.getElementById("unique_in").innerHTML = "0";
-        document.getElementById("conn_in").innerHTML = "";
-        document.getElementById("unique_out").innerHTML = "0";
-        document.getElementById("conn_out").innerHTML = "";
-        document.getElementById("unique_ports").innerHTML = "0";
-        document.getElementById("ports_in").innerHTML = "";
         return;
     }
-    document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
-    document.getElementById("selectionNumber").innerHTML = node.alias;
+    document.getElementById("selectionName").innerHTML = "Loading details...";
+
+    var temp = node.address.split(".");
+    requestData = {};
+    if (0 in temp) requestData.ip8 = temp[0]; else requestData.ip8 = -1;
+    if (1 in temp) requestData.ip16 = temp[1]; else requestData.ip16 = -1;
+    if (2 in temp) requestData.ip24 = temp[2]; else requestData.ip24 = -1;
+    if (3 in temp) requestData.ip32 = temp[3]; else requestData.ip32 = -1;
+
     $.ajax({
         url: "/details",
         //dataType: "json",
-        type: "POST",
-        data: node.alias,
+        type: "GET",
+        data: requestData,
         error: onNotLoadData,
         success: function(result) {
+            document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
+            document.getElementById("selectionNumber").innerHTML = node.address;
             document.getElementById("unique_in").innerHTML = result.unique_in;
             document.getElementById("unique_out").innerHTML = result.unique_out;
             document.getElementById("unique_ports").innerHTML = result.unique_ports;
