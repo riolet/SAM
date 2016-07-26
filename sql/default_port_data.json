@@ -683,7 +683,7 @@
       "port": 280,
       "tcp": 1,
       "udp": 1,
-      "shortname": "mgmt",
+      "shortname": "http-mgmt",
       "longname": "http-mgmt"
     },
     "300": {

@@ -344,15 +344,36 @@ function updateSelection(node) {
             document.getElementById("unique_in").innerHTML = result.unique_in;
             document.getElementById("unique_out").innerHTML = result.unique_out;
             document.getElementById("unique_ports").innerHTML = result.unique_ports;
+            console.log(result);
 
             var conn_in = "";
             var conn_out = "";
             var ports_in = "";
             for (var i in result.conn_in) {
-                conn_in += "<tr><td>" + result.conn_in[i].ip + "</td><td>" + result.conn_in[i].links + "</td></tr>";
+                conn_in += "<tr><td rowspan=\"" + Object.keys(result.conn_in[i]).length + "\">" + i + "</td>"
+                for (var j in result.conn_in[i]) {
+                    portInfo = result.conn_in[i][j];
+                    if (portInfo.shortname === null) {
+                        conn_in += "<td>" + portInfo.port + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                    } else {
+                        conn_in += "<td>" + portInfo.port + " - " + portInfo.shortname + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                    }
+                }
+                //erase the last opening <tr> tag
+                conn_in = conn_in.substring(0, conn_in.length - 4);
             }
             for (var i in result.conn_out) {
-                conn_out += "<tr><td>" + result.conn_out[i].ip + "</td><td>" + result.conn_out[i].links + "</td></tr>";
+                conn_out += "<tr><td rowspan=\"" + Object.keys(result.conn_out[i]).length + "\">" + i + "</td>"
+                for (var j in result.conn_out[i]) {
+                    portInfo = result.conn_out[i][j];
+                    if (portInfo.shortname === null) {
+                        conn_out += "<td>" + portInfo.port + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                    } else {
+                        conn_out += "<td>" + portInfo.port + " - " + portInfo.shortname + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                    }
+                }
+                //erase the last opening <tr> tag
+                conn_out = conn_out.substring(0, conn_out.length - 4);
             }
             for (var i in result.ports_in) {
                 // ports_in += "<tr><td><div class=\"content\">" + result.ports_in[i].port + "<div class=\"sub header\">" + result.ports_in[i].shortname + "</div></div></td><td>" + result.ports_in[i].links + "</td></tr>";
@@ -363,11 +384,11 @@ function updateSelection(node) {
                 }
             }
 
-            if (result.conn_in.length < result.unique_in) {
-                conn_in += "<tr><td>Plus " + (result.unique_in - result.conn_in.length) + " more...</td><td>--</td></tr>";
+            if (Object.keys(result.conn_in).length < result.unique_in) {
+                conn_in += "<tr><td>Plus " + (result.unique_in - Object.keys(result.conn_in).length) + " more...</td><td>--</td><td>--</td></tr>";
             }
-            if (result.conn_out.length < result.unique_out) {
-                conn_out += "<tr><td>Plus " + (result.unique_out - result.conn_out.length) + " more...</td><td>--</td></tr>";
+            if (Object.keys(result.conn_out).length < result.unique_out) {
+                conn_out += "<tr><td>Plus " + (result.unique_out - Object.keys(result.conn_out).length) + " more...</td><td>--</td><td>--</td></tr>";
             }
             if (result.ports_in.length < result.unique_ports) {
                 ports_in += "<tr><td>Plus " + (result.unique_ports - result.ports_in.length) + " more...</td><td>--</td></tr>";
