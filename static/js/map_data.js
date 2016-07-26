@@ -344,7 +344,6 @@ function updateSelection(node) {
             document.getElementById("unique_in").innerHTML = result.unique_in;
             document.getElementById("unique_out").innerHTML = result.unique_out;
             document.getElementById("unique_ports").innerHTML = result.unique_ports;
-            console.log(result);
 
             var conn_in = "";
             var conn_out = "";

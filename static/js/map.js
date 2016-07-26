@@ -70,6 +70,7 @@ function init() {
         action: updateConfig
     });
     $('.input.icon').popup();
+    $('table.sortable').tablesort();
 
     loadData();
 
