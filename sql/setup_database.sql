@@ -18,14 +18,3 @@ CREATE TABLE Syslog
 ,Occurances        INT DEFAULT 1 NOT NULL
 ,CONSTRAINT PKSyslog PRIMARY KEY (entry)
 );
-
-CREATE TABLE portLUT
-(port              INT UNSIGNED NOT NULL
-,tcp               BOOL NOT NULL DEFAULT TRUE
-,udp               BOOL NOT NULL DEFAULT FALSE
-,shortname         VARCHAR(10) NOT NULL DEFAULT ""
-,longname          VARCHAR(255) NOT NULL DEFAULT ""
-,alias_shortname   VARCHAR(10)
-,alias_longname    VARCHAR(255)
-,CONSTRAINT PKportLUT PRIMARY KEY (port)
-);

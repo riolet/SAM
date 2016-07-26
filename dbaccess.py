@@ -25,7 +25,13 @@ def create_database():
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
 
-    with open("./sql/setup_database.sql", 'r') as file:
+    exec_sql("./sql/setup_database.sql")
+
+    reset_port_names()
+
+
+def exec_sql(path):
+    with open(path, 'r') as file:
         lines = file.readlines()
     # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
@@ -39,11 +45,12 @@ def create_database():
         if command.strip(" \n") == "":
             continue
         common.db.query(command)
-    reset_port_names()
 
 
 def reset_port_names():
-    common.db.query("DELETE FROM portLUT;");
+    # drop and recreate the table
+    exec_sql("./sql/setup_LUTs.sql")
+
     with open("./sql/default_port_data.json", 'rb') as f:
         port_data = json.loads("".join(f.readlines()))
 

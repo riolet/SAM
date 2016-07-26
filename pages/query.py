@@ -10,7 +10,6 @@ def decimal_default(obj):
     raise TypeError
 
 class Query:
-    # TODO: convert to POST data like pages/details
     def GET(self):
         web.header("Content-Type", "application/json")
 
