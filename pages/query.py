@@ -14,14 +14,13 @@ class Query:
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
-        print(get_data)
 
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
         result = dbaccess.getNodes(
-            int(get_data.get('ipA', -1)),
-            int(get_data.get('ipB', -1)),
-            int(get_data.get('ipC', -1)))
+            int(get_data.get('ip8', -1)),
+            int(get_data.get('ip16', -1)),
+            int(get_data.get('ip24', -1)))
 
         rows = list(result)
 

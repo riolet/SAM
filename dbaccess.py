@@ -183,8 +183,8 @@ def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, fi
     else:
         if filter == -1:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port, shortname, longname
-                    , links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
                 LEFT JOIN portLUT
                 ON Links32.port = portLUT.port
@@ -280,9 +280,11 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
     else:
         if filter == -1:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port
-                    , links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
+                LEFT JOIN portLUT
+                ON Links32.port = portLUT.port
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
@@ -290,13 +292,16 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
                 """
         else:
             query = """
-                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2
+                SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+                    , shortname, longname, links, x1, y1, x2, y2
                 FROM Links32
+                LEFT JOIN portLUT
+                ON Links32.port = portLUT.port
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
                     && source32 = $seg4
-                    && port = $filter;
+                    && Links32.port = $filter;
                 """
         qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
