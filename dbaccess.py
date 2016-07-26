@@ -204,7 +204,7 @@ def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, fi
                     && dest16 = $seg2
                     && dest24 = $seg3
                     && dest32 = $seg4
-                    && port = $filter;
+                    && Links32.port = $filter;
                 """
         qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
         inputs = list(common.db.query(query, vars=qvars))
