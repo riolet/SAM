@@ -339,34 +339,53 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['unique_ports'] = row.unique_ports
 
     query = """
-        SELECT SourceIP AS 'ip', COUNT(*) AS links
+        SELECT ip, temp.port, links, shortname, longname
+        FROM
+            (SELECT Syslog.SourceIP AS 'ip'
+                , Syslog.DestinationPort as 'port'
+                , COUNT(*) AS 'links'
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
-            GROUP BY ip
-            ORDER BY links DESC
-            LIMIT 50;
+            GROUP BY Syslog.SourceIP, Syslog.DestinationPort)
+            AS temp
+            LEFT JOIN portLUT
+            ON temp.port = portLUT.port
+        ORDER BY links DESC
+        LIMIT 50;
     """
     qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT DestinationIP AS 'ip', COUNT(*) AS links
+        SELECT ip, temp.port, links, shortname, longname
+        FROM
+            (SELECT Syslog.DestinationIP AS 'ip'
+                , Syslog.DestinationPort as 'port'
+                , COUNT(*) AS 'links'
             FROM Syslog
             WHERE SourceIP >= $start && SourceIP <= $end
-            GROUP BY ip
-            ORDER BY links DESC
-            LIMIT 50;
+            GROUP BY Syslog.DestinationIP, Syslog.DestinationPort)
+            AS temp
+            LEFT JOIN portLUT
+            ON temp.port = portLUT.port
+        ORDER BY links DESC
+        LIMIT 50;
     """
     qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT DestinationPort AS port, COUNT(*) AS links
+        SELECT temp.port, links, shortname, longname
+        FROM
+            (SELECT DestinationPort AS port, COUNT(*) AS links
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
             GROUP BY port
-            ORDER BY links DESC
-            LIMIT 50;
+            ) AS temp
+            LEFT JOIN portLUT
+            ON portLUT.port = temp.port
+        ORDER BY links DESC
+        LIMIT 50;
     """
     qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
     details['ports_in'] = list(common.db.query(query, vars=qvars))
