@@ -158,7 +158,6 @@ function applysearch(event=null) {
         if (ips[i] == "") continue;
         segment = Number(ips[i]);
         if (Number.isNaN(segment) || segment < 0 || segment > 255) break;
-        console.log("searching for " + segment);
         if (subnet == null) {
             if (segment in nodeCollection) {
                 subnet = nodeCollection[segment]
