@@ -56,8 +56,8 @@ function renderLabels(collection, x, y, scale) {
     if (scale > 25) {
         //Draw port labels here
         for (var node in collection) {
-            if (collection[node].level > level) {
-                return;
+            if (collection[node].level < 32) {
+                continue;
             }
             ctx.globalAlpha = opacity(collection[node].level);
             for (var p in collection[node].ports) {
@@ -195,6 +195,10 @@ function drawArrow(x1, y1, x2, y2, thickness = 1) {
     }
 
     var len = Math.hypot(dx, dy);
+    if (len * scale > 10000) {
+        x1 = (-dx) / len * (10000 / scale) + x2;
+        y1 = (-dy) / len * (10000 / scale) + y2;
+    }
     var xTemp = (-dx) / len * (30 / scale); //make the arrowhead 30 screen pixels in size
     var yTemp = (-dy) / len * (30 / scale);
 
@@ -339,26 +343,26 @@ function onScreenRecursive(left, right, top, bottom, collection) {
     return selected;
 }
 
-function resetViewport(collection) {
-        var bbox = {'left': Infinity, 'right': -Infinity, 'top': Infinity, 'bottom': -Infinity};
-        for (var i in collection) {
-            var node = collection[i];
-            if (node.x - node.radius < bbox.left) {
-                bbox.left = node.x - node.radius;
-            }
-            if (node.x + node.radius > bbox.right) {
-                bbox.right = node.x + node.radius;
-            }
-            if (node.y - node.radius < bbox.top) {
-                bbox.top = node.y - node.radius;
-            }
-            if (node.y + node.radius > bbox.bottom) {
-                bbox.bottom = node.y + node.radius;
-            }
+function resetViewport(collection, fill=0.92) {
+    var bbox = {'left': Infinity, 'right': -Infinity, 'top': Infinity, 'bottom': -Infinity};
+    for (var i in collection) {
+        var node = collection[i];
+        if (node.x - node.radius < bbox.left) {
+            bbox.left = node.x - node.radius;
         }
-        var scaleA = 0.92 * rect.width / (bbox.right - bbox.left);
-        var scaleB = 0.92 * rect.height / (bbox.bottom - bbox.top);
-        scale = Math.min(scaleA, scaleB);
-        tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * scale;
-        ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * scale;
+        if (node.x + node.radius > bbox.right) {
+            bbox.right = node.x + node.radius;
+        }
+        if (node.y - node.radius < bbox.top) {
+            bbox.top = node.y - node.radius;
+        }
+        if (node.y + node.radius > bbox.bottom) {
+            bbox.bottom = node.y + node.radius;
+        }
+    }
+    var scaleA = fill * rect.width / (bbox.right - bbox.left);
+    var scaleB = fill * rect.height / (bbox.bottom - bbox.top);
+    scale = Math.min(scaleA, scaleB);
+    tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * scale;
+    ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * scale;
 }

@@ -134,12 +134,56 @@ function onfilter(event) {
 function applyfilter(event=null) {
     filterElement = document.getElementById("filter");
     filter = filterElement.value;
-
     updateSelection(null);
     nodeCollection = null;
     currentSubnet = "";
-    updateRenderRoot();
+    updateRenderRoot()
     loadData();
+}
+function onsearch(event) {
+    if (g_timer != null) {
+        clearTimeout(g_timer);
+    }
+    g_timer = setTimeout(applysearch, 700);
+}
+
+function applysearch(event=null) {
+    searchElement = document.getElementById("search");
+    var target = searchElement.value;
+    var ips = target.split(".");
+    var segment;
+    var subnet = null;
+
+    for (var i in ips) {
+        if (ips[i] == "") continue;
+        segment = Number(ips[i]);
+        if (Number.isNaN(segment) || segment < 0 || segment > 255) break;
+        if (subnet == null) {
+            if (segment in nodeCollection) {
+                subnet = nodeCollection[segment]
+            } else {
+                break;
+            }
+        } else {
+            if (!subnet.childrenLoaded && subnet.level < 32) {
+                loadChildren(subnet, callback=applysearch);
+                return;
+            }
+            if (segment in subnet.children) {
+                subnet = subnet.children[segment]
+            } else {
+                break;
+            }
+        }
+    }
+
+    if (subnet == null) {
+        return;
+    }
+
+    resetViewport([subnet], 0.2);
+    updateRenderRoot();
+    render(tx, ty, scale);
 }
 
 function onResize() {

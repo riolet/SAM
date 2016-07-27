@@ -60,6 +60,10 @@ function init() {
     filterElement.oninput = onfilter;
     filter = filterElement.value;
 
+    filterElement = document.getElementById("search");
+    filterElement.value = "";
+    filterElement.oninput = onsearch;
+
     updateFloatingPanel();
 
 

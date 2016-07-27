@@ -72,8 +72,8 @@ function onLoadData(result) {
         }
     }
 
+    resetViewport(nodeCollection);
     updateRenderRoot();
-    resetViewport(renderCollection)
     render(tx, ty, scale);
 }
 
@@ -90,7 +90,7 @@ function checkLoD() {
     render(tx, ty, scale);
 }
 
-function loadChildren(node) {
+function loadChildren(node, callback=null) {
     node.childrenLoaded = true;
     //console.log("Loading children of " + node.address);
     var temp = node.address.split(".");
@@ -126,8 +126,12 @@ function loadChildren(node) {
                 preprocessConnection(node.children[i].outputs[j])
             }
         }
-        updateRenderRoot();
-        render(tx, ty, scale);
+        if (callback == null) {
+            updateRenderRoot();
+            render(tx, ty, scale);
+        } else {
+            callback();
+        }
     }});
 }
 
