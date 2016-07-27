@@ -8,7 +8,8 @@ class Map:
     def GET(self):
         return str(  common.render._head(self.pageTitle,
                                          stylesheets=['/static/css/map.css'],
-                                         scripts=['/static/js/map.js',
+                                         scripts=['/static/js/tablesort.js',
+                                                  '/static/js/map.js',
                                                   '/static/js/map_data.js',
                                                   '/static/js/map_render.js',
                                                   '/static/js/map_events.js'])) \
