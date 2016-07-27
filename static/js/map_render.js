@@ -176,7 +176,14 @@ function renderLinks(node) {
     var link = node.inputs
     if (config.show_in) {
         for (var i in link) {
-            drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+            if (link[i].source8 == link[i].dest8
+            && link[i].source16 == link[i].dest16
+            && link[i].source24 == link[i].dest24
+            && link[i].source32 == link[i].dest32) {
+                drawLoopArrow(node, link[i].links);
+            } else {
+                drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, link[i].links);
+            }
         }
     }
     if (config.show_out) {
@@ -187,7 +194,34 @@ function renderLinks(node) {
     }
 }
 
-function drawArrow(x1, y1, x2, y2, thickness = 1) {
+function drawLoopArrow(node, thickness=1) {
+    var x1 = node.radius * Math.cos(3 * Math.PI / 8);
+    var y1 = node.radius * Math.sin(3 * Math.PI / 8);
+    var x2 = 3 * x1 + node.x;
+    var y2 = 3 * y1 + node.y;
+    var x4 = node.radius * Math.cos(1 * Math.PI / 8);
+    var y4 = node.radius * Math.sin(1 * Math.PI / 8);
+    var x3 = 3 * x4 + node.x;
+    var y3 = 3 * y4 + node.y;
+
+    x1 += node.x;
+    y1 += node.y;
+    x4 += node.x;
+    y4 += node.y;
+
+    ctx.beginPath();
+    ctx.lineWidth = (Math.log(thickness) / 4 + 2) / scale;
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+    // precalculated as math.cos(math.pi/8-0.2), math.sin(math.pi/8-0.2)
+    //               to math.cos(math.pi/8+0.4), math.sin(math.pi/8+0.4)
+    ctx.lineTo(x4 + 0.981490 * 24 / scale, y4 + 0.191509 * 24 / scale);
+    ctx.lineTo(x4 + 0.701925 * 24 / scale, y4 + 0.712250 * 24 / scale);
+    ctx.lineTo(x4, y4);
+    ctx.stroke();
+}
+
+function drawArrow(x1, y1, x2, y2, thickness=1) {
     var dx = x2-x1;
     var dy = y2-y1;
     if (Math.abs(dx) + Math.abs(dy) < 10) {
@@ -195,14 +229,17 @@ function drawArrow(x1, y1, x2, y2, thickness = 1) {
     }
 
     var len = Math.hypot(dx, dy);
+    // This fixes an issue Firefox has with drawing long lines at high zoom levels.
     if (len * scale > 10000) {
         x1 = (-dx) / len * (10000 / scale) + x2;
         y1 = (-dy) / len * (10000 / scale) + y2;
     }
-    var xTemp = (-dx) / len * (30 / scale); //make the arrowhead 30 screen pixels in size
+    // make the arrowheads 30 pixels (screen coordinates)
+    var xTemp = (-dx) / len * (30 / scale);
     var yTemp = (-dy) / len * (30 / scale);
 
-    var c = Math.cos(0.3); //0.3 is half angle of arrowhead in radians
+    // 0.3 is half the arrowhead angle in radians
+    var c = Math.cos(0.3);
     var s = Math.sin(0.3);
     var x3 = xTemp * c - yTemp * s + x2;
     var y3 = xTemp * s + yTemp * c + y2;
