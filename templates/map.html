@@ -55,12 +55,12 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 <div class="transition hidden">
                     <table class="ui very compact celled structured table">
                         <thead>
-                            <th>Inbound IP</th>
+                            <th>Source IP</th>
                             <th>Port</th>
                             <th>Count</th>
                         </thead>
-                        <tbody id="conn_in">
-                        </tbody>
+                        <tbody id="conn_in"></tbody>
+                        <tfoot class="full-width" id="conn_in_overflow"></tfoot>
                     </table>
                 </div>
             </div>
@@ -72,12 +72,12 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 <div class="transition hidden">
                     <table class="ui very compact celled structured table">
                         <thead>
-                            <th>Outbound IP</th>
+                            <th>Dest. IP</th>
                             <th>Port</th>
                             <th>Count</th>
                         </thead>
-                        <tbody id="conn_out">
-                        </tbody>
+                        <tbody id="conn_out"></tbody>
+                        <tfoot class="full-width" id="conn_out_overflow"></tfoot>
                     </table>
                 </div>
             </div>
@@ -92,8 +92,8 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                             <th>Port Accessed</th>
                             <th class="sorted descending">Occurrences</th>
                         </thead>
-                        <tbody id="ports_in">
-                        </tbody>
+                        <tbody id="ports_in"></tbody>
+                        <tfoot class="full-width" id="ports_in_overflow"></tfoot>
                     </table>
                 </div>
             </div>
