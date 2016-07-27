@@ -56,8 +56,8 @@ function renderLabels(collection, x, y, scale) {
     if (scale > 25) {
         //Draw port labels here
         for (var node in collection) {
-            if (collection[node].level > level) {
-                return;
+            if (collection[node].level < 32) {
+                continue;
             }
             ctx.globalAlpha = opacity(collection[node].level);
             for (var p in collection[node].ports) {
@@ -195,6 +195,10 @@ function drawArrow(x1, y1, x2, y2, thickness = 1) {
     }
 
     var len = Math.hypot(dx, dy);
+    if (len * scale > 10000) {
+        x1 = (-dx) / len * (10000 / scale) + x2;
+        y1 = (-dy) / len * (10000 / scale) + y2;
+    }
     var xTemp = (-dx) / len * (30 / scale); //make the arrowhead 30 screen pixels in size
     var yTemp = (-dy) / len * (30 / scale);
 
