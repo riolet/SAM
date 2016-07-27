@@ -116,10 +116,10 @@ function distanceSquared(x1, y1, x2, y2) {
 
 //Helper for pick. Determines if a coordinate is within a node's bounding box
 function contains(node, x, y) {
-    return x < node.x + node.radius
-        && x > node.x - node.radius
-        && y < node.y + node.radius
-        && y > node.y - node.radius;
+    return x < node.x + node.radius * 1.6
+        && x > node.x - node.radius * 1.6
+        && y < node.y + node.radius * 1.6
+        && y > node.y - node.radius * 1.6;
 }
 
 
