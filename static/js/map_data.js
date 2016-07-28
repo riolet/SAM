@@ -82,6 +82,7 @@ function checkLoD() {
     visible = onScreen();
 
     for (var i in visible) {
+        //TODO: mend this!
         if (visible[i].level < level && visible[i].childrenLoaded == false) {
             loadChildren(visible[i]);
         }
@@ -143,11 +144,10 @@ function preprocessConnection32(links) {
     var destination = findNode(links[0].dest8, links[0].dest16,
                                links[0].dest24, links[0].dest32);
 
-    // I apologize for doing this this way...
     //
-    //    3 2
+    //    3_2
     //  4|   |1
-    //  5|   |0
+    //  5|___|0
     //    6 7
     //
     used = [false, false, false, false, false, false, false, false];

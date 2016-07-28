@@ -35,8 +35,7 @@ function renderClusters(collection, x, y, scale) {
             return;
         }
 
-        alpha = opacity(collection[node].level);
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = opacity(collection[node].level, "node");
         ctx.lineWidth = 5 / scale;
         if (collection[node] == selection) {
             ctx.strokeStyle = "#BFBFFF";
@@ -44,6 +43,7 @@ function renderClusters(collection, x, y, scale) {
             ctx.strokeStyle = "#5555CC";
         }
         drawClusterNode(collection[node]);
+        ctx.globalAlpha = opacity(collection[node].level, "links");
         renderLinks(collection[node]);
     }
     renderLabels(collection, x, y, scale);
@@ -59,7 +59,7 @@ function renderLabels(collection, x, y, scale) {
             if (collection[node].level < 32) {
                 continue;
             }
-            ctx.globalAlpha = opacity(collection[node].level);
+            ctx.globalAlpha = opacity(collection[node].level, "label");
             for (var p in collection[node].ports) {
                 var text = p;
                 if (collection[node].ports[p].alias != '') {
@@ -114,7 +114,7 @@ function renderLabels(collection, x, y, scale) {
         } else {
             py = (collection[node].y - collection[node].radius) * scale + y - 5;
         }
-        var alpha = opacity(collection[node].level);
+        var alpha = opacity(collection[node].level, "label");
 
         //ctx.font = fontsize + "em sans";
         ctx.globalAlpha = alpha * 0.5;
@@ -130,7 +130,7 @@ function renderLabels(collection, x, y, scale) {
     ctx.fillStyle = "#FFFFFF";
     ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 3;
-    ctx.globalAlpha = 1.0 - opacity(8);
+    ctx.globalAlpha = 1.0 - opacity(8, "label");
     ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.fillStyle = "#000000";
@@ -257,49 +257,52 @@ function drawArrow(x1, y1, x2, y2, thickness=1) {
 }
 
 //Given a node's level (subnet) return the opacity to render it at.
-function opacity(level) {
+function opacity(level, type) {
+    var startZoom = -Infinity
+    var endZoom = Infinity
+
     if (level == 8) {
-        if (scale <= zoom8) {
-            return 1.0;
-        } else if (scale >= zoom8*2) {
-            return 0.0;
+        endZoom = zLinks16;
+    }
+    else if (level == 16) {
+        endZoom = zLinks24;
+        if (type == "node") {
+            startZoom = zNodes16;
         } else {
-            return (scale - zoom8*2) / (-zoom8);
+            startZoom = zLinks16;
         }
-    } else if (level == 16) {
-        if (scale <= zoom8) {
-            return 0.0;
-        } else if (scale >= zoom16*2) {
-            return 0.0;
-        } else if (scale >= zoom8*2 && scale <= zoom16) {
-            return 1.0;
-        } else if (scale < zoom8*2) {
-            return 1 - (scale - zoom8*2) / (-zoom8);
-        } else if (scale > zoom16) {
-            return (scale - zoom16*2) / (-zoom16);
+    }
+    else if (level == 24) {
+        endZoom = zLinks32;
+        if (type == "node") {
+            startZoom = zNodes24;
+        } else {
+            startZoom = zLinks24;
         }
-    } else if (level == 24) {
-        if (scale <= zoom16) {
-            return 0.0;
-        } else if (scale >= zoom24*2) {
-            return 0.0;
-        } else if (scale >= zoom16*2 && scale <= zoom24) {
-            return 1.0;
-        } else if (scale < zoom16*2) {
-            return 1 - (scale - zoom16*2) / (-zoom16);
-        } else if (scale > zoom24) {
-            return (scale - zoom24*2) / (-zoom24);
+    }
+    else if (level == 32) {
+        if (type == "node") {
+            startZoom = zNodes32;
+        } else {
+            startZoom = zLinks32;
         }
-    } else if (level == 32) {
-        if (scale <= zoom24) {
-            return 0.0;
-        } else if (scale >= zoom24*2) {
-            return 1.0;
-        } else if (scale < zoom24*2) {
-            return 1 - (scale - zoom24*2) / (-zoom24);
-        }
-    } else {
+    }
+
+    if (scale <= startZoom) {
+        // before it's time
         return 0.0;
+    } else if (scale >= endZoom*2) {
+        // after it's time
+        return 0.0;
+    } else if (scale >= startZoom*2 && scale <= endZoom) {
+        // in it's time
+        return 1.0;
+    } else if (scale < startZoom*2) {
+        // ramping up, linearly
+        return 1 - (scale - startZoom*2) / (-startZoom);
+    } else {
+        // ramping down, linearly
+        return (scale - endZoom*2) / (-endZoom);
     }
 }
 
@@ -343,8 +346,6 @@ function onScreen() {
     var x;
     var y;
     var r;
-
-    var level = currentLevel();
 
     visible = onScreenRecursive(left, right, top, bottom, nodeCollection);
 

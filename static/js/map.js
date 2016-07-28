@@ -82,13 +82,13 @@ function init() {
 }
 
 function currentLevel() {
-    if (scale < zLinks16) {
+    if (scale < zNodes16) {
         return 8;
     }
-    if (scale < zLink24) {
+    if (scale < zNodes24) {
         return 16;
     }
-    if (scale < zLinks32) {
+    if (scale < zNodes32) {
         return 24;
     }
     return 32;
