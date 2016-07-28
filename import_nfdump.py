@@ -4,22 +4,7 @@ import subprocess
 import shlex
 import common
 import dbaccess
-
-
-def validate_file(path):
-    """
-    Check whether a given path is a file.
-    Args:
-        path: The path to verify is a file
-
-    Returns:
-        True or False
-    """
-    if os.path.isfile(path):
-        return True
-    else:
-        print("File not found:", path)
-        return False
+import import_paloalto
 
 
 def instructions():
@@ -41,12 +26,12 @@ def import_file(path_in):
     line_num = -1
     lines_inserted = 0
     counter = 0
+    # prepare buffer
     row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": ""}
     rows = [row.copy() for i in range(1000)]
 
-    #bypass the header line at the start of the file
+    # skip the titles line at the start of the file
     proc.stdout.readline()
-
 
     proc.poll()
     while proc.returncode == None:
@@ -58,12 +43,12 @@ def import_file(path_in):
         counter += 1
 
         if counter == 1000:
-            insert_data(rows, counter)
+            import_paloalto.insert_data(rows, counter)
             lines_inserted += counter
             counter = 0
         proc.poll()
     if counter != 0:
-        insert_data(rows, counter)
+        import_paloalto.insert_data(rows, counter)
         lines_inserted += counter
 
     proc.poll()
@@ -97,44 +82,12 @@ def translate(line, linenum, dictionary):
     return 0
 
 
-def insert_data(rows, count):
-    """
-    Attempt to insert the first 'count' items in 'rows' into the database table `samapper`.`Syslog`.
-    Exits script on critical failure.
-    Args:
-        rows: The iterable containing dictionaries to insert
-            (dictionaries must all have the same keys, matching column names)
-        count: The number of items from rows to insert
-
-    Returns:
-        None
-    """
-    try:
-        truncated_rows = rows[:count]
-        # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
-        # >>> db.multiple_insert('person', values=values, _test=True)
-        common.db.multiple_insert('Syslog', values=truncated_rows)
-    except Exception as e:
-        # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
-        if e[0] == 1049: # Unknown database 'samapper'
-            dbaccess.create_database()
-            insert_data(rows, count)
-        elif e[0] == 1045: # Access Denied for '%s'@'%s' (using password: (YES|NO))
-            print(e[1])
-            print("Check your username / password? (dbconfig_local.py)")
-            sys.exit(1)
-        else:
-            print("Critical failure.")
-            print(e.message)
-            sys.exit(2)
-
-
 def main(argv):
     if len(argv) != 2:
         instructions()
         return
 
-    if validate_file(argv[1]):
+    if import_paloalto.validate_file(argv[1]):
         import_file(argv[1])
     else:
         instructions()
