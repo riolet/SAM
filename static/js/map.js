@@ -66,6 +66,10 @@ function init() {
 
     updateFloatingPanel();
 
+    document.getElementById("show_clients").checked = config.show_clients;
+    document.getElementById("show_servers").checked = config.show_servers;
+    document.getElementById("show_in").checked = config.show_in;
+    document.getElementById("show_out").checked = config.show_out;
 
     $('.ui.accordion').accordion();
     $('.ui.dropdown')

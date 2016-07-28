@@ -242,9 +242,14 @@ function drawArrow(x1, y1, x2, y2, bIncoming=true) {
 
     var len = Math.hypot(dx, dy);
     // This fixes an issue Firefox has with drawing long lines at high zoom levels.
-    if (bIncoming && len * scale > 10000) {
-        x1 = (-dx) / len * (10000 / scale) + x2;
-        y1 = (-dy) / len * (10000 / scale) + y2;
+    if (len * scale > 10000) {
+        if (bIncoming) {
+            x1 = (-dx) / len * (10000 / scale) + x2;
+            y1 = (-dy) / len * (10000 / scale) + y2;
+        } else {
+            x2 = (dx) / len * (10000 / scale) + x1;
+            y2 = (dy) / len * (10000 / scale) + y1;
+        }
     }
     // make the arrowheads 30 pixels (screen coordinates)
     var xTemp = (-dx) / len * (30 / scale);
