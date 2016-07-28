@@ -25,13 +25,13 @@ var config = {
     "show_in": true,
     "show_out": false};
 
-// var zoom8 = 0.012;
-// var zoom16 = 0.3;
-// var zoom24 = 7.5;
-var zoom8 = 0.0108;
-var zoom16 = 0.27;
-var zoom24 = 6.75;
-
+//Constant.  Used for zoom levels in map::currentLevel and map_render::opacity
+var zNodes16 = 0.00231;
+var zLinks16 = 0.0111;
+var zNodes24 = 0.0555;
+var zLinks24 = 0.267;
+var zNodes32 = 1.333;
+var zLinks32 = 6.667;
 
 function init() {
     canvas = document.getElementById("canvas");
@@ -82,13 +82,13 @@ function init() {
 }
 
 function currentLevel() {
-    if (scale < zoom8) {
+    if (scale < zLinks16) {
         return 8;
     }
-    if (scale < zoom16) {
+    if (scale < zLink24) {
         return 16;
     }
-    if (scale < zoom24) {
+    if (scale < zLinks32) {
         return 24;
     }
     return 32;
