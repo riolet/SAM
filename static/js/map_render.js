@@ -181,9 +181,8 @@ function drawClusterNode(node) {
 }
 
 function renderLinks(node) {
-    var link = node.inputs
-
     if (config.show_in) {
+        var link = node.inputs;
         for (var i in link) {
             if (link[i].source8 == link[i].dest8
             && link[i].source16 == link[i].dest16
@@ -196,9 +195,16 @@ function renderLinks(node) {
         }
     }
     if (config.show_out) {
-        link = node.outputs
+        var link = node.outputs;
         for (var i in link) {
-            drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2);
+            if (link[i].source8 == link[i].dest8
+            && link[i].source16 == link[i].dest16
+            && link[i].source24 == link[i].dest24
+            && link[i].source32 == link[i].dest32) {
+                drawLoopArrow(node, link[i].links);
+            } else {
+                drawArrow(link[i].x1, link[i].y1, link[i].x2, link[i].y2, false);
+            }
         }
     }
 }
@@ -227,7 +233,7 @@ function drawLoopArrow(node) {
     ctx.lineTo(x4, y4);
 }
 
-function drawArrow(x1, y1, x2, y2) {
+function drawArrow(x1, y1, x2, y2, bIncoming=true) {
     var dx = x2-x1;
     var dy = y2-y1;
     if (Math.abs(dx) + Math.abs(dy) < 10) {
@@ -236,7 +242,7 @@ function drawArrow(x1, y1, x2, y2) {
 
     var len = Math.hypot(dx, dy);
     // This fixes an issue Firefox has with drawing long lines at high zoom levels.
-    if (len * scale > 10000) {
+    if (bIncoming && len * scale > 10000) {
         x1 = (-dx) / len * (10000 / scale) + x2;
         y1 = (-dy) / len * (10000 / scale) + y2;
     }
