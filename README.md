@@ -19,6 +19,10 @@ Pip - _optional_, but convenient for installing python packages
 
     apt-get install python-pip
 
+nfdump - _optional_, for importing Cisco binary NetFlow dumps
+
+    apt-get install nfdump
+
 ## Installation
 
 1. Clone the repository
@@ -28,12 +32,11 @@ Pip - _optional_, but convenient for installing python packages
 
 ## Usage
 
-1. Import log files via `import_paloalto.py`. The paloalto system log format is expected.  Other formats will be supported in the future.
-
-   For example: `python import_paloalto.py data/syslog.txt`
-
-   Repeat this for all your data logs before moving on to the next step.
-
+1. Import log files into database by any combination of the following methods:
+   1. Palo Alto logs: `import_paloalto.py <file>`. The paloalto system log format is expected.
+   2. nfdumps: `import_nfdump.py <file>` Binary files from **nfcapd** are expected. nfdump must be installed.
 2. Run the preprocessing script `python preprocess.py` to analyze and organize the data
+
 3. Start the server locally by running: `python server.py`
+
 4. Navigate your browser to localhost:8080 and use your mouse to explore the network map
