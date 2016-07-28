@@ -82,7 +82,6 @@ function checkLoD() {
     visible = onScreen();
 
     for (var i in visible) {
-        //TODO: mend this!
         if (visible[i].level < level && visible[i].childrenLoaded == false) {
             loadChildren(visible[i]);
         }
