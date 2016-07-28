@@ -115,72 +115,10 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
     return rows
 
 
-def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, filter=-1):
+def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
     inputs = []
 
-    if ipSegment1 < 0 or ipSegment1 > 255:
-        inputs = []
-    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
-        if filter == -1:
-            query = """
-                SELECT source8, dest8
-                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
-                FROM Links8
-                WHERE dest8 = $seg1
-                GROUP BY source8, dest8;
-                """
-        else:
-            query = """
-                SELECT source8, dest8, links, x1, y1, x2, y2
-                FROM Links8
-                WHERE dest8 = $seg1
-                    && port = $filter;
-                """
-        qvars = {'seg1': str(ipSegment1), 'filter':filter}
-        inputs = list(common.db.query(query, vars=qvars))
-    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
-        if filter == -1:
-            query = """
-                SELECT source8, source16, dest8, dest16
-                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
-                FROM Links16
-                WHERE dest8 = $seg1
-                    && dest16 = $seg2
-                GROUP BY source8, source16, dest8, dest16;
-                """
-        else:
-            query = """
-                SELECT source8, source16, dest8, dest16, links, x1, y1, x2, y2
-                FROM Links16
-                WHERE dest8 = $seg1
-                    && dest16 = $seg2
-                    && port = $filter;
-                """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'filter':filter}
-        inputs = list(common.db.query(query, vars=qvars))
-    elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
-        if filter == -1:
-            query = """
-                SELECT source8, source16, source24, dest8, dest16, dest24
-                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
-                FROM Links24
-                WHERE dest8 = $seg1
-                    && dest16 = $seg2
-                    && dest24 = $seg3
-                GROUP BY source8, source16, source24, dest8, dest16, dest24;
-                """
-        else:
-            query = """
-                SELECT source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2
-                FROM Links24
-                WHERE dest8 = $seg1
-                    && dest16 = $seg2
-                    && dest24 = $seg3
-                    && port = $filter;
-                """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'filter': filter}
-        inputs = list(common.db.query(query, vars=qvars))
-    else:
+    if 0 <= ip32 <= 255:
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
@@ -206,8 +144,70 @@ def getLinksIn(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, fi
                     && dest32 = $seg4
                     && Links32.port = $filter;
                 """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'seg4': str(ip32), 'filter': filter}
         inputs = list(common.db.query(query, vars=qvars))
+    elif 0 <= ip24 <= 255:
+        if filter == -1:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links24
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && dest24 = $seg3
+                GROUP BY source8, source16, source24, dest8, dest16, dest24;
+                """
+        else:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2
+                FROM Links24
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && dest24 = $seg3
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter}
+        inputs = list(common.db.query(query, vars=qvars))
+    elif 0 <= ip16 <= 255:
+        if filter == -1:
+            query = """
+                SELECT source8, source16, dest8, dest16
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links16
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                GROUP BY source8, source16, dest8, dest16;
+                """
+        else:
+            query = """
+                SELECT source8, source16, dest8, dest16, links, x1, y1, x2, y2
+                FROM Links16
+                WHERE dest8 = $seg1
+                    && dest16 = $seg2
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter':filter}
+        inputs = list(common.db.query(query, vars=qvars))
+    elif 0 <= ip8 <= 255:
+        if filter == -1:
+            query = """
+                SELECT source8, dest8
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links8
+                WHERE dest8 = $seg1
+                GROUP BY source8, dest8;
+                """
+        else:
+            query = """
+                SELECT source8, dest8, links, x1, y1, x2, y2
+                FROM Links8
+                WHERE dest8 = $seg1
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ip8), 'filter': filter}
+        inputs = list(common.db.query(query, vars=qvars))
+    else:
+        inputs = []
 
     return inputs
 

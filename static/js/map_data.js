@@ -143,11 +143,10 @@ function preprocessConnection32(links) {
     var destination = findNode(links[0].dest8, links[0].dest16,
                                links[0].dest24, links[0].dest32);
 
-    // I apologize for doing this this way...
     //
-    //    3 2
+    //    3_2
     //  4|   |1
-    //  5|   |0
+    //  5|___|0
     //    6 7
     //
     used = [false, false, false, false, false, false, false, false];
@@ -277,7 +276,6 @@ function preprocessConnection(link) {
         destination = findNode(link.dest8)
     }
 
-    //offset endpoints by radius
     var dx = link.x2 - link.x1;
     var dy = link.y2 - link.y1;
 
