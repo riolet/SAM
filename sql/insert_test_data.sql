@@ -62,5 +62,79 @@ GROUP BY source8, source16, dest8, dest16
 ;
 
 
+-- connections within the cluster (src/dst8 are same).  2 joins to attach src and dst coordinates
+SELECT source8, source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
+FROM
+    (SELECT SourceIP DIV 16777216 AS source8
+             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+             , DestinationIP DIV 16777216 AS dest8
+             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+             , DestinationPort as port
+             , COUNT(*) AS conns
+        FROM Syslog
+        WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
+        GROUP BY source8, source16, dest8, dest16, port)
+        AS main
+    JOIN
+        (SELECT parent8, address, x, y
+        FROM Nodes16)
+        AS src
+        ON (source8 = src.parent8 && source16 = src.address)
+    JOIN
+        (SELECT parent8, address, x, y
+        FROM Nodes16)
+        AS dst
+        ON (dest8 = dst.parent8 && dest16 = dst.address);
+
+-- inbound connections from outside the cluster.  2 joins to attach src and dst coordinates
+SELECT source8, -1 AS source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
+FROM
+    (SELECT SourceIP DIV 16777216 AS source8
+             , DestinationIP DIV 16777216 AS dest8
+             , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+             , DestinationPort as port
+             , COUNT(*) AS conns
+        FROM Syslog
+        WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
+        GROUP BY source8, dest8, dest16, port)
+        AS main
+    JOIN
+        (SELECT address, x, y
+        FROM Nodes8)
+        AS src
+        ON (source8 = src.address)
+    JOIN
+        (SELECT parent8, address, x, y
+        FROM Nodes16)
+        AS dst
+        ON (dest8 = dst.parent8 && dest16 = dst.address)
+UNION
+SELECT source8, source16, dest8, -1 AS dest16, port, conns, src.x, src.y, dst.x, dst.y
+FROM
+    (SELECT SourceIP DIV 16777216 AS source8
+             , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+             , DestinationIP DIV 16777216 AS dest8
+             , DestinationPort as port
+             , COUNT(*) AS conns
+        FROM Syslog
+        WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
+        GROUP BY source8, source16, dest8, port)
+        AS main
+    JOIN
+        (SELECT parent8, address, x, y
+        FROM Nodes16)
+        AS src
+        ON (source8 = src.parent8 && source16 = src.address)
+    JOIN
+        (SELECT address, x, y
+        FROM Nodes8)
+        AS dst
+        ON (dest8 = dst.address)
+
+SELECT -1 AS x, y
+FROM Nodes8
+UNION
+SELECT x, -1 AS y
+FROM Nodes8;
 
 

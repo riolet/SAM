@@ -276,7 +276,6 @@ function preprocessConnection(link) {
         destination = findNode(link.dest8)
     }
 
-    //offset endpoints by radius
     var dx = link.x2 - link.x1;
     var dy = link.y2 - link.y1;
 

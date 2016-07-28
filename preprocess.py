@@ -385,7 +385,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, -1 AS source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, 256 AS source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
@@ -407,7 +407,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, dest8, -1 AS dest16, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, dest8, 256 AS dest16, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -465,7 +465,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, -1, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -489,7 +489,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, -1, -1, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
@@ -511,7 +511,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, source24, dest8, dest16, -1, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, dest8, dest16, 256, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -535,7 +535,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, source24, dest8, -1, -1, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, dest8, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -590,7 +590,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, source24, -1, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, 256, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -617,7 +617,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, -1, -1, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, 256, 256, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -642,7 +642,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, -1, -1, -1, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, 256, 256, 256, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
@@ -665,7 +665,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, dest24, -1, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 256, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -692,7 +692,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, -1, -1, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -717,7 +717,7 @@ def import_links():
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, -1, -1, -1, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, 256, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
