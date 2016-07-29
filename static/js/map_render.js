@@ -375,6 +375,7 @@ function onScreen() {
             filtered.push(visible[node]);
         }
     }
+    filtered.sort(function(a, b){ return a.level - b.level;});
     return filtered;
 }
 
