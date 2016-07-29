@@ -28,13 +28,14 @@ nfdump - _optional_, for importing Cisco binary NetFlow dumps
 1. Clone the repository
 2. Run `pip install -r requirements.txt` from within the directory. (Or do so manually--See text file for package names)
 3. Duplicate `dbconfig.py` as `dbconfig_local.py` and fill out database credentials
-3. Run `setup.py` from command line
 
 ## Usage
 
 1. Import log files into database by any combination of the following methods:
-   1. Palo Alto logs: `import_paloalto.py <file>`. The paloalto system log format is expected.
+   1. Palo Alto logs: `import_paloalto.py <file>`. The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
    2. nfdumps: `import_nfdump.py <file>` Binary files from **nfcapd** are expected. nfdump must be installed.
+
+   Import from all files before going to step 2
 2. Run the preprocessing script `python preprocess.py` to analyze and organize the data
 
 3. Start the server locally by running: `python server.py`
