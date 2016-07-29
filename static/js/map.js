@@ -15,7 +15,7 @@ var scale = 0.0007;
 var map = {};
 
 var nodeCollection = {};
-var renderCollection;
+var renderCollection = [];
 var currentSubnet = "";
 var selection = null;
 var filter = "";
