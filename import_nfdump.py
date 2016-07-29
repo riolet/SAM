@@ -9,7 +9,7 @@ import import_paloalto
 
 def instructions():
     print("""
-This program imports a nfdump into the MySQL database.
+This program imports a nfdump into the MySQL database.  The file must be binary data from nfcapd.
 It extracts IP addresses and ports and discards other data. Only TCP traffic data is imported.
 
 Usage:
@@ -18,7 +18,6 @@ Usage:
 
 
 def import_file(path_in):
-    pass
     # Assume a binary file as input
     args = shlex.split('nfdump -r {0} -o "fmt:%pr,%sa,%sp,%da,%dp,%byt,%bps"'.format(path_in))
     proc = subprocess.Popen(args, bufsize=1, stdout=subprocess.PIPE)
