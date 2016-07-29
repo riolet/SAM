@@ -192,8 +192,6 @@ function applysearch(event=null) {
 function onResize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - navBarHeight;
-    width = canvas.width;
-    height = canvas.height;
     rect = canvas.getBoundingClientRect();
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);

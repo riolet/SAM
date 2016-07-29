@@ -11,7 +11,7 @@ function render(x, y, scale) {
     ctx.resetTransform();
     ctx.fillStyle = "#AAFFDD";
     ctx.globalAlpha = 1.0;
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (Object.keys(nodeCollection).length == 0) {
         ctx.fillStyle = "#996666";

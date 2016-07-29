@@ -39,8 +39,6 @@ function init() {
     $('#output').css('top', navBarHeight);
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - navBarHeight;
-    width = canvas.width;
-    height = canvas.height;
     rect = canvas.getBoundingClientRect();
     tx = rect.width / 2;
     ty = rect.height / 2;
