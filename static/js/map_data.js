@@ -60,7 +60,7 @@ function onLoadData(result) {
     // where each object has address, alias, connections, x, y, radius,
     nodeCollection = {};
     for (var row in result) {
-        name = result[row].address;
+        var name = result[row].address;
         nodeCollection[result[row].address] = new Node(name, name, result[row].address, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
     }
     for (var i in nodeCollection) {
@@ -78,8 +78,8 @@ function onLoadData(result) {
 }
 
 function checkLoD() {
-    level = currentLevel();
-    visible = onScreen();
+    var level = currentLevel();
+    var visible = onScreen();
 
     for (var i in visible) {
         if (visible[i].level < level && visible[i].childrenLoaded == false) {
@@ -109,7 +109,7 @@ function loadChildren(node, callback=null) {
         success: function(result) {
         for (var row in result) {
             //console.log("Loaded " + node.alias + " -> " + result[row].address);
-            name = node.alias + "." + result[row].address;
+            var name = node.alias + "." + result[row].address;
             node.children[result[row].address] = new Node(name, name, result[row].address, node.level + 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
         }
         // process the connections

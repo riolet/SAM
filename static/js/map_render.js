@@ -443,6 +443,7 @@ function onScreen() {
 
 function onScreenRecursive(left, right, top, bottom, collection) {
     var selected = [];
+    var x, y, r;
     for (var node in collection) {
         x = collection[node].x;
         y = collection[node].y;
