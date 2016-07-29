@@ -4,6 +4,10 @@ function updateRenderRoot() {
 }
 
 function render(x, y, scale) {
+    if (renderCollection.length == 0) {
+        return;
+    }
+
     ctx.resetTransform();
     ctx.fillStyle = "#AAFFDD";
     ctx.globalAlpha = 1.0;
@@ -19,59 +23,120 @@ function render(x, y, scale) {
 
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
-    ctx.lineWidth = 1;
-    ctx.fillStyle = "#0000FF";
-    ctx.strokeStyle = "#5555CC";
-
     renderClusters(renderCollection, x, y, scale);
 }
 
 function renderClusters(collection, x, y, scale) {
     var level = currentLevel();
-    var alpha = 1.0;
+    var alpha = 0;
+    var skip = false;
+    var colorSelected = "#BFBFFF";
+    var colorNormal = "#5555CC";
+    var colorUnselected = "#95D5D9";
+    if (selection == null) {
+        ctx.strokeStyle = colorNormal;
+    } else {
+        ctx.strokeStyle = colorUnselected;
+    }
+    ctx.globalAlpha = 1;
 
+    //Draw the graph edges
+    ctx.lineWidth = 2 / scale;
+    drawingLevel = collection[0].level;
+    ctx.beginPath();
+    alpha = opacity(collection[0].level, "links");
+    ctx.globalAlpha = alpha;
+    skip = alpha == 0 ? true : false;
+    for (var node in collection) {
+        if (collection[node].level != drawingLevel) {
+            ctx.stroke();
+            ctx.beginPath();
+            alpha = opacity(collection[node].level, "links");
+            ctx.globalAlpha = alpha;
+            skip = alpha == 0 ? true : false;
+            drawingLevel = collection[node].level;
+        }
+        if (skip) {
+            continue;
+        }
+        renderLinks(collection[node]);
+    }
+    ctx.stroke();
+
+    // Draw the graph nodes
     ctx.lineWidth = 5 / scale;
-
+    var drawingLevel = collection[0].level;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    alpha = opacity(collection[0].level, "node");
+    ctx.globalAlpha = alpha
+    skip = alpha == 0 ? true : false;
     for (var node in collection) {
         if (collection[node].level > level) {
             return;
         }
 
-        ctx.globalAlpha = opacity(collection[node].level, "node");
-        if (collection[node] == selection) {
-            ctx.strokeStyle = "#BFBFFF";
-        } else {
-            ctx.strokeStyle = "#5555CC";
+        if (collection[node].level != drawingLevel) {
+            ctx.stroke();
+            ctx.beginPath();
+            alpha = opacity(collection[node].level, "node");
+            ctx.globalAlpha = alpha
+            skip = alpha == 0 ? true : false;
+            drawingLevel = collection[node].level;
         }
-        drawClusterNode(collection[node]);
+        if (skip) {
+            continue;
+        }
+        renderNode(collection[node]);
     }
+    ctx.stroke();
 
-    ctx.lineWidth = 2 / scale;
-    for (var node in collection) {
-        ctx.beginPath();
-        ctx.globalAlpha = opacity(collection[node].level, "links");
-        renderLinks(collection[node]);
-        ctx.stroke();
-    }
-
-    renderLabels(collection, x, y, scale);
-}
-
-function renderLabels(collection, x, y, scale) {
+    //Draw the labels
     ctx.resetTransform();
     ctx.font = "1.5em sans";
     ctx.fillStyle = "#000000";
+    for (var node in collection) {
+        renderLabels(collection[node], x, y, scale);
+    }
+
+    //Draw the selected item over top everything else
+    if (selection != null) {
+        ctx.setTransform(scale, 0, 0, scale, x, y, 1);
+        ctx.strokeStyle = colorNormal;
+        ctx.globalAlpha = 1;
+
+        //ctx.globalAlpha = opacity(selection.level, "links");
+        ctx.lineWidth = 2 / scale;
+        ctx.beginPath();
+        renderLinks(selection);
+        ctx.stroke();
+
+        //ctx.globalAlpha = opacity(selection.level, "node");
+        ctx.lineWidth = 5 / scale;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        renderNode(selection);
+        ctx.stroke();
+
+        ctx.resetTransform();
+        ctx.font = "1.5em sans";
+        ctx.fillStyle = "#000000";
+        renderLabels(selection, x, y, scale);
+    }
+
+    renderSubnetLabel(x, y, scale);
+}
+
+function renderLabels(node, x, y, scale) {
     if (scale > 25) {
         //Draw port labels here
-        for (var node in collection) {
-            if (collection[node].level < 32) {
-                continue;
-            }
-            ctx.globalAlpha = opacity(collection[node].level, "label");
-            for (var p in collection[node].ports) {
+        var alpha = opacity(32, "label");
+        ctx.globalAlpha = (selection == null || selection === node) ? alpha : alpha * 0.33;
+        if (node.level == 32) {
+            for (var p in node.ports) {
                 var text = p;
-                if (collection[node].ports[p].alias != '') {
-                    text = collection[node].ports[p].alias;
+                if (node.ports[p].alias != '') {
+                    text = node.ports[p].alias;
                 }
                 ctx.font = "1.5em sans";
                 var sizeMin = ctx.measureText("mmmmm");
@@ -81,26 +146,25 @@ function renderLabels(collection, x, y, scale) {
                 var newSize = (1.2 * scale) / size * 1.6;
                 ctx.font = newSize.toString() + "em sans";
                 size = ctx.measureText(text).width;
-                //node.ports[p].x
-                if (collection[node].ports[p].side == "left") {
-                    var px = collection[node].ports[p].x * scale + x - size / 2;
-                    var py = collection[node].ports[p].y * scale + y + hOffset;
+                if (node.ports[p].side == "left") {
+                    var px = node.ports[p].x * scale + x - size / 2;
+                    var py = node.ports[p].y * scale + y + hOffset;
                     ctx.fillText(text, px, py);
-                } else if (collection[node].ports[p].side == "right") {
-                    var px = collection[node].ports[p].x * scale + x - size / 2;
-                    var py = collection[node].ports[p].y * scale + y + hOffset;
+                } else if (node.ports[p].side == "right") {
+                    var px = node.ports[p].x * scale + x - size / 2;
+                    var py = node.ports[p].y * scale + y + hOffset;
                     ctx.fillText(text, px, py);
-                } else if (collection[node].ports[p].side == "top") {
-                    var px = collection[node].ports[p].x * scale + x;
-                    var py = collection[node].ports[p].y * scale + y;
+                } else if (node.ports[p].side == "top") {
+                    var px = node.ports[p].x * scale + x;
+                    var py = node.ports[p].y * scale + y;
                     ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(Math.PI/2);
                     ctx.fillText(text, -size / 2, hOffset);
                     ctx.restore();
-                } else if (collection[node].ports[p].side == "bottom") {
-                    var px = collection[node].ports[p].x * scale + x;
-                    var py = collection[node].ports[p].y * scale + y;
+                } else if (node.ports[p].side == "bottom") {
+                    var px = node.ports[p].x * scale + x;
+                    var py = node.ports[p].y * scale + y;
                     ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(Math.PI/2);
@@ -110,29 +174,30 @@ function renderLabels(collection, x, y, scale) {
             }
         }
     }
+    //Draw node labels here
     ctx.font = "1.5em sans";
-    for (var node in collection) {
-        //Draw node labels here
-        var text = collection[node].number;
-        var size = ctx.measureText(text);
-        var px = collection[node].x * scale + x - size.width / 2;
-        var py;
-        if (collection[node].level == 32) {
-            py = collection[node].y * scale + y + 10;
-        } else {
-            py = (collection[node].y - collection[node].radius) * scale + y - 5;
-        }
-        var alpha = opacity(collection[node].level, "label");
-
-        //ctx.font = fontsize + "em sans";
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(px, py + 2, size.width, -21);
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = "#000000";
-        ctx.fillText(text, px, py);
+    var text = node.number;
+    var size = ctx.measureText(text);
+    var px = node.x * scale + x - size.width / 2;
+    var py;
+    if (node.level == 32) {
+        py = node.y * scale + y + 10;
+    } else {
+        py = (node.y - node.radius) * scale + y - 5;
     }
-    //Draw region label
+    var alpha = opacity(node.level, "label");
+
+    //ctx.font = fontsize + "em sans";
+    ctx.globalAlpha = ((selection == null || selection === node) ? alpha : alpha * 0.33) * 0.5;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(px, py + 2, size.width, -21);
+    ctx.globalAlpha = (selection == null || selection === node) ? alpha : alpha * 0.33;
+    ctx.fillStyle = "#000000";
+    ctx.fillText(text, px, py);
+}
+
+function renderSubnetLabel() {
+    //Draw subnet label
     ctx.font = "3em sans";
     var size = ctx.measureText(currentSubnet);
     ctx.fillStyle = "#FFFFFF";
@@ -143,16 +208,13 @@ function renderLabels(collection, x, y, scale) {
     ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.fillStyle = "#000000";
     ctx.fillText(currentSubnet, (rect.width - size.width) / 2, 55);
-
 }
 
-function drawClusterNode(node) {
+function renderNode(node) {
     if (node.level < 31) {
-        ctx.beginPath();
+        ctx.moveTo(node.x + node.radius, node.y);
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
-        ctx.stroke();
     } else {
-        ctx.fillStyle = "#FFFFFF";
         //terminal node (final IP address)
         ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius*2, node.radius * 2);
         //draw ports
@@ -375,7 +437,7 @@ function onScreen() {
             filtered.push(visible[node]);
         }
     }
-    filtered.sort(function(a, b){ return a.level - b.level;});
+    filtered.sort(function(a, b){ return b.level - a.level;});
     return filtered;
 }
 
