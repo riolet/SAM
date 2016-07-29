@@ -1,23 +1,24 @@
 var canvas;
 var ctx;
-var width;
-var height;
-var rect;
-var navBarHeight;
+var rect; //render region on screen
 
+//global transform coordinates, with initial values
+var tx = 0;
+var ty = 0;
+var scale = 0.0007;
+
+//mouse interaction variables
 var ismdown = false;
 var mdownx, mdowny;
 var mx, my;
-var tx = 532;
-var ty = 288;
-var scale = 0.0007;
 
-var map = {};
-
+//store the data displayed in the map
 var nodeCollection = {};
 var renderCollection = [];
-var currentSubnet = "";
 var selection = null;
+var currentSubnet = "";
+
+//settings/options data
 var filter = "";
 var config = {
     "show_clients": true,
@@ -25,7 +26,7 @@ var config = {
     "show_in": true,
     "show_out": false};
 
-//Constant.  Used for zoom levels in map::currentLevel and map_render::opacity
+//Constants.  Used for zoom levels in map::currentLevel and map_render::opacity
 var zNodes16 = 0.00231;
 var zLinks16 = 0.0111;
 var zNodes24 = 0.0555;
@@ -33,9 +34,10 @@ var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
 
+
 function init() {
     canvas = document.getElementById("canvas");
-    navBarHeight = $('#navbar').height();
+    var navBarHeight = $('#navbar').height();
     $('#output').css('top', navBarHeight);
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - navBarHeight;
@@ -45,7 +47,6 @@ function init() {
     ctx = canvas.getContext("2d");
     ctx.lineJoin = "bevel";
 
-
     //Event listeners for detecting clicks and zooms
     canvas.addEventListener('mousedown', mousedown);
     canvas.addEventListener('mousemove', mousemove);
@@ -54,13 +55,13 @@ function init() {
     canvas.addEventListener('wheel', wheel);
     window.addEventListener('keydown',keydown,false);
 
-    filterElement = document.getElementById("filter");
+    var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
     filter = filterElement.value;
 
-    filterElement = document.getElementById("search");
-    filterElement.value = "";
-    filterElement.oninput = onsearch;
+    var searchElement = document.getElementById("search");
+    searchElement.value = "";
+    searchElement.oninput = onsearch;
 
     updateFloatingPanel();
 
@@ -79,8 +80,6 @@ function init() {
     $('table.sortable').tablesort();
 
     loadData();
-
-    render(tx, ty, scale);
 }
 
 function currentLevel() {
