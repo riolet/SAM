@@ -1,3 +1,5 @@
+"use strict";
+
 function mousedown(event) {
     deselectText();
     mdownx = event.clientX - rect.left;
@@ -19,7 +21,7 @@ function deselectText() {
 
 function mouseup(event) {
     if (ismdown == false) {
-        return
+        return;
     }
 
     ismdown = false;
@@ -40,7 +42,7 @@ function mouseup(event) {
 
 function mousemove(event) {
     if (ismdown == false) {
-        return
+        return;
     }
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
@@ -97,15 +99,15 @@ function pick(x, y) {
     var best = null;
     var bestDist = +Infinity;
     var tempDist = 0;
-    for (var i in renderCollection) {
-        if (contains(renderCollection[i], x, y)) {
-            tempDist = distanceSquared(x, y, renderCollection[i].x, renderCollection[i].y)
-            if (tempDist < bestDist || renderCollection[i].level > best.level) {
+    renderCollection.forEach(function(node, i, array) {
+        if (contains(node, x, y)) {
+            tempDist = distanceSquared(x, y, node.x, node.y);
+            if (tempDist < bestDist || node.level > best.level) {
                 bestDist = tempDist;
-                best = renderCollection[i];
+                best = node;
             }
         }
-    }
+    });
     if (best != null && best.level < currentLevel() - 8) {
         best = null;
     }
@@ -134,14 +136,14 @@ function onfilter(event) {
     g_timer = setTimeout(applyfilter, 700);
 }
 
-function applyfilter(event=null) {
-    filterElement = document.getElementById("filter");
-    filter = filterElement.value;
+function applyfilter(event) {
+    filter = document.getElementById("filter").value;
     updateSelection(null);
-    nodeCollection = null;
+    nodeCollection = {};
     currentSubnet = "";
-    updateRenderRoot()
+    updateRenderRoot();
     loadData();
+    render(tx, ty, scale);
 }
 function onsearch(event) {
     if (g_timer != null) {
@@ -150,30 +152,35 @@ function onsearch(event) {
     g_timer = setTimeout(applysearch, 700);
 }
 
-function applysearch(event=null) {
-    searchElement = document.getElementById("search");
+function applysearch(event) {
+    var searchElement = document.getElementById("search");
     var target = searchElement.value;
     var ips = target.split(".");
     var segment;
     var subnet = null;
+    var i = 0;
 
-    for (var i in ips) {
-        if (ips[i] == "") continue;
+    for (i in ips) {
+        if (ips[i] == "") {
+            continue;
+        }
         segment = Number(ips[i]);
-        if (Number.isNaN(segment) || segment < 0 || segment > 255) break;
+        if (Number.isNaN(segment) || segment < 0 || segment > 255) {
+            break;
+        }
         if (subnet == null) {
             if (segment in nodeCollection) {
-                subnet = nodeCollection[segment]
+                subnet = nodeCollection[segment];
             } else {
                 break;
             }
         } else {
             if (!subnet.childrenLoaded && subnet.level < 32) {
-                loadChildren(subnet, callback=applysearch);
+                loadChildren(subnet, applysearch);
                 return;
             }
             if (segment in subnet.children) {
-                subnet = subnet.children[segment]
+                subnet = subnet.children[segment];
             } else {
                 break;
             }
@@ -191,7 +198,7 @@ function applysearch(event=null) {
 
 function onResize() {
     canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - $('#navbar').height();
+    canvas.height = window.innerHeight - $("#navbar").height();
     rect = canvas.getBoundingClientRect();
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render(tx, ty, scale);
@@ -216,16 +223,16 @@ function updateFloatingPanel() {
     heightAvailable -= 10; //for padding
     heightAvailable -= 10; //for borders
 
-    contentTitles = $("#selectionInfo div.title");
-    for (var i = 0; i < contentTitles.length; i++) {
+    var contentTitles = $("#selectionInfo div.title");
+    for (let i = 0; i < contentTitles.length; i++) {
         //offsetHeight is height + vertical padding + vertical borders
         heightAvailable -= contentTitles[i].offsetHeight;
     }
-    heightAvailable -= document.getElementById('selectionName').offsetHeight;
-    heightAvailable -= document.getElementById('selectionNumber').offsetHeight;
+    heightAvailable -= document.getElementById("selectionName").offsetHeight;
+    heightAvailable -= document.getElementById("selectionNumber").offsetHeight;
 
-    contentBlocks = $("#selectionInfo div.content");
-    for (var i = 0; i < contentBlocks.length; i++) {
+    var contentBlocks = $("#selectionInfo div.content");
+    for (let i = 0; i < contentBlocks.length; i++) {
         contentBlocks[i].style.maxHeight = heightAvailable + "px";
     }
 }

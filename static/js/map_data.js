@@ -1,3 +1,5 @@
+"use strict";
+
 function loadData() {
     $.ajax({
         url: "/query",
@@ -26,8 +28,8 @@ Node.prototype = {
 };
 
 function Node(alias, address, number, level, connections, x, y, radius, inputs, outputs) {
-    this.alias = alias;
-    this.address = address;
+    this.alias = alias.toString();
+    this.address = address.toString();
     this.number = number;
     this.level = level;
     this.connections = connections;
@@ -58,19 +60,21 @@ function onLoadData(result) {
     // result should be a json object.
     // I am expecting `result` to be an array of objects
     // where each object has address, alias, connections, x, y, radius,
+    console.log(result);
     nodeCollection = {};
-    for (var row in result) {
-        var name = result[row].address;
-        nodeCollection[result[row].address] = new Node(name, name, result[row].address, 8, result[row].connections, result[row].x, result[row].y, result[row].radius, result[row].inputs, result[row].outputs);
-    }
-    for (var i in nodeCollection) {
-        for (var j in nodeCollection[i].inputs) {
-            preprocessConnection(nodeCollection[i].inputs[j])
-        }
-        for (var j in nodeCollection[i].outputs) {
-            preprocessConnection(nodeCollection[i].outputs[j])
-        }
-    }
+    result.forEach(function (node, i, array) {
+        var name = node.address;
+        nodeCollection[node.address] = new Node(name, name, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+    });
+
+    Object.keys(nodeCollection).forEach(function (key, i, array) {
+        nodeCollection[key].inputs.forEach(function (link, i, array) {
+            preprocessConnection(link);
+        });
+        nodeCollection[key].outputs.forEach(function (link, i, array) {
+            preprocessConnection(link);
+        });
+    });
 
     resetViewport(nodeCollection);
     updateRenderRoot();
@@ -81,11 +85,11 @@ function checkLoD() {
     var level = currentLevel();
     var visible = onScreen();
 
-    for (var i in visible) {
-        if (visible[i].level < level && visible[i].childrenLoaded == false) {
-            loadChildren(visible[i]);
+    visible.forEach(function (node, i, array) {
+        if (node.level < level && node.childrenLoaded == false) {
+            loadChildren(node);
         }
-    }
+    });
     updateRenderRoot();
     render(tx, ty, scale);
 }
@@ -94,7 +98,7 @@ function loadChildren(node, callback=null) {
     node.childrenLoaded = true;
     //console.log("Loading children of " + node.address);
     var temp = node.address.split(".");
-    requestData = {};
+    var requestData = {};
     if (0 in temp) requestData.ip8 = temp[0]; else requestData.ip8 = -1;
     if (1 in temp) requestData.ip16 = temp[1]; else requestData.ip16 = -1;
     if (2 in temp) requestData.ip24 = temp[2]; else requestData.ip24 = -1;
@@ -149,16 +153,16 @@ function preprocessConnection32(links) {
     //  5|___|0
     //    6 7
     //
-    used = [false, false, false, false, false, false, false, false];
-    locations = [ {'x':destination.x + destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'right'}
-                , {'x':destination.x + destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'right'}
-                , {'x':destination.x + destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
-                , {'x':destination.x - destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
-                , {'x':destination.x - destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'left'}
-                , {'x':destination.x - destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'left'}
-                , {'x':destination.x - destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
-                , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
-                ];
+    var used = [false, false, false, false, false, false, false, false];
+    var locations = [ {'x':destination.x + destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'right'}
+                    , {'x':destination.x + destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'right'}
+                    , {'x':destination.x + destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
+                    , {'x':destination.x - destination.radius/3, 'y':destination.y - destination.radius, 'alias': '', 'side': 'top'}
+                    , {'x':destination.x - destination.radius, 'y':destination.y - destination.radius/3, 'alias': '', 'side': 'left'}
+                    , {'x':destination.x - destination.radius, 'y':destination.y + destination.radius/3, 'alias': '', 'side': 'left'}
+                    , {'x':destination.x - destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
+                    , {'x':destination.x + destination.radius/3, 'y':destination.y + destination.radius, 'alias': '', 'side': 'bottom'}
+                    ];
 
     var ports = {}
     for (var j in links) {
@@ -331,7 +335,7 @@ function updateSelection(node) {
     document.getElementById("selectionName").innerHTML = "Loading details...";
 
     var temp = node.address.split(".");
-    requestData = {};
+    var requestData = {};
     if (0 in temp) requestData.ip8 = temp[0]; else requestData.ip8 = -1;
     if (1 in temp) requestData.ip16 = temp[1]; else requestData.ip16 = -1;
     if (2 in temp) requestData.ip24 = temp[2]; else requestData.ip24 = -1;
@@ -353,14 +357,15 @@ function updateSelection(node) {
             var conn_in = "";
             var conn_out = "";
             var ports_in = "";
+            var port_info;
             for (var i in result.conn_in) {
                 conn_in += "<tr><td rowspan=\"" + result.conn_in[i][1].length + "\">" + result.conn_in[i][0] + "</td>";
                 for (var j in result.conn_in[i][1]) {
-                    portInfo = result.conn_in[i][1][j];
-                    if (portInfo.shortname === null) {
-                        conn_in += "<td>" + portInfo.port + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                    port_info = result.conn_in[i][1][j];
+                    if (port_info.shortname === null) {
+                        conn_in += "<td>" + port_info.port + "</td><td>" + port_info.links + "</td></tr><tr>";
                     } else {
-                        conn_in += "<td>" + portInfo.port + " - " + portInfo.shortname + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                        conn_in += "<td>" + port_info.port + " - " + port_info.shortname + "</td><td>" + port_info.links + "</td></tr><tr>";
                     }
                 }
                 //erase the last opening <tr> tag
@@ -369,11 +374,11 @@ function updateSelection(node) {
             for (var i in result.conn_out) {
                 conn_out += "<tr><td rowspan=\"" + result.conn_out[i][1].length + "\">" + result.conn_out[i][0] + "</td>";
                 for (var j in result.conn_out[i][1]) {
-                    portInfo = result.conn_out[i][1][j];
-                    if (portInfo.shortname === null) {
-                        conn_out += "<td>" + portInfo.port + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                    port_info = result.conn_out[i][1][j];
+                    if (port_info.shortname === null) {
+                        conn_out += "<td>" + port_info.port + "</td><td>" + port_info.links + "</td></tr><tr>";
                     } else {
-                        conn_out += "<td>" + portInfo.port + " - " + portInfo.shortname + "</td><td>" + portInfo.links + "</td></tr><tr>";
+                        conn_out += "<td>" + port_info.port + " - " + port_info.shortname + "</td><td>" + port_info.links + "</td></tr><tr>";
                     }
                 }
                 //erase the last opening <tr> tag

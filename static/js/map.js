@@ -1,3 +1,5 @@
+"use strict";
+
 var canvas;
 var ctx;
 var rect; //render region on screen
@@ -9,8 +11,10 @@ var scale = 0.0007;
 
 //mouse interaction variables
 var ismdown = false;
-var mdownx, mdowny;
-var mx, my;
+var mdownx;
+var mdowny;
+var mx;
+var my;
 
 //store the data displayed in the map
 var nodeCollection = {};
@@ -24,7 +28,8 @@ var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
-    "show_out": false};
+    "show_out": false
+};
 
 //Constants.  Used for zoom levels in map::currentLevel and map_render::opacity
 var zNodes16 = 0.00231;
@@ -37,8 +42,8 @@ var zLinks32 = 6.667;
 
 function init() {
     canvas = document.getElementById("canvas");
-    var navBarHeight = $('#navbar').height();
-    $('#output').css('top', navBarHeight);
+    var navBarHeight = $("#navbar").height();
+    $("#output").css("top", navBarHeight);
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - navBarHeight;
     rect = canvas.getBoundingClientRect();
@@ -48,12 +53,12 @@ function init() {
     ctx.lineJoin = "bevel";
 
     //Event listeners for detecting clicks and zooms
-    canvas.addEventListener('mousedown', mousedown);
-    canvas.addEventListener('mousemove', mousemove);
-    canvas.addEventListener('mouseup', mouseup);
-    canvas.addEventListener('keydown', mouseup);
-    canvas.addEventListener('wheel', wheel);
-    window.addEventListener('keydown',keydown,false);
+    canvas.addEventListener("mousedown", mousedown);
+    canvas.addEventListener("mousemove", mousemove);
+    canvas.addEventListener("mouseup", mouseup);
+    canvas.addEventListener("keydown", mouseup);
+    canvas.addEventListener("wheel", wheel);
+    window.addEventListener("keydown", keydown, false);
 
     var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
@@ -70,14 +75,12 @@ function init() {
     document.getElementById("show_in").checked = config.show_in;
     document.getElementById("show_out").checked = config.show_out;
 
-    $('.ui.accordion').accordion();
-    $('.ui.dropdown')
-    .dropdown({
-        //action: 'none'
+    $(".ui.accordion").accordion();
+    $(".ui.dropdown").dropdown({
         action: updateConfig
     });
-    $('.input.icon').popup();
-    $('table.sortable').tablesort();
+    $(".input.icon").popup();
+    $("table.sortable").tablesort();
 
     loadData();
 }
@@ -95,20 +98,33 @@ function currentLevel() {
     return 32;
 }
 
-function findNode(seg1=-1, seg2=-1, seg3=-1, seg4=-1) {
-    if (seg1 in nodeCollection) {
-        if (seg2 in nodeCollection[seg1].children) {
-            if (seg3 in nodeCollection[seg1].children[seg2].children) {
-                if (seg4 in nodeCollection[seg1].children[seg2].children[seg3].children) {
-                    return nodeCollection[seg1].children[seg2].children[seg3].children[seg4];
+function findNode(ip8, ip16, ip24, ip32) {
+    if (ip8 === undefined) {
+        ip8 = -1;
+    }
+    if (ip16 === undefined) {
+        ip16 = -1;
+    }
+    if (ip24 === undefined) {
+        ip24 = -1;
+    }
+    if (ip32 === undefined) {
+        ip32 = -1;
+    }
+
+    if (ip8 in nodeCollection) {
+        if (ip16 in nodeCollection[ip8].children) {
+            if (ip24 in nodeCollection[ip8].children[ip16].children) {
+                if (ip32 in nodeCollection[ip8].children[ip16].children[ip24].children) {
+                    return nodeCollection[ip8].children[ip16].children[ip24].children[ip32];
                 } else {
-                    return nodeCollection[seg1].children[seg2].children[seg3];
+                    return nodeCollection[ip8].children[ip16].children[ip24];
                 }
             } else {
-                return nodeCollection[seg1].children[seg2];
+                return nodeCollection[ip8].children[ip16];
             }
         } else {
-            return nodeCollection[seg1];
+            return nodeCollection[ip8];
         }
     } else {
         return null;
