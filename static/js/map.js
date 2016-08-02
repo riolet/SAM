@@ -1,31 +1,35 @@
 var canvas;
 var ctx;
-var width;
-var height;
-var rect;
-var navBarHeight;
+var rect; //render region on screen
 
-var ismdown = false;
-var mdownx, mdowny;
-var mx, my;
-var tx = 532;
-var ty = 288;
+//global transform coordinates, with initial values
+var tx = 0;
+var ty = 0;
 var scale = 0.0007;
 
-var map = {};
+//mouse interaction variables
+var ismdown = false;
+var mdownx;
+var mdowny;
+var mx;
+var my;
 
+//store the data displayed in the map
 var nodeCollection = {};
 var renderCollection = [];
-var currentSubnet = "";
 var selection = null;
+var currentSubnet = "";
+
+//settings/options data
 var filter = "";
 var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
-    "show_out": false};
+    "show_out": false
+};
 
-//Constant.  Used for zoom levels in map::currentLevel and map_render::opacity
+//Constants.  Used for zoom levels in map::currentLevel and map_render::opacity
 var zNodes16 = 0.00231;
 var zLinks16 = 0.0111;
 var zNodes24 = 0.0555;
@@ -33,36 +37,37 @@ var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
 
+//for filtering and searching
+var g_timer = null;
+
 function init() {
+    "use strict";
     canvas = document.getElementById("canvas");
-    navBarHeight = $('#navbar').height();
-    $('#output').css('top', navBarHeight);
+    var navBarHeight = $("#navbar").height();
+    $("#output").css("top", navBarHeight);
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - navBarHeight;
-    width = canvas.width;
-    height = canvas.height;
     rect = canvas.getBoundingClientRect();
     tx = rect.width / 2;
     ty = rect.height / 2;
     ctx = canvas.getContext("2d");
     ctx.lineJoin = "bevel";
 
-
     //Event listeners for detecting clicks and zooms
-    canvas.addEventListener('mousedown', mousedown);
-    canvas.addEventListener('mousemove', mousemove);
-    canvas.addEventListener('mouseup', mouseup);
-    canvas.addEventListener('keydown', mouseup);
-    canvas.addEventListener('wheel', wheel);
-    window.addEventListener('keydown',keydown,false);
+    canvas.addEventListener("mousedown", mousedown);
+    canvas.addEventListener("mousemove", mousemove);
+    canvas.addEventListener("mouseup", mouseup);
+    canvas.addEventListener("mouseout", mouseup);
+    canvas.addEventListener("wheel", wheel);
+    window.addEventListener("keydown", keydown, false);
 
-    filterElement = document.getElementById("filter");
+    var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
     filter = filterElement.value;
 
-    filterElement = document.getElementById("search");
-    filterElement.value = "";
-    filterElement.oninput = onsearch;
+    var searchElement = document.getElementById("search");
+    searchElement.value = "";
+    searchElement.oninput = onsearch;
 
     updateFloatingPanel();
 
@@ -71,21 +76,18 @@ function init() {
     document.getElementById("show_in").checked = config.show_in;
     document.getElementById("show_out").checked = config.show_out;
 
-    $('.ui.accordion').accordion();
-    $('.ui.dropdown')
-    .dropdown({
-        //action: 'none'
+    $(".ui.accordion").accordion();
+    $(".ui.dropdown").dropdown({
         action: updateConfig
     });
-    $('.input.icon').popup();
-    $('table.sortable').tablesort();
+    $(".input.icon").popup();
+    $("table.sortable").tablesort();
 
     loadData();
-
-    render(tx, ty, scale);
 }
 
 function currentLevel() {
+    "use strict";
     if (scale < zNodes16) {
         return 8;
     }
@@ -98,20 +100,34 @@ function currentLevel() {
     return 32;
 }
 
-function findNode(seg1=-1, seg2=-1, seg3=-1, seg4=-1) {
-    if (seg1 in nodeCollection) {
-        if (seg2 in nodeCollection[seg1].children) {
-            if (seg3 in nodeCollection[seg1].children[seg2].children) {
-                if (seg4 in nodeCollection[seg1].children[seg2].children[seg3].children) {
-                    return nodeCollection[seg1].children[seg2].children[seg3].children[seg4];
+function findNode(ip8, ip16, ip24, ip32) {
+    "use strict";
+    if (ip8 === undefined) {
+        ip8 = -1;
+    }
+    if (ip16 === undefined) {
+        ip16 = -1;
+    }
+    if (ip24 === undefined) {
+        ip24 = -1;
+    }
+    if (ip32 === undefined) {
+        ip32 = -1;
+    }
+
+    if (nodeCollection.hasOwnProperty(ip8)) {
+        if (nodeCollection[ip8].children.hasOwnProperty(ip16)) {
+            if (nodeCollection[ip8].children[ip16].children.hasOwnProperty(ip24)) {
+                if (nodeCollection[ip8].children[ip16].children[ip24].children.hasOwnProperty(ip32)) {
+                    return nodeCollection[ip8].children[ip16].children[ip24].children[ip32];
                 } else {
-                    return nodeCollection[seg1].children[seg2].children[seg3];
+                    return nodeCollection[ip8].children[ip16].children[ip24];
                 }
             } else {
-                return nodeCollection[seg1].children[seg2];
+                return nodeCollection[ip8].children[ip16];
             }
         } else {
-            return nodeCollection[seg1];
+            return nodeCollection[ip8];
         }
     } else {
         return null;
