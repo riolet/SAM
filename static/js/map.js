@@ -57,7 +57,7 @@ function init() {
     canvas.addEventListener("mousedown", mousedown);
     canvas.addEventListener("mousemove", mousemove);
     canvas.addEventListener("mouseup", mouseup);
-    canvas.addEventListener("keydown", mouseup);
+    canvas.addEventListener("mouseout", mouseup);
     canvas.addEventListener("wheel", wheel);
     window.addEventListener("keydown", keydown, false);
 
