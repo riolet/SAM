@@ -32,9 +32,9 @@ Node.prototype = {
     radius: 0,             //render: radius
     children: {},          //child (subnet) nodes (if this is level 8, 16, or 24)
     childrenLoaded: false, //whether the children have been loaded
-    inputs: [],            //input connections
-    outputs: [],           //output connections
-    ports: {},             //ports by which other nodes connect to this one ( /32 only)
+    inputs: [],            //input connections. an array like: [(ip, [port, ...]), ...]
+    outputs: [],           //output connections. an array like: [(ip, [port, ...]), ...]
+    ports: {},             //ports by which other nodes connect to this one ( /32 only). Contains a key for each port number
     client: false,         //whether this node acts as a client
     server: false          //whether this node acts as a server
 };
@@ -265,7 +265,7 @@ function loadData() {
 
 function loadChildren(parent, callback) {
     "use strict";
-    if (parent.childrenLoaded === true || parent.level >= currentLevel()) {
+    if (parent.childrenLoaded === true) {
         return;
     }
 
@@ -321,7 +321,11 @@ function checkLoD() {
     "use strict";
     var visible = onScreen();
 
-    visible.forEach(loadChildren);
+    visible.forEach(function (node) {
+        if (node.level < currentLevel()) {
+            loadChildren(node);
+        }
+    });
     updateRenderRoot();
     render(tx, ty, scale);
 }

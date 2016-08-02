@@ -176,6 +176,7 @@ function applysearch() {
             }
         } else {
             if (subnet.childrenLoaded === false && subnet.level < 32) {
+                //load more and restart when loading is complete.
                 loadChildren(subnet, applysearch);
                 return;
             }
