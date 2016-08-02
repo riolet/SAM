@@ -1,0 +1,18 @@
+$def with (stats)
+$# "$def with (arg1, ...)" MUST be the first line. See template.py for details
+<h3 class="ui center aligned header">Stats</h3>
+<div class="ui container">
+    <table class="ui celled table">
+        <thead>
+            <th>Query</th>
+            <th>Rows</th>
+        </thead>
+        <tbody>
+        $for desc, value in stats:
+            <tr>
+            <td>$desc</td>
+            <td>$value</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

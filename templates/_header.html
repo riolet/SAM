@@ -1,0 +1,15 @@
+$def with (menuItems, selected)
+<div class="ui black inverted menu" id="navbar">
+    <div class="header item">
+        <i class="home icon"></i>
+        <a href="/">Systems Architecture Mapper</a>
+    </div>
+    $for menuItem in menuItems:
+        $ active = ''
+        $if menuItem['name']==selected:
+            $ active = 'active'
+        <a class="item $active" href="$menuItem['link']">
+            <i class="$menuItem['icon'] icon"></i>
+            $menuItem['name']
+        </a>
+</div>
