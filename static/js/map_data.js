@@ -1,13 +1,3 @@
-function loadData() {
-    "use strict";
-    $.ajax({
-        url: "/query",
-        data: {"filter": filter},
-        success: onLoadData,
-        error: onNotLoadData
-    });
-}
-
 function Node(alias, address, number, level, connections, x, y, radius, inputs, outputs) {
     "use strict";
     this.alias = alias.toString();
@@ -49,95 +39,41 @@ Node.prototype = {
     server: false          //whether this node acts as a server
 };
 
-// Function(jqXHR jqXHR, String textStatus, String errorThrown)
-function onNotLoadData(xhr, textStatus, errorThrown) {
+function closestEmptyPort(link, used) {
     "use strict";
-    console.log("Failed to load data:");
-    console.log("\t" + textStatus);
-    console.log("\t" + errorThrown);
-}
+    var right = [1, 0, 2, 7, 3, 6, 4, 5];
+    var top = [3, 2, 4, 1, 5, 0, 6, 7];
+    var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
+    var left = [4, 5, 3, 6, 2, 7, 1, 0];
 
-function onLoadData(result) {
-    "use strict";
-    // result should be an array of objects
-    // where each object has address, alias, connections, x, y, radius,
-    nodeCollection = {};
-    result.forEach(function (node) {
-        var name = node.address;
-        nodeCollection[node.address] = new Node(name, name, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
-    });
+    var dx = link.x2 - link.x1;
+    var dy = link.y2 - link.y1;
 
-    Object.keys(nodeCollection).forEach(function (key) {
-        nodeCollection[key].inputs.forEach(preprocessConnection);
-        nodeCollection[key].outputs.forEach(preprocessConnection);
-    });
+    var chooser = function (i) {
+        return used[i] === false;
+    };
+    var choice;
 
-    resetViewport(nodeCollection);
-    updateRenderRoot();
-    render(tx, ty, scale);
-}
-
-function checkLoD() {
-    "use strict";
-    var visible = onScreen();
-
-    visible.forEach(loadChildren);
-    updateRenderRoot();
-    render(tx, ty, scale);
-}
-
-function loadChildren(parent, callback) {
-    "use strict";
-    if (parent.childrenLoaded === true || parent.level >= currentLevel()) {
-        return;
-    }
-
-    parent.childrenLoaded = true;
-    //console.log("Loading children of " + node.address);
-    var temp = parent.address.split(".");
-    var requestData = {"ip24": -1, "ip16": -1, "ip8": -1};
-    if (temp.length >= 3) {
-        requestData.ip24 = temp[2];
-    }
-    if (temp.length >= 2) {
-        requestData.ip16 = temp[1];
-    }
-    if (temp.length >= 1) {
-        requestData.ip8 = temp[0];
-    }
-    requestData.filter = filter;
-
-    $.ajax({
-        url: "/query",
-        type: "GET",
-        data: requestData,
-        dataType: "json",
-        error: onNotLoadData,
-        success: function (result) {
-            // result should be an array of objects
-            // where each object has address, alias, connections, x, y, radius,
-            result.forEach(function (child) {
-                //console.log("Loaded " + node.alias + " -> " + result[row].address);
-                var name = parent.alias + "." + child.address;
-                parent.children[child.address] = new Node(name, name, child.address, parent.level + 8, child.connections, child.x, child.y, child.radius, child.inputs, child.outputs);
-            });
-            // process the connections
-            Object.keys(parent.children).forEach(function (child) {
-                if (parent.children[child].level === 32) {
-                    preprocessConnection32(parent.children[child].inputs);
-                } else {
-                    parent.children[child].inputs.forEach(preprocessConnection);
-                }
-                parent.children[child].outputs.forEach(preprocessConnection);
-            });
-            if (typeof callback === "function") {
-                callback();
-            } else {
-                updateRenderRoot();
-                render(tx, ty, scale);
-            }
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //port on right
+            choice = right.find(chooser);
+        } else {
+            //port on left
+            choice = left.find(chooser);
         }
-    });
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //port on bottom
+            choice = bottom.find(chooser);
+        } else {
+            //port on top
+            choice = top.find(chooser);
+        }
+    }
+    return choice;
 }
 
 function preprocessConnection32(links) {
@@ -168,6 +104,7 @@ function preprocessConnection32(links) {
     var ports = {};
     var j;
     var choice = 0;
+    //the first 8 unique port numbers should be mapped to locations.
     for (j = 0; j < Object.keys(links).length; j += 1) {
         if (ports.hasOwnProperty(links[j].port)) {
             continue;
@@ -233,43 +170,6 @@ function preprocessConnection32(links) {
     });
 }
 
-function closestEmptyPort(link, used) {
-    "use strict";
-    var right = [1, 0, 2, 7, 3, 6, 4, 5];
-    var top = [3, 2, 4, 1, 5, 0, 6, 7];
-    var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
-    var left = [4, 5, 3, 6, 2, 7, 1, 0];
-
-    var dx = link.x2 - link.x1;
-    var dy = link.y2 - link.y1;
-
-    var chooser = function (i) {
-        return used[i] === false;
-    };
-    var choice;
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //port on right
-            choice = right.find(chooser);
-        } else {
-            //port on left
-            choice = left.find(chooser);
-        }
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //port on bottom
-            choice = bottom.find(chooser);
-        } else {
-            //port on top
-            choice = top.find(chooser);
-        }
-    }
-    return choice;
-}
-
 function preprocessConnection(link) {
     "use strict";
     //TODO: move this preprocessing into the database (preprocess.py) instead of client-side.
@@ -325,6 +225,107 @@ function preprocessConnection(link) {
     }
 }
 
+function onLoadData(result) {
+    "use strict";
+    // result should be an array of objects
+    // where each object has address, alias, connections, x, y, radius,
+    nodeCollection = {};
+    result.forEach(function (node) {
+        var name = node.address;
+        nodeCollection[node.address] = new Node(name, name, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+    });
+
+    Object.keys(nodeCollection).forEach(function (key) {
+        nodeCollection[key].inputs.forEach(preprocessConnection);
+        nodeCollection[key].outputs.forEach(preprocessConnection);
+    });
+
+    resetViewport(nodeCollection);
+    updateRenderRoot();
+    render(tx, ty, scale);
+}
+
+// Function(jqXHR jqXHR, String textStatus, String errorThrown)
+function onNotLoadData(xhr, textStatus, errorThrown) {
+    "use strict";
+    console.log("Failed to load data:");
+    console.log("\t" + textStatus);
+    console.log("\t" + errorThrown);
+}
+
+function loadData() {
+    "use strict";
+    $.ajax({
+        url: "/query",
+        data: {"filter": filter},
+        success: onLoadData,
+        error: onNotLoadData
+    });
+}
+
+function loadChildren(parent, callback) {
+    "use strict";
+    if (parent.childrenLoaded === true || parent.level >= currentLevel()) {
+        return;
+    }
+
+    parent.childrenLoaded = true;
+    //console.log("Loading children of " + node.address);
+    var temp = parent.address.split(".");
+    var requestData = {"ip24": -1, "ip16": -1, "ip8": -1};
+    if (temp.length >= 3) {
+        requestData.ip24 = temp[2];
+    }
+    if (temp.length >= 2) {
+        requestData.ip16 = temp[1];
+    }
+    if (temp.length >= 1) {
+        requestData.ip8 = temp[0];
+    }
+    requestData.filter = filter;
+
+    $.ajax({
+        url: "/query",
+        type: "GET",
+        data: requestData,
+        dataType: "json",
+        error: onNotLoadData,
+        success: function (result) {
+            // result should be an array of objects
+            // where each object has address, alias, connections, x, y, radius,
+            result.forEach(function (child) {
+                //console.log("Loaded " + node.alias + " -> " + result[row].address);
+                var name = parent.alias + "." + child.address;
+                parent.children[child.address] = new Node(name, name, child.address, parent.level + 8, child.connections, child.x, child.y, child.radius, child.inputs, child.outputs);
+            });
+            // process the connections
+            Object.keys(parent.children).forEach(function (child) {
+                if (parent.children[child].level === 32) {
+                    preprocessConnection32(parent.children[child].inputs);
+                } else {
+                    parent.children[child].inputs.forEach(preprocessConnection);
+                }
+                parent.children[child].outputs.forEach(preprocessConnection);
+            });
+            if (typeof callback === "function") {
+                callback();
+            } else {
+                updateRenderRoot();
+                render(tx, ty, scale);
+            }
+        }
+    });
+}
+
+function checkLoD() {
+    "use strict";
+    var visible = onScreen();
+
+    visible.forEach(loadChildren);
+    updateRenderRoot();
+    render(tx, ty, scale);
+}
+
 function updateSelection(node) {
     "use strict";
     selection = node;
@@ -375,7 +376,6 @@ function updateSelection(node) {
             var conn_in = "";
             var conn_out = "";
             var ports_in = "";
-            var port_info;
             conn_in = result.conn_in.reduce(function (accum, connection) {
                 //connection === (ip address, [ports])
                 accum += "<tr><td rowspan=\"" + connection[1].length + "\">" + connection[0] + "</td>";

@@ -1,5 +1,3 @@
-"use strict";
-
 var canvas;
 var ctx;
 var rect; //render region on screen
@@ -39,8 +37,11 @@ var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
 
+//for filtering and searching
+var g_timer = null;
 
 function init() {
+    "use strict";
     canvas = document.getElementById("canvas");
     var navBarHeight = $("#navbar").height();
     $("#output").css("top", navBarHeight);
@@ -86,6 +87,7 @@ function init() {
 }
 
 function currentLevel() {
+    "use strict";
     if (scale < zNodes16) {
         return 8;
     }
@@ -99,6 +101,7 @@ function currentLevel() {
 }
 
 function findNode(ip8, ip16, ip24, ip32) {
+    "use strict";
     if (ip8 === undefined) {
         ip8 = -1;
     }
@@ -112,10 +115,10 @@ function findNode(ip8, ip16, ip24, ip32) {
         ip32 = -1;
     }
 
-    if (ip8 in nodeCollection) {
-        if (ip16 in nodeCollection[ip8].children) {
-            if (ip24 in nodeCollection[ip8].children[ip16].children) {
-                if (ip32 in nodeCollection[ip8].children[ip16].children[ip24].children) {
+    if (nodeCollection.hasOwnProperty(ip8)) {
+        if (nodeCollection[ip8].children.hasOwnProperty(ip16)) {
+            if (nodeCollection[ip8].children[ip16].children.hasOwnProperty(ip24)) {
+                if (nodeCollection[ip8].children[ip16].children[ip24].children.hasOwnProperty(ip32)) {
                     return nodeCollection[ip8].children[ip16].children[ip24].children[ip32];
                 } else {
                     return nodeCollection[ip8].children[ip16].children[ip24];
