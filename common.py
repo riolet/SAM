@@ -1,4 +1,4 @@
-import sys
+import sys, os
 base_path = os.path.dirname(__file__)
 import web
 
