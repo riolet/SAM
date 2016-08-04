@@ -1,3 +1,6 @@
+import sys, os
+abspath = os.path.dirname(__file__)
+sys.path.append(abspath)
 import web
 import pages.overview
 import pages.map

@@ -1,4 +1,5 @@
 import sys
+base_path = os.path.dirname(__file__)
 import web
 
 navbar = [
@@ -15,7 +16,7 @@ navbar = [
 ]
 
 # tell renderer where to look for templates
-render = web.template.render('templates/')
+render = web.template.render(os.path.join(base_path, 'templates/'))
 
 try:
     sys.dont_write_bytecode = True
