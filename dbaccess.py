@@ -56,10 +56,10 @@ def reset_port_names():
 
     ports = port_data["ports"].values()
     for port in ports:
-        if len(port['shortname']) > 10:
-            port['shortname'] = port['shortname'][:10]
-        if len(port['longname']) > 255:
-            port['longname'] = port['longname'][:255]
+        if len(port['name']) > 10:
+            port['name'] = port['name'][:10]
+        if len(port['description']) > 255:
+            port['description'] = port['description'][:255]
 
     common.db.multiple_insert('portLUT', values=ports)
 
@@ -102,7 +102,6 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
                                parent8 = ipSegment1)
     elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
         # check Nodes24
-        # TODO: This is broken :(
         rows = common.db.where("Nodes24",
                                parent8 = ipSegment1,
                                parent16 = ipSegment2)
@@ -122,7 +121,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , shortname, longname, links, x1, y1, x2, y2
+                    , name, description, links, x1, y1, x2, y2
                 FROM Links32
                 LEFT JOIN portLUT
                 ON Links32.port = portLUT.port
@@ -134,7 +133,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
         else:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , shortname, longname, links, x1, y1, x2, y2
+                    , name, description, links, x1, y1, x2, y2
                 FROM Links32
                 LEFT JOIN portLUT
                 ON Links32.port = portLUT.port
@@ -281,7 +280,7 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , shortname, longname, links, x1, y1, x2, y2
+                    , name, description, links, x1, y1, x2, y2
                 FROM Links32
                 LEFT JOIN portLUT
                 ON Links32.port = portLUT.port
@@ -293,7 +292,7 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
         else:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , shortname, longname, links, x1, y1, x2, y2
+                    , name, description, links, x1, y1, x2, y2
                 FROM Links32
                 LEFT JOIN portLUT
                 ON Links32.port = portLUT.port
@@ -339,7 +338,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['unique_ports'] = row.unique_ports
 
     query = """
-        SELECT ip, temp.port, links, shortname, longname
+        SELECT ip, temp.port, links, name, description
         FROM
             (SELECT Syslog.SourceIP AS 'ip'
                 , Syslog.DestinationPort as 'port'
@@ -357,7 +356,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT ip, temp.port, links, shortname, longname
+        SELECT ip, temp.port, links, name, description
         FROM
             (SELECT Syslog.DestinationIP AS 'ip'
                 , Syslog.DestinationPort as 'port'
@@ -375,7 +374,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT temp.port, links, shortname, longname
+        SELECT temp.port, links, name, description
         FROM
             (SELECT DestinationPort AS port, COUNT(*) AS links
             FROM Syslog
