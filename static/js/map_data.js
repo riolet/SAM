@@ -114,8 +114,8 @@ function preprocessConnection32(links) {
             continue;
         }
         ports[links[j].port] = locations[choice];
-        if (links[j].shortname !== null) {
-            ports[links[j].port].alias = links[j].shortname;
+        if (links[j].name !== null) {
+            ports[links[j].port].alias = links[j].name;
         }
         used[choice] = true;
         if (Object.keys(ports).length >= 8) {
@@ -384,10 +384,10 @@ function updateSelection(node) {
                 //connection === (ip address, [ports])
                 accum += "<tr><td rowspan=\"" + connection[1].length + "\">" + connection[0] + "</td>";
                 accum += connection[1].reduce(function (ports, port) {
-                    if (port.shortname === null) {
+                    if (port.name === null) {
                         ports += "<td>" + port.port + "</td><td>" + port.links + "</td></tr><tr>";
                     } else {
-                        ports += "<td>" + port.port + " - " + port.shortname + "</td><td>" + port.links + "</td></tr><tr>";
+                        ports += "<td>" + port.port + " - " + port.name + "</td><td>" + port.links + "</td></tr><tr>";
                     }
                     return ports;
                 }, "");
@@ -398,10 +398,10 @@ function updateSelection(node) {
                 //connection === (ip address, [ports])
                 accum += "<tr><td rowspan=\"" + connection[1].length + "\">" + connection[0] + "</td>";
                 accum += connection[1].reduce(function (ports, port) {
-                    if (port.shortname === null) {
+                    if (port.name === null) {
                         ports += "<td>" + port.port + "</td><td>" + port.links + "</td></tr><tr>";
                     } else {
-                        ports += "<td>" + port.port + " - " + port.shortname + "</td><td>" + port.links + "</td></tr><tr>";
+                        ports += "<td>" + port.port + " - " + port.name + "</td><td>" + port.links + "</td></tr><tr>";
                     }
                     return ports;
                 }, "");
@@ -409,12 +409,12 @@ function updateSelection(node) {
                 return accum.substring(0, accum.length - 4);
             }, "");
             ports_in = result.ports_in.reduce(function (accum, port) {
-                //result.ports_in === [{port, links, shortname, longname}, ...]
-                //port === {port, links, shortname, longname}
-                if (port.shortname === null) {
+                //result.ports_in === [{port, links, name, description}, ...]
+                //port === {port, links, name, description}
+                if (port.name === null) {
                     accum += "<tr><td>" + port.port + "</td><td>" + port.links + "</td></tr>";
                 } else {
-                    accum += "<tr><td>" + port.port + " - " + port.shortname + "</td><td>" + port.links + "</td></tr>";
+                    accum += "<tr><td>" + port.port + " - " + port.name + "</td><td>" + port.links + "</td></tr>";
                 }
                 return accum;
             }, "");
