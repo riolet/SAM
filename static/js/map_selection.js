@@ -66,6 +66,8 @@ function sel_update_display(node) {
     var h4;
     var h5;
     var a;
+    var tbody;
+    var overflow;
 
     //clear all data
     removeChildren(m_selection["titles"]);
@@ -87,6 +89,7 @@ function sel_update_display(node) {
     m_selection["unique_ports"].childNodes[0].textContent = node.details["unique_ports"].toString();
 
     //fill in the tables
+    tbody = document.createElement("tbody");
     node.details["conn_in"].forEach(function (connection) {
         tr = document.createElement("tr");
         td = document.createElement("td");
@@ -109,12 +112,18 @@ function sel_update_display(node) {
             td = document.createElement("td");
             td.appendChild(document.createTextNode(port.links.toString()));
             tr.appendChild(td);
-            m_selection["conn_in"].appendChild(tr)
+            tbody.appendChild(tr)
             tr = document.createElement("tr");
         });
     });
+    table = m_selection["conn_in"].parentElement;
+    overflow = m_selection["conn_in"].nextElementSibling;
+    table.removeChild(m_selection["conn_in"]);
+    m_selection["conn_in"] = tbody;
+    table.insertBefore(tbody, overflow);
 
 
+    tbody = document.createElement("tbody");
     node.details["conn_out"].forEach(function (connection) {
         tr = document.createElement("tr");
         td = document.createElement("td");
@@ -137,11 +146,18 @@ function sel_update_display(node) {
             td = document.createElement("td");
             td.appendChild(document.createTextNode(port.links.toString()));
             tr.appendChild(td);
-            m_selection["conn_out"].appendChild(tr)
+            tbody.appendChild(tr)
             tr = document.createElement("tr");
         });
     });
+    table = m_selection["conn_out"].parentElement;
+    overflow = m_selection["conn_out"].nextElementSibling;
+    table.removeChild(m_selection["conn_out"]);
+    m_selection["conn_out"] = tbody;
+    table.insertBefore(tbody, overflow);
 
+
+    tbody = document.createElement("tbody");
     node.details["ports_in"].forEach(function (port) {
         tr = document.createElement("tr");
         td = document.createElement("td");
@@ -159,11 +175,16 @@ function sel_update_display(node) {
         td = document.createElement("td");
         td.appendChild(document.createTextNode(port.links.toString()));
         tr.appendChild(td);
-        m_selection["ports_in"].appendChild(tr);
+        tbody.appendChild(tr);
     });
+    table = m_selection["ports_in"].parentElement;
+    overflow = m_selection["ports_in"].nextElementSibling;
+    table.removeChild(m_selection["ports_in"]);
+    m_selection["ports_in"] = tbody;
+    table.insertBefore(tbody, overflow);
 
     //fill in the overflow table footer for connections in
-    var overflow = m_selection["conn_in"].nextElementSibling;
+    overflow = m_selection["conn_in"].nextElementSibling;
     removeChildren(overflow);
     var overflow_text;
     var overflow_amount = node.details["unique_in"] - node.details["conn_in"].length;
