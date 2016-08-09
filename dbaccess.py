@@ -392,6 +392,23 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     return details
 
 
+def getPortInfo(port):
+    query = """
+SELECT portLUT.port, portLUT.name, portLUT.description,
+    portAliasLUT.name AS alias_name,
+    portAliasLUT.description AS alias_description
+FROM portLUT
+LEFT JOIN portAliasLUT
+    ON portLUT.port=portAliasLUT.port
+WHERE portLUT.port=$port
+LIMIT 1;
+    """
+    qvars = {'port':port}
+    info = common.db.query(query, vars=qvars)
+    if len(info) == 0:
+        return {}
+    return info[0]
+
 def printLink(row):
     if "source32" in row:
         print formatLink(row.source8, row.source16, row.source24, row.source32, row.dest8, row.dest16, row.dest24, row.dest32)
