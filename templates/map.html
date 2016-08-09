@@ -108,6 +108,32 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
         </div>
     </div>
 </div>
+<div class="ui modal ports">
+    <div class="header">Port <span id="port_number"></span></div>
+    <div class="content">
+        <table class="ui table">
+            <tr><td class="right aligned">Use translation:</td><td><div class="ui fitted toggle checkbox"><input name="use_port" type="checkbox"><label></label></div></td></tr>
+            <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
+            <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+            <tr>
+                <td class="right aligned">Alias Name:</td>
+                <td>
+                    <div class="ui input" data-content="A custom alias to override the default name">
+                        <input placeholder="port name" id="port_alias_name" type="text">
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="right aligned">Alias Description:</td>
+                <td>
+                    <div class="ui input" data-content="A custom alias to override the default description">
+                        <input placeholder="port description" id="port_alias_description" type="text">
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
 <script type="application/javascript">
 var body = document.getElementsByTagName("body")[0];
 body.addEventListener("load", init(), false);

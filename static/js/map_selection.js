@@ -1,7 +1,9 @@
 //model
+
 var m_selection = {}
 
 //controller
+
 function sel_init() {
     m_selection["selection"] = null;
     m_selection["sidebar"] = document.getElementById("sel_bar");
@@ -26,7 +28,17 @@ function sel_set_selection(node) {
     }
 }
 
-//view
+function port_click(event) {
+    port = Number((event.target.innerHTML.split(" ")[0]));
+    document.getElementById("port_number").innerHTML = port;
+    document.getElementById("port_name").innerHTML = "...";
+    document.getElementById("port_description").innerHTML = "...";
+    $('.ui.modal.ports').modal('show');
+    load_portinfo(port);
+}
+
+// view
+
 function sel_clear_display() {
     removeChildren(m_selection["titles"]);
     removeChildren(m_selection["conn_in"]);
@@ -62,6 +74,7 @@ function sel_update_display(node) {
     var td;
     var h4;
     var h5;
+    var a;
 
     //clear all data
     removeChildren(m_selection["titles"]);
@@ -90,12 +103,15 @@ function sel_update_display(node) {
         td.appendChild(document.createTextNode(connection[0]));
         tr.appendChild(td);
         connection[1].forEach(function (port) {
-            td = document.createElement("td");
+            td = document.createElement("td");;
+            a = document.createElement("a");
+            a.onclick = port_click;
             if (port.name === null) {
-                td.appendChild(document.createTextNode(port.port.toString()));
+                a.appendChild(document.createTextNode(port.port.toString()));
             } else {
-                td.appendChild(document.createTextNode(port.port.toString() + " - " + port.name.toString()));
+                a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
             }
+            td.appendChild(a);
             tr.appendChild(td);
             td = document.createElement("td");
             td.appendChild(document.createTextNode(port.links.toString()));
@@ -114,11 +130,14 @@ function sel_update_display(node) {
         tr.appendChild(td);
         connection[1].forEach(function (port) {
             td = document.createElement("td");
+            a = document.createElement("a");
+            a.onclick = port_click;
             if (port.name === null) {
-                td.appendChild(document.createTextNode(port.port.toString()));
+                a.appendChild(document.createTextNode(port.port.toString()));
             } else {
-                td.appendChild(document.createTextNode(port.port.toString() + " - " + port.name.toString()));
+                a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
             }
+            td.appendChild(a);
             tr.appendChild(td);
             td = document.createElement("td");
             td.appendChild(document.createTextNode(port.links.toString()));
@@ -131,11 +150,14 @@ function sel_update_display(node) {
     node.details["ports_in"].forEach(function (port) {
         tr = document.createElement("tr");
         td = document.createElement("td");
+        a = document.createElement("a");
+        a.onclick = port_click;
         if (port.name === null) {
-            td.appendChild(document.createTextNode(port.port.toString()));
+            a.appendChild(document.createTextNode(port.port.toString()));
         } else {
-            td.appendChild(document.createTextNode(port.port.toString() + " - " + port.name.toString()));
+            a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
         }
+        td.appendChild(a);
         tr.appendChild(td);
         td = document.createElement("td");
         td.appendChild(document.createTextNode(port.links.toString()));
