@@ -283,7 +283,7 @@ function renderLabels(node, x, y, scale) {
     "use strict";
     var alpha = 0;
     if (scale > 25) {
-        //Draw port labels here
+        //Draw port labels at this zoom level
         alpha = opacity(32, "label");
         if (m_selection["selection"] === null || m_selection["selection"] === node) {
             ctx.globalAlpha = alpha;
@@ -292,10 +292,7 @@ function renderLabels(node, x, y, scale) {
         }
         if (node.level === 32) {
             Object.keys(node.ports).forEach(function (p) {
-                var text = p;
-                if (node.ports[p].alias !== "") {
-                    text = node.ports[p].alias;
-                }
+                var text = get_port_alias(p);
                 ctx.font = "1.5em sans";
                 var sizeMin = ctx.measureText("mmmmm");
                 var size = Math.max(ctx.measureText(text).width, sizeMin.width);

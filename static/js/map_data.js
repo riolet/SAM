@@ -111,14 +111,12 @@ function preprocessConnection32(links) {
         if (ports.hasOwnProperty(links[j].port)) {
             continue;
         }
+        port_request_add(links[j].port);
         choice = closestEmptyPort(links[j], used);
         if (choice === undefined) {
             continue;
         }
         ports[links[j].port] = locations[choice];
-        if (links[j].name !== null) {
-            ports[links[j].port].alias = links[j].name;
-        }
         used[choice] = true;
         if (Object.keys(ports).length >= 8) {
             break;
@@ -308,6 +306,8 @@ function loadChildren(parent, callback) {
                 }
                 parent.children[child].outputs.forEach(preprocessConnection);
             });
+            port_request_submit();
+
             if (typeof callback === "function") {
                 callback();
             } else {
@@ -324,13 +324,14 @@ function POST_portinfo(request) {
         url: "/portinfo",
         type: "POST",
         data: request,
-        error: onNotLoadData
+        error: onNotLoadData,
+        success: function(result) { console.log(result); }
     });
 }
 
 function GET_portinfo(port) {
     "use strict";
-    var requestData = {"port": port}
+    var requestData = {"port": port.join(",")};
     $.ajax({
         url: "/portinfo",
         type: "GET",
@@ -385,6 +386,22 @@ function getDetails(node, callback) {
             node.details["conn_out"] = result.conn_out;
             node.details["ports_in"] = result.ports_in;
             node.details["loaded"] = true;
+
+            result.conn_in.forEach(function (element) {
+                element[1].forEach(function (port) {
+                    port_request_add(port.port);
+                });
+            });
+            result.conn_out.forEach(function (element) {
+                element[1].forEach(function (port) {
+                    port_request_add(port.port);
+                });
+            });
+            result.ports_in.forEach(function (element) {
+                port_request_add(element.port);
+            });
+            port_request_submit();
+
             if (typeof callback === "function") {
                 callback();
             }

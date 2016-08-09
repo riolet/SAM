@@ -97,12 +97,12 @@ function sel_update_display(node) {
             td = document.createElement("td");;
             a = document.createElement("a");
             a.onclick = port_click;
-            if (port.name === null) {
-                a.appendChild(document.createTextNode(port.port.toString()));
-            } else {
-                a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
-                a.setAttribute("data-content", port.description);
+            if (port_loaded(port.port)) {
+                a.appendChild(document.createTextNode(get_port_name(port.port)));
+                a.setAttribute("data-content", get_port_description(port.port));
                 a.setAttribute("class", "popup");
+            } else {
+                a.appendChild(document.createTextNode(port.port.toString()));
             }
             td.appendChild(a);
             tr.appendChild(td);
@@ -125,12 +125,12 @@ function sel_update_display(node) {
             td = document.createElement("td");
             a = document.createElement("a");
             a.onclick = port_click;
-            if (port.name === null) {
-                a.appendChild(document.createTextNode(port.port.toString()));
-            } else {
-                a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
-                a.setAttribute("data-content", port.description);
+            if (port_loaded(port.port)) {
+                a.appendChild(document.createTextNode(get_port_name(port.port)));
+                a.setAttribute("data-content", get_port_description(port.port));
                 a.setAttribute("class", "popup");
+            } else {
+                a.appendChild(document.createTextNode(port.port.toString()));
             }
             td.appendChild(a);
             tr.appendChild(td);
@@ -147,12 +147,12 @@ function sel_update_display(node) {
         td = document.createElement("td");
         a = document.createElement("a");
         a.onclick = port_click;
-        if (port.name === null) {
-            a.appendChild(document.createTextNode(port.port.toString()));
-        } else {
-            a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
-            a.setAttribute("data-content", port.description);
+        if (port_loaded(port.port)) {
+            a.appendChild(document.createTextNode(get_port_name(port.port)));
+            a.setAttribute("data-content", get_port_description(port.port));
             a.setAttribute("class", "popup");
+        } else {
+            a.appendChild(document.createTextNode(port.port.toString()));
         }
         td.appendChild(a);
         tr.appendChild(td);
@@ -212,5 +212,4 @@ function sel_update_display(node) {
 
     //enable new popups (tooltips)
     $('.popup').popup();
-;
 }

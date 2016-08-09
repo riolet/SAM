@@ -121,10 +121,8 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , name, description, links, x1, y1, x2, y2
+                    , links, x1, y1, x2, y2
                 FROM Links32
-                LEFT JOIN portLUT
-                ON Links32.port = portLUT.port
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
                     && dest24 = $seg3
@@ -133,10 +131,8 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
         else:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , name, description, links, x1, y1, x2, y2
+                    , links, x1, y1, x2, y2
                 FROM Links32
-                LEFT JOIN portLUT
-                ON Links32.port = portLUT.port
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
                     && dest24 = $seg3
@@ -280,10 +276,8 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , name, description, links, x1, y1, x2, y2
+                    , links, x1, y1, x2, y2
                 FROM Links32
-                LEFT JOIN portLUT
-                ON Links32.port = portLUT.port
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
@@ -292,10 +286,8 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
         else:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
-                    , name, description, links, x1, y1, x2, y2
+                    , links, x1, y1, x2, y2
                 FROM Links32
-                LEFT JOIN portLUT
-                ON Links32.port = portLUT.port
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
@@ -338,7 +330,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['unique_ports'] = row.unique_ports
 
     query = """
-        SELECT ip, temp.port, links, name, description
+        SELECT ip, temp.port, links
         FROM
             (SELECT Syslog.SourceIP AS 'ip'
                 , Syslog.DestinationPort as 'port'
@@ -347,8 +339,6 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
             WHERE DestinationIP >= $start && DestinationIP <= $end
             GROUP BY Syslog.SourceIP, Syslog.DestinationPort)
             AS temp
-            LEFT JOIN portLUT
-            ON temp.port = portLUT.port
         ORDER BY links DESC
         LIMIT 50;
     """
@@ -356,7 +346,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT ip, temp.port, links, name, description
+        SELECT ip, temp.port, links
         FROM
             (SELECT Syslog.DestinationIP AS 'ip'
                 , Syslog.DestinationPort as 'port'
@@ -365,8 +355,6 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
             WHERE SourceIP >= $start && SourceIP <= $end
             GROUP BY Syslog.DestinationIP, Syslog.DestinationPort)
             AS temp
-            LEFT JOIN portLUT
-            ON temp.port = portLUT.port
         ORDER BY links DESC
         LIMIT 50;
     """
@@ -374,15 +362,13 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
-        SELECT temp.port, links, name, description
+        SELECT temp.port, links
         FROM
             (SELECT DestinationPort AS port, COUNT(*) AS links
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
             GROUP BY port
             ) AS temp
-            LEFT JOIN portLUT
-            ON portLUT.port = temp.port
         ORDER BY links DESC
         LIMIT 50;
     """
@@ -393,6 +379,13 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
 
 
 def getPortInfo(port):
+    if type(port) == type([]):
+        arg = "("
+        for i in port:
+            arg += str(i) + ","
+        arg = arg[:-1] + ")"
+    else:
+        arg = "({0})".format(port)
     query = """
 SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
     portAliasLUT.name AS alias_name,
@@ -400,14 +393,32 @@ SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
 FROM portLUT
 LEFT JOIN portAliasLUT
     ON portLUT.port=portAliasLUT.port
-WHERE portLUT.port=$port
-LIMIT 1;
-    """
-    qvars = {'port':port}
-    info = common.db.query(query, vars=qvars)
-    if len(info) == 0:
-        return {}
-    return info[0]
+WHERE portLUT.port IN {0}
+    """.format(arg)
+    info = common.db.query(query)
+    return info
+
+
+def setPortInfo(data):
+    # update portAliasLUT database of names to include the new information
+    exists = common.db.select('portAliasLUT', what="1", where={"port": data['port']})
+    if len(exists) == 1:
+        common.db.update('portAliasLUT',
+                         {"port": data['port']},
+                         name=data['alias_name'],
+                         description=data['alias_description'])
+    else:
+        common.db.insert('portAliasLUT', port=data.port, name=data.alias_name, description=data.alias_description);
+
+    # update portLUT database of default values to include the missing information
+    exists = common.db.select('portLUT', what="1", where={"port": data['port']})
+    if len(exists) == 1:
+        common.db.update('portLUT',
+                         {"port": data['port']},
+                         active=data['active'])
+    else:
+        common.db.insert('portAliasLUT', port=data.port, active=data['active'], tcp=1, udp=1, name="", description="");
+
 
 def printLink(row):
     if "source32" in row:
