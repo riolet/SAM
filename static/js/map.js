@@ -52,6 +52,7 @@ function init() {
     ty = rect.height / 2;
     ctx = canvas.getContext("2d");
     ctx.lineJoin = "bevel";
+    sel_init();
 
     //Event listeners for detecting clicks and zooms
     canvas.addEventListener("mousedown", mousedown);
@@ -131,5 +132,11 @@ function findNode(ip8, ip16, ip24, ip32) {
         }
     } else {
         return null;
+    }
+}
+
+function removeChildren(element) {
+    while (element.firstChild) {
+        element.removeChild(element.firstChild);
     }
 }

@@ -3,6 +3,8 @@
 SAM is a tool designed to map a network based on the data log of a router.
 It runs as a local python-based server and displays the a map and statistics on the browser.
 
+Check out the [website](http://sam.centralus.cloudapp.azure.com) for details about the project and a demo!
+
 ## Prerequisites
 
 MySQL - SAM will support other databases in the future:
@@ -15,7 +17,7 @@ Python - python-dev is needed to build the MySQLdb package
     apt-get install python
     apt-get install python-dev
 
-Pip - _optional_, but convenient for installing python packages
+Pip - for installing python packages
 
     apt-get install python-pip
 
@@ -26,7 +28,7 @@ nfdump - _optional_, for importing Cisco binary NetFlow dumps
 ## Installation
 
 1. Clone the repository
-2. Run `pip install -r requirements.txt` from within the directory. (Or do so manually--See text file for package names)
+2. Run `pip install -r requirements.txt` from within the directory to install necessary packages.
 3. Duplicate `dbconfig.py` as `dbconfig_local.py` and fill out database credentials
 
 ## Usage

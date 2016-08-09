@@ -41,8 +41,9 @@ function pick(x, y) {
     var bestDist = +Infinity;
     var tempDist = 0;
     renderCollection.forEach(function (node) {
-        if (contains(node, x, y)) {
-            tempDist = distanceSquared(x, y, node.x, node.y);
+        tempDist = distanceSquared(x, y, node.x, node.y);
+        if (tempDist < node.radius*node.radius) {
+        //if (contains(node, x, y)) {
             if (tempDist < bestDist || node.level > best.level) {
                 bestDist = tempDist;
                 best = node;
@@ -67,8 +68,9 @@ function mouseup(event) {
 
     if (mx === mdownx && my === mdowny) {
         //mouse hasn't moved. treat this as a "pick" operation
-        selection = pick((mx - tx) / scale, (my - ty) / scale);
-        updateSelection(selection);
+        var selection = pick((mx - tx) / scale, (my - ty) / scale);
+        //updateSelection(selection);
+        sel_set_selection(selection);
     }
 
     tx = tx + mx - mdownx;
@@ -206,7 +208,7 @@ function onsearch() {
 
 function updateFloatingPanel() {
     "use strict";
-    var side = document.getElementById("sidebar");
+    var side = document.getElementById("sel_bar");
     var heightAvailable = rect.height - 40;
     side.style.maxHeight = heightAvailable + "px";
 
@@ -219,8 +221,7 @@ function updateFloatingPanel() {
         //offsetHeight is height + vertical padding + vertical borders
         heightAvailable -= contentTitles[i].offsetHeight;
     }
-    heightAvailable -= document.getElementById("selectionName").offsetHeight;
-    heightAvailable -= document.getElementById("selectionNumber").offsetHeight;
+    heightAvailable -= document.getElementById("sel_titles").offsetHeight;
 
     var contentBlocks = $("#selectionInfo div.content");
     for (i = 0; i < contentBlocks.length; i += 1) {

@@ -49,9 +49,11 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             </div>
         </div>
     </div>
-    <div id="sidebar">
-        <h4 id="selectionName">No selection</h4>
-        <h5 id="selectionNumber"></h5>
+    <div id="sel_bar">
+        <div id="sel_titles">
+            <h4>No selection</h4>
+            <h5></h5>
+        </div>
         <div id="selectionInfo" class="ui styled fluid accordion">
             <div class="title">
                 <i class="dropdown icon"></i>
@@ -103,6 +105,42 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+<div class="ui modal ports">
+    <div class="header">Port <span id="port_number"></span></div>
+    <div class="content">
+        <table class="ui table">
+            <tr><td class="right aligned">Use Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+            <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
+            <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+            <tr>
+                <td class="right aligned">Alias Name:</td>
+                <td>
+                    <div class="ui input" data-content="A custom alias to override the default name">
+                        <input placeholder="port name" id="port_alias_name" type="text">
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="right aligned">Alias Description:</td>
+                <td>
+                    <div class="ui input" data-content="A custom alias to override the default description">
+                        <input placeholder="port description" id="port_alias_description" type="text">
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="actions">
+        <div class="ui blue ok button">
+            <i class="save icon"></i>
+            Save
+        </div>
+        <div class="ui red cancel button">
+            <i class="cancel icon"></i>
+            Cancel
         </div>
     </div>
 </div>

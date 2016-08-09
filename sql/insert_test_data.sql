@@ -137,4 +137,23 @@ UNION
 SELECT x, -1 AS y
 FROM Nodes8;
 
+SELECT portLUT.port, portLUT.name, portLUT.description,
+    portAliasLUT.name AS alias_name,
+    portAliasLUT.description AS alias_description
+FROM portLUT
+LEFT JOIN portAliasLUT
+    ON portLUT.port=portAliasLUT.port
+WHERE
+LIMIT 10;
 
+SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
+    , portLUT.active, portLUT.name, portLUT.description, portAliasLUT.name, portAliasLUT.description, links, x1, y1, x2, y2
+FROM Links32
+LEFT JOIN portLUT
+ON Links32.port = portLUT.port
+LEFT JOIN portAliasLUT
+ON Links32.port = portAliasLUT.port
+WHERE dest8 = 82
+    && dest16 = 70
+    && dest24 = 210
+    && dest32 = 2;
