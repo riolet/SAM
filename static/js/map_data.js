@@ -324,8 +324,7 @@ function POST_portinfo(request) {
         url: "/portinfo",
         type: "POST",
         data: request,
-        error: onNotLoadData,
-        success: function(result) { console.log(result); }
+        error: onNotLoadData
     });
 }
 

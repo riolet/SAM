@@ -15,8 +15,10 @@ function get_port_name(port) {
     if (m_ports[port].active) {
         if (m_ports[port].alias_name !== "" && m_ports[port].alias_name !== null) {
             return port.toString() + " - " + m_ports[port].alias_name;
-        } else {
+        } else if (m_ports[port].name.length !== 0) {
             return port.toString() + " - " + m_ports[port].name;
+        } else {
+            return port.toString();
         }
     }
     return port.toString();
@@ -87,13 +89,12 @@ function port_request_submit() {
     });
 
     m_port_requests = [];
-    GET_portinfo(request);
+    if (request.length > 0) {
+        GET_portinfo(request);
+    }
 }
 
 function port_save() {
-    console.log("saving.  m_portinfo is now:");
-    console.log(m_portinfo);
-
     var differences = false;
     if (document.getElementById("port_active").checked !== (m_portinfo.active === 1)) {
         //toggle active between 0 and 1
@@ -147,12 +148,12 @@ function port_display(port) {
     } else {
         document.getElementById("port_active").checked = (port.active === 1);
     }
-    if (port === undefined || port.name === undefined || port.name === null) {
+    if (port === undefined || port.name === undefined || port.name === null || port.name === "") {
         document.getElementById("port_name").innerHTML = "none";
     } else {
         document.getElementById("port_name").innerHTML = port.name;
     }
-    if (port === undefined || port.description === undefined || port.description === null) {
+    if (port === undefined || port.description === undefined || port.description === null || port.description === "") {
         document.getElementById("port_description").innerHTML = "none";
     } else {
         document.getElementById("port_description").innerHTML = port.description;
@@ -169,8 +170,6 @@ function port_display(port) {
     } else {
         document.getElementById("port_alias_description").value = port.alias_description;
     }
-    console.log("displaying.  m_portinfo is now:");
-    console.log(m_portinfo);
 }
 
 function GET_portinfo_callback(result) {
