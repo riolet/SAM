@@ -30,10 +30,12 @@ function get_port_alias(port) {
     }
 
     if (m_ports[port].active) {
-        if (m_ports[port].alias_name !== "" && m_ports[port].alias_name !== null) {
+        if (m_ports[port].alias_name !== null && m_ports[port].alias_name.length !== 0) {
             return m_ports[port].alias_name;
-        } else {
+        } else if (m_ports[port].name !== null && m_ports[port].name.length !== 0) {
             return m_ports[port].name;
+        } else {
+            return port.toString();
         }
     }
     return port.toString();
