@@ -417,7 +417,7 @@ def setPortInfo(data):
                          {"port": data['port']},
                          active=data['active'])
     else:
-        common.db.insert('portAliasLUT', port=data.port, active=data['active'], tcp=1, udp=1, name="", description="");
+        common.db.insert('portLUT', port=data.port, active=data['active'], tcp=1, udp=1, name="", description="");
 
 
 def printLink(row):
