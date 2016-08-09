@@ -285,7 +285,7 @@ function renderLabels(node, x, y, scale) {
     if (scale > 25) {
         //Draw port labels here
         alpha = opacity(32, "label");
-        if (selection === null || selection === node) {
+        if (m_selection["selection"] === null || m_selection["selection"] === node) {
             ctx.globalAlpha = alpha;
         } else {
             ctx.globalAlpha = alpha * 0.33;
@@ -348,7 +348,7 @@ function renderLabels(node, x, y, scale) {
     alpha = opacity(node.level, "label");
 
     //ctx.font = fontsize + "em sans";
-    if (selection === null || selection === node) {
+    if (m_selection["selection"] === null || m_selection["selection"] === node) {
         ctx.globalAlpha = alpha * 0.5;
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(px, py + 2, size.width, -21);
@@ -405,7 +405,7 @@ function renderClusters(collection, x, y, scale) {
     var drawingLevel;
     var colorNormal = "#5555CC";
     var colorUnselected = "#95D5D9";
-    if (selection === null) {
+    if (m_selection["selection"] === null) {
         ctx.strokeStyle = colorNormal;
     } else {
         ctx.strokeStyle = colorUnselected;
@@ -466,28 +466,29 @@ function renderClusters(collection, x, y, scale) {
     });
 
     //Draw the selected item over top everything else
-    if (selection !== null) {
+    if (m_selection["selection"] !== null) {
+
         ctx.setTransform(scale, 0, 0, scale, x, y, 1);
         ctx.strokeStyle = colorNormal;
         ctx.globalAlpha = 1;
 
-        //ctx.globalAlpha = opacity(selection.level, "links");
+        //ctx.globalAlpha = opacity(m_selection["selection"].level, "links");
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
-        renderLinks(selection);
+        renderLinks(m_selection["selection"]);
         ctx.stroke();
 
-        //ctx.globalAlpha = opacity(selection.level, "node");
+        //ctx.globalAlpha = opacity(m_selection["selection"].level, "node");
         ctx.lineWidth = 5 / scale;
         ctx.fillStyle = "#FFFFFF";
         ctx.beginPath();
-        renderNode(selection);
+        renderNode(m_selection["selection"]);
         ctx.stroke();
 
         ctx.resetTransform();
         ctx.font = "1.5em sans";
         ctx.fillStyle = "#000000";
-        renderLabels(selection, x, y, scale);
+        renderLabels(m_selection["selection"], x, y, scale);
     }
 }
 

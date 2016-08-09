@@ -19,6 +19,7 @@ function Node(alias, address, number, level, connections, x, y, radius, inputs, 
     if (outputs.length > 0) {
         this.client = true;
     }
+    this.details = {"loaded": false};
 }
 
 Node.prototype = {
@@ -36,7 +37,8 @@ Node.prototype = {
     outputs: [],           //output connections. an array like: [(ip, [port, ...]), ...]
     ports: {},             //ports by which other nodes connect to this one ( /32 only). Contains a key for each port number
     client: false,         //whether this node acts as a client
-    server: false          //whether this node acts as a server
+    server: false,         //whether this node acts as a server
+    details: {}            //detailed information about this node (aliases, metadata, selection panel stuff)
 };
 
 function closestEmptyPort(link, used) {
@@ -330,25 +332,8 @@ function checkLoD() {
     render(tx, ty, scale);
 }
 
-function updateSelection(node) {
+function getDetails(node, callback) {
     "use strict";
-    selection = node;
-    document.getElementById("unique_in").innerHTML = "0";
-    document.getElementById("conn_in").innerHTML = "";
-    document.getElementById("conn_in_overflow").innerHTML = "";
-    document.getElementById("unique_out").innerHTML = "0";
-    document.getElementById("conn_out").innerHTML = "";
-    document.getElementById("conn_out_overflow").innerHTML = "";
-    document.getElementById("unique_ports").innerHTML = "0";
-    document.getElementById("ports_in").innerHTML = "";
-    document.getElementById("ports_in_overflow").innerHTML = "";
-    document.getElementById("selectionNumber").innerHTML = "";
-    if (node === null) {
-        document.getElementById("selectionName").innerHTML = "No selection";
-        return;
-    }
-    document.getElementById("selectionName").innerHTML = "Loading details...";
-
     var temp = node.address.split(".");
     var requestData = {"ip32": -1, "ip24": -1, "ip16": -1, "ip8": -1};
     if (temp.length >= 4) {
@@ -371,77 +356,16 @@ function updateSelection(node) {
         data: requestData,
         error: onNotLoadData,
         success: function (result) {
-            document.getElementById("selectionName").innerHTML = "\"" + node.alias + "\"";
-            document.getElementById("selectionNumber").innerHTML = node.address;
-            document.getElementById("unique_in").innerHTML = result.unique_in;
-            document.getElementById("unique_out").innerHTML = result.unique_out;
-            document.getElementById("unique_ports").innerHTML = result.unique_ports;
-
-            var conn_in = "";
-            var conn_out = "";
-            var ports_in = "";
-            conn_in = result.conn_in.reduce(function (accum, connection) {
-                //connection === (ip address, [ports])
-                accum += "<tr><td rowspan=\"" + connection[1].length + "\">" + connection[0] + "</td>";
-                accum += connection[1].reduce(function (ports, port) {
-                    if (port.name === null) {
-                        ports += "<td>" + port.port + "</td><td>" + port.links + "</td></tr><tr>";
-                    } else {
-                        ports += "<td>" + port.port + " - " + port.name + "</td><td>" + port.links + "</td></tr><tr>";
-                    }
-                    return ports;
-                }, "");
-                //erase the last opening <tr> tag
-                return accum.substring(0, accum.length - 4);
-            }, "");
-            conn_out = result.conn_out.reduce(function (accum, connection) {
-                //connection === (ip address, [ports])
-                accum += "<tr><td rowspan=\"" + connection[1].length + "\">" + connection[0] + "</td>";
-                accum += connection[1].reduce(function (ports, port) {
-                    if (port.name === null) {
-                        ports += "<td>" + port.port + "</td><td>" + port.links + "</td></tr><tr>";
-                    } else {
-                        ports += "<td>" + port.port + " - " + port.name + "</td><td>" + port.links + "</td></tr><tr>";
-                    }
-                    return ports;
-                }, "");
-                //erase the last opening <tr> tag
-                return accum.substring(0, accum.length - 4);
-            }, "");
-            ports_in = result.ports_in.reduce(function (accum, port) {
-                //result.ports_in === [{port, links, name, description}, ...]
-                //port === {port, links, name, description}
-                if (port.name === null) {
-                    accum += "<tr><td>" + port.port + "</td><td>" + port.links + "</td></tr>";
-                } else {
-                    accum += "<tr><td>" + port.port + " - " + port.name + "</td><td>" + port.links + "</td></tr>";
-                }
-                return accum;
-            }, "");
-
-            document.getElementById("conn_in").innerHTML = conn_in;
-            document.getElementById("conn_out").innerHTML = conn_out;
-            document.getElementById("ports_in").innerHTML = ports_in;
-
-            //indicate any overflow that hasn't been loaded
-            var overflow = 0;
-            var overflow_text = "";
-            if (result.conn_in.length < result.unique_in) {
-                overflow = result.unique_in - result.conn_in.length;
-                overflow_text = "<tr><th>Plus " + overflow + " more...</th><th colspan=\"2\"></th></tr>";
-                document.getElementById("conn_in_overflow").innerHTML = overflow_text;
+            node.details["unique_in"] = result.unique_in;
+            node.details["unique_out"] = result.unique_out;
+            node.details["unique_ports"] = result.unique_ports;
+            node.details["conn_in"] = result.conn_in;
+            node.details["conn_out"] = result.conn_out;
+            node.details["ports_in"] = result.ports_in;
+            node.details["loaded"] = true;
+            if (typeof callback === "function") {
+                callback();
             }
-            if (result.conn_out.length < result.unique_out) {
-                overflow = result.unique_out - result.conn_out.length;
-                overflow_text = "<tr><th>Plus " + overflow + " more...</th><th colspan=\"2\"></th></tr>";
-                document.getElementById("conn_out_overflow").innerHTML = overflow_text;
-            }
-            if (result.ports_in.length < result.unique_ports) {
-                overflow = result.unique_ports - result.ports_in.length;
-                overflow_text = "<tr><th>Plus " + overflow + " more...</th><th></th></tr>";
-                document.getElementById("ports_in_overflow").innerHTML = overflow_text;
-            }
-            updateFloatingPanel();
         }
     });
 }
