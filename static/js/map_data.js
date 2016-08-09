@@ -318,7 +318,17 @@ function loadChildren(parent, callback) {
     });
 }
 
-function load_portinfo(port) {
+function POST_portinfo(request) {
+    "use strict";
+    $.ajax({
+        url: "/portinfo",
+        type: "POST",
+        data: request,
+        error: onNotLoadData
+    });
+}
+
+function GET_portinfo(port) {
     "use strict";
     var requestData = {"port": port}
     $.ajax({
@@ -327,28 +337,7 @@ function load_portinfo(port) {
         data: requestData,
         dataType: "json",
         error: onNotLoadData,
-        success: function (result) {
-            if (result.name === undefined) {
-                document.getElementById("port_name").innerHTML = "none";
-            } else {
-                document.getElementById("port_name").innerHTML = result.name;
-            }
-            if (result.description === undefined) {
-                document.getElementById("port_description").innerHTML = "none";
-            } else {
-                document.getElementById("port_description").innerHTML = result.description;
-            }
-            if (result.alias_name === undefined) {
-                document.getElementById("port_alias_name").value = "";
-            } else {
-                document.getElementById("port_alias_name").value = result.alias_name;
-            }
-            if (result.alias_description === undefined) {
-                document.getElementById("port_alias_description").value = "";
-            } else {
-                document.getElementById("port_alias_description").value = result.alias_description;
-            }
-        }
+        success: GET_portinfo_callback
     });
 }
 

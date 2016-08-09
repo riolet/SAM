@@ -28,15 +28,6 @@ function sel_set_selection(node) {
     }
 }
 
-function port_click(event) {
-    port = Number((event.target.innerHTML.split(" ")[0]));
-    document.getElementById("port_number").innerHTML = port;
-    document.getElementById("port_name").innerHTML = "...";
-    document.getElementById("port_description").innerHTML = "...";
-    $('.ui.modal.ports').modal('show');
-    load_portinfo(port);
-}
-
 // view
 
 function sel_clear_display() {
@@ -110,6 +101,8 @@ function sel_update_display(node) {
                 a.appendChild(document.createTextNode(port.port.toString()));
             } else {
                 a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
+                a.setAttribute("data-content", port.description);
+                a.setAttribute("class", "popup");
             }
             td.appendChild(a);
             tr.appendChild(td);
@@ -136,6 +129,8 @@ function sel_update_display(node) {
                 a.appendChild(document.createTextNode(port.port.toString()));
             } else {
                 a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
+                a.setAttribute("data-content", port.description);
+                a.setAttribute("class", "popup");
             }
             td.appendChild(a);
             tr.appendChild(td);
@@ -156,6 +151,8 @@ function sel_update_display(node) {
             a.appendChild(document.createTextNode(port.port.toString()));
         } else {
             a.appendChild(document.createTextNode(port.port.toString() + " - " + port.name));
+            a.setAttribute("data-content", port.description);
+            a.setAttribute("class", "popup");
         }
         td.appendChild(a);
         tr.appendChild(td);
@@ -212,4 +209,8 @@ function sel_update_display(node) {
         tr.appendChild(th);
         overflow.appendChild(tr);
     }
+
+    //enable new popups (tooltips)
+    $('.popup').popup();
+;
 }

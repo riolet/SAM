@@ -394,7 +394,7 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
 
 def getPortInfo(port):
     query = """
-SELECT portLUT.port, portLUT.name, portLUT.description,
+SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
     portAliasLUT.name AS alias_name,
     portAliasLUT.description AS alias_description
 FROM portLUT

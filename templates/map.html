@@ -112,7 +112,7 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
     <div class="header">Port <span id="port_number"></span></div>
     <div class="content">
         <table class="ui table">
-            <tr><td class="right aligned">Use translation:</td><td><div class="ui fitted toggle checkbox"><input name="use_port" type="checkbox"><label></label></div></td></tr>
+            <tr><td class="right aligned">Use Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
             <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
             <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
             <tr>
@@ -132,6 +132,16 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 </td>
             </tr>
         </table>
+    </div>
+    <div class="actions">
+        <div class="ui blue ok button">
+            <i class="save icon"></i>
+            Save
+        </div>
+        <div class="ui red cancel button">
+            <i class="cancel icon"></i>
+            Cancel
+        </div>
     </div>
 </div>
 <script type="application/javascript">

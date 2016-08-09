@@ -12,6 +12,7 @@ class Map:
                                                   '/static/js/map.js',
                                                   '/static/js/map_data.js',
                                                   '/static/js/map_selection.js',
+                                                  '/static/js/map_ports.js',
                                                   '/static/js/map_render.js',
                                                   '/static/js/map_events.js'])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
