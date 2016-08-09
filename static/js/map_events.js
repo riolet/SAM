@@ -41,8 +41,9 @@ function pick(x, y) {
     var bestDist = +Infinity;
     var tempDist = 0;
     renderCollection.forEach(function (node) {
-        if (contains(node, x, y)) {
-            tempDist = distanceSquared(x, y, node.x, node.y);
+        tempDist = distanceSquared(x, y, node.x, node.y);
+        if (tempDist < node.radius*node.radius) {
+        //if (contains(node, x, y)) {
             if (tempDist < bestDist || node.level > best.level) {
                 bestDist = tempDist;
                 best = node;
