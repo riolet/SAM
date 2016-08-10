@@ -79,18 +79,24 @@ function sel_update_display(node) {
     removeChildren(m_selection["titles"]);
     //removeChildren(m_selection["conn_in"]);
     table = m_selection["conn_in"].parentElement;
-    tbody = document.createElement("tbody");
     overflow = m_selection["conn_in"].nextElementSibling;
+    table.removeChild(m_selection["conn_in"]);
+    tbody = document.createElement("tbody");
+    m_selection["conn_in"] = tbody;
     table.insertBefore(tbody, overflow);
     //removeChildren(m_selection["conn_out"]);
     table = m_selection["conn_out"].parentElement;
-    tbody = document.createElement("tbody");
     overflow = m_selection["conn_out"].nextElementSibling;
+    table.removeChild(m_selection["conn_out"]);
+    tbody = document.createElement("tbody");
+    m_selection["conn_out"] = tbody;
     table.insertBefore(tbody, overflow);
     //removeChildren(m_selection["ports_in"]);
     table = m_selection["ports_in"].parentElement;
-    tbody = document.createElement("tbody");
     overflow = m_selection["ports_in"].nextElementSibling;
+    table.removeChild(m_selection["ports_in"]);
+    tbody = document.createElement("tbody");
+    m_selection["ports_in"] = tbody;
     table.insertBefore(tbody, overflow);
 
     //fill the title div
