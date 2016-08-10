@@ -282,8 +282,7 @@ function POST_node_alias(node, name) {
         url: "/nodeinfo",
         type: "POST",
         data: request,
-        error: onNotLoadData,
-        success: function (response) { console.log(response); }
+        error: onNotLoadData
     });
 }
 
