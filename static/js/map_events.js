@@ -126,6 +126,10 @@ function wheel(event) {
 
 function keydown(event) {
     "use strict";
+    //don't interfere with input dialogs
+    if (document.activeElement.localName !== "body") {
+        return;
+    }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
         resetViewport(nodeCollection);
