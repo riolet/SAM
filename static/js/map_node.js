@@ -69,17 +69,18 @@ function get_node_address(node) {
 }
 
 function set_node_name(node, name) {
+    "use strict";
     var oldName = node.alias;
     if (oldName === name) {
         return;
     }
-    console.log("saving node name. (" + oldName + ")->(" + name + ")");
     POST_node_alias(node, name);
     node.alias = name;
     render(tx, ty, scale);
 }
 
 function node_alias_submit(event) {
+    "use strict";
     if (event.keyCode === 13 || event.type === "blur") {
         var newName = document.getElementById("node_alias_edit");
         set_node_name(m_selection["selection"], newName.value);
