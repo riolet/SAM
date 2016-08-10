@@ -6,7 +6,7 @@ import json
 def test_database():
     result = 0
     try:
-        rows = common.db.query("SELECT * FROM Syslog LIMIT 1;")
+        common.db.query("SELECT 1 FROM Syslog LIMIT 1;")
     except Exception as e:
         result = e[0]
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
@@ -31,8 +31,8 @@ def create_database():
 
 
 def exec_sql(path):
-    with open(path, 'r') as file:
-        lines = file.readlines()
+    with open(path, 'r') as f:
+        lines = f.readlines()
     # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
     # join into one long string
@@ -64,34 +64,34 @@ def reset_port_names():
     common.db.multiple_insert('portLUT', values=ports)
 
 
-def determineRange(ip1 = -1, ip2 = -1, ip3 = -1, ip4 = -1):
-    min = 0x00000000
-    max = 0xFFFFFFFF
+def determineRange(ip1=-1, ip2=-1, ip3=-1, ip4=-1):
+    low = 0x00000000
+    high = 0xFFFFFFFF
     quot = 1
     if 0 <= ip1 <= 255:
-        min = (ip1 << 24)   # 172.0.0.0
+        low = (ip1 << 24)   # 172.0.0.0
         if 0 <= ip2 <= 255:
-            min |= (ip2 << 16)  # 172.19.0.0
+            low |= (ip2 << 16)  # 172.19.0.0
             if 0 <= ip3 <= 255:
-                min |= (ip3 << 8)
+                low |= (ip3 << 8)
                 if 0 <= ip4 <= 255:
-                    min |= ip4
-                    max = min
+                    low |= ip4
+                    high = low
                 else:
-                    max = min | 0xFF
+                    high = low | 0xFF
                     quot = 0x1
             else:
-                max = min | 0xFFFF
+                high = low | 0xFFFF
                 quot = 0x100
         else:
-            max = min | 0xFFFFFF
+            high = low | 0xFFFFFF
             quot = 0x10000
     else:
         quot = 0x1000000
-    return (min, max, quot)
+    return low, high, quot
 
 
-def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
+def getNodes(ipSegment1=-1, ipSegment2=-1, ipSegment3=-1):
     ipSegment1 = int(ipSegment1)
     ipSegment2 = int(ipSegment2)
     ipSegment3 = int(ipSegment3)
@@ -102,24 +102,22 @@ def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
     elif ipSegment2 < 0 or ipSegment2 > 255:
         # check Nodes16
         rows = common.db.where("Nodes16",
-                               parent8 = ipSegment1)
+                               parent8=ipSegment1)
     elif ipSegment3 < 0 or ipSegment3 > 255:
         # check Nodes24
         rows = common.db.where("Nodes24",
-                               parent8 = ipSegment1,
-                               parent16 = ipSegment2)
+                               parent8=ipSegment1,
+                               parent16=ipSegment2)
     else:
         # check Nodes32
         rows = common.db.where("Nodes32",
-                               parent8 = ipSegment1,
-                               parent16 = ipSegment2,
-                               parent24 = ipSegment3)
+                               parent8=ipSegment1,
+                               parent16=ipSegment2,
+                               parent24=ipSegment3)
     return rows
 
 
 def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
-    inputs = []
-
     if 0 <= ip32 <= 255:
         if filter == -1:
             query = """
@@ -184,7 +182,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     && dest16 = $seg2
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter':filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter}
         inputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip8 <= 255:
         if filter == -1:
@@ -210,8 +208,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
     return inputs
 
 
-def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, filter=-1):
-    outputs = []
+def getLinksOut(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1, filter=-1):
 
     if ipSegment1 < 0 or ipSegment1 > 255:
         outputs = []
@@ -297,13 +294,17 @@ def getLinksOut(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1, f
                     && source32 = $seg4
                     && Links32.port = $filter;
                 """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'seg4': str(ipSegment4), 'filter': filter}
+        qvars = {'seg1': str(ipSegment1),
+                 'seg2': str(ipSegment2),
+                 'seg3': str(ipSegment3),
+                 'seg4': str(ipSegment4),
+                 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
 
     return outputs
 
 
-def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
+def getDetails(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1):
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ipSegment1, ipSegment2, ipSegment3, ipSegment4)
 
@@ -404,11 +405,12 @@ def setNodeInfo(address, data):
     if len(ips) == 3:
         common.db.update('Nodes24', {"parent8": ips[0], "parent16": ips[1], "address": ips[2]}, **data)
     if len(ips) == 4:
-        common.db.update('Nodes32', {"parent8": ips[0], "parent16": ips[1], "parent24": ips[2], "address": ips[3]}, **data)
+        common.db.update('Nodes32', {"parent8": ips[0], "parent16": ips[1],
+                                     "parent24": ips[2], "address": ips[3]}, **data)
 
 
 def getPortInfo(port):
-    if type(port) == type([]):
+    if isinstance(port, list):
         arg = "("
         for i in port:
             arg += str(i) + ","
@@ -437,7 +439,7 @@ def setPortInfo(data):
                          name=data['alias_name'],
                          description=data['alias_description'])
     else:
-        common.db.insert('portAliasLUT', port=data.port, name=data.alias_name, description=data.alias_description);
+        common.db.insert('portAliasLUT', port=data.port, name=data.alias_name, description=data.alias_description)
 
     # update portLUT database of default values to include the missing information
     exists = common.db.select('portLUT', what="1", where={"port": data['port']})
@@ -446,26 +448,31 @@ def setPortInfo(data):
                          {"port": data['port']},
                          active=data['active'])
     else:
-        common.db.insert('portLUT', port=data.port, active=data['active'], tcp=1, udp=1, name="", description="");
+        common.db.insert('portLUT', port=data.port, active=data['active'], tcp=1, udp=1, name="", description="")
 
 
 def printLink(row):
     if "source32" in row:
-        print formatLink(row.source8, row.source16, row.source24, row.source32, row.dest8, row.dest16, row.dest24, row.dest32)
+        print formatLink(row.source8, row.source16, row.source24, row.source32,
+                         row.dest8, row.dest16, row.dest24, row.dest32)
     elif "source24" in row:
-        print formatLink(row.source8, row.source16, row.source24, 0, row.dest8, row.dest16, row.dest24, 0)
+        print formatLink(row.source8, row.source16, row.source24, 0,
+                         row.dest8, row.dest16, row.dest24, 0)
     elif "source16" in row:
-        print formatLink(row.source8, row.source16, 0, 0, row.dest8, row.dest16, 0, 0)
+        print formatLink(row.source8, row.source16, 0, 0,
+                         row.dest8, row.dest16, 0, 0)
     elif "source8" in row:
-        print formatLink(row.source8, 0, 0, 0, row.dest8, 0, 0, 0)
+        print formatLink(row.source8, 0, 0, 0,
+                         row.dest8, 0, 0, 0)
 
 
-def formatLink(src8 = 0, src16 = 0, src24 = 0, src32 = 0, dst8 = 0, dst16 = 0, dst24 = 0, dst32 = 0):
-    return "{0:>15s} --> {1:<15s}".format("{0:d}.{1:d}.{2:d}.{3:d}".format(src8, src16, src24, src32), "{0:d}.{1:d}.{2:d}.{3:d}".format(dst8, dst16, dst24, dst32))
+def formatLink(src8=0, src16=0, src24=0, src32=0, dst8=0, dst16=0, dst24=0, dst32=0):
+    return "{0:>15s} --> {1:<15s}".format("{0:d}.{1:d}.{2:d}.{3:d}".format(src8, src16, src24, src32), 
+                                          "{0:d}.{1:d}.{2:d}.{3:d}".format(dst8, dst16, dst24, dst32))
 
 
 def getTableSizes():
-    tableSizes= {};
+    tableSizes = {}
 
     rows = common.db.select("Nodes8", what="COUNT(*)")
     tableSizes["Nodes8"] = rows[0]["COUNT(*)"]

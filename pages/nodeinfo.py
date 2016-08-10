@@ -2,6 +2,7 @@ import json
 import dbaccess
 import web
 
+
 class Nodeinfo:
     def GET(self):
         web.header("Content-Type", "application/json")

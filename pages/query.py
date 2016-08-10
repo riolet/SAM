@@ -22,7 +22,7 @@ class Query:
         print(get_data)
         print("requesting data on: ")
         address_str = get_data.get('address', None)
-        if address_str != None:
+        if address_str is not None:
             addresses = address_str.split(",")
             for i in addresses:
                 print("\t" + i)
@@ -33,7 +33,7 @@ class Query:
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
         result = {}
-        if addresses == []:
+        if not addresses:
             result["_"] = list(dbaccess.getNodes())
         else:
             for address in addresses:
@@ -50,11 +50,15 @@ class Query:
         for children in result.values():
             for child in children:
                 if "parent24" in child:
-                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16, child.parent24, child.address, filter=portFilter)
-                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16, child.parent24, child.address, filter=portFilter)
+                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16, child.parent24,
+                                                       child.address, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16, child.parent24,
+                                                         child.address, filter=portFilter)
                 elif "parent16" in child:
-                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16, child.address, filter=portFilter)
-                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16, child.address, filter=portFilter)
+                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16,
+                                                       child.address, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16,
+                                                         child.address, filter=portFilter)
                 elif "parent8" in child:
                     child.inputs = dbaccess.getLinksIn(child.parent8, child.address, filter=portFilter)
                     child.outputs = dbaccess.getLinksOut(child.parent8, child.address, filter=portFilter)
