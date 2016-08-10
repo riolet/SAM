@@ -108,7 +108,7 @@ function onScreen() {
     var bottom = (rect.height - ty) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, nodeCollection);
+    visible = onScreenRecursive(left, right, top, bottom, m_nodes);
 
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
@@ -333,7 +333,7 @@ function renderLabels(node, x, y, scale) {
     }
     //Draw node labels here
     ctx.font = "1.5em sans";
-    var text = node.number;
+    var text = get_node_name(node);
     var size = ctx.measureText(text);
     var px = node.x * scale + x - size.width / 2;
     var py;
@@ -496,7 +496,7 @@ function render(x, y, scale) {
     ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (Object.keys(nodeCollection).length === 0) {
+    if (Object.keys(m_nodes).length === 0) {
         ctx.fillStyle = "#996666";
         ctx.font = "3em sans";
         var size = ctx.measureText("No data available");
