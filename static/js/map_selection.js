@@ -90,7 +90,10 @@ function sel_update_display(node) {
 
     //fill the title div
     h4 = document.createElement("h4");
-    h4.appendChild(document.createTextNode(node.alias));
+    a = document.createElement("a");
+    a.onclick = node_info_click;
+    a.appendChild(document.createTextNode(node.alias));
+    h4.appendChild(a);
     m_selection["titles"].appendChild(h4);
     h5 = document.createElement("h5");
     h5.appendChild(document.createTextNode(node.address));

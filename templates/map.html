@@ -112,7 +112,7 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
     <div class="header">Port <span id="port_number"></span></div>
     <div class="content">
         <table class="ui table">
-            <tr><td class="right aligned">Use Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+            <tr><td class="right aligned">Use Name Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
             <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
             <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
             <tr>
@@ -128,6 +128,31 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 <td>
                     <div class="ui input" data-content="A custom alias to override the default description">
                         <input placeholder="port description" id="port_alias_description" type="text">
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="actions">
+        <div class="ui blue ok button">
+            <i class="save icon"></i>
+            Save
+        </div>
+        <div class="ui red cancel button">
+            <i class="cancel icon"></i>
+            Cancel
+        </div>
+    </div>
+</div>
+<div class="ui modal nodeinfo">
+    <div class="header">Port <span id="host_number"></span></div>
+    <div class="content">
+        <table class="ui table">
+            <tr>
+                <td class="right aligned">Host Name:</td>
+                <td>
+                    <div class="ui input" data-content="A custom alias to override the default name">
+                        <input placeholder="host name" id="host_name" type="text">
                     </div>
                 </td>
             </tr>
