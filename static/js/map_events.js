@@ -139,7 +139,7 @@ function keydown(event) {
 function applyfilter() {
     "use strict";
     filter = document.getElementById("filter").value;
-    updateSelection(null);
+    sel_set_selection(null);
     nodeCollection = {};
     currentSubnet = "";
     updateRenderRoot();

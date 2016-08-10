@@ -15,6 +15,7 @@ urls = (
     '/query', 'pages.query.Query',
     '/details', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
+    '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
 )
 
 # For development testing, uncomment these 3 lines

@@ -32,19 +32,22 @@ function sel_set_selection(node) {
 
 function sel_clear_display() {
     removeChildren(m_selection["titles"]);
-    removeChildren(m_selection["conn_in"]);
-    removeChildren(m_selection["conn_out"]);
-    removeChildren(m_selection["ports_in"]);
+    //removeChildren(m_selection["conn_in"]);
+    m_selection["conn_in"].innerHTML = "";
+    //removeChildren(m_selection["conn_out"]);
+    m_selection["conn_out"].innerHTML = "";
+    //removeChildren(m_selection["ports_in"]);
+    m_selection["ports_in"].innerHTML = "";
     m_selection["unique_in"].childNodes[0].textContent = "0";
     m_selection["unique_out"].childNodes[0].textContent = "0";
     m_selection["unique_ports"].childNodes[0].textContent = "0";
 
     var overflow = m_selection["conn_in"].nextElementSibling;
-    removeChildren(overflow);
+    overflow.innerHTML = "";
     overflow = m_selection["conn_out"].nextElementSibling;
-    removeChildren(overflow);
+    overflow.innerHTML = "";
     overflow = m_selection["ports_in"].nextElementSibling;
-    removeChildren(overflow);
+    overflow.innerHTML = "";
 
 
     var h4 = document.createElement("h4");
@@ -69,6 +72,8 @@ function sel_update_display(node) {
     var table;
     var tbody;
     var overflow;
+    var div;
+    var input;
 
     //clear all data
     removeChildren(m_selection["titles"]);
@@ -90,13 +95,23 @@ function sel_update_display(node) {
 
     //fill the title div
     h4 = document.createElement("h4");
-    a = document.createElement("a");
-    a.onclick = node_info_click;
-    a.appendChild(document.createTextNode(node.alias));
-    h4.appendChild(a);
+    div = document.createElement("div");
+    input = document.createElement("input");
+    input.id = "node_alias_edit";
+    input.type = "text";
+    input.placeholder = "Node Alias";
+    input.style.textAlign = "center";
+    input.value = get_node_name(node);
+    input.onkeyup = node_alias_submit;
+    input.onblur = node_alias_submit;
+    div.classList.add("ui");
+    div.classList.add("transparent");
+    div.classList.add("input");
+    div.appendChild(input);
+    h4.appendChild(div);
     m_selection["titles"].appendChild(h4);
     h5 = document.createElement("h5");
-    h5.appendChild(document.createTextNode(node.address));
+    h5.appendChild(document.createTextNode(get_node_address(node)));
     m_selection["titles"].appendChild(h5);
 
     //fill in the section titles
@@ -105,6 +120,7 @@ function sel_update_display(node) {
     m_selection["unique_ports"].childNodes[0].textContent = node.details["unique_ports"].toString();
 
     //fill in the tables
+    //Input Connections table
     tbody = document.createElement("tbody");
     node.details["conn_in"].forEach(function (connection) {
         tr = document.createElement("tr");
@@ -139,6 +155,7 @@ function sel_update_display(node) {
     table.insertBefore(tbody, overflow);
 
 
+    //Output Connections table
     tbody = document.createElement("tbody");
     node.details["conn_out"].forEach(function (connection) {
         tr = document.createElement("tr");
@@ -173,6 +190,7 @@ function sel_update_display(node) {
     table.insertBefore(tbody, overflow);
 
 
+    //Ports Accessed table
     tbody = document.createElement("tbody");
     node.details["ports_in"].forEach(function (port) {
         tr = document.createElement("tr");

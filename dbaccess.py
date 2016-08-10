@@ -378,6 +378,32 @@ def getDetails(ipSegment1, ipSegment2 = -1, ipSegment3 = -1, ipSegment4 = -1):
     return details
 
 
+def getNodeInfo(*address):
+    print("-"*50)
+    print("getting node info:")
+    print("type: " + str(type(address)))
+    print(address)
+    print("-"*50)
+    pass
+
+
+def setNodeInfo(address, data):
+    print("-"*50)
+    print("Setting node info!")
+    ips = address.split(".")
+    print("type data: " + str(type(data)))
+    print(data)
+    print("-"*50)
+    if len(ips) == 1:
+        common.db.update('Nodes8', {"address": ips[0]}, **data)
+    if len(ips) == 2:
+        common.db.update('Nodes16', {"parent8": ips[0], "address": ips[1]}, **data)
+    if len(ips) == 3:
+        common.db.update('Nodes24', {"parent8": ips[0], "parent16": ips[1], "address": ips[2]}, **data)
+    if len(ips) == 4:
+        common.db.update('Nodes32', {"parent8": ips[0], "parent16": ips[1], "parent24": ips[2], "address": ips[3]}, **data)
+
+
 def getPortInfo(port):
     if type(port) == type([]):
         arg = "("

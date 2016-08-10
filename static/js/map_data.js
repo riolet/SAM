@@ -189,7 +189,7 @@ function onLoadData(result) {
     nodeCollection = {};
     result.forEach(function (node) {
         var name = node.address;
-        nodeCollection[node.address] = new Node(name, name, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+        nodeCollection[node.address] = new Node(node.alias, name, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
     });
 
     Object.keys(nodeCollection).forEach(function (key) {
@@ -251,8 +251,8 @@ function loadChildren(parent, callback) {
             // result should be an array of objects
             // where each object has address, alias, connections, x, y, radius,
             result.forEach(function (child) {
-                var name = parent.alias + "." + child.address;
-                parent.children[child.address] = new Node(name, name, child.address, parent.level + 8, child.connections, child.x, child.y, child.radius, child.inputs, child.outputs);
+                var name = parent.address + "." + child.address;
+                parent.children[child.address] = new Node(child.alias, name, child.address, parent.level + 8, child.connections, child.x, child.y, child.radius, child.inputs, child.outputs);
             });
             // process the connections
             Object.keys(parent.children).forEach(function (child) {
@@ -272,6 +272,18 @@ function loadChildren(parent, callback) {
                 render(tx, ty, scale);
             }
         }
+    });
+}
+
+function POST_node_alias(node, name) {
+    "use strict";
+    var request = {"node": node.address, "alias": name}
+    $.ajax({
+        url: "/nodeinfo",
+        type: "POST",
+        data: request,
+        error: onNotLoadData,
+        success: function (response) { console.log(response); }
     });
 }
 

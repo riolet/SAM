@@ -333,7 +333,7 @@ function renderLabels(node, x, y, scale) {
     }
     //Draw node labels here
     ctx.font = "1.5em sans";
-    var text = node.number;
+    var text = get_node_name(node);
     var size = ctx.measureText(text);
     var px = node.x * scale + x - size.width / 2;
     var py;
