@@ -92,15 +92,18 @@ def determineRange(ip1 = -1, ip2 = -1, ip3 = -1, ip4 = -1):
 
 
 def getNodes(ipSegment1 = -1, ipSegment2 = -1, ipSegment3 = -1):
-    rows = []
-    if ipSegment1 == -1 or ipSegment1 < 0 or ipSegment1 > 255:
+    ipSegment1 = int(ipSegment1)
+    ipSegment2 = int(ipSegment2)
+    ipSegment3 = int(ipSegment3)
+
+    if ipSegment1 < 0 or ipSegment1 > 255:
         # check Nodes8
         rows = common.db.select("Nodes8")
-    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+    elif ipSegment2 < 0 or ipSegment2 > 255:
         # check Nodes16
         rows = common.db.where("Nodes16",
                                parent8 = ipSegment1)
-    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+    elif ipSegment3 < 0 or ipSegment3 > 255:
         # check Nodes24
         rows = common.db.where("Nodes24",
                                parent8 = ipSegment1,

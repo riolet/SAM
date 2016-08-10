@@ -9,20 +9,35 @@ def decimal_default(obj):
         return float(obj)
     raise TypeError
 
+
 class Query:
     def GET(self):
         web.header("Content-Type", "application/json")
 
+        addresses = []
+
         get_data = web.input()
+        print("-"*50)
+        print("Query: get_data is")
+        print(get_data)
+        print("requesting data on: ")
+        address_str = get_data.get('address', None)
+        if address_str != None:
+            addresses = address_str.split(",")
+            for i in addresses:
+                print("\t" + i)
+        else:
+            print("\troot nodes")
+        print("-"*50)
 
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
-        result = dbaccess.getNodes(
-            int(get_data.get('ip8', -1)),
-            int(get_data.get('ip16', -1)),
-            int(get_data.get('ip24', -1)))
-
-        rows = list(result)
+        result = {}
+        if addresses == []:
+            result["_"] = list(dbaccess.getNodes())
+        else:
+            for address in addresses:
+                result[address] = list(dbaccess.getNodes(*address.split(".")))
 
         portFilter = get_data.get('filter', "")
         if portFilter == "":
@@ -32,18 +47,19 @@ class Query:
 
         print("filtering by " + str(portFilter))
 
-        for row in rows:
-            if "parent24" in row:
-                row.inputs = dbaccess.getLinksIn(row.parent8, row.parent16, row.parent24, row.address, filter=portFilter)
-                row.outputs = dbaccess.getLinksOut(row.parent8, row.parent16, row.parent24, row.address, filter=portFilter)
-            elif "parent16" in row:
-                row.inputs = dbaccess.getLinksIn(row.parent8, row.parent16, row.address, filter=portFilter)
-                row.outputs = dbaccess.getLinksOut(row.parent8, row.parent16, row.address, filter=portFilter)
-            elif "parent8" in row:
-                row.inputs = dbaccess.getLinksIn(row.parent8, row.address, filter=portFilter)
-                row.outputs = dbaccess.getLinksOut(row.parent8, row.address, filter=portFilter)
-            else:
-                row.inputs = dbaccess.getLinksIn(row.address, filter=portFilter)
-                row.outputs = dbaccess.getLinksOut(row.address, filter=portFilter)
+        for children in result.values():
+            for child in children:
+                if "parent24" in child:
+                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16, child.parent24, child.address, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16, child.parent24, child.address, filter=portFilter)
+                elif "parent16" in child:
+                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16, child.address, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16, child.address, filter=portFilter)
+                elif "parent8" in child:
+                    child.inputs = dbaccess.getLinksIn(child.parent8, child.address, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.parent8, child.address, filter=portFilter)
+                else:
+                    child.inputs = dbaccess.getLinksIn(child.address, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.address, filter=portFilter)
 
-        return json.dumps(rows, default=decimal_default)
+        return json.dumps(result, default=decimal_default)

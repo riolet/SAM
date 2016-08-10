@@ -182,26 +182,6 @@ function preprocessConnection(link) {
     }
 }
 
-function onLoadData(result) {
-    "use strict";
-    // result should be an array of objects
-    // where each object has address, alias, connections, x, y, radius,
-    nodeCollection = {};
-    result.forEach(function (node) {
-        var name = node.address;
-        nodeCollection[node.address] = new Node(node.alias, name, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
-    });
-
-    Object.keys(nodeCollection).forEach(function (key) {
-        nodeCollection[key].inputs.forEach(preprocessConnection);
-        nodeCollection[key].outputs.forEach(preprocessConnection);
-    });
-
-    resetViewport(nodeCollection);
-    updateRenderRoot();
-    render(tx, ty, scale);
-}
-
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
@@ -210,69 +190,56 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
     console.log("\t" + errorThrown);
 }
 
-function loadData() {
-    "use strict";
-    $.ajax({
-        url: "/query",
-        data: {"filter": filter},
-        success: onLoadData,
-        error: onNotLoadData
-    });
-}
+/*
+Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
 
-function loadChildren(parent, callback) {
-    "use strict";
-    if (parent.childrenLoaded === true) {
-        return;
-    }
+parents: either an array of nodes, or null.
+    if a list of nodes, retrieves the children of the nodes that don't have children loaded
+    if null, retreives the top-level nodes. (the /8 subnet)
+callback: if is a function, call it when done importing.
 
-    parent.childrenLoaded = true;
-    //console.log("Loading children of " + node.address);
-    var temp = parent.address.split(".");
-    var requestData = {"ip24": -1, "ip16": -1, "ip8": -1};
-    if (temp.length >= 3) {
-        requestData.ip24 = temp[2];
+ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
+*/
+function GET_nodes(parents, callback) {
+    var request = {}
+
+    if (parents !== null) {
+        //filter out parents with children already loaded
+        parents = parents.filter(function (parent) {
+            return !parent.childrenLoaded;
+        });
+        if (parents.length == 0) {
+            return;
+        }
+        request.address = parents.map(function (parent) {
+            parent.childrenLoaded = true;
+            return parent.address;
+        }).join(",");
     }
-    if (temp.length >= 2) {
-        requestData.ip16 = temp[1];
-    }
-    if (temp.length >= 1) {
-        requestData.ip8 = temp[0];
-    }
-    requestData.filter = filter;
+    request.filter = filter;
 
     $.ajax({
         url: "/query",
         type: "GET",
-        data: requestData,
+        data: request,
         dataType: "json",
         error: onNotLoadData,
-        success: function (result) {
-            // result should be an array of objects
-            // where each object has address, alias, connections, x, y, radius,
-            result.forEach(function (child) {
-                var name = parent.address + "." + child.address;
-                parent.children[child.address] = new Node(child.alias, name, child.address, parent.level + 8, child.connections, child.x, child.y, child.radius, child.inputs, child.outputs);
-            });
-            // process the connections
-            Object.keys(parent.children).forEach(function (child) {
-                if (parent.children[child].level === 32) {
-                    preprocessConnection32(parent.children[child].inputs);
-                } else {
-                    parent.children[child].inputs.forEach(preprocessConnection);
-                }
-                parent.children[child].outputs.forEach(preprocessConnection);
-            });
-            port_request_submit();
-
+        success: function (response) {
+            node_update(response);
             if (typeof callback === "function") {
-                callback();
+                callback(response);
             } else {
                 updateRenderRoot();
                 render(tx, ty, scale);
             }
         }
     });
+}
+
+function reportErrors(response) {
+    if (response.code !== 0) {
+        console.log("Error: " + response.message);
+    }
 }
 
 function POST_node_alias(node, name) {
@@ -282,7 +249,8 @@ function POST_node_alias(node, name) {
         url: "/nodeinfo",
         type: "POST",
         data: request,
-        error: onNotLoadData
+        error: onNotLoadData,
+        success: reportErrors
     });
 }
 
@@ -292,7 +260,8 @@ function POST_portinfo(request) {
         url: "/portinfo",
         type: "POST",
         data: request,
-        error: onNotLoadData
+        error: onNotLoadData,
+        success: reportErrors
     });
 }
 
@@ -311,13 +280,14 @@ function GET_portinfo(port) {
 
 function checkLoD() {
     "use strict";
-    var visible = onScreen();
 
-    visible.forEach(function (node) {
+    var nodesToLoad = []
+    renderCollection.forEach(function (node) {
         if (node.level < currentLevel()) {
-            loadChildren(node);
+            nodesToLoad.push(node);
         }
     });
+    GET_nodes(nodesToLoad);
     updateRenderRoot();
     render(tx, ty, scale);
 }

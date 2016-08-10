@@ -132,7 +132,7 @@ function keydown(event) {
     }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
-        resetViewport(nodeCollection);
+        resetViewport(m_nodes);
         updateRenderRoot();
         resetViewport(renderCollection);
         render(tx, ty, scale);
@@ -144,10 +144,10 @@ function applyfilter() {
     "use strict";
     filter = document.getElementById("filter").value;
     sel_set_selection(null);
-    nodeCollection = {};
+    m_nodes = {};
     currentSubnet = "";
     updateRenderRoot();
-    loadData();
+    GET_nodes(null);
     render(tx, ty, scale);
 }
 function onfilter() {
@@ -175,15 +175,15 @@ function applysearch() {
             break;
         }
         if (subnet === null) {
-            if (nodeCollection.hasOwnProperty(segment)) {
-                subnet = nodeCollection[segment];
+            if (m_nodes.hasOwnProperty(segment)) {
+                subnet = m_nodes[segment];
             } else {
                 break;
             }
         } else {
             if (subnet.childrenLoaded === false && subnet.level < 32) {
                 //load more and restart when loading is complete.
-                loadChildren(subnet, applysearch);
+                GET_nodes([subnet], applysearch);
                 return;
             }
             if (subnet.children.hasOwnProperty(segment)) {

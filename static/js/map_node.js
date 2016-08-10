@@ -1,3 +1,5 @@
+var m_nodes = {};
+
 function Node(alias, address, number, level, connections, x, y, radius, inputs, outputs) {
     "use strict";
     if (typeof alias === "string") {
@@ -92,8 +94,6 @@ function node_alias_submit(event) {
 function node_info_click(event) {
     "use strict";
     var node = m_selection['selection'];
-    console.log("node_info_click!");
-    console.log(node);
 
     $('.ui.modal.nodeinfo')
         .modal({
@@ -101,4 +101,45 @@ function node_info_click(event) {
         })
         .modal('show')
     ;
+}
+
+function import_node(parent, node) {
+    if (parent === null) {
+        m_nodes[node.address] = new Node(node.alias, node.address, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+    } else {
+        var name = parent.address + "." + node.address;
+        parent.children[node.address] = new Node(node.alias, name, node.address, parent.level + 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+    }
+}
+
+// `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
+function node_update(response) {
+    Object.keys(response).forEach(function (parent_address) {
+        if (parent_address === "_") {
+            //must be top level
+            m_nodes = {};
+            response[parent_address].forEach(function (node) {
+                import_node(null, node);
+            });
+            Object.keys(m_nodes).forEach(function (key) {
+                m_nodes[key].inputs.forEach(preprocessConnection);
+                m_nodes[key].outputs.forEach(preprocessConnection);
+            });
+            resetViewport(m_nodes);
+        } else {
+            parent = findNode(parent_address);
+            response[parent_address].forEach(function (node) {
+                import_node(parent, node);
+            });
+            Object.keys(parent.children).forEach(function (child) {
+                if (parent.children[child].level === 32) {
+                    preprocessConnection32(parent.children[child].inputs);
+                } else {
+                    parent.children[child].inputs.forEach(preprocessConnection);
+                }
+                parent.children[child].outputs.forEach(preprocessConnection);
+            });
+        }
+    });
+    port_request_submit();
 }
