@@ -22,6 +22,7 @@ function sel_set_selection(node) {
 
     if (node !== null && node["details"]["loaded"] === false) {
         // load details
+        m_selection["titles"].firstChild.innerHTML = "Loading selection..."
         getDetails(node, sel_update_display);
     } else {
         sel_update_display();
@@ -110,10 +111,15 @@ function sel_update_display(node) {
     input.value = get_node_name(node);
     input.onkeyup = node_alias_submit;
     input.onblur = node_alias_submit;
+    a = document.createElement("i");
+    a.classList.add("write");
+    a.classList.add("icon");
     div.classList.add("ui");
     div.classList.add("transparent");
+    div.classList.add("icon");
     div.classList.add("input");
     div.appendChild(input);
+    div.appendChild(a);
     h4.appendChild(div);
     m_selection["titles"].appendChild(h4);
     h5 = document.createElement("h5");
