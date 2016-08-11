@@ -15,9 +15,7 @@ var mx;
 var my;
 
 //store the data displayed in the map
-var nodeCollection = {};
 var renderCollection = [];
-var selection = null;
 var currentSubnet = "";
 
 //settings/options data
@@ -52,6 +50,7 @@ function init() {
     ty = rect.height / 2;
     ctx = canvas.getContext("2d");
     ctx.lineJoin = "bevel";
+    sel_init();
 
     //Event listeners for detecting clicks and zooms
     canvas.addEventListener("mousedown", mousedown);
@@ -83,7 +82,8 @@ function init() {
     $(".input.icon").popup();
     $("table.sortable").tablesort();
 
-    loadData();
+    //loadData();
+    GET_nodes(null);
 }
 
 function currentLevel() {
@@ -102,6 +102,24 @@ function currentLevel() {
 
 function findNode(ip8, ip16, ip24, ip32) {
     "use strict";
+    if (typeof ip8 === "string") {
+        var ips = ip8.split(".");
+        if (ips.length == 1) {
+            ip8 = Number(ips[0]);
+        } else if (ips.length == 2) {
+            ip8 = Number(ips[0]);
+            ip16 = Number(ips[1]);
+        } else if (ips.length == 3) {
+            ip8 = Number(ips[0]);
+            ip16 = Number(ips[1]);
+            ip24 = Number(ips[2]);
+        } else if (ips.length == 4) {
+            ip8 = Number(ips[0]);
+            ip16 = Number(ips[1]);
+            ip24 = Number(ips[2]);
+            ip32 = Number(ips[3]);
+        }
+    }
     if (ip8 === undefined) {
         ip8 = -1;
     }
@@ -115,21 +133,27 @@ function findNode(ip8, ip16, ip24, ip32) {
         ip32 = -1;
     }
 
-    if (nodeCollection.hasOwnProperty(ip8)) {
-        if (nodeCollection[ip8].children.hasOwnProperty(ip16)) {
-            if (nodeCollection[ip8].children[ip16].children.hasOwnProperty(ip24)) {
-                if (nodeCollection[ip8].children[ip16].children[ip24].children.hasOwnProperty(ip32)) {
-                    return nodeCollection[ip8].children[ip16].children[ip24].children[ip32];
+    if (m_nodes.hasOwnProperty(ip8)) {
+        if (m_nodes[ip8].children.hasOwnProperty(ip16)) {
+            if (m_nodes[ip8].children[ip16].children.hasOwnProperty(ip24)) {
+                if (m_nodes[ip8].children[ip16].children[ip24].children.hasOwnProperty(ip32)) {
+                    return m_nodes[ip8].children[ip16].children[ip24].children[ip32];
                 } else {
-                    return nodeCollection[ip8].children[ip16].children[ip24];
+                    return m_nodes[ip8].children[ip16].children[ip24];
                 }
             } else {
-                return nodeCollection[ip8].children[ip16];
+                return m_nodes[ip8].children[ip16];
             }
         } else {
-            return nodeCollection[ip8];
+            return m_nodes[ip8];
         }
     } else {
         return null;
+    }
+}
+
+function removeChildren(element) {
+    while (element.firstChild) {
+        element.removeChild(element.firstChild);
     }
 }

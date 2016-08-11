@@ -108,7 +108,7 @@ function onScreen() {
     var bottom = (rect.height - ty) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, nodeCollection);
+    visible = onScreenRecursive(left, right, top, bottom, m_nodes);
 
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
@@ -283,19 +283,16 @@ function renderLabels(node, x, y, scale) {
     "use strict";
     var alpha = 0;
     if (scale > 25) {
-        //Draw port labels here
+        //Draw port labels at this zoom level
         alpha = opacity(32, "label");
-        if (selection === null || selection === node) {
+        if (m_selection["selection"] === null || m_selection["selection"] === node) {
             ctx.globalAlpha = alpha;
         } else {
             ctx.globalAlpha = alpha * 0.33;
         }
         if (node.level === 32) {
             Object.keys(node.ports).forEach(function (p) {
-                var text = p;
-                if (node.ports[p].alias !== "") {
-                    text = node.ports[p].alias;
-                }
+                var text = get_port_alias(p);
                 ctx.font = "1.5em sans";
                 var sizeMin = ctx.measureText("mmmmm");
                 var size = Math.max(ctx.measureText(text).width, sizeMin.width);
@@ -336,7 +333,7 @@ function renderLabels(node, x, y, scale) {
     }
     //Draw node labels here
     ctx.font = "1.5em sans";
-    var text = node.number;
+    var text = get_node_name(node);
     var size = ctx.measureText(text);
     var px = node.x * scale + x - size.width / 2;
     var py;
@@ -348,7 +345,7 @@ function renderLabels(node, x, y, scale) {
     alpha = opacity(node.level, "label");
 
     //ctx.font = fontsize + "em sans";
-    if (selection === null || selection === node) {
+    if (m_selection["selection"] === null || m_selection["selection"] === node) {
         ctx.globalAlpha = alpha * 0.5;
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(px, py + 2, size.width, -21);
@@ -405,7 +402,7 @@ function renderClusters(collection, x, y, scale) {
     var drawingLevel;
     var colorNormal = "#5555CC";
     var colorUnselected = "#95D5D9";
-    if (selection === null) {
+    if (m_selection["selection"] === null) {
         ctx.strokeStyle = colorNormal;
     } else {
         ctx.strokeStyle = colorUnselected;
@@ -466,28 +463,29 @@ function renderClusters(collection, x, y, scale) {
     });
 
     //Draw the selected item over top everything else
-    if (selection !== null) {
+    if (m_selection["selection"] !== null) {
+
         ctx.setTransform(scale, 0, 0, scale, x, y, 1);
         ctx.strokeStyle = colorNormal;
         ctx.globalAlpha = 1;
 
-        //ctx.globalAlpha = opacity(selection.level, "links");
+        //ctx.globalAlpha = opacity(m_selection["selection"].level, "links");
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
-        renderLinks(selection);
+        renderLinks(m_selection["selection"]);
         ctx.stroke();
 
-        //ctx.globalAlpha = opacity(selection.level, "node");
+        //ctx.globalAlpha = opacity(m_selection["selection"].level, "node");
         ctx.lineWidth = 5 / scale;
         ctx.fillStyle = "#FFFFFF";
         ctx.beginPath();
-        renderNode(selection);
+        renderNode(m_selection["selection"]);
         ctx.stroke();
 
         ctx.resetTransform();
         ctx.font = "1.5em sans";
         ctx.fillStyle = "#000000";
-        renderLabels(selection, x, y, scale);
+        renderLabels(m_selection["selection"], x, y, scale);
     }
 }
 
@@ -498,7 +496,7 @@ function render(x, y, scale) {
     ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (Object.keys(nodeCollection).length === 0) {
+    if (Object.keys(m_nodes).length === 0) {
         ctx.fillStyle = "#996666";
         ctx.font = "3em sans";
         var size = ctx.measureText("No data available");

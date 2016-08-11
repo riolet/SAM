@@ -41,8 +41,9 @@ function pick(x, y) {
     var bestDist = +Infinity;
     var tempDist = 0;
     renderCollection.forEach(function (node) {
-        if (contains(node, x, y)) {
-            tempDist = distanceSquared(x, y, node.x, node.y);
+        tempDist = distanceSquared(x, y, node.x, node.y);
+        if (tempDist < node.radius*node.radius) {
+        //if (contains(node, x, y)) {
             if (tempDist < bestDist || node.level > best.level) {
                 bestDist = tempDist;
                 best = node;
@@ -67,8 +68,9 @@ function mouseup(event) {
 
     if (mx === mdownx && my === mdowny) {
         //mouse hasn't moved. treat this as a "pick" operation
-        selection = pick((mx - tx) / scale, (my - ty) / scale);
-        updateSelection(selection);
+        var selection = pick((mx - tx) / scale, (my - ty) / scale);
+        //updateSelection(selection);
+        sel_set_selection(selection);
     }
 
     tx = tx + mx - mdownx;
@@ -124,9 +126,13 @@ function wheel(event) {
 
 function keydown(event) {
     "use strict";
+    //don't interfere with input dialogs
+    if (document.activeElement.localName !== "body") {
+        return;
+    }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
-        resetViewport(nodeCollection);
+        resetViewport(m_nodes);
         updateRenderRoot();
         resetViewport(renderCollection);
         render(tx, ty, scale);
@@ -137,11 +143,11 @@ function keydown(event) {
 function applyfilter() {
     "use strict";
     filter = document.getElementById("filter").value;
-    updateSelection(null);
-    nodeCollection = {};
+    sel_set_selection(null);
+    m_nodes = {};
     currentSubnet = "";
     updateRenderRoot();
-    loadData();
+    GET_nodes(null);
     render(tx, ty, scale);
 }
 function onfilter() {
@@ -169,15 +175,15 @@ function applysearch() {
             break;
         }
         if (subnet === null) {
-            if (nodeCollection.hasOwnProperty(segment)) {
-                subnet = nodeCollection[segment];
+            if (m_nodes.hasOwnProperty(segment)) {
+                subnet = m_nodes[segment];
             } else {
                 break;
             }
         } else {
             if (subnet.childrenLoaded === false && subnet.level < 32) {
                 //load more and restart when loading is complete.
-                loadChildren(subnet, applysearch);
+                GET_nodes([subnet], applysearch);
                 return;
             }
             if (subnet.children.hasOwnProperty(segment)) {
@@ -206,7 +212,7 @@ function onsearch() {
 
 function updateFloatingPanel() {
     "use strict";
-    var side = document.getElementById("sidebar");
+    var side = document.getElementById("sel_bar");
     var heightAvailable = rect.height - 40;
     side.style.maxHeight = heightAvailable + "px";
 
@@ -219,8 +225,7 @@ function updateFloatingPanel() {
         //offsetHeight is height + vertical padding + vertical borders
         heightAvailable -= contentTitles[i].offsetHeight;
     }
-    heightAvailable -= document.getElementById("selectionName").offsetHeight;
-    heightAvailable -= document.getElementById("selectionNumber").offsetHeight;
+    heightAvailable -= document.getElementById("sel_titles").offsetHeight;
 
     var contentBlocks = $("#selectionInfo div.content");
     for (i = 0; i < contentBlocks.length; i += 1) {
