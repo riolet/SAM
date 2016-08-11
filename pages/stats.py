@@ -29,8 +29,12 @@ class Stats:
         rows = common.db.query("SELECT DestinationPort AS 'Port', COUNT(*) AS 'Connections' FROM Syslog GROUP BY Port;")
         lrows = rows.list()
         self.stats.append(("Unique destination ports:", str(len(lrows))))
-        lrows = [i for i in lrows if i['Port'] < 32768]
-        self.stats.append(("Unique destination ports (under 32768):", str(len(lrows))))
+        sys_lrows = [i for i in lrows if i['Port'] < 1024]
+        self.stats.append(("Unique system ports (0..1023):", str(len(sys_lrows))))
+        usr_lrows = [i for i in lrows if 1024 <= i['Port'] < 49152]
+        self.stats.append(("Unique user ports (1024..49151):", str(len(usr_lrows))))
+        prv_lrows = [i for i in lrows if 49152 <= i['Port'] < 65536]
+        self.stats.append(("Unique private ports (49152..65535):", str(len(prv_lrows))))
 
         rows = common.db.query(
             "SELECT DestinationIP AS 'Address', \
