@@ -169,229 +169,24 @@ def import_nodes():
 
 def import_links():
     # Populate Links8
-    query = """
-        INSERT INTO Links8 (source8, dest8, port, links, x1, y1, x2, y2)
-        SELECT source8, dest8, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                 , DestinationIP DIV 16777216 AS dest8
-                 , DestinationPort as port
-                 , COUNT(*) AS conns
-            FROM Syslog
-            GROUP BY source8, dest8, port) AS main
-            JOIN
-            (SELECT address, x, y FROM Nodes8) AS src
-            ON (source8 = src.address)
-            JOIN
-            (SELECT address, x, y FROM Nodes8) AS dst
-            ON (dest8 = dst.address);
-        """
-    common.db.query(query)
+    links = get_links8()
+    for link in links:
+        position_link(link)
+    set_links8(links)
 
     # Populate Links16
-    #
-    # This seems like a big query. Some explanation:
-    # The query creates a larger table (union) from a few query results
-    #    and inserts the larger table into Links16)
+    links = get_links16()
+    for link in links:
+        position_link(link)
+    set_links16(links)
 
-    query = """
-        INSERT INTO Links16 (source8, source16, dest8, dest16, port, links, x1, y1, x2, y2)
-        SELECT source8, source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-                     , DestinationIP DIV 16777216 AS dest8
-                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, dest8, dest16, port)
-                AS main
-            JOIN
-                (SELECT parent8, address, x, y
-                FROM Nodes16)
-                AS src
-                ON (source8 = src.parent8 && source16 = src.address)
-            JOIN
-                (SELECT parent8, address, x, y
-                FROM Nodes16)
-                AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
-        UNION
-        SELECT source8, 256 AS source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , DestinationIP DIV 16777216 AS dest8
-                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, dest8, dest16, port)
-                AS main
-            JOIN
-                (SELECT address, x, y
-                FROM Nodes8)
-                AS src
-                ON (source8 = src.address)
-            JOIN
-                (SELECT parent8, address, x, y
-                FROM Nodes16)
-                AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
-        UNION
-        SELECT source8, source16, dest8, 256 AS dest16, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-                     , DestinationIP DIV 16777216 AS dest8
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, dest8, port)
-                AS main
-            JOIN
-                (SELECT parent8, address, x, y
-                FROM Nodes16)
-                AS src
-                ON (source8 = src.parent8 && source16 = src.address)
-            JOIN
-                (SELECT address, x, y
-                FROM Nodes8)
-                AS dst
-                ON (dest8 = dst.address);
-    """
-    common.db.query(query)
 
     # Populate Links24
-    #
-    # This seems like a big query. Some explanation:
-    # The query creates a larger table (union) from a few query results
-    #    and inserts the larger table into Links24)
-    # This query is set up like this to group together queries from very different IP addresses
-    # (i.e. from a different /8 or /16 address)
-    query = """
-        INSERT INTO Links24 (source8, source16, source24, dest8, dest16, dest24, port, links, x1, y1, x2, y2)
-        SELECT source8, source16, source24, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-                     , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
-                     , DestinationIP DIV 16777216 AS dest8
-                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
-                    AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, source24, dest8, dest16, dest24, port) AS main
-            JOIN
-                (SELECT parent8, parent16, address, x, y
-                FROM Nodes24)
-                AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
-            JOIN
-                (SELECT parent8, parent16, address, x, y
-                FROM Nodes24)
-                AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
-        UNION
-        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-                     , DestinationIP DIV 16777216 AS dest8
-                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
-                    AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, dest8, dest16, dest24, port) AS main
-            JOIN
-                (SELECT parent8, address, x, y
-                FROM Nodes16)
-                AS src
-                ON (source8 = src.parent8 && source16 = src.address)
-            JOIN
-                (SELECT parent8, parent16, address, x, y
-                FROM Nodes24)
-                AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
-        UNION
-        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , DestinationIP DIV 16777216 AS dest8
-                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, dest8, dest16, dest24, port) AS main
-            JOIN
-                (SELECT address, x, y
-                FROM Nodes8)
-                AS src
-                ON (source8 = src.address)
-            JOIN
-                (SELECT parent8, parent16, address, x, y
-                FROM Nodes24)
-                AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
-        UNION
-        SELECT source8, source16, source24, dest8, dest16, 256, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-                     , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
-                     , DestinationIP DIV 16777216 AS dest8
-                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
-                    AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, source24, dest8, dest16, port) AS main
-            JOIN
-                (SELECT parent8, parent16, address, x, y
-                FROM Nodes24)
-                AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
-            JOIN
-                (SELECT parent8, address, x, y
-                FROM Nodes16)
-                AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
-        UNION
-        SELECT source8, source16, source24, dest8, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
-        FROM
-            (SELECT SourceIP DIV 16777216 AS source8
-                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
-                     , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
-                     , DestinationIP DIV 16777216 AS dest8
-                     , DestinationPort as port
-                     , COUNT(*) AS conns
-                FROM Syslog
-                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, source24, dest8, port) AS main
-            JOIN
-                (SELECT parent8, parent16, address, x, y
-                FROM Nodes24)
-                AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
-            JOIN
-                (SELECT address, x, y
-                FROM Nodes8)
-                AS dst
-                ON (dest8 = dst.address);
-    """
-    common.db.query(query)
+    links = get_links24()
+    for link in links:
+        position_link(link)
+    set_links24(links)
+
 
     # Populate Links32
     query = """
@@ -577,9 +372,44 @@ def import_links():
     common.db.query(query)
 
 
-def getLinks8():
+def position_link(link):
+    dx = link.dx - link.sx
+    dy = link.dy - link.sy
+    io_offset = 0.2
+
+    if abs(dx) > abs(dy):
+        # more horizontal distance
+        if dx < 0:
+            # leftward flowing
+            link.sx -= link.sr
+            link.dx += link.dr
+            link.sy += link.sr * io_offset
+            link.dy += link.dr * io_offset
+        else:
+            # rightward flowing
+            link.sx += link.sr
+            link.dx -= link.dr
+            link.sy -= link.sr * io_offset
+            link.dy -= link.dr * io_offset
+    else:
+        # more vertical distance
+        if dy < 0:
+            link.sy -= link.sr
+            link.dy += link.dr
+            link.sx += link.sr * io_offset
+            link.dx += link.dr * io_offset
+        else:
+            link.sy += link.sr
+            link.dy -= link.dr
+            link.sx -= link.sr * io_offset
+            link.dx -= link.dr * io_offset
+
+
+def get_links8():
     query = """
-        SELECT source8, dest8, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, dest8, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                  , DestinationIP DIV 16777216 AS dest8
@@ -588,14 +418,285 @@ def getLinks8():
             FROM Syslog
             GROUP BY source8, dest8, port) AS main
             JOIN
-            (SELECT address, x, y FROM Nodes8) AS src
+            (SELECT address, x, y, radius FROM Nodes8) AS src
             ON (source8 = src.address)
             JOIN
-            (SELECT address, x, y FROM Nodes8) AS dst
+            (SELECT address, x, y, radius FROM Nodes8) AS dst
             ON (dest8 = dst.address);
         """
     rows = list(common.db.query(query))
     return rows
+
+
+def set_links8(links):
+    values = [{
+        "source8": i.source8,
+        "dest8": i.dest8,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links8', values=values)
+
+
+def get_links16():
+    # This seems like a big query. Some explanation:
+    # The query creates a larger table (union) from a few query results:
+    #    a.b -> a.c
+    #    a.* -> b.c
+    #    a.b -> c.*
+    query = """
+        SELECT source8, source16, dest8, dest16, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                     , DestinationIP DIV 16777216 AS dest8
+                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
+                GROUP BY source8, source16, dest8, dest16, port)
+                AS main
+            JOIN
+                (SELECT parent8, address, x, y, radius
+                FROM Nodes16)
+                AS src
+                ON (source8 = src.parent8 && source16 = src.address)
+            JOIN
+                (SELECT parent8, address, x, y, radius
+                FROM Nodes16)
+                AS dst
+                ON (dest8 = dst.parent8 && dest16 = dst.address)
+        UNION
+        SELECT source8, 256 AS source16, dest8, dest16, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , DestinationIP DIV 16777216 AS dest8
+                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
+                GROUP BY source8, dest8, dest16, port)
+                AS main
+            JOIN
+                (SELECT address, x, y, radius
+                FROM Nodes8)
+                AS src
+                ON (source8 = src.address)
+            JOIN
+                (SELECT parent8, address, x, y, radius
+                FROM Nodes16)
+                AS dst
+                ON (dest8 = dst.parent8 && dest16 = dst.address)
+        UNION
+        SELECT source8, source16, dest8, 256 AS dest16, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                     , DestinationIP DIV 16777216 AS dest8
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
+                GROUP BY source8, source16, dest8, port)
+                AS main
+            JOIN
+                (SELECT parent8, address, x, y, radius
+                FROM Nodes16)
+                AS src
+                ON (source8 = src.parent8 && source16 = src.address)
+            JOIN
+                (SELECT address, x, y, radius
+                FROM Nodes8)
+                AS dst
+                ON (dest8 = dst.address);"""
+    rows = list(common.db.query(query))
+    return rows
+
+
+def set_links16(links):
+    values = [{
+        "source8": i.source8,
+        "source16": i.source16,
+        "dest8": i.dest8,
+        "dest16": i.dest16,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links16', values=values)
+
+
+def get_links24():
+    # This seems like a big query. Some explanation:
+    # The query creates a larger table (union) from a few query results:
+    #    a.b.c -> a.b.d
+    #    a.b.* -> a.c.d
+    #    a.*.* -> b.c.d
+    #    a.b.c -> a.d.*
+    #    a.b.c -> d.*.*
+    query = """
+        SELECT source8, source16, source24, dest8, dest16, dest24, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                     , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+                     , DestinationIP DIV 16777216 AS dest8
+                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
+                    AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
+                GROUP BY source8, source16, source24, dest8, dest16, dest24, port) AS main
+            JOIN
+                (SELECT parent8, parent16, address, x, y, radius
+                FROM Nodes24)
+                AS src
+                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+            JOIN
+                (SELECT parent8, parent16, address, x, y, radius
+                FROM Nodes24)
+                AS dst
+                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+        UNION
+        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                     , DestinationIP DIV 16777216 AS dest8
+                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
+                    AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
+                GROUP BY source8, source16, dest8, dest16, dest24, port) AS main
+            JOIN
+                (SELECT parent8, address, x, y, radius
+                FROM Nodes16)
+                AS src
+                ON (source8 = src.parent8 && source16 = src.address)
+            JOIN
+                (SELECT parent8, parent16, address, x, y, radius
+                FROM Nodes24)
+                AS dst
+                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+        UNION
+        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , DestinationIP DIV 16777216 AS dest8
+                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
+                GROUP BY source8, dest8, dest16, dest24, port) AS main
+            JOIN
+                (SELECT address, x, y, radius
+                FROM Nodes8)
+                AS src
+                ON (source8 = src.address)
+            JOIN
+                (SELECT parent8, parent16, address, x, y, radius
+                FROM Nodes24)
+                AS dst
+                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+        UNION
+        SELECT source8, source16, source24, dest8, dest16, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                     , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+                     , DestinationIP DIV 16777216 AS dest8
+                     , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
+                    AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
+                GROUP BY source8, source16, source24, dest8, dest16, port) AS main
+            JOIN
+                (SELECT parent8, parent16, address, x, y, radius
+                FROM Nodes24)
+                AS src
+                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+            JOIN
+                (SELECT parent8, address, x, y, radius
+                FROM Nodes16)
+                AS dst
+                ON (dest8 = dst.parent8 && dest16 = dst.address)
+        UNION
+        SELECT source8, source16, source24, dest8, 256, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                     , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
+                     , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
+                     , DestinationIP DIV 16777216 AS dest8
+                     , DestinationPort as port
+                     , COUNT(*) AS conns
+                FROM Syslog
+                WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
+                GROUP BY source8, source16, source24, dest8, port) AS main
+            JOIN
+                (SELECT parent8, parent16, address, x, y, radius
+                FROM Nodes24)
+                AS src
+                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+            JOIN
+                (SELECT address, x, y, radius
+                FROM Nodes8)
+                AS dst
+                ON (dest8 = dst.address);
+    """
+    rows = list(common.db.query(query))
+    return rows
+
+
+def set_links24(links):
+    values = [{
+        "source8": i.source8,
+        "source16": i.source16,
+        "source24": i.source24,
+        "dest8": i.dest8,
+        "dest16": i.dest16,
+        "dest24": i.dest24,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links24', values=values)
 
 
 def preprocess_log():

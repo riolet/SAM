@@ -127,61 +127,6 @@ function preprocessConnection32(links) {
     });
 }
 
-function preprocessConnection(link) {
-    "use strict";
-    //TODO: move this preprocessing into the database (preprocess.py) instead of client-side.
-    var source = {};
-    var destination = {};
-    if (link.hasOwnProperty("source32")) {
-        source = findNode(link.source8, link.source16, link.source24, link.source32);
-        destination = findNode(link.dest8, link.dest16, link.dest24, link.dest32);
-    } else if (link.hasOwnProperty("source24")) {
-        source = findNode(link.source8, link.source16, link.source24);
-        destination = findNode(link.dest8, link.dest16, link.dest24);
-    } else if (link.hasOwnProperty("source16")) {
-        destination = findNode(link.dest8, link.dest16);
-        source = findNode(link.source8, link.source16);
-    } else {
-        destination = findNode(link.dest8);
-        source = findNode(link.source8);
-    }
-
-    var dx = link.x2 - link.x1;
-    var dy = link.y2 - link.y1;
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //leftward flowing
-            link.x1 -= source.radius;
-            link.x2 += destination.radius;
-            link.y1 += source.radius * 0.2;
-            link.y2 += destination.radius * 0.2;
-        } else {
-            //rightward flowing
-            link.x1 += source.radius;
-            link.x2 -= destination.radius;
-            link.y1 -= source.radius * 0.2;
-            link.y2 -= destination.radius * 0.2;
-        }
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //upward flowing
-            link.y1 -= source.radius;
-            link.y2 += destination.radius;
-            link.x1 += source.radius * 0.2;
-            link.x2 += destination.radius * 0.2;
-        } else {
-            //downward flowing
-            link.y1 += source.radius;
-            link.y2 -= destination.radius;
-            link.x1 -= source.radius * 0.2;
-            link.x2 -= destination.radius * 0.2;
-        }
-    }
-}
-
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";

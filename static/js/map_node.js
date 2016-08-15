@@ -121,23 +121,11 @@ function node_update(response) {
             response[parent_address].forEach(function (node) {
                 import_node(null, node);
             });
-            Object.keys(m_nodes).forEach(function (key) {
-                //m_nodes[key].inputs.forEach(preprocessConnection);
-                //m_nodes[key].outputs.forEach(preprocessConnection);
-            });
             resetViewport(m_nodes);
         } else {
             parent = findNode(parent_address);
             response[parent_address].forEach(function (node) {
                 import_node(parent, node);
-            });
-            Object.keys(parent.children).forEach(function (child) {
-                if (parent.children[child].level === 32) {
-                    preprocessConnection32(parent.children[child].inputs);
-                } else {
-                    parent.children[child].inputs.forEach(preprocessConnection);
-                }
-                parent.children[child].outputs.forEach(preprocessConnection);
             });
         }
     });
