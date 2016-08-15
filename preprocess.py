@@ -167,172 +167,6 @@ def import_nodes():
     common.db.query(query)
 
 
-def dist_squared(x1, y1, x2, y2):
-    return (x2-x1)**2 + (y2-y1)**2
-
-
-def check_collisions(node, nodelist, margin=0):
-    for n in nodelist:
-        if dist_squared(node.x, node.y, n.x, n.y) < (node.radius + n.radius + margin)**2:
-            return True
-    return False
-
-
-def group_nodes_for_layout(node_iter):
-    nodes = list(node_iter)
-    placed = []
-    parent = -1
-    temp = []
-    groups = []
-    for node in nodes:
-        if node.parent == parent:
-            temp.append(node)
-            continue
-        else:
-            # placed.extend(layout_nodes(temp))
-            groups.append(temp)
-            temp = [node]
-            parent = node.parent
-    groups.append(temp)
-
-    for group in groups:
-        placed.extend(layout_nodes(group))
-
-    return placed
-
-
-def layout_nodes(nodes):
-    placed = []
-
-    # TODO: is it possible to do this within the import_nodes queries?
-
-    if len(nodes) == 0:
-        pass
-
-    elif len(nodes) == 1:
-        node = nodes[0]
-        node.x = node.px
-        node.y = node.py
-        placed.append(node)
-
-    else:
-        nodes_wide = 16
-        w = nodes[0].pr * 1.8
-        left = nodes[0].px - w/2
-        top = nodes[0].py - w/2
-        step = w / (nodes_wide - 1)
-        for node in nodes:
-            x = left + (node.address % nodes_wide) * step
-            y = top + (node.address / nodes_wide) * step
-            node.x = x
-            node.y = y
-            x += step
-            placed.append(node)
-
-    return placed
-
-
-def position_nodes():
-    # position the /8 first
-    # arrangement radius is 20000
-    # node radius is 2000
-    query = """
-        SELECT 1 AS parent, address, connections, 0 AS px, 0 AS py, 331776 AS pr, x, y
-        FROM
-            Nodes8
-        ORDER BY connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes8
-        SET x = $nx
-          , y = $ny
-        WHERE address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-    # position the /16 within each node's parent
-    query = """
-        SELECT A.parent8 AS parent, A.address, A.connections, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
-        FROM
-            Nodes16 A JOIN Nodes8 B
-            ON A.parent8 = B.address
-        ORDER BY parent, connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes16
-        SET x = $nx
-          , y = $ny
-        WHERE parent8 = $pip8 AND address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'pip8': node.parent,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-    # position the /24 within each node's parent
-    query = """
-        SELECT A.parent8, A.parent16 AS parent, A.address, A.connections, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
-        FROM
-            Nodes24 A JOIN Nodes16 B
-            ON (A.parent16 = B.address AND A.parent8 = B.parent8)
-        ORDER BY parent8, parent, connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes24
-        SET x = $nx
-          , y = $ny
-        WHERE parent8 = $pip8 AND parent16 = $pip16 AND address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'pip8': node.parent8,
-                 'pip16': node.parent,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-    # position the /32 within each node's parent
-    query = """
-        SELECT A.parent8, A.parent16, A.parent24 AS parent, A.address, A.connections, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
-        FROM
-            Nodes32 A JOIN Nodes24 B
-            ON (A.parent24 = B.address AND A.parent16 = B.parent16 AND A.parent8 = B.parent8)
-        ORDER BY parent8, parent16, parent, connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes32
-        SET x = $nx
-          , y = $ny
-        WHERE parent8 = $pip8 AND parent16 = $pip16  AND parent24 = $pip24 AND address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'pip8': node.parent8,
-                 'pip16': node.parent16,
-                 'pip24': node.parent,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-
 def import_links():
     # Populate Links8
     query = """
@@ -742,19 +576,31 @@ def import_links():
     """
     common.db.query(query)
 
-    # remove connections to self?
-    # query = "DELETE FROM Links8 WHERE source8=dest8;"
-    # common.db.query(query)
-    # query = "DELETE FROM Links16 WHERE source8=dest8 && source16=dest16;"
-    # common.db.query(query)
+
+def getLinks8():
+    query = """
+        SELECT source8, dest8, port, conns, src.x, src.y, dst.x, dst.y
+        FROM
+            (SELECT SourceIP DIV 16777216 AS source8
+                 , DestinationIP DIV 16777216 AS dest8
+                 , DestinationPort as port
+                 , COUNT(*) AS conns
+            FROM Syslog
+            GROUP BY source8, dest8, port) AS main
+            JOIN
+            (SELECT address, x, y FROM Nodes8) AS src
+            ON (source8 = src.address)
+            JOIN
+            (SELECT address, x, y FROM Nodes8) AS dst
+            ON (dest8 = dst.address);
+        """
+    rows = list(common.db.query(query))
+    return rows
 
 
 def preprocess_log():
     clean_tables()
     import_nodes()
-    # grid-based positioning is being handled within import_nodes() now.
-    # related functions are retained in case of non-grid layouts in the future.
-    # position_nodes()
     import_links()
     print("Pre-processing completed successfully.")
 
@@ -772,3 +618,4 @@ if __name__ == "__main__":
 # time python preprocess.py >/dev/null 2>/dev/null
 # is about half of
 # time python preprocess.py
+

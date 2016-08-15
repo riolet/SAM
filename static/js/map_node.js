@@ -122,8 +122,8 @@ function node_update(response) {
                 import_node(null, node);
             });
             Object.keys(m_nodes).forEach(function (key) {
-                m_nodes[key].inputs.forEach(preprocessConnection);
-                m_nodes[key].outputs.forEach(preprocessConnection);
+                //m_nodes[key].inputs.forEach(preprocessConnection);
+                //m_nodes[key].outputs.forEach(preprocessConnection);
             });
             resetViewport(m_nodes);
         } else {
