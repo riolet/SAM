@@ -127,7 +127,141 @@ function node_update(response) {
             response[parent_address].forEach(function (node) {
                 import_node(parent, node);
             });
+            Object.keys(parent.children).forEach(function (child) {
+                if (parent.children[child].level === 32) {
+                    node_processPorts(parent.children[child].inputs);
+                }
+            });
         }
     });
     port_request_submit();
+}
+
+function node_closestEmptyPort(link, used) {
+    "use strict";
+    var right = [1, 0, 2, 7, 3, 6, 4, 5];
+    var top = [3, 2, 4, 1, 5, 0, 6, 7];
+    var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
+    var left = [4, 5, 3, 6, 2, 7, 1, 0];
+
+    var dx = link.x2 - link.x1;
+    var dy = link.y2 - link.y1;
+
+    var chooser = function (i) {
+        return used[i] === false;
+    };
+    var choice;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //port on right
+            choice = right.find(chooser);
+        } else {
+            //port on left
+            choice = left.find(chooser);
+        }
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //port on bottom
+            choice = bottom.find(chooser);
+        } else {
+            //port on top
+            choice = top.find(chooser);
+        }
+    }
+    return choice;
+}
+
+function node_processPorts(links) {
+    "use strict";
+    if (links.length === 0) {
+        return;
+    }
+
+    var destination = findNode(links[0].dest8, links[0].dest16,
+            links[0].dest24, links[0].dest32);
+
+    //
+    //    3_2
+    //  4|   |1
+    //  5|___|0
+    //    6 7
+    //
+    var used = [false, false, false, false, false, false, false, false];
+    var locations = [{"x": destination.x + destination.radius, "y": destination.y + destination.radius / 3, "alias": "", "side": "right"},
+            {"x": destination.x + destination.radius, "y": destination.y - destination.radius / 3, "alias": "", "side": "right"},
+            {"x": destination.x + destination.radius / 3, "y": destination.y - destination.radius, "alias": "", "side": "top"},
+            {"x": destination.x - destination.radius / 3, "y": destination.y - destination.radius, "alias": "", "side": "top"},
+            {"x": destination.x - destination.radius, "y": destination.y - destination.radius / 3, "alias": "", "side": "left"},
+            {"x": destination.x - destination.radius, "y": destination.y + destination.radius / 3, "alias": "", "side": "left"},
+            {"x": destination.x - destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"},
+            {"x": destination.x + destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"}];
+
+    var ports = {};
+    var j;
+    var choice = 0;
+    //the first 8 unique port numbers should be mapped to locations.
+    for (j = 0; j < Object.keys(links).length; j += 1) {
+        if (ports.hasOwnProperty(links[j].port)) {
+            continue;
+        }
+        port_request_add(links[j].port);
+        choice = node_closestEmptyPort(links[j], used);
+        if (choice === undefined) {
+            continue;
+        }
+        ports[links[j].port] = locations[choice];
+        used[choice] = true;
+        if (Object.keys(ports).length >= 8) {
+            break;
+        }
+    }
+    destination.ports = ports;
+
+    links.forEach(function (link) {
+        var source = findNode(link.source8, link.source16,
+                link.source24, link.source32);
+
+        //offset endpoints by radius
+        var dx = link.x2 - link.x1;
+        var dy = link.y2 - link.y1;
+
+        if (ports.hasOwnProperty(link.port)) {
+            if (ports[link.port].side === "top") {
+                link.x2 = ports[link.port].x;
+                link.y2 = ports[link.port].y - 0.6;
+            } else if (ports[link.port].side === "left") {
+                link.x2 = ports[link.port].x - 0.6;
+                link.y2 = ports[link.port].y;
+            } else if (ports[link.port].side === "right") {
+                link.x2 = ports[link.port].x + 0.6;
+                link.y2 = ports[link.port].y;
+            } else if (ports[link.port].side === "bottom") {
+                link.x2 = ports[link.port].x;
+                link.y2 = ports[link.port].y + 0.6;
+            } else {
+                //this should never execute
+                link.x2 = ports[link.port].x;
+                link.y2 = ports[link.port].y;
+            }
+        } else {
+            //align to corners
+            if (dx > 0) {
+                link.x1 += source.radius;
+                link.x2 -= destination.radius;
+            } else {
+                link.x1 -= source.radius;
+                link.x2 += destination.radius;
+            }
+            if (dy > 0) {
+                link.y1 += source.radius;
+                link.y2 -= destination.radius;
+            } else {
+                link.y1 -= source.radius;
+                link.y2 += destination.radius;
+            }
+        }
+    });
 }
