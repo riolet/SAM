@@ -167,177 +167,73 @@ def import_nodes():
     common.db.query(query)
 
 
-def dist_squared(x1, y1, x2, y2):
-    return (x2-x1)**2 + (y2-y1)**2
-
-
-def check_collisions(node, nodelist, margin=0):
-    for n in nodelist:
-        if dist_squared(node.x, node.y, n.x, n.y) < (node.radius + n.radius + margin)**2:
-            return True
-    return False
-
-
-def group_nodes_for_layout(node_iter):
-    nodes = list(node_iter)
-    placed = []
-    parent = -1
-    temp = []
-    groups = []
-    for node in nodes:
-        if node.parent == parent:
-            temp.append(node)
-            continue
-        else:
-            # placed.extend(layout_nodes(temp))
-            groups.append(temp)
-            temp = [node]
-            parent = node.parent
-    groups.append(temp)
-
-    for group in groups:
-        placed.extend(layout_nodes(group))
-
-    return placed
-
-
-def layout_nodes(nodes):
-    placed = []
-
-    # TODO: is it possible to do this within the import_nodes queries?
-
-    if len(nodes) == 0:
-        pass
-
-    elif len(nodes) == 1:
-        node = nodes[0]
-        node.x = node.px
-        node.y = node.py
-        placed.append(node)
-
-    else:
-        nodes_wide = 16
-        w = nodes[0].pr * 1.8
-        left = nodes[0].px - w/2
-        top = nodes[0].py - w/2
-        step = w / (nodes_wide - 1)
-        for node in nodes:
-            x = left + (node.address % nodes_wide) * step
-            y = top + (node.address / nodes_wide) * step
-            node.x = x
-            node.y = y
-            x += step
-            placed.append(node)
-
-    return placed
-
-
-def position_nodes():
-    # position the /8 first
-    # arrangement radius is 20000
-    # node radius is 2000
-    query = """
-        SELECT 1 AS parent, address, connections, 0 AS px, 0 AS py, 331776 AS pr, x, y
-        FROM
-            Nodes8
-        ORDER BY connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes8
-        SET x = $nx
-          , y = $ny
-        WHERE address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-    # position the /16 within each node's parent
-    query = """
-        SELECT A.parent8 AS parent, A.address, A.connections, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
-        FROM
-            Nodes16 A JOIN Nodes8 B
-            ON A.parent8 = B.address
-        ORDER BY parent, connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes16
-        SET x = $nx
-          , y = $ny
-        WHERE parent8 = $pip8 AND address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'pip8': node.parent,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-    # position the /24 within each node's parent
-    query = """
-        SELECT A.parent8, A.parent16 AS parent, A.address, A.connections, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
-        FROM
-            Nodes24 A JOIN Nodes16 B
-            ON (A.parent16 = B.address AND A.parent8 = B.parent8)
-        ORDER BY parent8, parent, connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes24
-        SET x = $nx
-          , y = $ny
-        WHERE parent8 = $pip8 AND parent16 = $pip16 AND address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'pip8': node.parent8,
-                 'pip16': node.parent,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-    # position the /32 within each node's parent
-    query = """
-        SELECT A.parent8, A.parent16, A.parent24 AS parent, A.address, A.connections, B.x AS px, B.y AS py, B.radius AS pr, A.x, A.y
-        FROM
-            Nodes32 A JOIN Nodes24 B
-            ON (A.parent24 = B.address AND A.parent16 = B.parent16 AND A.parent8 = B.parent8)
-        ORDER BY parent8, parent16, parent, connections DESC;
-        """
-    rows = common.db.query(query)
-
-    placed = group_nodes_for_layout(rows)
-
-    for node in placed:
-        query = """
-        UPDATE Nodes32
-        SET x = $nx
-          , y = $ny
-        WHERE parent8 = $pip8 AND parent16 = $pip16  AND parent24 = $pip24 AND address = $nip"""
-        qvars = {'nx': node.x,
-                 'ny': node.y,
-                 'pip8': node.parent8,
-                 'pip16': node.parent16,
-                 'pip24': node.parent,
-                 'nip': node.address}
-        common.db.query(query, vars=qvars)
-
-
 def import_links():
     # Populate Links8
+    links = get_links8()
+    for link in links:
+        position_link(link)
+    set_links8(links)
+
+    # Populate Links16
+    links = get_links16()
+    for link in links:
+        position_link(link)
+    set_links16(links)
+
+
+    # Populate Links24
+    links = get_links24()
+    for link in links:
+        position_link(link)
+    set_links24(links)
+
+
+    # Populate Links32
+    links = get_links32()
+    for link in links:
+        position_link(link)
+    set_links32(links)
+
+
+
+def position_link(link):
+    dx = link.dx - link.sx
+    dy = link.dy - link.sy
+    io_offset = 0.2
+
+    if abs(dx) > abs(dy):
+        # more horizontal distance
+        if dx < 0:
+            # leftward flowing
+            link.sx -= link.sr
+            link.dx += link.dr
+            link.sy += link.sr * io_offset
+            link.dy += link.dr * io_offset
+        else:
+            # rightward flowing
+            link.sx += link.sr
+            link.dx -= link.dr
+            link.sy -= link.sr * io_offset
+            link.dy -= link.dr * io_offset
+    else:
+        # more vertical distance
+        if dy < 0:
+            link.sy -= link.sr
+            link.dy += link.dr
+            link.sx += link.sr * io_offset
+            link.dx += link.dr * io_offset
+        else:
+            link.sy += link.sr
+            link.dy -= link.dr
+            link.sx -= link.sr * io_offset
+            link.dx -= link.dr * io_offset
+
+
+def get_links8():
     query = """
-        INSERT INTO Links8 (source8, dest8, port, links, x1, y1, x2, y2)
-        SELECT source8, dest8, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, dest8, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                  , DestinationIP DIV 16777216 AS dest8
@@ -346,23 +242,40 @@ def import_links():
             FROM Syslog
             GROUP BY source8, dest8, port) AS main
             JOIN
-            (SELECT address, x, y FROM Nodes8) AS src
+            (SELECT address, x, y, radius FROM Nodes8) AS src
             ON (source8 = src.address)
             JOIN
-            (SELECT address, x, y FROM Nodes8) AS dst
+            (SELECT address, x, y, radius FROM Nodes8) AS dst
             ON (dest8 = dst.address);
         """
-    common.db.query(query)
+    rows = list(common.db.query(query))
+    return rows
 
-    # Populate Links16
-    #
+
+def set_links8(links):
+    values = [{
+        "source8": i.source8,
+        "dest8": i.dest8,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links8', values=values)
+
+
+def get_links16():
     # This seems like a big query. Some explanation:
-    # The query creates a larger table (union) from a few query results
-    #    and inserts the larger table into Links16)
-
+    # The query creates a larger table (union) from a few query results:
+    #    a.b -> a.c
+    #    a.* -> b.c
+    #    a.b -> c.*
     query = """
-        INSERT INTO Links16 (source8, source16, dest8, dest16, port, links, x1, y1, x2, y2)
-        SELECT source8, source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, dest8, dest16, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -375,17 +288,19 @@ def import_links():
                 GROUP BY source8, source16, dest8, dest16, port)
                 AS main
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.address)
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, 256 AS source16, dest8, dest16, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, 256 AS source16, dest8, dest16, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
@@ -397,17 +312,19 @@ def import_links():
                 GROUP BY source8, dest8, dest16, port)
                 AS main
             JOIN
-                (SELECT address, x, y
+                (SELECT address, x, y, radius
                 FROM Nodes8)
                 AS src
                 ON (source8 = src.address)
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, dest8, 256 AS dest16, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, dest8, 256 AS dest16, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -419,28 +336,47 @@ def import_links():
                 GROUP BY source8, source16, dest8, port)
                 AS main
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.address)
             JOIN
-                (SELECT address, x, y
+                (SELECT address, x, y, radius
                 FROM Nodes8)
                 AS dst
-                ON (dest8 = dst.address);
-    """
-    common.db.query(query)
+                ON (dest8 = dst.address);"""
+    rows = list(common.db.query(query))
+    return rows
 
-    # Populate Links24
-    #
+
+def set_links16(links):
+    values = [{
+        "source8": i.source8,
+        "source16": i.source16,
+        "dest8": i.dest8,
+        "dest16": i.dest16,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links16', values=values)
+
+
+def get_links24():
     # This seems like a big query. Some explanation:
-    # The query creates a larger table (union) from a few query results
-    #    and inserts the larger table into Links24)
-    # This query is set up like this to group together queries from very different IP addresses
-    # (i.e. from a different /8 or /16 address)
+    # The query creates a larger table (union) from a few query results:
+    #    a.b.c -> a.b.d
+    #    a.b.* -> a.c.d
+    #    a.*.* -> b.c.d
+    #    a.b.c -> a.d.*
+    #    a.b.c -> d.*.*
     query = """
-        INSERT INTO Links24 (source8, source16, source24, dest8, dest16, dest24, port, links, x1, y1, x2, y2)
-        SELECT source8, source16, source24, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, dest8, dest16, dest24, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -455,17 +391,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                 GROUP BY source8, source16, source24, dest8, dest16, dest24, port) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -479,17 +417,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                 GROUP BY source8, source16, dest8, dest16, dest24, port) AS main
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.address)
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
@@ -501,17 +441,19 @@ def import_links():
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
                 GROUP BY source8, dest8, dest16, dest24, port) AS main
             JOIN
-                (SELECT address, x, y
+                (SELECT address, x, y, radius
                 FROM Nodes8)
                 AS src
                 ON (source8 = src.address)
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, source24, dest8, dest16, 256, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, dest8, dest16, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -525,17 +467,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                 GROUP BY source8, source16, source24, dest8, dest16, port) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, source24, dest8, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, dest8, 256, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -547,22 +491,52 @@ def import_links():
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
                 GROUP BY source8, source16, source24, dest8, port) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
             JOIN
-                (SELECT address, x, y
+                (SELECT address, x, y, radius
                 FROM Nodes8)
                 AS dst
                 ON (dest8 = dst.address);
     """
-    common.db.query(query)
+    rows = list(common.db.query(query))
+    return rows
 
-    # Populate Links32
+
+def set_links24(links):
+    values = [{
+        "source8": i.source8,
+        "source16": i.source16,
+        "source24": i.source24,
+        "dest8": i.dest8,
+        "dest16": i.dest16,
+        "dest24": i.dest24,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links24', values=values)
+
+
+def get_links32():
+    # This seems like a big query. Some explanation:
+    # The query creates a larger table (union) from a few query results:
+    #    a.b.c.d -> a.b.c.e
+    #    a.b.c.* -> a.b.d.e
+    #    a.b.*.* -> a.c.d.e
+    #    a.*.*.* -> b.c.d.e
+    #    a.b.c.d -> a.b.e.*
+    #    a.b.c.d -> a.e.*.*
+    #    a.b.c.d -> e.*.*.*
     query = """
-        INSERT INTO Links32 (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, links, x1, y1, x2, y2)
-        SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -580,17 +554,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 = (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
                 GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, dest32, port) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, source24, 256, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, 256, dest8, dest16, dest24, dest32, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -607,17 +583,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 != (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
                 GROUP BY source8, source16, source24, dest8, dest16, dest24, dest32, port) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, 256, 256, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, 256, 256, dest8, dest16, dest24, dest32, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -632,17 +610,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                 GROUP BY source8, source16, dest8, dest16, dest24, dest32, port) AS main
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.address)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, 256, 256, 256, dest8, dest16, dest24, dest32, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, 256, 256, 256, dest8, dest16, dest24, dest32, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
@@ -655,17 +635,19 @@ def import_links():
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
                 GROUP BY source8, dest8, dest16, dest24, dest32, port) AS main
             JOIN
-                (SELECT address, x, y
+                (SELECT address, x, y, radius
                 FROM Nodes8)
                 AS src
                 ON (source8 = src.address)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 256, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -682,17 +664,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 != (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
                 GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, port) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
             JOIN
-                (SELECT parent8, parent16, address, x, y
+                (SELECT parent8, parent16, address, x, y, radius
                 FROM Nodes24)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, dest16, 256, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -707,17 +691,19 @@ def import_links():
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                 GROUP BY source8, source16, source24, source32, dest8, dest16, port) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
             JOIN
-                (SELECT parent8, address, x, y
+                (SELECT parent8, address, x, y, radius
                 FROM Nodes16)
                 AS dst
                 ON (dest8 = dst.parent8 && dest16 = dst.address)
         UNION
-        SELECT source8, source16, source24, source32, dest8, 256, 256, 256, port, conns, src.x, src.y, dst.x, dst.y
+        SELECT source8, source16, source24, source32, dest8, 256, 256, 256, port, conns,
+            src.x AS sx, src.y AS sy, src.radius AS sr,
+            dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
@@ -730,35 +716,47 @@ def import_links():
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
                 GROUP BY source8, source16, source24, source32, dest8, port) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y
+                (SELECT parent8, parent16, parent24, address, x, y, radius
                 FROM Nodes32)
                 AS src
                 ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
             JOIN
-                (SELECT address, x, y
+                (SELECT address, x, y, radius
                 FROM Nodes8)
                 AS dst
                 ON (dest8 = dst.address);
     """
-    common.db.query(query)
+    rows = list(common.db.query(query))
+    return rows
 
-    # remove connections to self?
-    # query = "DELETE FROM Links8 WHERE source8=dest8;"
-    # common.db.query(query)
-    # query = "DELETE FROM Links16 WHERE source8=dest8 && source16=dest16;"
-    # common.db.query(query)
+
+def set_links32(links):
+    values = [{
+        "source8": i.source8,
+        "source16": i.source16,
+        "source24": i.source24,
+        "source32": i.source32,
+        "dest8": i.dest8,
+        "dest16": i.dest16,
+        "dest24": i.dest24,
+        "dest32": i.dest32,
+        "port": i.port,
+        "links": i.conns,
+        "x1": i.sx,
+        "y1": i.sy,
+        "x2": i.dx,
+        "y2": i.dy
+    } for i in links]
+    common.db.multiple_insert('Links32', values=values)
 
 
 def preprocess_log():
     clean_tables()
     import_nodes()
-    # grid-based positioning is being handled within import_nodes() now.
-    # related functions are retained in case of non-grid layouts in the future.
-    # position_nodes()
     import_links()
     print("Pre-processing completed successfully.")
 
-# If running as a script, begin by executing main.
+# If running as a script
 if __name__ == "__main__":
     access = dbaccess.test_database()
     if access == 1049:
@@ -768,7 +766,3 @@ if __name__ == "__main__":
     else:
         preprocess_log()
 
-
-# time python preprocess.py >/dev/null 2>/dev/null
-# is about half of
-# time python preprocess.py
