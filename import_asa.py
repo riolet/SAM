@@ -2,7 +2,7 @@ import sys
 import os
 import json
 import common
-#import dbaccess
+import dbaccess
 
 def validate_file(path):
     """
