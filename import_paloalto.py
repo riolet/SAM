@@ -1,11 +1,11 @@
 import json
 import sys
 import common
-import import_base
+from import_base import BaseImporter
 from datetime import datetime
 
 
-class PaloAltoImporter(import_base.BaseImporter):
+class PaloAltoImporter(BaseImporter):
     def translate(self, line, line_num, dictionary):
         """
         Converts a given syslog line into a dictionary of (ip, port, ip, port, timestamp)
@@ -44,7 +44,6 @@ class PaloAltoImporter(import_base.BaseImporter):
         dictionary['DestinationPort'] = split_data[25]
         dictionary['Stamp'] = datetime.strptime(split_data[1], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         return 0
-    import_base.translate = translate
 
 
 # If running as a script, begin by executing main.
