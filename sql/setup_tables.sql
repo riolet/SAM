@@ -1,54 +1,54 @@
 CREATE TABLE Nodes8
-(address           INT NOT NULL
+(ip8               INT NOT NULL
 ,connections       INT NOT NULL
 ,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
 ,alias             VARCHAR(96)
-,CONSTRAINT PKNodes8 PRIMARY KEY (address)
+,CONSTRAINT PKNodes8 PRIMARY KEY (ip8)
 );
 
 CREATE TABLE Nodes16
-(parent8           INT NOT NULL
-,address           INT NOT NULL
+(ip8               INT NOT NULL
+,ip16              INT NOT NULL
 ,connections       INT NOT NULL
 ,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 200
 ,alias             VARCHAR(96)
-,CONSTRAINT PKNodes16 PRIMARY KEY (parent8, address)
-,CONSTRAINT FKParent16 FOREIGN KEY (parent8) REFERENCES Nodes8 (address)
+,CONSTRAINT PKNodes16 PRIMARY KEY (ip8, ip16)
+,CONSTRAINT FKParent16 FOREIGN KEY (ip8) REFERENCES Nodes8 (ip8)
 );
 
 CREATE TABLE Nodes24
-(parent8           INT NOT NULL
-,parent16          INT NOT NULL
-,address           INT NOT NULL
+(ip8               INT NOT NULL
+,ip16              INT NOT NULL
+,ip24              INT NOT NULL
 ,connections       INT NOT NULL
 ,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 20
 ,alias             VARCHAR(96)
-,CONSTRAINT PKNodes24 PRIMARY KEY (parent8, parent16, address)
-,CONSTRAINT FKParent24 FOREIGN KEY (parent8, parent16) REFERENCES Nodes16 (parent8, address)
+,CONSTRAINT PKNodes24 PRIMARY KEY (ip8, ip16, ip24)
+,CONSTRAINT FKParent24 FOREIGN KEY (ip8, ip16) REFERENCES Nodes16 (ip8, ip16)
 );
 
 CREATE TABLE Nodes32
-(parent8           INT NOT NULL
-,parent16          INT NOT NULL
-,parent24          INT NOT NULL
-,address           INT NOT NULL
+(ip8               INT NOT NULL
+,ip16              INT NOT NULL
+,ip24              INT NOT NULL
+,ip32              INT NOT NULL
 ,connections       INT NOT NULL
 ,children          INT DEFAULT 0
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2
 ,alias             VARCHAR(96)
-,CONSTRAINT PKNodes32 PRIMARY KEY (parent8, parent16, parent24, address)
-,CONSTRAINT FKParent32 FOREIGN KEY (parent8, parent16, parent24) REFERENCES Nodes24 (parent8, parent16, address)
+,CONSTRAINT PKNodes32 PRIMARY KEY (ip8, ip16, ip24, ip32)
+,CONSTRAINT FKParent32 FOREIGN KEY (ip8, ip16, ip24) REFERENCES Nodes24 (ip8, ip16, ip24)
 );
 
 CREATE TABLE Links8
