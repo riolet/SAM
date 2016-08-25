@@ -66,7 +66,7 @@ Usage:
             line_num = -1
             lines_inserted = 0
             counter = 0
-            row = {"SourceIP":"", "SourcePort":"", "DestinationIP":"", "DestinationPort":"", "Stamp": ""}
+            row = {"SourceIP":"", "SourcePort":"", "DestinationIP":"", "DestinationPort":"", "Timestamp": ""}
             rows = [row.copy() for i in range(1000)]
             for line in fin:
                 line_num += 1

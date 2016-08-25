@@ -42,7 +42,7 @@ class PaloAltoImporter(BaseImporter):
         dictionary['SourcePort'] = split_data[24]
         dictionary['DestinationIP'] = common.IPtoInt(*(split_data[8].split(".")))
         dictionary['DestinationPort'] = split_data[25]
-        dictionary['Stamp'] = datetime.strptime(split_data[1], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+        dictionary['Timestamp'] = datetime.strptime(split_data[1], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         return 0
 
 

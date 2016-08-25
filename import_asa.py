@@ -6,7 +6,7 @@ from import_base import BaseImporter
 # This implementation is incomplete:
 # TODO: validate implementation with test data
 # TODO: verify protocol is TCP
-# TODO: parse timestamp into dictionary['Stamp']
+# TODO: parse timestamp into dictionary['Timestamp']
 
 class ASAImporter(BaseImporter):
 
@@ -34,7 +34,7 @@ class ASAImporter(BaseImporter):
             dictionary['SourcePort'] = m.group('asa_src_port')
             dictionary['DestinationIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
             dictionary['DestinationPort'] = m.group('asa_dst_port')
-            # dictionary['Stamp'] = ???
+            # dictionary['Timestamp'] = ???
             return 0
         else:
             print("error parsing line {0}: {1}".format(line_num, line))

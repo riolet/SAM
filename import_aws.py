@@ -6,7 +6,7 @@ from import_base import BaseImporter
 # This implementation is incomplete:
 # TODO: validate implementation with test data
 # TODO: verify protocol is TCP
-# TODO: parse timestamp into dictionary['Stamp']
+# TODO: parse timestamp into dictionary['Timestamp']
 
 
 class AWSImporter(BaseImporter):
@@ -27,7 +27,7 @@ class AWSImporter(BaseImporter):
         dictionary['SourcePort'] = awsLog[5]
         dictionary['DestinationIP'] = common.IPtoInt(*(awsLog[4].split(".")))
         dictionary['DestinationPort'] = awsLog[6]
-        # dictionary['Stamp'] = ???
+        # dictionary['Timestamp'] = ???
         return 0
 
 
