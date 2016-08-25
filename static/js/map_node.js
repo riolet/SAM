@@ -249,18 +249,18 @@ function node_processPorts(links) {
         } else {
             //align to corners
             if (dx > 0) {
-                link.x1 += source.radius;
-                link.x2 -= destination.radius;
+                link.x1 = source.x + source.radius;
+                link.x2 = destination.x - destination.radius;
             } else {
-                link.x1 -= source.radius;
-                link.x2 += destination.radius;
+                link.x1 = source.x - source.radius;
+                link.x2 = destination.x + destination.radius;
             }
             if (dy > 0) {
-                link.y1 += source.radius;
-                link.y2 -= destination.radius;
+                link.y1 = source.y + source.radius;
+                link.y2 = destination.y - destination.radius;
             } else {
-                link.y1 -= source.radius;
-                link.y2 += destination.radius;
+                link.y1 = source.y - source.radius;
+                link.y2 = destination.y + destination.radius;
             }
         }
     });
