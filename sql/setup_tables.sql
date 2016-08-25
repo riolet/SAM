@@ -60,7 +60,8 @@ CREATE TABLE Links8
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks8 PRIMARY KEY (source8, dest8, port)
+,timestamp         TIMESTAMP NOT NULL
+,CONSTRAINT PKLinks8 PRIMARY KEY (source8, dest8, port, timestamp)
 );
 
 CREATE TABLE Links16
@@ -74,7 +75,8 @@ CREATE TABLE Links16
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks16 PRIMARY KEY (source8, source16, dest8, dest16, port)
+,timestamp         TIMESTAMP NOT NULL
+,CONSTRAINT PKLinks16 PRIMARY KEY (source8, source16, dest8, dest16, port, timestamp)
 );
 
 CREATE TABLE Links24
@@ -90,7 +92,8 @@ CREATE TABLE Links24
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks24 PRIMARY KEY (source8, source16, source24, dest8, dest16, dest24, port)
+,timestamp         TIMESTAMP NOT NULL
+,CONSTRAINT PKLinks24 PRIMARY KEY (source8, source16, source24, dest8, dest16, dest24, port, timestamp)
 );
 
 CREATE TABLE Links32
@@ -108,5 +111,6 @@ CREATE TABLE Links32
 ,y1                FLOAT(12,3) DEFAULT 0
 ,x2                FLOAT(12,3) DEFAULT 0
 ,y2                FLOAT(12,3) DEFAULT 0
-,CONSTRAINT PKLinks32 PRIMARY KEY (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port)
+,timestamp         TIMESTAMP NOT NULL
+,CONSTRAINT PKLinks32 PRIMARY KEY (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, timestamp)
 );
