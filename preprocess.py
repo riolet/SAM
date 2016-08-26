@@ -4,8 +4,6 @@ Preprocess the data in the database's upload table Syslog
 
 import common
 import dbaccess
-import random
-import math
 
 
 def clean_tables():
@@ -18,20 +16,7 @@ def clean_tables():
     common.db.query("DROP TABLE IF EXISTS Nodes16;")
     common.db.query("DROP TABLE IF EXISTS Nodes8;")
 
-    with open("./sql/setup_tables.sql", 'r') as file:
-        lines = file.readlines()
-    # remove comment lines
-    lines = [i for i in lines if not i.startswith("--")]
-    # join into one long string
-    script = " ".join(lines)
-    # split string into a list of commands
-    commands = script.split(";")
-
-    for command in commands:
-        # ignore empty statements (like trailing newlines)
-        if command.strip(" \n") == "":
-            continue
-        common.db.query(command)
+    dbaccess.exec_sql("./sql/setup_tables.sql")
 
 
 def import_nodes():
@@ -44,15 +29,15 @@ def import_nodes():
 
     # Get all /8 nodes. Load them into Nodes8
     query = """
-        INSERT INTO Nodes8 (address, connections, children, x, y, radius)
-        SELECT cluster.nip AS address
+        INSERT INTO Nodes8 (ip8, connections, children, x, y, radius)
+        SELECT cluster.ip8 AS ip8
             , SUM(cluster.conns) AS connections
             , COUNT(cluster.child) AS children
-            , (331776 * (cluster.nip % 16) / 7.5 - 331776) as x
-            , (331776 * (cluster.nip DIV 16) / 7.5 - 331776) as y
+            , (331776 * (cluster.ip8 % 16) / 7.5 - 331776) as x
+            , (331776 * (cluster.ip8 DIV 16) / 7.5 - 331776) as y
             , 20736 as radius
         FROM
-            (SELECT ip DIV 16777216 AS 'nip'
+            (SELECT ip DIV 16777216 AS 'ip8'
                 , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'child'
                 , COUNT(*) AS 'conns'
             FROM (
@@ -62,26 +47,26 @@ def import_nodes():
                 (SELECT DestinationIP AS ip
                 FROM Syslog)
             ) AS result
-            GROUP BY nip, child
+            GROUP BY ip8, child
         ) AS cluster
-        GROUP BY address;
+        GROUP BY ip8;
     """
     qvars = {"radius": 331776}
     common.db.query(query, vars=qvars)
 
     # Get all the /16 nodes. Load these into Nodes16
     query = """
-        INSERT INTO Nodes16 (parent8, address, connections, children, x, y, radius)
-        SELECT cluster.parent8, cluster.address, cluster.connections, cluster.children
-            , ((Nodes8.radius * (cluster.address MOD 16) / 7.5 - Nodes8.radius) + Nodes8.x) as x
-            , ((Nodes8.radius * (cluster.address DIV 16) / 7.5 - Nodes8.radius) + Nodes8.y) as y
+        INSERT INTO Nodes16 (ip8, ip16, connections, children, x, y, radius)
+        SELECT cluster.ip8, cluster.ip16, cluster.connections, cluster.children
+            , ((Nodes8.radius * (cluster.ip16 MOD 16) / 7.5 - Nodes8.radius) + Nodes8.x) as x
+            , ((Nodes8.radius * (cluster.ip16 DIV 16) / 7.5 - Nodes8.radius) + Nodes8.y) as y
             , 864 as radius
         FROM
-            (SELECT aggregate.pip8 AS parent8, aggregate.nip AS address
+            (SELECT aggregate.ip8 AS ip8, aggregate.ip16 AS ip16
                 , SUM(aggregate.conns) AS connections, COUNT(aggregate.child) AS children
             FROM
-                (SELECT ip DIV 16777216 AS 'pip8'
-                    , (ip MOD 16777216) DIV 65536 AS 'nip'
+                (SELECT ip DIV 16777216 AS 'ip8'
+                    , (ip MOD 16777216) DIV 65536 AS 'ip16'
                     , (ip MOD 65536) DIV 256 AS 'child'
                     , COUNT(*) AS 'conns'
                 FROM (
@@ -91,28 +76,28 @@ def import_nodes():
                     (SELECT DestinationIP AS ip
                     FROM Syslog)
                 ) as result
-                GROUP BY pip8, nip, child
+                GROUP BY ip8, ip16, child
             ) AS aggregate
-            GROUP BY parent8, address) as cluster
+            GROUP BY ip8, ip16) as cluster
             JOIN Nodes8
-            ON Nodes8.address = cluster.parent8
+            ON Nodes8.ip8 = cluster.ip8;
         """
     common.db.query(query)
 
     # Get all the /24 nodes. Load these into Nodes24
     query = """
-        INSERT INTO Nodes24 (parent8, parent16, address, connections, children, x, y, radius)
-        SELECT cluster.parent8, cluster.parent16, cluster.address, cluster.connections, cluster.children
-            , ((Nodes16.radius * (cluster.address MOD 16) / 7.5 - Nodes16.radius) + Nodes16.x) as x
-            , ((Nodes16.radius * (cluster.address DIV 16) / 7.5 - Nodes16.radius) + Nodes16.y) as y
+        INSERT INTO Nodes24 (ip8, ip16, ip24, connections, children, x, y, radius)
+        SELECT cluster.ip8, cluster.ip16, cluster.ip24, cluster.connections, cluster.children
+            , ((Nodes16.radius * (cluster.ip24 MOD 16) / 7.5 - Nodes16.radius) + Nodes16.x) as x
+            , ((Nodes16.radius * (cluster.ip24 DIV 16) / 7.5 - Nodes16.radius) + Nodes16.y) as y
             , 36 as radius
         FROM
-            (SELECT aggregate.pip8 AS parent8, aggregate.pip16 AS parent16, aggregate.nip AS address
+            (SELECT aggregate.ip8 AS ip8, aggregate.ip16 AS ip16, aggregate.ip24 AS ip24
                 , SUM(aggregate.conns) AS connections, COUNT(aggregate.child) AS children
             FROM
-                (SELECT ip DIV 16777216 AS 'pip8'
-                    , (ip MOD 16777216) DIV 65536 AS 'pip16'
-                    , (ip MOD 65536) DIV 256 AS 'nip'
+                (SELECT ip DIV 16777216 AS 'ip8'
+                    , (ip MOD 16777216) DIV 65536 AS 'ip16'
+                    , (ip MOD 65536) DIV 256 AS 'ip24'
                     , (ip MOD 256) AS 'child'
                     , COUNT(*) AS 'conns'
                 FROM (
@@ -122,33 +107,33 @@ def import_nodes():
                     (SELECT DestinationIP AS ip
                     FROM Syslog)
                 ) as result
-                GROUP BY pip8, pip16, nip, child
+                GROUP BY ip8, ip16, ip24, child
             ) AS aggregate
-            GROUP BY parent8, parent16, address) AS cluster
+            GROUP BY ip8, ip16, ip24) AS cluster
             JOIN Nodes16
-            ON Nodes16.address = cluster.parent16 && Nodes16.parent8 = cluster.parent8;
+            ON Nodes16.ip16 = cluster.ip16 && Nodes16.ip8 = cluster.ip8;
         """
     common.db.query(query)
 
     # Get all the /32 nodes. Load these into Nodes32
     query = """
-        INSERT INTO Nodes32 (parent8, parent16, parent24, address, connections, children, x, y, radius)
-        SELECT cluster.parent8, cluster.parent16, cluster.parent24, cluster.address, cluster.connections, cluster.children
-            , ((Nodes24.radius * (cluster.address MOD 16) / 7.5 - Nodes24.radius) + Nodes24.x) as x
-            , ((Nodes24.radius * (cluster.address DIV 16) / 7.5 - Nodes24.radius) + Nodes24.y) as y
+        INSERT INTO Nodes32 (ip8, ip16, ip24, ip32, connections, children, x, y, radius)
+        SELECT cluster.ip8, cluster.ip16, cluster.ip24, cluster.ip32, cluster.connections, cluster.children
+            , ((Nodes24.radius * (cluster.ip32 MOD 16) / 7.5 - Nodes24.radius) + Nodes24.x) as x
+            , ((Nodes24.radius * (cluster.ip32 DIV 16) / 7.5 - Nodes24.radius) + Nodes24.y) as y
             , 1.5 as radius
         FROM
-            (SELECT aggregate.pip8 AS parent8
-                , aggregate.pip16 AS parent16
-                , aggregate.pip24 AS parent24
-                , aggregate.nip AS address
+            (SELECT aggregate.ip8 AS ip8
+                , aggregate.ip16 AS ip16
+                , aggregate.ip24 AS ip24
+                , aggregate.ip32 AS ip32
                 , SUM(aggregate.conns) AS connections
                 , COUNT(aggregate.child) AS children
             FROM
-                (SELECT ip DIV 16777216 AS 'pip8'
-                    , (ip MOD 16777216) DIV 65536 AS 'pip16'
-                    , (ip MOD 65536) DIV 256 AS 'pip24'
-                    , (ip MOD 256) AS 'nip'
+                (SELECT ip DIV 16777216 AS 'ip8'
+                    , (ip MOD 16777216) DIV 65536 AS 'ip16'
+                    , (ip MOD 65536) DIV 256 AS 'ip24'
+                    , (ip MOD 256) AS 'ip32'
                     , 0 AS 'child'
                     , COUNT(*) AS 'conns'
                 FROM (
@@ -158,11 +143,11 @@ def import_nodes():
                     (SELECT DestinationIP AS ip
                     FROM Syslog)
                 ) as result
-                GROUP BY pip8, pip16, pip24, nip, child
+                GROUP BY ip8, ip16, ip24, ip32, child
             ) AS aggregate
-            GROUP BY parent8, parent16, parent24, address) AS cluster
+            GROUP BY ip8, ip16, ip24, ip32) AS cluster
             JOIN Nodes24
-            ON Nodes24.address = cluster.parent24 && Nodes24.parent16 = cluster.parent16 && Nodes24.parent8 = cluster.parent8;
+            ON Nodes24.ip24 = cluster.ip24 && Nodes24.ip16 = cluster.ip16 && Nodes24.ip8 = cluster.ip8;
         """
     common.db.query(query)
 
@@ -193,7 +178,6 @@ def import_links():
     for link in links:
         position_link(link)
     set_links32(links)
-
 
 
 def position_link(link):
@@ -230,23 +214,25 @@ def position_link(link):
 
 
 def get_links8():
+
     query = """
-        SELECT source8, dest8, port, conns,
+        SELECT source8, dest8, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                  , DestinationIP DIV 16777216 AS dest8
                  , DestinationPort as port
+                 , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                  , COUNT(*) AS conns
             FROM Syslog
-            GROUP BY source8, dest8, port) AS main
+            GROUP BY source8, dest8, port, ts) AS main
             JOIN
-            (SELECT address, x, y, radius FROM Nodes8) AS src
-            ON (source8 = src.address)
+            (SELECT ip8, x, y, radius FROM Nodes8) AS src
+            ON (source8 = src.ip8)
             JOIN
-            (SELECT address, x, y, radius FROM Nodes8) AS dst
-            ON (dest8 = dst.address);
+            (SELECT ip8, x, y, radius FROM Nodes8) AS dst
+            ON (dest8 = dst.ip8);
         """
     rows = list(common.db.query(query))
     return rows
@@ -261,7 +247,8 @@ def set_links8(links):
         "x1": i.sx,
         "y1": i.sy,
         "x2": i.dx,
-        "y2": i.dy
+        "y2": i.dy,
+        "timestamp": i.ts
     } for i in links]
     common.db.multiple_insert('Links8', values=values)
 
@@ -273,7 +260,7 @@ def get_links16():
     #    a.* -> b.c
     #    a.b -> c.*
     query = """
-        SELECT source8, source16, dest8, dest16, port, conns,
+        SELECT source8, source16, dest8, dest16, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -282,23 +269,24 @@ def get_links16():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, dest8, dest16, port)
+                GROUP BY source8, source16, dest8, dest16, port, ts)
                 AS main
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16)
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16)
         UNION
-        SELECT source8, 256 AS source16, dest8, dest16, port, conns,
+        SELECT source8, 256 AS source16, dest8, dest16, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -306,23 +294,24 @@ def get_links16():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, dest8, dest16, port)
+                GROUP BY source8, dest8, dest16, port, ts)
                 AS main
             JOIN
-                (SELECT address, x, y, radius
+                (SELECT ip8, x, y, radius
                 FROM Nodes8)
                 AS src
-                ON (source8 = src.address)
+                ON (source8 = src.ip8)
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16)
         UNION
-        SELECT source8, source16, dest8, 256 AS dest16, port, conns,
+        SELECT source8, source16, dest8, 256 AS dest16, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -330,21 +319,22 @@ def get_links16():
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
                      , DestinationIP DIV 16777216 AS dest8
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, dest8, port)
+                GROUP BY source8, source16, dest8, port, ts)
                 AS main
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16)
             JOIN
-                (SELECT address, x, y, radius
+                (SELECT ip8, x, y, radius
                 FROM Nodes8)
                 AS dst
-                ON (dest8 = dst.address);"""
+                ON (dest8 = dst.ip8);"""
     rows = list(common.db.query(query))
     return rows
 
@@ -360,7 +350,8 @@ def set_links16(links):
         "x1": i.sx,
         "y1": i.sy,
         "x2": i.dx,
-        "y2": i.dy
+        "y2": i.dy,
+        "timestamp": i.ts
     } for i in links]
     common.db.multiple_insert('Links16', values=values)
 
@@ -374,7 +365,7 @@ def get_links24():
     #    a.b.c -> a.d.*
     #    a.b.c -> d.*.*
     query = """
-        SELECT source8, source16, source24, dest8, dest16, dest24, port, conns,
+        SELECT source8, source16, source24, dest8, dest16, dest24, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -385,23 +376,24 @@ def get_links24():
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, source24, dest8, dest16, dest24, port) AS main
+                GROUP BY source8, source16, source24, dest8, dest16, dest24, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24)
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24)
         UNION
-        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns,
+        SELECT source8, source16, 256, dest8, dest16, dest24, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -411,23 +403,24 @@ def get_links24():
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, dest8, dest16, dest24, port) AS main
+                GROUP BY source8, source16, dest8, dest16, dest24, port, ts) AS main
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16)
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24)
         UNION
-        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns,
+        SELECT source8, 256, 256, dest8, dest16, dest24, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -436,22 +429,23 @@ def get_links24():
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, dest8, dest16, dest24, port) AS main
+                GROUP BY source8, dest8, dest16, dest24, port, ts) AS main
             JOIN
-                (SELECT address, x, y, radius
+                (SELECT ip8, x, y, radius
                 FROM Nodes8)
                 AS src
-                ON (source8 = src.address)
+                ON (source8 = src.ip8)
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24)
         UNION
-        SELECT source8, source16, source24, dest8, dest16, 256, port, conns,
+        SELECT source8, source16, source24, dest8, dest16, 256, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -461,23 +455,24 @@ def get_links24():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, source24, dest8, dest16, port) AS main
+                GROUP BY source8, source16, source24, dest8, dest16, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24)
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16)
         UNION
-        SELECT source8, source16, source24, dest8, 256, 256, port, conns,
+        SELECT source8, source16, source24, dest8, 256, 256, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -486,20 +481,21 @@ def get_links24():
                      , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
                      , DestinationIP DIV 16777216 AS dest8
                      , DestinationPort as port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, source24, dest8, port) AS main
+                GROUP BY source8, source16, source24, dest8, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24)
             JOIN
-                (SELECT address, x, y, radius
+                (SELECT ip8, x, y, radius
                 FROM Nodes8)
                 AS dst
-                ON (dest8 = dst.address);
+                ON (dest8 = dst.ip8);
     """
     rows = list(common.db.query(query))
     return rows
@@ -518,7 +514,8 @@ def set_links24(links):
         "x1": i.sx,
         "y1": i.sy,
         "x2": i.dx,
-        "y2": i.dy
+        "y2": i.dy,
+        "timestamp": i.ts
     } for i in links]
     common.db.multiple_insert('Links24', values=values)
 
@@ -534,7 +531,7 @@ def get_links32():
     #    a.b.c.d -> a.e.*.*
     #    a.b.c.d -> e.*.*.*
     query = """
-        SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, conns,
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -547,24 +544,25 @@ def get_links32():
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 = (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
-                GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, dest32, port) AS main
+                GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24 && source32 = src.ip32)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24 && dest32 = dst.ip32)
         UNION
-        SELECT source8, source16, source24, 256, dest8, dest16, dest24, dest32, port, conns,
+        SELECT source8, source16, source24, 256, dest8, dest16, dest24, dest32, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -576,24 +574,25 @@ def get_links32():
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 != (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
-                GROUP BY source8, source16, source24, dest8, dest16, dest24, dest32, port) AS main
+                GROUP BY source8, source16, source24, dest8, dest16, dest24, dest32, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24 && dest32 = dst.ip32)
         UNION
-        SELECT source8, source16, 256, 256, dest8, dest16, dest24, dest32, port, conns,
+        SELECT source8, source16, 256, 256, dest8, dest16, dest24, dest32, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -604,23 +603,24 @@ def get_links32():
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, dest8, dest16, dest24, dest32, port) AS main
+                GROUP BY source8, source16, dest8, dest16, dest24, dest32, port, ts) AS main
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24 && dest32 = dst.ip32)
         UNION
-        SELECT source8, 256, 256, 256, dest8, dest16, dest24, dest32, port, conns,
+        SELECT source8, 256, 256, 256, dest8, dest16, dest24, dest32, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -630,22 +630,23 @@ def get_links32():
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , (DestinationIP - (DestinationIP DIV 256) * 256) AS dest32
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, dest8, dest16, dest24, dest32, port) AS main
+                GROUP BY source8, dest8, dest16, dest24, dest32, port, ts) AS main
             JOIN
-                (SELECT address, x, y, radius
+                (SELECT ip8, x, y, radius
                 FROM Nodes8)
                 AS src
-                ON (source8 = src.address)
+                ON (source8 = src.ip8)
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.parent24 && dest32 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24 && dest32 = dst.ip32)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 256, port, conns,
+        SELECT source8, source16, source24, source32, dest8, dest16, dest24, 256, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -657,24 +658,25 @@ def get_links32():
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 = (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
                     AND (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 != (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256
-                GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, port) AS main
+                GROUP BY source8, source16, source24, source32, dest8, dest16, dest24, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24 && source32 = src.ip32)
             JOIN
-                (SELECT parent8, parent16, address, x, y, radius
+                (SELECT ip8, ip16, ip24, x, y, radius
                 FROM Nodes24)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.parent16 && dest24 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16 && dest24 = dst.ip24)
         UNION
-        SELECT source8, source16, source24, source32, dest8, dest16, 256, 256, port, conns,
+        SELECT source8, source16, source24, source32, dest8, dest16, 256, 256, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -685,23 +687,24 @@ def get_links32():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
                     AND (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 != (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536
-                GROUP BY source8, source16, source24, source32, dest8, dest16, port) AS main
+                GROUP BY source8, source16, source24, source32, dest8, dest16, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24 && source32 = src.ip32)
             JOIN
-                (SELECT parent8, address, x, y, radius
+                (SELECT ip8, ip16, x, y, radius
                 FROM Nodes16)
                 AS dst
-                ON (dest8 = dst.parent8 && dest16 = dst.address)
+                ON (dest8 = dst.ip8 && dest16 = dst.ip16)
         UNION
-        SELECT source8, source16, source24, source32, dest8, 256, 256, 256, port, conns,
+        SELECT source8, source16, source24, source32, dest8, 256, 256, 256, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
             dst.x AS dx, dst.y AS dy, dst.radius AS dr
         FROM
@@ -711,20 +714,21 @@ def get_links32():
                      , (SourceIP - (SourceIP DIV 256) * 256) AS source32
                      , DestinationIP DIV 16777216 AS dest8
                      , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
-                GROUP BY source8, source16, source24, source32, dest8, port) AS main
+                GROUP BY source8, source16, source24, source32, dest8, port, ts) AS main
             JOIN
-                (SELECT parent8, parent16, parent24, address, x, y, radius
+                (SELECT ip8, ip16, ip24, ip32, x, y, radius
                 FROM Nodes32)
                 AS src
-                ON (source8 = src.parent8 && source16 = src.parent16 && source24 = src.parent24 && source32 = src.address)
+                ON (source8 = src.ip8 && source16 = src.ip16 && source24 = src.ip24 && source32 = src.ip32)
             JOIN
-                (SELECT address, x, y, radius
+                (SELECT ip8, x, y, radius
                 FROM Nodes8)
                 AS dst
-                ON (dest8 = dst.address);
+                ON (dest8 = dst.ip8);
     """
     rows = list(common.db.query(query))
     return rows
@@ -745,7 +749,8 @@ def set_links32(links):
         "x1": i.sx,
         "y1": i.sy,
         "x2": i.dx,
-        "y2": i.dy
+        "y2": i.dy,
+        "timestamp": i.ts
     } for i in links]
     common.db.multiple_insert('Links32', values=values)
 

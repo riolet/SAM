@@ -27,7 +27,7 @@ Usage:
         lines_inserted = 0
         counter = 0
         # prepare buffer
-        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Stamp": ""}
+        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
         rows = [row.copy() for i in range(1000)]
 
         # skip the titles line at the start of the file
@@ -79,7 +79,7 @@ Usage:
         dictionary['SourcePort'] = split_data[2]
         dictionary['DestinationIP'] = common.IPtoInt(*(split_data[3].split(".")))
         dictionary['DestinationPort'] = split_data[4]
-        dictionary['Stamp'] = split_data[7]
+        dictionary['Timestamp'] = split_data[7]
         return 0
 
 

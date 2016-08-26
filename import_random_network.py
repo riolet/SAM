@@ -244,7 +244,7 @@ class RandomImporter(BaseImporter):
             rows[counter]["SourcePort"] = str(b)
             rows[counter]["DestinationIP"] = str(c)
             rows[counter]["DestinationPort"] = str(d)
-            rows[counter]["Stamp"] = generate_time()
+            rows[counter]["Timestamp"] = generate_time()
 
             counter += 1
 
