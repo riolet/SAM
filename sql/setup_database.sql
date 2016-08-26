@@ -15,6 +15,7 @@ CREATE TABLE Syslog
 ,SourcePort        INT NOT NULL
 ,DestinationIP     INT UNSIGNED NOT NULL
 ,DestinationPort   INT NOT NULL
+,Stamp             DATETIME NOT NULL
 ,Occurances        INT DEFAULT 1 NOT NULL
 ,CONSTRAINT PKSyslog PRIMARY KEY (entry)
 );

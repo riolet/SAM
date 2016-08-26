@@ -8,6 +8,10 @@ import json
 import common
 import dbaccess
 import traceback
+from import_base import BaseImporter
+from datetime import datetime
+from time import time
+
 
 class Node:
     def __init__(self, parent, ip, alias=""):
@@ -209,36 +213,50 @@ def gen_links(c, cs, s):
             for i in range(occurences):
                 yield (source.get_as_int(), random.randint(16384, 65535), dest.get_as_int(), destPort)
 
+def generate_time():
+    one_week_in_seconds = 60 * 60 * 24 * 7
+    now = time()
+    then = now - random.random() * one_week_in_seconds
+    return datetime.fromtimestamp(then).strftime("%Y-%m-%d %H:%M:%S")
 
-def import_random():
-    lines_to_import = 10000
-    line_num = 0
-    lines_inserted = 0
-    counter = 0
-    row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": ""}
-    rows = [row.copy() for i in range(1000)]
-    c, cs, s = generate_nodes()
-    gen = gen_links(c, cs, s)
-    for i in range(lines_to_import):
-        line_num += 1
 
-        a, b, c, d = gen.next()
-        rows[counter]["SourceIP"] = str(a)
-        rows[counter]["SourcePort"] = str(b)
-        rows[counter]["DestinationIP"] = str(c)
-        rows[counter]["DestinationPort"] = str(d)
+class RandomImporter(BaseImporter):
+    def __init__(self):
+        BaseImporter.__init__(self)
+        self.lines_to_import = 10000
 
-        counter += 1
+    def main(self, argv):
+        self.import_file(None)
 
-        # Perform the actual insertion in batches of 1000
-        if counter == 1000:
+    def import_file(self, path_in):
+        line_num = 0
+        lines_inserted = 0
+        counter = 0
+        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": ""}
+        rows = [row.copy() for i in range(1000)]
+        c, cs, s = generate_nodes()
+        gen = gen_links(c, cs, s)
+        for i in range(self.lines_to_import):
+            line_num += 1
+
+            a, b, c, d = gen.next()
+            rows[counter]["SourceIP"] = str(a)
+            rows[counter]["SourcePort"] = str(b)
+            rows[counter]["DestinationIP"] = str(c)
+            rows[counter]["DestinationPort"] = str(d)
+            rows[counter]["Stamp"] = generate_time()
+
+            counter += 1
+
+            # Perform the actual insertion in batches of 1000
+            if counter == 1000:
+                insert_data(rows, counter)
+                lines_inserted += counter
+                counter = 0
+        if counter != 0:
             insert_data(rows, counter)
             lines_inserted += counter
-            counter = 0
-    if counter != 0:
-        insert_data(rows, counter)
-        lines_inserted += counter
-    print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+        print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
 
 
 def insert_data(rows, count):
@@ -275,5 +293,7 @@ def insert_data(rows, count):
             print '-'*60
             sys.exit(2)
 
+# If running as a script, begin by executing main.
 if __name__ == "__main__":
-    import_random()
+    importer = RandomImporter()
+    importer.main(sys.argv)
