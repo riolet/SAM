@@ -103,12 +103,29 @@ function node_info_click(event) {
     ;
 }
 
+function determine_address(node) {
+    if (node.hasOwnProperty("ip32")) {
+        return node.ip32
+    }
+    if (node.hasOwnProperty("ip24")) {
+        return node.ip24
+    }
+    if (node.hasOwnProperty("ip16")) {
+        return node.ip16
+    }
+    if (node.hasOwnProperty("ip8")) {
+        return node.ip8
+    }
+    return undefined
+}
+
 function import_node(parent, node) {
+    address = determine_address(node);
     if (parent === null) {
-        m_nodes[node.address] = new Node(node.alias, node.address, node.address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+        m_nodes[address] = new Node(node.alias, address, address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
     } else {
-        var name = parent.address + "." + node.address;
-        parent.children[node.address] = new Node(node.alias, name, node.address, parent.level + 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+        var name = parent.address + "." + address;
+        parent.children[address] = new Node(node.alias, name, address, parent.level + 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
     }
 }
 

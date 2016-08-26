@@ -49,21 +49,21 @@ class Query:
 
         for children in result.values():
             for child in children:
-                if "parent24" in child:
-                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16, child.parent24,
-                                                       child.address, filter=portFilter)
-                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16, child.parent24,
-                                                         child.address, filter=portFilter)
-                elif "parent16" in child:
-                    child.inputs = dbaccess.getLinksIn(child.parent8, child.parent16,
-                                                       child.address, filter=portFilter)
-                    child.outputs = dbaccess.getLinksOut(child.parent8, child.parent16,
-                                                         child.address, filter=portFilter)
-                elif "parent8" in child:
-                    child.inputs = dbaccess.getLinksIn(child.parent8, child.address, filter=portFilter)
-                    child.outputs = dbaccess.getLinksOut(child.parent8, child.address, filter=portFilter)
+                if "ip32" in child:
+                    child.inputs = dbaccess.getLinksIn(child.ip8, child.ip16, child.ip24,
+                                                       child.ip32, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.ip8, child.ip16, child.ip24,
+                                                         child.ip32, filter=portFilter)
+                elif "ip24" in child:
+                    child.inputs = dbaccess.getLinksIn(child.ip8, child.ip16,
+                                                       child.ip24, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.ip8, child.ip16,
+                                                         child.ip24, filter=portFilter)
+                elif "ip16" in child:
+                    child.inputs = dbaccess.getLinksIn(child.ip8, child.ip16, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.ip8, child.ip16, filter=portFilter)
                 else:
-                    child.inputs = dbaccess.getLinksIn(child.address, filter=portFilter)
-                    child.outputs = dbaccess.getLinksOut(child.address, filter=portFilter)
+                    child.inputs = dbaccess.getLinksIn(child.ip8, filter=portFilter)
+                    child.outputs = dbaccess.getLinksOut(child.ip8, filter=portFilter)
 
         return json.dumps(result, default=decimal_default)

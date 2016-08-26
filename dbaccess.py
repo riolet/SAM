@@ -304,6 +304,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
     return outputs
 
 
+# TODO: this draws from Syslog, but it mustn't when we're not using Syslog anymore.
 def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ip8, ip16, ip24, ip32)
@@ -388,6 +389,7 @@ def getNodeInfo(*address):
     print("type: " + str(type(address)))
     print(address)
     print("-"*50)
+    # TODO: for use getting meta about hosts
     pass
 
 
@@ -399,14 +401,15 @@ def setNodeInfo(address, data):
     print(data)
     print("-"*50)
     if len(ips) == 1:
-        common.db.update('Nodes8', {"address": ips[0]}, **data)
+        common.db.update('Nodes8', {"ip8": ips[0]}, **data)
     if len(ips) == 2:
-        common.db.update('Nodes16', {"parent8": ips[0], "address": ips[1]}, **data)
+        common.db.update('Nodes16', {"ip8": ips[0], "ip16": ips[1]}, **data)
     if len(ips) == 3:
-        common.db.update('Nodes24', {"parent8": ips[0], "parent16": ips[1], "address": ips[2]}, **data)
+        common.db.update('Nodes24', {"ip8": ips[0], "ip16": ips[1],
+                                     "ip24": ips[2]}, **data)
     if len(ips) == 4:
-        common.db.update('Nodes32', {"parent8": ips[0], "parent16": ips[1],
-                                     "parent24": ips[2], "address": ips[3]}, **data)
+        common.db.update('Nodes32', {"ip8": ips[0], "ip16": ips[1],
+                                     "ip24": ips[2], "ip32": ips[3]}, **data)
 
 
 def getPortInfo(port):
@@ -418,13 +421,13 @@ def getPortInfo(port):
     else:
         arg = "({0})".format(port)
     query = """
-SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
-    portAliasLUT.name AS alias_name,
-    portAliasLUT.description AS alias_description
-FROM portLUT
-LEFT JOIN portAliasLUT
-    ON portLUT.port=portAliasLUT.port
-WHERE portLUT.port IN {0}
+        SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
+            portAliasLUT.name AS alias_name,
+            portAliasLUT.description AS alias_description
+        FROM portLUT
+        LEFT JOIN portAliasLUT
+            ON portLUT.port=portAliasLUT.port
+        WHERE portLUT.port IN {0}
     """.format(arg)
     info = common.db.query(query)
     return info
