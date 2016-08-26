@@ -64,18 +64,18 @@ def reset_port_names():
     common.db.multiple_insert('portLUT', values=ports)
 
 
-def determineRange(ip1=-1, ip2=-1, ip3=-1, ip4=-1):
+def determineRange(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     low = 0x00000000
     high = 0xFFFFFFFF
     quot = 1
-    if 0 <= ip1 <= 255:
-        low = (ip1 << 24)   # 172.0.0.0
-        if 0 <= ip2 <= 255:
-            low |= (ip2 << 16)  # 172.19.0.0
-            if 0 <= ip3 <= 255:
-                low |= (ip3 << 8)
-                if 0 <= ip4 <= 255:
-                    low |= ip4
+    if 0 <= ip8 <= 255:
+        low = (ip8 << 24)   # 172.0.0.0
+        if 0 <= ip16 <= 255:
+            low |= (ip16 << 16)  # 172.19.0.0
+            if 0 <= ip24 <= 255:
+                low |= (ip24 << 8)
+                if 0 <= ip32 <= 255:
+                    low |= ip32
                     high = low
                 else:
                     high = low | 0xFF
@@ -91,29 +91,29 @@ def determineRange(ip1=-1, ip2=-1, ip3=-1, ip4=-1):
     return low, high, quot
 
 
-def getNodes(ipSegment1=-1, ipSegment2=-1, ipSegment3=-1):
-    ipSegment1 = int(ipSegment1)
-    ipSegment2 = int(ipSegment2)
-    ipSegment3 = int(ipSegment3)
+def getNodes(ip8=-1, ip16=-1, ip24=-1):
+    ip8 = int(ip8)
+    ip16 = int(ip16)
+    ip24 = int(ip24)
 
-    if ipSegment1 < 0 or ipSegment1 > 255:
+    if ip8 < 0 or ip8 > 255:
         # check Nodes8
         rows = common.db.select("Nodes8")
-    elif ipSegment2 < 0 or ipSegment2 > 255:
+    elif ip16 < 0 or ip16 > 255:
         # check Nodes16
         rows = common.db.where("Nodes16",
-                               parent8=ipSegment1)
-    elif ipSegment3 < 0 or ipSegment3 > 255:
+                               ip8=ip8)
+    elif ip24 < 0 or ip24 > 255:
         # check Nodes24
         rows = common.db.where("Nodes24",
-                               parent8=ipSegment1,
-                               parent16=ipSegment2)
+                               ip8=ip8,
+                               ip16=ip16)
     else:
         # check Nodes32
         rows = common.db.where("Nodes32",
-                               parent8=ipSegment1,
-                               parent16=ipSegment2,
-                               parent24=ipSegment3)
+                               ip8=ip8,
+                               ip16=ip16,
+                               ip24=ip24)
     return rows
 
 
@@ -208,11 +208,11 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
     return inputs
 
 
-def getLinksOut(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1, filter=-1):
+def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
 
-    if ipSegment1 < 0 or ipSegment1 > 255:
+    if ip8 < 0 or ip8 > 255:
         outputs = []
-    elif ipSegment2 == -1 or ipSegment2 < 0 or ipSegment2 > 255:
+    elif ip16 == -1 or ip16 < 0 or ip16 > 255:
         if filter == -1:
             query = """
                 SELECT source8, dest8
@@ -228,9 +228,9 @@ def getLinksOut(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1, filter=
                 WHERE source8 = $seg1
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ipSegment1), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
-    elif ipSegment3 == -1 or ipSegment3 < 0 or ipSegment3 > 255:
+    elif ip24 == -1 or ip24 < 0 or ip24 > 255:
         if filter == -1:
             query = """
                 SELECT source8, source16, dest8, dest16
@@ -248,9 +248,9 @@ def getLinksOut(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1, filter=
                     && source16 = $seg2
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
-    elif ipSegment4 == -1 or ipSegment4 < 0 or ipSegment4 > 255:
+    elif ip32 == -1 or ip32 < 0 or ip32 > 255:
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, dest8, dest16, dest24
@@ -270,7 +270,7 @@ def getLinksOut(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1, filter=
                     && source24 = $seg3
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ipSegment1), 'seg2': str(ipSegment2), 'seg3': str(ipSegment3), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
     else:
         if filter == -1:
@@ -294,19 +294,19 @@ def getLinksOut(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1, filter=
                     && source32 = $seg4
                     && Links32.port = $filter;
                 """
-        qvars = {'seg1': str(ipSegment1),
-                 'seg2': str(ipSegment2),
-                 'seg3': str(ipSegment3),
-                 'seg4': str(ipSegment4),
+        qvars = {'seg1': str(ip8),
+                 'seg2': str(ip16),
+                 'seg3': str(ip24),
+                 'seg4': str(ip32),
                  'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
 
     return outputs
 
 
-def getDetails(ipSegment1, ipSegment2=-1, ipSegment3=-1, ipSegment4=-1):
+def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
     details = {}
-    ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ipSegment1, ipSegment2, ipSegment3, ipSegment4)
+    ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ip8, ip16, ip24, ip32)
 
     query = """
         SELECT tableA.unique_in, tableB.unique_out, tableC.unique_ports
