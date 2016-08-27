@@ -2,6 +2,7 @@ import json
 import dbaccess
 import web
 import decimal
+import time
 
 
 def decimal_default(obj):
@@ -11,15 +12,11 @@ def decimal_default(obj):
 
 
 class Query:
-    def GET(self):
-        web.header("Content-Type", "application/json")
-
+    def get_children(self, get_data):
+        before = time.time()
+        queries = 0
         addresses = []
-
-        get_data = web.input()
-        print("-"*50)
-        print("Query: get_data is")
-        print(get_data)
+        print("-" * 50)
         print("requesting data on: ")
         address_str = get_data.get('address', None)
         if address_str is not None:
@@ -28,16 +25,17 @@ class Query:
                 print("\t" + i)
         else:
             print("\troot nodes")
-        print("-"*50)
 
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
         result = {}
         if not addresses:
             result["_"] = list(dbaccess.getNodes())
+            queries += 1
         else:
             for address in addresses:
                 result[address] = list(dbaccess.getNodes(*address.split(".")))
+                queries += 1
 
         portFilter = get_data.get('filter', "")
         if portFilter == "":
@@ -45,8 +43,7 @@ class Query:
         else:
             portFilter = int(portFilter)
 
-        print("filtering by " + str(portFilter))
-
+        print("time elapsed before getting links: {0:0.3f} seconds".format(time.time() - before))
         for children in result.values():
             for child in children:
                 if "ip32" in child:
@@ -65,5 +62,19 @@ class Query:
                 else:
                     child.inputs = dbaccess.getLinksIn(child.ip8, filter=portFilter)
                     child.outputs = dbaccess.getLinksOut(child.ip8, filter=portFilter)
+                queries += 2
 
-        return json.dumps(result, default=decimal_default)
+        answer = json.dumps(result, default=decimal_default)
+        after = time.time()
+        print("total time: {0:0.3f} seconds".format(after - before))
+        print("total queries: {0}".format(queries))
+        print("-" * 50)
+        return answer
+
+    def GET(self):
+        web.header("Content-Type", "application/json")
+
+
+        get_data = web.input()
+
+        return self.get_children(get_data)
