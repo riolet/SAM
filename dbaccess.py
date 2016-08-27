@@ -209,70 +209,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
 
 
 def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
-
-    if ip8 < 0 or ip8 > 255:
-        outputs = []
-    elif ip16 == -1 or ip16 < 0 or ip16 > 255:
-        if filter == -1:
-            query = """
-                SELECT source8, dest8
-                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
-                FROM Links8
-                WHERE source8 = $seg1
-                GROUP BY source8, dest8;
-                """
-        else:
-            query = """
-                SELECT source8, dest8, links, x1, y1, x2, y2
-                FROM Links8
-                WHERE source8 = $seg1
-                    && port = $filter;
-                """
-        qvars = {'seg1': str(ip8), 'filter': filter}
-        outputs = list(common.db.query(query, vars=qvars))
-    elif ip24 == -1 or ip24 < 0 or ip24 > 255:
-        if filter == -1:
-            query = """
-                SELECT source8, source16, dest8, dest16
-                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
-                FROM Links16
-                WHERE source8 = $seg1
-                    && source16 = $seg2
-                GROUP BY source8, source16, dest8, dest16;
-                """
-        else:
-            query = """
-                SELECT source8, source16, dest8, dest16, links, x1, y1, x2, y2
-                FROM Links16
-                WHERE source8 = $seg1
-                    && source16 = $seg2
-                    && port = $filter;
-                """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter}
-        outputs = list(common.db.query(query, vars=qvars))
-    elif ip32 == -1 or ip32 < 0 or ip32 > 255:
-        if filter == -1:
-            query = """
-                SELECT source8, source16, source24, dest8, dest16, dest24
-                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
-                FROM Links24
-                WHERE source8 = $seg1
-                    && source16 = $seg2
-                    && source24 = $seg3
-                GROUP BY source8, source16, source24, dest8, dest16, dest24;
-                """
-        else:
-            query = """
-                SELECT source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2
-                FROM Links24
-                WHERE source8 = $seg1
-                    && source16 = $seg2
-                    && source24 = $seg3
-                    && port = $filter;
-                """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter}
-        outputs = list(common.db.query(query, vars=qvars))
-    else:
+    if 0 <= ip32 <= 255:
         if filter == -1:
             query = """
                 SELECT source8, source16, source24, source32, dest8, dest16, dest24, dest32, Links32.port
@@ -294,13 +231,70 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     && source32 = $seg4
                     && Links32.port = $filter;
                 """
-        qvars = {'seg1': str(ip8),
-                 'seg2': str(ip16),
-                 'seg3': str(ip24),
-                 'seg4': str(ip32),
-                 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'seg4': str(ip32), 'filter': filter}
         outputs = list(common.db.query(query, vars=qvars))
-
+    elif 0 <= ip24 <= 255:
+        if filter == -1:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links24
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && source24 = $seg3
+                GROUP BY source8, source16, source24, dest8, dest16, dest24;
+                """
+        else:
+            query = """
+                SELECT source8, source16, source24, dest8, dest16, dest24, links, x1, y1, x2, y2
+                FROM Links24
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && source24 = $seg3
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter}
+        outputs = list(common.db.query(query, vars=qvars))
+    elif 0 <= ip16 <= 255:
+        if filter == -1:
+            query = """
+                SELECT source8, source16, dest8, dest16
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links16
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                GROUP BY source8, source16, dest8, dest16;
+                """
+        else:
+            query = """
+                SELECT source8, source16, dest8, dest16, links, x1, y1, x2, y2
+                FROM Links16
+                WHERE source8 = $seg1
+                    && source16 = $seg2
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter}
+        outputs = list(common.db.query(query, vars=qvars))
+    elif 0 <= ip8 <= 255:
+        if filter == -1:
+            query = """
+                SELECT source8, dest8
+                    , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
+                FROM Links8
+                WHERE source8 = $seg1
+                GROUP BY source8, dest8;
+                """
+        else:
+            query = """
+                SELECT source8, dest8, links, x1, y1, x2, y2
+                FROM Links8
+                WHERE source8 = $seg1
+                    && port = $filter;
+                """
+        qvars = {'seg1': str(ip8), 'filter': filter}
+        outputs = list(common.db.query(query, vars=qvars))
+    else:
+        outputs = []
     return outputs
 
 
