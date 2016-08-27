@@ -2,7 +2,7 @@ import sys, os
 sys.path.append(os.path.dirname(__file__))
 import web
 
-web.config.debug = False
+# web.config.debug = False
 
 # Manage routing from here. Regex matches URL and chooses class by name
 urls = (

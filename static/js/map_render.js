@@ -118,7 +118,9 @@ function onScreen() {
     visible.forEach(function (node) {
         if ((node.client === true && config.show_clients) ||
                 (node.server === true && config.show_servers) ||
-                (node.client === true && node.server === true)) {
+                (node.client === true && node.server === true) ||
+                true) {
+            // TODO: remove true from above, after links work again
             filtered.push(node);
         }
     });

@@ -70,6 +70,17 @@ function POST_node_alias(node, name) {
     });
 }
 
+function GET_links(request) {
+    "use strict";
+    $.ajax({
+        url: "/links",
+        type: "GET",
+        data: request,
+        error: onNotLoadData,
+        success: GET_links_callback
+    });
+}
+
 function POST_portinfo(request) {
     "use strict";
     $.ajax({
@@ -110,20 +121,8 @@ function checkLoD() {
 
 function getDetails(node, callback) {
     "use strict";
-    var temp = node.address.split(".");
-    var requestData = {"ip32": -1, "ip24": -1, "ip16": -1, "ip8": -1};
-    if (temp.length >= 4) {
-        requestData.ip32 = temp[3];
-    }
-    if (temp.length >= 3) {
-        requestData.ip24 = temp[2];
-    }
-    if (temp.length >= 2) {
-        requestData.ip16 = temp[1];
-    }
-    if (temp.length >= 1) {
-        requestData.ip8 = temp[0];
-    }
+
+    var requestData = {"address": node.address}
 
     $.ajax({
         url: "/details",

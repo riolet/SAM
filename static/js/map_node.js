@@ -1,6 +1,6 @@
 var m_nodes = {};
 
-function Node(alias, address, number, level, connections, x, y, radius, inputs, outputs) {
+function Node(alias, address, number, level, connections, x, y, radius) {
     "use strict";
     if (typeof alias === "string") {
         this.alias = alias;
@@ -16,15 +16,11 @@ function Node(alias, address, number, level, connections, x, y, radius, inputs, 
     this.radius = radius;
     this.children = {};
     this.childrenLoaded = false;
-    this.inputs = inputs;
-    this.outputs = outputs;
+    this.inputs = [];
+    this.outputs = [];
     this.ports = {};
-    if (inputs.length > 0) {
-        this.server = true;
-    }
-    if (outputs.length > 0) {
-        this.client = true;
-    }
+    this.server = false;
+    this.client = false;
     this.details = {"loaded": false};
 }
 
@@ -122,10 +118,10 @@ function determine_address(node) {
 function import_node(parent, node) {
     address = determine_address(node);
     if (parent === null) {
-        m_nodes[address] = new Node(node.alias, address, address, 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+        m_nodes[address] = new Node(node.alias, address, address, 8, node.connections, node.x, node.y, node.radius);
     } else {
         var name = parent.address + "." + address;
-        parent.children[address] = new Node(node.alias, name, address, parent.level + 8, node.connections, node.x, node.y, node.radius, node.inputs, node.outputs);
+        parent.children[address] = new Node(node.alias, name, address, parent.level + 8, node.connections, node.x, node.y, node.radius);
     }
 }
 

@@ -300,6 +300,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
 
 # TODO: this draws from Syslog, but it mustn't when we're not using Syslog anymore.
 def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
+    print("getDetails: {0}.{1}.{2}.{3}".format(ip8, ip16, ip24, ip32))
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ip8, ip16, ip24, ip32)
 
