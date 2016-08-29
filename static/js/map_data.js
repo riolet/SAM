@@ -72,6 +72,9 @@ function POST_node_alias(node, name) {
 
 function GET_links(request) {
     "use strict";
+    console.log("placing request for: ");
+    console.log(request);
+    /*
     $.ajax({
         url: "/links",
         type: "GET",
@@ -79,6 +82,7 @@ function GET_links(request) {
         error: onNotLoadData,
         success: GET_links_callback
     });
+    */
 }
 
 function POST_portinfo(request) {

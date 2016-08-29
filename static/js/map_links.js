@@ -12,6 +12,8 @@ function link_request_add(address) {
 }
 
 function link_request_submit() {
+    const chunksize = 40;
+    var i;
     var request = m_link_requests.filter(function (address) {
         return !m_links.hasOwnProperty(address);
     });
@@ -21,10 +23,15 @@ function link_request_submit() {
         return !i || address != ary[i - 1];
     });
 
-    m_link_requests = [];
-    if (request.length > 0) {
-        GET_links(request);
+    for (i = 0; i < request.length; i += chunksize) {
+        if (i + chunksize > request.length) {
+            GET_links(request.slice(i));
+        } else {
+            GET_links(request.slice(i, i + chunksize));
+        }
     }
+
+    m_link_requests = [];
 }
 
 function link_removeAll(collection) {

@@ -132,6 +132,7 @@ function node_update(response) {
         }
     });
     port_request_submit();
+    link_request_submit();
 }
 
 function node_closestEmptyPort(link, used) {

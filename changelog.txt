@@ -1,3 +1,9 @@
+2016-08-29
+Links will be loaded seperate from nodes
+    this allows nodes to be retained and links to be changed (with changing timelines)
+    This also allows control over how links are loaded. (order of loading, chunking the requests)
+
+
 2016-08-25
 Started adding timestamps.
     Decided not to add timestamps to `Node*` tables. Nodes are independent of time?
