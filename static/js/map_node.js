@@ -22,7 +22,11 @@ function Node(alias, address, number, subnet, connections, x, y, radius) {
     this.server = false;                //whether this node acts as a client
     this.client = false;                //whether this node acts as a server
     this.details = {"loaded": false};   //detailed information about this node (aliases, metadata, selection panel stuff)
+
+    //queue the node to have links loaded
+    link_request_add(address.toString());
 }
+
 function get_node_name(node) {
     "use strict";
     if (node.alias.length === 0) {

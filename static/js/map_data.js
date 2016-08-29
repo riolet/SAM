@@ -35,7 +35,7 @@ function GET_nodes(parents, callback) {
     request.filter = filter;
 
     $.ajax({
-        url: "/query",
+        url: "/nodes",
         type: "GET",
         data: request,
         dataType: "json",
@@ -119,7 +119,7 @@ function checkLoD() {
     render(tx, ty, scale);
 }
 
-function getDetails(node, callback) {
+function GET_details(node, callback) {
     "use strict";
 
     var requestData = {"address": node.address}

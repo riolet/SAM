@@ -23,7 +23,7 @@ function sel_set_selection(node) {
     if (node !== null && node["details"]["loaded"] === false) {
         // load details
         m_selection["titles"].firstChild.innerHTML = "Loading selection..."
-        getDetails(node, sel_update_display);
+        GET_details(node, sel_update_display);
     } else {
         sel_update_display();
     }
