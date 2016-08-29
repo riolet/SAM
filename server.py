@@ -12,6 +12,7 @@ urls = (
     '/map', 'pages.map.Map',
     '/stats', 'pages.stats.Stats',
     '/nodes', 'pages.nodes.Nodes',
+    '/links', 'pages.links.Links',
     '/details', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',

@@ -70,19 +70,18 @@ function POST_node_alias(node, name) {
     });
 }
 
-function GET_links(request) {
+function GET_links(addrs) {
     "use strict";
-    console.log("placing request for: ");
-    console.log(request);
-    /*
+    var requestData = {
+        "address": addrs.join(","),
+        "filter": filter};
     $.ajax({
         url: "/links",
         type: "GET",
-        data: request,
+        data: requestData,
         error: onNotLoadData,
         success: GET_links_callback
     });
-    */
 }
 
 function POST_portinfo(request) {

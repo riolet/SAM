@@ -2,7 +2,6 @@ import json
 import dbaccess
 import web
 import decimal
-import time
 
 
 def decimal_default(obj):

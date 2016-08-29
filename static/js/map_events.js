@@ -144,10 +144,9 @@ function applyfilter() {
     "use strict";
     filter = document.getElementById("filter").value;
     sel_set_selection(null);
-    m_nodes = {};
     subnetLabel = "";
+    links_reset();
     updateRenderRoot();
-    GET_nodes(null);
     render(tx, ty, scale);
 }
 function onfilter() {
