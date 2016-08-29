@@ -18,9 +18,14 @@ function link_request_add_all(collection) {
     });
 }
 
+function link_comparator(a, b) {
+    //determine value of a and b
+
+    //return bValue - aValue to sort by most valuable first
+}
+
 function link_request_submit() {
     const chunksize = 40;
-    var i;
     var request = m_link_requests.filter(function (address) {
         return !m_links.hasOwnProperty(address);
     });
@@ -30,15 +35,21 @@ function link_request_submit() {
         return !i || address != ary[i - 1];
     });
 
-    for (i = 0; i < request.length; i += chunksize) {
-        if (i + chunksize > request.length) {
-            GET_links(request.slice(i));
-        } else {
-            GET_links(request.slice(i, i + chunksize));
-        }
+    // TODO: sort by value to user (i.e. what will the user need first?)
+    //request.sort(link_comparator);
+
+    console.log("requesting:")
+    if (chunksize > request.length) {
+        console.log(request);
+        GET_links(request);
+        m_link_requests = [];
+    } else {
+        console.log(request.slice(0, chunksize));
+        GET_links(request.slice(0, chunksize));
+        m_link_requests = request.slice(chunksize);
+        setTimeout(link_request_submit, 500);
     }
 
-    m_link_requests = [];
 }
 
 function link_remove_all(collection) {

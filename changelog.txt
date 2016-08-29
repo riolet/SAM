@@ -2,7 +2,11 @@
 Links will be loaded seperate from nodes
     this allows nodes to be retained and links to be changed (with changing timelines)
     This also allows control over how links are loaded. (order of loading, chunking the requests)
-
+    Changing filters now merely deletes links, and requests new links
+        instead of deleting everything and reseting the view
+Loading order started:
+    first attempt is prioritize what is visible first
+    focus on what will be visible when zooming in slightly more next
 
 2016-08-25
 Started adding timestamps.
