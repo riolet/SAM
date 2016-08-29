@@ -1,9 +1,8 @@
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
-    console.log("Failed to load data:");
-    console.log("\t" + textStatus);
-    console.log("\t" + errorThrown);
+    console.error("Failed to load data: " + errorThrown);
+    console.log("\tText Status: " + textStatus);
 }
 
 /*

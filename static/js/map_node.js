@@ -14,7 +14,7 @@ function Node(alias, address, number, subnet, connections, x, y, radius) {
     this.x = x;                         //render: x position in graph
     this.y = y;                         //render: y position in graph
     this.radius = radius;               //render: radius
-    this.children = {};                 //child (subnet) nodes (if this is subnet 8, 16, or 24)
+    this.children = {};                 //child nodes (if this is subnet 8, 16, or 24)
     this.childrenLoaded = false;        //whether the children have been loaded
     this.inputs = [];                   //input connections. an array like: [(ip, [port, ...]), ...]
     this.outputs = [];                  //output connections. an array like: [(ip, [port, ...]), ...]

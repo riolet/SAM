@@ -1,4 +1,4 @@
-//Given a node's subnet (subnet) return the opacity to render it at.
+//Given a node's subnet, return the opacity to render it at.
 function opacity(subnet, type) {
     "use strict";
     var startZoom = -Infinity;
