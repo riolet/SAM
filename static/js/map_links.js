@@ -56,6 +56,11 @@ function link_request_submit() {
     });
     request.sort(link_comparator);
 
+    if (request.length == 0) {
+        m_link_requests = [];
+        return;
+    }
+
     console.log("requesting:")
     if (chunksize > request.length) {
         console.log(request);
