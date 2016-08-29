@@ -18,10 +18,30 @@ function link_request_add_all(collection) {
     });
 }
 
+function dist_between_squared(x1, y1, x2, y2) {
+    return Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
+}
+
 function link_comparator(a, b) {
+    var aValue;
+    var bValue;
     //determine value of a and b
+    var centerx = (rect.width - 2 * tx) / (2 * scale);
+    var centery = (rect.height - 2 * ty) / (2 * scale);
+
+    aNode = findNode(a);
+    bNode = findNode(b);
+    aValue = 1 / Math.max(1, dist_between_squared(aNode.x, aNode.y, centerx, centery));
+    bValue = 1 / Math.max(1, dist_between_squared(bNode.x, bNode.y, centerx, centery));
+    // _Value is now a number between 0 and 1, where 1 is closer to center screen
+
+    if (renderCollection.indexOf(aNode) != -1) {
+        aValue += 32 - aNode.subnet;
+    }
+    // _Value is now a number between 0 and 25 based on being visible and zoomed further out
 
     //return bValue - aValue to sort by most valuable first
+    return bValue - aValue;
 }
 
 function link_request_submit() {
@@ -34,9 +54,7 @@ function link_request_submit() {
     request = request.sort().filter(function(address, i, ary) {
         return !i || address != ary[i - 1];
     });
-
-    // TODO: sort by value to user (i.e. what will the user need first?)
-    //request.sort(link_comparator);
+    request.sort(link_comparator);
 
     console.log("requesting:")
     if (chunksize > request.length) {

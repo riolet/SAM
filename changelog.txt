@@ -5,8 +5,9 @@ Links will be loaded seperate from nodes
     Changing filters now merely deletes links, and requests new links
         instead of deleting everything and reseting the view
 Loading order started:
-    first attempt is prioritize what is visible first
-    focus on what will be visible when zooming in slightly more next
+    nodes are ranked by distance from center of screen
+    but nodes that are on screen and larger take priority
+        (like if you're zoomed in on 12.34.56 then 12 and 12.34 would take priority)
 
 2016-08-25
 Started adding timestamps.
