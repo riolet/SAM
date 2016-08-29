@@ -1,8 +1,4 @@
-//model
-
 var m_selection = {}
-
-//controller
 
 function sel_init() {
     m_selection["selection"] = null;
@@ -23,13 +19,11 @@ function sel_set_selection(node) {
     if (node !== null && node["details"]["loaded"] === false) {
         // load details
         m_selection["titles"].firstChild.innerHTML = "Loading selection..."
-        getDetails(node, sel_update_display);
+        GET_details(node, sel_update_display);
     } else {
         sel_update_display();
     }
 }
-
-// view
 
 function sel_clear_display() {
     removeChildren(m_selection["titles"]);
@@ -148,6 +142,8 @@ function sel_update_display(node) {
                 a.appendChild(document.createTextNode(get_port_name(port.port)));
                 a.setAttribute("data-content", get_port_description(port.port));
                 a.setAttribute("class", "popup");
+                //This works as an alternative, but it's ugly.
+                //a.title = get_port_description(port.port)
             } else {
                 a.appendChild(document.createTextNode(port.port.toString()));
             }

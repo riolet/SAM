@@ -1,3 +1,14 @@
+2016-08-29
+Links will be loaded seperate from nodes
+    this allows nodes to be retained and links to be changed (with changing timelines)
+    This also allows control over how links are loaded. (order of loading, chunking the requests)
+    Changing filters now merely deletes links, and requests new links
+        instead of deleting everything and reseting the view
+Loading order started:
+    nodes are ranked by distance from center of screen
+    but nodes that are on screen and larger take priority
+        (like if you're zoomed in on 12.34.56 then 12 and 12.34 would take priority)
+
 2016-08-25
 Started adding timestamps.
     Decided not to add timestamps to `Node*` tables. Nodes are independent of time?

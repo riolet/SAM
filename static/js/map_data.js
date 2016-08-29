@@ -1,9 +1,8 @@
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
-    console.log("Failed to load data:");
-    console.log("\t" + textStatus);
-    console.log("\t" + errorThrown);
+    console.error("Failed to load data: " + errorThrown);
+    console.log("\tText Status: " + textStatus);
 }
 
 /*
@@ -35,7 +34,7 @@ function GET_nodes(parents, callback) {
     request.filter = filter;
 
     $.ajax({
-        url: "/query",
+        url: "/nodes",
         type: "GET",
         data: request,
         dataType: "json",
@@ -70,6 +69,20 @@ function POST_node_alias(node, name) {
     });
 }
 
+function GET_links(addrs) {
+    "use strict";
+    var requestData = {
+        "address": addrs.join(","),
+        "filter": filter};
+    $.ajax({
+        url: "/links",
+        type: "GET",
+        data: requestData,
+        error: onNotLoadData,
+        success: GET_links_callback
+    });
+}
+
 function POST_portinfo(request) {
     "use strict";
     $.ajax({
@@ -99,7 +112,7 @@ function checkLoD() {
 
     var nodesToLoad = []
     renderCollection.forEach(function (node) {
-        if (node.level < currentLevel()) {
+        if (node.subnet < currentSubnet()) {
             nodesToLoad.push(node);
         }
     });
@@ -108,22 +121,10 @@ function checkLoD() {
     render(tx, ty, scale);
 }
 
-function getDetails(node, callback) {
+function GET_details(node, callback) {
     "use strict";
-    var temp = node.address.split(".");
-    var requestData = {"ip32": -1, "ip24": -1, "ip16": -1, "ip8": -1};
-    if (temp.length >= 4) {
-        requestData.ip32 = temp[3];
-    }
-    if (temp.length >= 3) {
-        requestData.ip24 = temp[2];
-    }
-    if (temp.length >= 2) {
-        requestData.ip16 = temp[1];
-    }
-    if (temp.length >= 1) {
-        requestData.ip8 = temp[0];
-    }
+
+    var requestData = {"address": node.address}
 
     $.ajax({
         url: "/details",

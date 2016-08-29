@@ -9,18 +9,9 @@ class Details:
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
-        # print("-"*50)
-        # print("Details: get_data is")
-        # print(get_data)
-        # print("-"*50)
 
-        ips = [
-            int(get_data.get('ip8', -1)),
-            int(get_data.get('ip16', -1)),
-            int(get_data.get('ip24', -1)),
-            int(get_data.get('ip32', -1))
-            ]
-
+        ips = get_data.get("address").split(".")
+        ips = [int(i) for i in ips]
         details = dbaccess.getDetails(*ips)
 
         conn_in = {}
