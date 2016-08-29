@@ -110,7 +110,7 @@ function checkLoD() {
 
     var nodesToLoad = []
     renderCollection.forEach(function (node) {
-        if (node.level < currentLevel()) {
+        if (node.subnet < currentSubnet()) {
             nodesToLoad.push(node);
         }
     });

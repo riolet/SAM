@@ -1,48 +1,28 @@
 var m_nodes = {};
 
-function Node(alias, address, number, level, connections, x, y, radius) {
+function Node(alias, address, number, subnet, connections, x, y, radius) {
     "use strict";
     if (typeof alias === "string") {
-        this.alias = alias;
+        this.alias = alias;  //Custom address translation
     } else {
         this.alias = "";
     }
-    this.address = address.toString();
-    this.number = number;
-    this.level = level;
-    this.connections = connections;
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.children = {};
-    this.childrenLoaded = false;
-    this.inputs = [];
-    this.outputs = [];
-    this.ports = {};
-    this.server = false;
-    this.client = false;
-    this.details = {"loaded": false};
+    this.address = address.toString();  //address: 12.34.56.78
+    this.number = number;               //ip segment number: 78
+    this.subnet = subnet;               //ip subnet number: 8, 16, 24, 32
+    this.connections = connections;     //number of connections (not unique) this node is involved in
+    this.x = x;                         //render: x position in graph
+    this.y = y;                         //render: y position in graph
+    this.radius = radius;               //render: radius
+    this.children = {};                 //child (subnet) nodes (if this is subnet 8, 16, or 24)
+    this.childrenLoaded = false;        //whether the children have been loaded
+    this.inputs = [];                   //input connections. an array like: [(ip, [port, ...]), ...]
+    this.outputs = [];                  //output connections. an array like: [(ip, [port, ...]), ...]
+    this.ports = {};                    //ports by which other nodes connect to this one ( /32 only). Contains a key for each port number
+    this.server = false;                //whether this node acts as a client
+    this.client = false;                //whether this node acts as a server
+    this.details = {"loaded": false};   //detailed information about this node (aliases, metadata, selection panel stuff)
 }
-
-Node.prototype = {
-    alias: "",             //DNS translation
-    address: "0",          //address: 12.34.56.78
-    number: 0,             //ip segment number: 78
-    level: 8,              //ip segment/subnet: 8, 16, 24, or 32
-    connections: 0,        //number of connections (not unique) this node is involved in
-    x: 0,                  //render: x position in graph
-    y: 0,                  //render: y position in graph
-    radius: 0,             //render: radius
-    children: {},          //child (subnet) nodes (if this is level 8, 16, or 24)
-    childrenLoaded: false, //whether the children have been loaded
-    inputs: [],            //input connections. an array like: [(ip, [port, ...]), ...]
-    outputs: [],           //output connections. an array like: [(ip, [port, ...]), ...]
-    ports: {},             //ports by which other nodes connect to this one ( /32 only). Contains a key for each port number
-    client: false,         //whether this node acts as a client
-    server: false,         //whether this node acts as a server
-    details: {}            //detailed information about this node (aliases, metadata, selection panel stuff)
-};
-
 function get_node_name(node) {
     "use strict";
     if (node.alias.length === 0) {
@@ -60,8 +40,8 @@ function get_node_address(node) {
         add += ".0";
         terms -= 1;
     }
-    if (node.level < 32) {
-        add += "/" + node.level;
+    if (node.subnet < 32) {
+        add += "/" + node.subnet;
     }
     return add;
 }
@@ -121,7 +101,7 @@ function import_node(parent, node) {
         m_nodes[address] = new Node(node.alias, address, address, 8, node.connections, node.x, node.y, node.radius);
     } else {
         var name = parent.address + "." + address;
-        parent.children[address] = new Node(node.alias, name, address, parent.level + 8, node.connections, node.x, node.y, node.radius);
+        parent.children[address] = new Node(node.alias, name, address, parent.subnet + 8, node.connections, node.x, node.y, node.radius);
     }
 }
 
@@ -129,7 +109,7 @@ function import_node(parent, node) {
 function node_update(response) {
     Object.keys(response).forEach(function (parent_address) {
         if (parent_address === "_") {
-            //must be top level
+            //must be top subnet
             m_nodes = {};
             response[parent_address].forEach(function (node) {
                 import_node(null, node);
@@ -141,7 +121,7 @@ function node_update(response) {
                 import_node(parent, node);
             });
             Object.keys(parent.children).forEach(function (child) {
-                if (parent.children[child].level === 32) {
+                if (parent.children[child].subnet === 32) {
                     node_processPorts(parent.children[child].inputs);
                 }
             });

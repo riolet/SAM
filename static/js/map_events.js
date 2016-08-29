@@ -44,13 +44,13 @@ function pick(x, y) {
         tempDist = distanceSquared(x, y, node.x, node.y);
         if (tempDist < node.radius*node.radius) {
         //if (contains(node, x, y)) {
-            if (tempDist < bestDist || node.level > best.level) {
+            if (tempDist < bestDist || node.subnet > best.subnet) {
                 bestDist = tempDist;
                 best = node;
             }
         }
     });
-    if (best !== null && best.level < currentLevel() - 8) {
+    if (best !== null && best.subnet < currentSubnet() - 8) {
         best = null;
     }
     return best;
@@ -145,7 +145,7 @@ function applyfilter() {
     filter = document.getElementById("filter").value;
     sel_set_selection(null);
     m_nodes = {};
-    currentSubnet = "";
+    subnetLabel = "";
     updateRenderRoot();
     GET_nodes(null);
     render(tx, ty, scale);
@@ -181,7 +181,7 @@ function applysearch() {
                 break;
             }
         } else {
-            if (subnet.childrenLoaded === false && subnet.level < 32) {
+            if (subnet.childrenLoaded === false && subnet.subnet < 32) {
                 //load more and restart when loading is complete.
                 GET_nodes([subnet], applysearch);
                 return;

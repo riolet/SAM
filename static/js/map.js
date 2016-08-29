@@ -16,7 +16,7 @@ var my;
 
 //store the data displayed in the map
 var renderCollection = [];
-var currentSubnet = "";
+var subnetLabel = "";
 
 //settings/options data
 var filter = "";
@@ -27,7 +27,7 @@ var config = {
     "show_out": false
 };
 
-//Constants.  Used for zoom levels in map::currentLevel and map_render::opacity
+//Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
 var zNodes16 = 0.00231;
 var zLinks16 = 0.0111;
 var zNodes24 = 0.0555;
@@ -86,7 +86,7 @@ function init() {
     GET_nodes(null);
 }
 
-function currentLevel() {
+function currentSubnet() {
     "use strict";
     if (scale < zNodes16) {
         return 8;
