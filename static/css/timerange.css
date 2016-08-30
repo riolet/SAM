@@ -19,6 +19,7 @@
     height: 100%;
     width: 0em;
     position: absolute;
+    top: 0em;
     z-index: 2;
 }
 .slider .slider-bar::after {
@@ -32,15 +33,6 @@
     background-color: #FFEEDD;
     border: 0.1em solid black;
     border-radius: 0.2em;
-}
-
-.slider #slider-start {
-    top: 0em;
-    left: 100%;
-}
-.slider #slider-end {
-    top: 0em;
-    right: 2em;
 }
 .slider .slider-selection {
     width: calc(100% - 4em);
