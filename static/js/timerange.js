@@ -30,27 +30,42 @@ function slider_init() {
 function updateDisplay() {
     var leftSlider = document.getElementById("slider-start");
     var rightSlider = document.getElementById("slider-end");
+    var selection = document.getElementById("slider-active");
     leftSlider.style.left = (slider_model.start * 100) + "%";
     rightSlider.style.left = (slider_model.end * 100) + "%";
+    selection.style.width = ((slider_model.end - slider_model.start) * 100) + "%";
+    selection.style.left = (slider_model.start * 100) + "%";
 }
 
 function onMouseDown(event) {
+    event.preventDefault();
     var clickPos = (event.clientX - slider_model.minx) / (slider_model.maxx - slider_model.minx);
     var distStart = Math.abs(slider_model.start - clickPos);
     var distEnd = Math.abs(slider_model.end - clickPos);
-    slider_model.pinned = clickPos;
     if (distStart < distEnd) {
         slider_model.start = clickPos;
+        if (distStart < 0.01) {
+            slider_model.pinned = slider_model.end;
+        } else {
+            slider_model.pinned = slider_model.start;
+        }
     } else {
         slider_model.end = clickPos;
+        if (distEnd < 0.01) {
+            slider_model.pinned = slider_model.start;
+        } else {
+            slider_model.pinned = slider_model.end;
+        }
     }
     slider_model.sliding = true;
     fire_edit_event();
     fire_change_event();
     updateDisplay();
+    return true;
 }
 
 function onMouseMove(event) {
+    event.preventDefault();
     if (!slider_model.sliding) {
         return;
     }
@@ -67,8 +82,10 @@ function onMouseMove(event) {
 }
 
 function onMouseUp(event) {
+    event.preventDefault();
     slider_model.sliding = false;
     fire_change_event();
+    return true;
 }
 
 function fire_edit_event() {
