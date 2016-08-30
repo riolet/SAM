@@ -16,6 +16,7 @@ urls = (
     '/details', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
+    '/temp', 'pages.temp.Temp',
 )
 
 # For development testing, uncomment these 3 lines

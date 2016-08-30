@@ -1,0 +1,35 @@
+.timerange {
+    border: 1px dotted blue;
+}
+.timerange .slider {
+    border: 2px solid green;
+    height: 1.5em;
+    position: relative;
+}
+.timerange .labels {
+    border: 2px dashed red;
+}
+.slider .slider-bar {
+    height: 100%;
+    width: 0.5em;
+    background-color: yellow;
+    border: 2px solid black;
+    position: absolute;
+    z-index: 2;
+}
+.slider #slider-start {
+    top: 0em;
+    left: 2em;
+}
+.slider #slider-end {
+    top: 0em;
+    right: 2em;
+}
+.slider .slider-selection {
+    width: calc(100% - 4em);
+    height: 100%;
+    position: absolute;
+    left: 2em;
+    background-color: cyan;
+    z-index: 1;
+}
