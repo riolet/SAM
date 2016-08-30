@@ -1,15 +1,19 @@
 2016-08-30
-Time range controller
-    mouse down:
-        A = nearest handle
-        move A to mouse.
-        trigger edit event.
-    mouse drag:
-        B = furthest handle
-        move B to mouse.
-        trigger edit event.
-    mouse up:
-        trigger changed event
+Decided to use premade slider noUiSlider instead ( http://refreshless.com/nouislider/ )
+    It is free and open source, no attribution necessary
+    It can move sliders, handle dates, link the sliders, fire events, and is smooth with the mouse.
+    Integrated into the config menu of the map.
+CANCELED: Custom time range controller
+    X mouse down:
+    X    A = nearest handle
+    X    move A to mouse.
+    X    trigger edit event.
+    X mouse drag:
+    X    B = furthest handle
+    X    move B to mouse.
+    X    trigger edit event.
+    X mouse up:
+    X    trigger changed event
 
 2016-08-29
 Links will be loaded seperate from nodes

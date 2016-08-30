@@ -1,111 +1,102 @@
-var slider_model = {}
-
-function slider_add_listener(event, callback) {
-    if (event == "edit") {
-        slider_model.editListeners.push(callback);
-    }
-    if (event == "change") {
-        slider_model.changeListeners.push(callback);
-    }
+// Create a new date from a string, return as a timestamp.
+function timestamp(str){
+    return new Date(str).getTime();
 }
 
-function slider_init() {
-    console.log("init!");
-    var slider = document.getElementById("range-slider");
-
-    slider.onmousedown = onMouseDown;
-    slider.onmousemove = onMouseMove;
-    slider.onmouseup = onMouseUp;
-    slider.onmouseexit = onMouseUp;
-    slider.onmouseleave = onMouseUp;
-    slider_model.start = 0.2;
-    slider_model.end = 0.8;
-    slider_model.editListeners = []
-    slider_model.changeListeners = []
-    slider_model.sliding = false;
-
-    var rect = slider.getBoundingClientRect();
-    slider_model.minx = rect.left;
-    slider_model.maxx = rect.right;
-    updateDisplay();
+// Create a string representation of the date.
+function formatDate ( date ) {
+    return formatPip().to(date.valueOf());
 }
 
-function updateDisplay() {
-    var leftSlider = document.getElementById("slider-start");
-    var rightSlider = document.getElementById("slider-end");
-    var selection = document.getElementById("slider-active");
-    leftSlider.style.left = Math.floor(slider_model.start * 100) + "%";
-    rightSlider.style.left = Math.floor(slider_model.end * 100) + "%";
-    selection.style.width = Math.floor((slider_model.end - slider_model.start) * 100) + "%";
-    selection.style.left = Math.floor(slider_model.start * 100) + "%";
+
+function formatPip () {
+    bob = {}
+    bob.to = function(val) {
+        var date = new Date(val);
+        var year    = date.getFullYear();
+        var month   = date.getMonth()+1;
+        var day     = date.getDate();
+        var hour    = date.getHours();
+        var minute  = date.getMinutes();
+        var second  = date.getSeconds();
+        if(month.toString().length == 1) {
+            var month = '0'+month;
+        }
+        if(day.toString().length == 1) {
+            var day = '0'+day;
+        }
+        if(hour.toString().length == 1) {
+            var hour = '0'+hour;
+        }
+        if(minute.toString().length == 1) {
+            var minute = '0'+minute;
+        }
+        if(second.toString().length == 1) {
+            var second = '0'+second;
+        }
+        var dateTime = year+'-'+month+'-'+day+' '+hour+':'+minute;
+        return dateTime;
+    };
+    bob.from = function(datetimestring) {
+        return new Date(datetimestring).getTime();
+    };
+    return bob;
 }
 
-function onMouseDown(event) {
-    event.preventDefault();
-    var clickPos = (event.clientX - slider_model.minx) / (slider_model.maxx - slider_model.minx);
-    var distStart = Math.abs(slider_model.start - clickPos);
-    var distEnd = Math.abs(slider_model.end - clickPos);
-    if (distStart < distEnd) {
-        slider_model.start = clickPos;
-        slider_model.pinned = slider_model.end;
-    } else {
-        slider_model.end = clickPos;
-        slider_model.pinned = slider_model.start;
-    }
-    slider_model.start = clamp(slider_model.start, 0, 1);
-    slider_model.end = clamp(slider_model.end, 0, 1);
-    slider_model.sliding = true;
-    fire_edit_event();
-    updateDisplay();
-    return true;
-}
+function slider2_init() {
+    var dateSlider = document.getElementById('slider-date');
 
-function onMouseMove(event) {
-    event.preventDefault();
-    if (!slider_model.sliding) {
-        return;
-    }
-    var clickPos = (event.clientX - slider_model.minx) / (slider_model.maxx - slider_model.minx);
-    if (clickPos > slider_model.pinned) {
-        slider_model.start = slider_model.pinned;
-        slider_model.end = clickPos;
-    } else {
-        slider_model.start = clickPos;
-        slider_model.end = slider_model.pinned;
-    }
-    slider_model.start = clamp(slider_model.start, 0, 1);
-    slider_model.end = clamp(slider_model.end, 0, 1);
-    updateDisplay();
-    return true;
-}
+    noUiSlider.create(dateSlider, {
+        // Create two timestamps to define a range.
+        range: {
+            min: timestamp('2016-06-19 00:00'),
+            max: timestamp('2016-06-21 23:55')
+        },
 
-function clamp(val, min, max) {
-    if (val < min) {
-        val = min;
-    } else if (val > max) {
-        val = max;
-    }
-    return val;
-}
+        // Steps of 5 minutes
+        step: 5 * 60 * 1000,
 
-function onMouseUp(event) {
-    event.preventDefault();
-    slider_model.sliding = false;
-    fire_change_event();
-    return true;
-}
+        // at least 5 minutes between handles
+        margin: 5 * 60 * 1000,
 
-function fire_edit_event() {
-    slider_model.editListeners.forEach(function (callback) {
-        callback(slider_model);
+        // Two more timestamps indicate the handle starting positions.
+        start: [ timestamp('2016-06-19 19:00'), timestamp('2016-06-20 08:00') ],
+
+        // Shade the selection
+        connect: true,
+        // Allow range draggin
+        behaviour: "drag",
+
+        pips: {
+            mode: 'count',
+            values: 5,
+            stepped: true,
+            density: 6,
+            format: {"to": function(v) { return ""; } }
+        }
+    });
+
+
+    var inputA = document.getElementById('input-start');
+    var inputB = document.getElementById('input-end');
+    var converter = formatPip();
+
+    dateSlider.noUiSlider.on('update', function( values, handle ) {
+        var value = values[handle];
+        if ( handle ) {
+            inputB.value = converter.to(Math.round(value));
+        } else {
+            inputA.value = converter.to(Math.round(value));
+        }
+    });
+
+    inputA.addEventListener('change', function(){
+        dateSlider.noUiSlider.set([converter.from(this.value), null]);
+    });
+
+    inputB.addEventListener('change', function(){
+        dateSlider.noUiSlider.set([null, converter.from(this.value)]);
     });
 }
 
-function fire_change_event() {
-    slider_model.changeListeners.forEach(function (callback) {
-        callback(slider_model);
-    });
-}
-
-//execute when document is 'ready'
-$(slider_init);
+$(slider2_init);

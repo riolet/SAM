@@ -1,44 +1,9 @@
-.timerange {
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    overflow: hidden;
-    background-color: #CCDDEE;
+.slider-box {
+    overflow-x: hidden;
+    overflow-y: hidden;
+    height: 4.0em;
+    padding: 0 1.2em;
 }
-.timerange .slider {
-    background-color: #BBCCDD;
-    height: 1.5em;
-    position: relative;
-    margin: 0 0.5em;
-}
-.timerange .labels {
-    background-color: rgba(255, 0, 0, 0.5);
-    padding: 0.1em;
-}
-.slider .slider-bar {
-    display: block;
-    height: 100%;
-    width: 0em;
-    position: absolute;
-    top: 0em;
-    z-index: 2;
-}
-.slider .slider-bar::after {
-    display: block;
-    content: "";
-    cursor:pointer;
-    position: relative;
-    left: -0.3em;
-    width: 0.5em;
-    height: 100%;
-    background-color: #FFEEDD;
-    border: 0.1em solid black;
-    border-radius: 0.2em;
-}
-.slider .slider-selection {
-    width: calc(100% - 4em);
-    height: 100%;
-    position: absolute;
-    left: 2em;
-    background-color: #99AABB;
-    z-index: 1;
+.slider-box > div {
+    margin-top: 0.5em;
 }
