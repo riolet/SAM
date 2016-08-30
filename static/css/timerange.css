@@ -1,25 +1,42 @@
 .timerange {
-    border: 1px dotted blue;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: #CCDDEE;
 }
 .timerange .slider {
-    border: 2px solid green;
+    background-color: #BBCCDD;
     height: 1.5em;
     position: relative;
+    margin: 0 0.5em;
 }
 .timerange .labels {
-    border: 2px dashed red;
+    background-color: rgba(255, 0, 0, 0.5);
+    padding: 0.1em;
 }
 .slider .slider-bar {
+    display: block;
     height: 100%;
-    width: 0.5em;
-    background-color: yellow;
-    border: 2px solid black;
+    width: 0em;
     position: absolute;
     z-index: 2;
 }
+.slider .slider-bar::after {
+    display: block;
+    content: "";
+    cursor:pointer;
+    position: relative;
+    left: -0.3em;
+    width: 0.5em;
+    height: 100%;
+    background-color: #FFEEDD;
+    border: 0.1em solid black;
+    border-radius: 0.2em;
+}
+
 .slider #slider-start {
     top: 0em;
-    left: 2em;
+    left: 100%;
 }
 .slider #slider-end {
     top: 0em;
@@ -30,6 +47,6 @@
     height: 100%;
     position: absolute;
     left: 2em;
-    background-color: cyan;
+    background-color: #99AABB;
     z-index: 1;
 }

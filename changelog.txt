@@ -1,3 +1,16 @@
+2016-08-30
+Time range controller
+    mouse down:
+        A = nearest handle
+        move A to mouse.
+        trigger edit event.
+    mouse drag:
+        B = furthest handle
+        move B to mouse.
+        trigger edit event.
+    mouse up:
+        trigger changed event
+
 2016-08-29
 Links will be loaded seperate from nodes
     this allows nodes to be retained and links to be changed (with changing timelines)

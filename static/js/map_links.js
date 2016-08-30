@@ -1,5 +1,6 @@
-m_links = {};
-m_link_requests = [];
+var m_links = {};
+var m_link_requests = [];
+var m_link_timer;
 
 function link_loaded(address) {
     return m_links.hasOwnProperty(address);
@@ -70,7 +71,7 @@ function link_request_submit() {
         console.log(request.slice(0, chunksize));
         GET_links(request.slice(0, chunksize));
         m_link_requests = request.slice(chunksize);
-        setTimeout(link_request_submit, 500);
+        m_link_timer = setTimeout(link_request_submit, 500);
     }
 
 }
