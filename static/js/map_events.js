@@ -197,6 +197,7 @@ function applysearch() {
     }
 
     resetViewport([subnet], 0.2);
+    sel_set_selection(subnet);
     updateRenderRoot();
     render(tx, ty, scale);
 }
