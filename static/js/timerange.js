@@ -1,17 +1,12 @@
-// Create a new date from a string, return as a timestamp.
-function timestamp(str){
-    return new Date(str).getTime();
-}
-
 // Create a string representation of the date.
 function formatDate ( date ) {
     return formatPip().to(date.valueOf());
 }
 
 
-function formatPip () {
-    bob = {}
-    bob.to = function(val) {
+function dateConverter() {
+    cnv = {}
+    cnv.to = function(val) {
         var date = new Date(val);
         var year    = date.getFullYear();
         var month   = date.getMonth()+1;
@@ -37,20 +32,33 @@ function formatPip () {
         var dateTime = year+'-'+month+'-'+day+' '+hour+':'+minute;
         return dateTime;
     };
-    bob.from = function(datetimestring) {
+    cnv.from = function(datetimestring) {
         return new Date(datetimestring).getTime();
     };
-    return bob;
+    return cnv;
 }
 
-function slider2_init() {
+function slider_init() {
+    $.ajax({
+        url: "/stats",
+        type: "GET",
+        data: {'q': 'timerange'},
+        dataType: "json",
+        error: onNotLoadData,
+        success: function (response) {
+            create_slider(Math.floor(response.min * 1000), Math.floor(response.max * 1000));
+        }
+    });
+}
+
+function create_slider(dtmin, dtmax) {
     var dateSlider = document.getElementById('slider-date');
 
     noUiSlider.create(dateSlider, {
         // Create two timestamps to define a range.
         range: {
-            min: timestamp('2016-06-19 00:00'),
-            max: timestamp('2016-06-21 23:55')
+            min: dtmin,
+            max: dtmax
         },
 
         // Steps of 5 minutes
@@ -60,7 +68,8 @@ function slider2_init() {
         margin: 5 * 60 * 1000,
 
         // Two more timestamps indicate the handle starting positions.
-        start: [ timestamp('2016-06-19 19:00'), timestamp('2016-06-20 08:00') ],
+        start: [ dtmin, dtmax ],
+
 
         // Shade the selection
         connect: true,
@@ -72,14 +81,13 @@ function slider2_init() {
             values: 5,
             stepped: true,
             density: 6,
-            format: {"to": function(v) { return ""; } }
+            format: {"to": function(v) { return ""; } } //no labels
         }
     });
 
-
     var inputA = document.getElementById('input-start');
     var inputB = document.getElementById('input-end');
-    var converter = formatPip();
+    var converter = dateConverter();
 
     dateSlider.noUiSlider.on('update', function( values, handle ) {
         var value = values[handle];
@@ -99,4 +107,4 @@ function slider2_init() {
     });
 }
 
-$(slider2_init);
+$(slider_init);

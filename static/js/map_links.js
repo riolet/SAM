@@ -62,9 +62,7 @@ function link_request_submit() {
         return;
     }
 
-    console.log("requesting:")
     if (chunksize > request.length) {
-        console.log(request);
         GET_links(request);
         m_link_requests = [];
     } else {
