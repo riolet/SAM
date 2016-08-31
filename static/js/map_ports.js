@@ -4,10 +4,12 @@ var m_ports = [];
 var m_port_requests = [];
 
 function port_loaded(port) {
+    "use strict";
     return m_ports.hasOwnProperty(port);
 }
 
 function get_port_name(port) {
+    "use strict";
     if (!m_ports.hasOwnProperty(port)){
         return port.toString();
     }
@@ -25,6 +27,7 @@ function get_port_name(port) {
 }
 
 function get_port_alias(port) {
+    "use strict";
     if (!m_ports.hasOwnProperty(port)){
         return port.toString();
     }
@@ -42,6 +45,7 @@ function get_port_alias(port) {
 }
 
 function get_port_description(port) {
+    "use strict";
     if (!m_ports.hasOwnProperty(port)){
         return ""
     }
@@ -58,6 +62,7 @@ function get_port_description(port) {
 }
 
 function update_port(info) {
+    "use strict";
     var port = {};
     port.active = info.active;
     port.port = Number(info.port);
@@ -70,17 +75,20 @@ function update_port(info) {
 }
 
 function port_click(event) {
-    port = Number((event.target.innerHTML.split(" ")[0]));
+    "use strict";
+    var port = Number((event.target.innerHTML.split(" ")[0]));
     show_window(port)
 }
 
 function port_request_add(port_number) {
+    "use strict";
     if (!port_loaded(port_number)) {
         m_port_requests.push(port_number);
     }
 }
 
 function port_request_submit() {
+    "use strict";
     var request = m_port_requests.filter(function (element) {
         return !m_ports.hasOwnProperty(element.port);
     });
@@ -97,6 +105,7 @@ function port_request_submit() {
 }
 
 function port_save() {
+    "use strict";
     var differences = false;
     if (document.getElementById("port_active").checked !== (m_portinfo.active === 1)) {
         //toggle active between 0 and 1
@@ -120,6 +129,7 @@ function port_save() {
 }
 
 function show_window(port) {
+    "use strict";
     document.getElementById("port_number").innerHTML = port;
     document.getElementById("port_name").innerHTML = "loading...";
     document.getElementById("port_description").innerHTML = "loading...";
@@ -141,6 +151,7 @@ function show_window(port) {
 }
 
 function port_display(port) {
+    "use strict";
     if (port !== undefined) {
         m_portinfo = port;
     }
@@ -175,9 +186,10 @@ function port_display(port) {
 }
 
 function GET_portinfo_callback(result) {
+    "use strict";
     result.forEach(update_port);
     sel_update_display(m_selection["selection"]);
-    port = result.pop();
+    var port = result.pop();
     port_display(port);
 }
 

@@ -1,0 +1,9 @@
+.slider-box {
+    overflow-x: hidden;
+    overflow-y: hidden;
+    height: 4.0em;
+    padding: 0 1.2em;
+}
+.slider-box > div {
+    margin-top: 0.5em;
+}

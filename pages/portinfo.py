@@ -2,6 +2,8 @@ import json
 import dbaccess
 import web
 
+# This class is for getting the aliases for a port number
+
 
 class Portinfo:
     def GET(self):

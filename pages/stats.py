@@ -1,10 +1,17 @@
 import common
 import dbaccess
-
+import json
+import web
+import time
 
 class Stats:
     pageTitle = "Stats"
     stats = []
+
+    def get_timerange(self):
+        rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM Links32;")
+        row = rows[0]
+        return {'min':time.mktime(row['min'].timetuple()), 'max':time.mktime(row['max'].timetuple())}
 
     def collect_stats(self):
         self.stats = []
@@ -58,8 +65,13 @@ class Stats:
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        self.collect_stats()
-        return str(common.render._head(self.pageTitle)) \
+        get_data = web.input()
+        if "q" in get_data:
+            web.header("Content-Type", "application/json")
+            return json.dumps(self.get_timerange())
+        else:
+            self.collect_stats()
+            return str(common.render._head(self.pageTitle)) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
                + str(common.render.stats(self.stats)) \
                + str(common.render._tail())

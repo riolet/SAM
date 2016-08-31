@@ -16,6 +16,7 @@ callback: if is a function, call it when done importing.
 ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 */
 function GET_nodes(parents, callback) {
+    "use strict";
     var request = {}
 
     if (parents !== null) {
@@ -31,7 +32,7 @@ function GET_nodes(parents, callback) {
             return parent.address;
         }).join(",");
     }
-    request.filter = filter;
+    request.filter = config.filter;
 
     $.ajax({
         url: "/nodes",
@@ -73,7 +74,9 @@ function GET_links(addrs) {
     "use strict";
     var requestData = {
         "address": addrs.join(","),
-        "filter": filter};
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend};
     $.ajax({
         url: "/links",
         type: "GET",
@@ -124,7 +127,12 @@ function checkLoD() {
 function GET_details(node, callback) {
     "use strict";
 
-    var requestData = {"address": node.address}
+    var requestData = {
+        "address": node.address,
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend
+        };
 
     $.ajax({
         url: "/details",

@@ -142,9 +142,8 @@ function keydown(event) {
 
 function applyfilter() {
     "use strict";
-    filter = document.getElementById("filter").value;
+    config.filter = document.getElementById("filter").value;
     sel_set_selection(null);
-    subnetLabel = "";
     links_reset();
     updateRenderRoot();
     render(tx, ty, scale);
@@ -198,6 +197,7 @@ function applysearch() {
     }
 
     resetViewport([subnet], 0.2);
+    sel_set_selection(subnet);
     updateRenderRoot();
     render(tx, ty, scale);
 }

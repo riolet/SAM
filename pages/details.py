@@ -4,15 +4,24 @@ import dbaccess
 import common
 
 
+# This class is for getting the main selection details, such as ins, outs, and ports.
+
+
 class Details:
     def GET(self):
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
+        filter = get_data.get('filter', '')
+        timestart = get_data.get("tstart", 1)
+        timeend = get_data.get("tend", 2**31 - 1)
+        timestart = int(timestart)
+        timeend = int(timeend)
 
         ips = get_data.get("address").split(".")
         ips = [int(i) for i in ips]
-        details = dbaccess.getDetails(*ips)
+
+        details = dbaccess.getDetails(*ips, filter=filter, timerange=(timestart, timeend))
 
         conn_in = {}
         for connection in details['conn_in']:

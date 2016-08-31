@@ -19,12 +19,14 @@ var renderCollection = [];
 var subnetLabel = "";
 
 //settings/options data
-var filter = "";
 var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
-    "show_out": false
+    "show_out": false,
+    "filter": "",
+    "tstart": 1,
+    "tend": 2147483647
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -62,7 +64,7 @@ function init() {
 
     var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
-    filter = filterElement.value;
+    config.filter = filterElement.value;
 
     var searchElement = document.getElementById("search");
     searchElement.value = "";
