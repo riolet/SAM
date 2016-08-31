@@ -4,6 +4,8 @@ import web
 import decimal
 import datetime
 
+# This class is for getting the links or edges connecting nodes in the graph
+
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):

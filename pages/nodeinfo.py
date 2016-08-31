@@ -2,6 +2,8 @@ import json
 import dbaccess
 import web
 
+# This class is for getting and setting node metadata
+
 
 class Nodeinfo:
     def GET(self):
@@ -11,8 +13,6 @@ class Nodeinfo:
         if "node" not in get_data:
             return json.dumps({})
 
-        # should return JSON compatible data...for javascript on the other end.
-        # result = dbaccess.connections()
         node = get_data.get('node')
 
         node = node.split(".")

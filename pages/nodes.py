@@ -3,6 +3,8 @@ import dbaccess
 import web
 import decimal
 
+# This class is for getting the child nodes of all nodes in a node list, for the map
+
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):

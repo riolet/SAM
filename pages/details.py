@@ -4,6 +4,9 @@ import dbaccess
 import common
 
 
+# This class is for getting the main selection details, such as ins, outs, and ports.
+
+
 class Details:
     def GET(self):
         web.header("Content-Type", "application/json")
