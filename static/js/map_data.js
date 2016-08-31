@@ -31,7 +31,7 @@ function GET_nodes(parents, callback) {
             return parent.address;
         }).join(",");
     }
-    request.filter = filter;
+    request.filter = config.filter;
 
     $.ajax({
         url: "/nodes",
@@ -73,7 +73,9 @@ function GET_links(addrs) {
     "use strict";
     var requestData = {
         "address": addrs.join(","),
-        "filter": filter};
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend};
     $.ajax({
         url: "/links",
         type: "GET",

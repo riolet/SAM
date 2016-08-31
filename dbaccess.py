@@ -117,7 +117,7 @@ def getNodes(ip8=-1, ip16=-1, ip24=-1):
     return rows
 
 
-def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
+def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(0, 2**31 - 1)):
     if 0 <= ip32 <= 255:
         if filter == -1:
             query = """
@@ -128,6 +128,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     && dest16 = $seg2
                     && dest24 = $seg3
                     && dest32 = $seg4
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 """
         else:
             query = """
@@ -138,9 +139,10 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     && dest16 = $seg2
                     && dest24 = $seg3
                     && dest32 = $seg4
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && Links32.port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'seg4': str(ip32), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'seg4': str(ip32), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         inputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip24 <= 255:
         if filter == -1:
@@ -151,6 +153,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
                     && dest24 = $seg3
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 GROUP BY source8, source16, source24, dest8, dest16, dest24;
                 """
         else:
@@ -160,9 +163,10 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
                     && dest24 = $seg3
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         inputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip16 <= 255:
         if filter == -1:
@@ -172,6 +176,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 FROM Links16
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 GROUP BY source8, source16, dest8, dest16;
                 """
         else:
@@ -180,9 +185,10 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 FROM Links16
                 WHERE dest8 = $seg1
                     && dest16 = $seg2
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         inputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip8 <= 255:
         if filter == -1:
@@ -191,6 +197,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
                 FROM Links8
                 WHERE dest8 = $seg1
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 GROUP BY source8, dest8;
                 """
         else:
@@ -198,9 +205,10 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 SELECT source8, dest8, links, x1, y1, x2, y2
                 FROM Links8
                 WHERE dest8 = $seg1
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         inputs = list(common.db.query(query, vars=qvars))
     else:
         inputs = []
@@ -208,7 +216,7 @@ def getLinksIn(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
     return inputs
 
 
-def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
+def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(0, 2**31 - 1)):
     if 0 <= ip32 <= 255:
         if filter == -1:
             query = """
@@ -219,6 +227,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     && source16 = $seg2
                     && source24 = $seg3
                     && source32 = $seg4
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 """
         else:
             query = """
@@ -229,9 +238,10 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     && source16 = $seg2
                     && source24 = $seg3
                     && source32 = $seg4
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && Links32.port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'seg4': str(ip32), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'seg4': str(ip32), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         outputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip24 <= 255:
         if filter == -1:
@@ -242,6 +252,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 GROUP BY source8, source16, source24, dest8, dest16, dest24;
                 """
         else:
@@ -251,9 +262,10 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 WHERE source8 = $seg1
                     && source16 = $seg2
                     && source24 = $seg3
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'seg3': str(ip24), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         outputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip16 <= 255:
         if filter == -1:
@@ -263,6 +275,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 FROM Links16
                 WHERE source8 = $seg1
                     && source16 = $seg2
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 GROUP BY source8, source16, dest8, dest16;
                 """
         else:
@@ -271,9 +284,10 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 FROM Links16
                 WHERE source8 = $seg1
                     && source16 = $seg2
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'seg2': str(ip16), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         outputs = list(common.db.query(query, vars=qvars))
     elif 0 <= ip8 <= 255:
         if filter == -1:
@@ -282,6 +296,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                     , SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2
                 FROM Links8
                 WHERE source8 = $seg1
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                 GROUP BY source8, dest8;
                 """
         else:
@@ -289,9 +304,10 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1):
                 SELECT source8, dest8, links, x1, y1, x2, y2
                 FROM Links8
                 WHERE source8 = $seg1
+                    && timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
                     && port = $filter;
                 """
-        qvars = {'seg1': str(ip8), 'filter': filter}
+        qvars = {'seg1': str(ip8), 'filter': filter, 'tstart':timerange[0], 'tend': timerange[1]}
         outputs = list(common.db.query(query, vars=qvars))
     else:
         outputs = []

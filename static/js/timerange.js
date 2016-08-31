@@ -5,9 +5,9 @@ function formatDate ( date ) {
 
 
 function dateConverter() {
-    cnv = {}
+    cnv = {};
     cnv.to = function(val) {
-        var date = new Date(val);
+        var date = new Date(val * 1000);
         var year    = date.getFullYear();
         var month   = date.getMonth()+1;
         var day     = date.getDate();
@@ -33,7 +33,8 @@ function dateConverter() {
         return dateTime;
     };
     cnv.from = function(datetimestring) {
-        return new Date(datetimestring).getTime();
+        var val = new Date(datetimestring).getTime()
+        return val / 1000;
     };
     return cnv;
 }
@@ -46,7 +47,9 @@ function slider_init() {
         dataType: "json",
         error: onNotLoadData,
         success: function (response) {
-            create_slider(Math.floor(response.min * 1000), Math.floor(response.max * 1000));
+            create_slider(Math.floor(response.min), Math.floor(response.max));
+            config.tstart = response.min;
+            config.tend = response.max;
         }
     });
 }
@@ -62,10 +65,10 @@ function create_slider(dtmin, dtmax) {
         },
 
         // Steps of 5 minutes
-        step: 5 * 60 * 1000,
+        step: 5 * 60,
 
         // at least 5 minutes between handles
-        margin: 5 * 60 * 1000,
+        margin: 5 * 60,
 
         // Two more timestamps indicate the handle starting positions.
         start: [ dtmin, dtmax ],
@@ -93,9 +96,17 @@ function create_slider(dtmin, dtmax) {
         var value = values[handle];
         if ( handle ) {
             inputB.value = converter.to(Math.round(value));
+            config.tend = Math.round(value);
         } else {
             inputA.value = converter.to(Math.round(value));
+            config.tstart = Math.round(value);
         }
+    });
+    dateSlider.noUiSlider.on('end', function(){
+        sel_set_selection(null);
+        links_reset();
+        updateRenderRoot();
+        render(tx, ty, scale);
     });
 
     inputA.addEventListener('change', function(){

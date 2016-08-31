@@ -263,14 +263,14 @@ function renderSubnetLabel() {
     //Draw subnet label
     ctx.font = "3em sans";
     var text = subnetLabel;
-    if (filter !== "") {
-        text += ":" + filter;
+    if (config.filter !== "") {
+        text += ":" + config.filter;
     }
     var size = ctx.measureText(text);
     ctx.fillStyle = "#FFFFFF";
     ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 3;
-    if (filter === "") {
+    if (config.filter === "") {
         ctx.globalAlpha = 1.0 - opacity(8, "label");
     } else {
         ctx.globalAlpha = 1.0;
