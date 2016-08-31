@@ -1,3 +1,11 @@
+2016-08-31
+Searching for a node by address should select that node too.
+Timerange is now factored into link searches
+Details will be purged when time range is changed.
+Details panel should show data that:
+    has NOT been filtered by port number
+    but HAS been filtered by time range.
+
 2016-08-30
 Decided to use premade slider noUiSlider instead ( http://refreshless.com/nouislider/ )
     It is free and open source, no attribution necessary

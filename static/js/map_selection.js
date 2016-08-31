@@ -18,7 +18,7 @@ function sel_set_selection(node) {
     m_selection["selection"] = node;
     sel_clear_display();
 
-    if (node !== null && node["details"]["loaded"] === false) {
+    if (node !== null && node.details.loaded === false) {
         // load details
         m_selection["titles"].firstChild.innerHTML = "Loading selection..."
         GET_details(node, sel_update_display);
@@ -52,6 +52,16 @@ function sel_clear_display() {
     h4.appendChild(document.createTextNode("No selection"));
     m_selection["titles"].appendChild(h4);
     m_selection["titles"].appendChild(document.createElement("h5"));
+}
+
+function sel_remove_all(collection) {
+    "use strict";
+    Object.keys(collection).forEach(function (node_name) {
+        if (collection[node_name].details.loaded) {
+            collection[node_name].details = {"loaded": false};
+        }
+        sel_remove_all(collection[node_name].children);
+    });
 }
 
 function sel_update_display(node) {

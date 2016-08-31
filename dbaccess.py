@@ -315,7 +315,7 @@ def getLinksOut(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(0, 2**31 -
 
 
 # TODO: this draws from Syslog, but it mustn't when we're not using Syslog anymore.
-def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
+def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(1, 2**31-1)):
     print("getDetails: {0}.{1}.{2}.{3}".format(ip8, ip16, ip24, ip32))
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determineRange(ip8, ip16, ip24, ip32)
@@ -325,20 +325,23 @@ def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
         FROM
             (SELECT COUNT(DISTINCT(SourceIP)) AS 'unique_in'
             FROM Syslog
-            WHERE DestinationIP >= $start && DestinationIP <= $end)
+            WHERE DestinationIP >= $start && DestinationIP <= $end
+                && Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend))
             AS tableA
         JOIN
             (SELECT COUNT(DISTINCT(DestinationIP)) AS 'unique_out'
             FROM Syslog
-            WHERE SourceIP >= $start && SourceIP <= $end)
+            WHERE SourceIP >= $start && SourceIP <= $end
+                && Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend))
             AS tableB
         JOIN
             (SELECT COUNT(DISTINCT(DestinationPort)) AS 'unique_ports'
             FROM Syslog
-            WHERE DestinationIP >= $start && DestinationIP <= $end)
+            WHERE DestinationIP >= $start && DestinationIP <= $end
+                && Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend))
             AS tableC;
     """
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1]}
     rows = common.db.query(query, vars=qvars)
     row = rows[0]
     details['unique_out'] = row.unique_out
@@ -353,12 +356,13 @@ def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
                 , COUNT(*) AS 'links'
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
+                && Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
             GROUP BY Syslog.SourceIP, Syslog.DestinationPort)
             AS temp
         ORDER BY links DESC
         LIMIT 50;
     """
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1]}
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
@@ -369,12 +373,13 @@ def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
                 , COUNT(*) AS 'links'
             FROM Syslog
             WHERE SourceIP >= $start && SourceIP <= $end
+                && Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
             GROUP BY Syslog.DestinationIP, Syslog.DestinationPort)
             AS temp
         ORDER BY links DESC
         LIMIT 50;
     """
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1]}
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
@@ -383,12 +388,13 @@ def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1):
             (SELECT DestinationPort AS port, COUNT(*) AS links
             FROM Syslog
             WHERE DestinationIP >= $start && DestinationIP <= $end
+                && Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)
             GROUP BY port
             ) AS temp
         ORDER BY links DESC
         LIMIT 50;
     """
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1]}
     details['ports_in'] = list(common.db.query(query, vars=qvars))
 
     return details
