@@ -1,6 +1,7 @@
 var m_selection = {}
 
 function sel_init() {
+    "use strict";
     m_selection["selection"] = null;
     m_selection["sidebar"] = document.getElementById("sel_bar");
     m_selection["titles"] = document.getElementById("sel_titles");
@@ -13,6 +14,7 @@ function sel_init() {
 }
 
 function sel_set_selection(node) {
+    "use strict";
     m_selection["selection"] = node;
     sel_clear_display();
 
@@ -26,6 +28,7 @@ function sel_set_selection(node) {
 }
 
 function sel_clear_display() {
+    "use strict";
     removeChildren(m_selection["titles"]);
     //removeChildren(m_selection["conn_in"]);
     m_selection["conn_in"].innerHTML = "";
@@ -52,6 +55,7 @@ function sel_clear_display() {
 }
 
 function sel_update_display(node) {
+    "use strict";
     if (node === undefined) {
         node = m_selection["selection"]
     }

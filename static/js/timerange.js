@@ -1,11 +1,6 @@
-// Create a string representation of the date.
-function formatDate ( date ) {
-    return formatPip().to(date.valueOf());
-}
-
-
 function dateConverter() {
-    cnv = {};
+    "use strict";
+    var cnv = {};
     cnv.to = function(val) {
         var date = new Date(val * 1000);
         var year    = date.getFullYear();
@@ -40,6 +35,7 @@ function dateConverter() {
 }
 
 function slider_init() {
+    "use strict";
     $.ajax({
         url: "/stats",
         type: "GET",
@@ -55,6 +51,7 @@ function slider_init() {
 }
 
 function create_slider(dtmin, dtmax) {
+    "use strict";
     var dateSlider = document.getElementById('slider-date');
 
     noUiSlider.create(dateSlider, {
