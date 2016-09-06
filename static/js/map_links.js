@@ -52,7 +52,6 @@ function link_comparator(a, b) {
 
 function link_request_submit() {
     "use strict";
-    const chunksize = 40;
     var request = m_link_requests.filter(function (address) {
         return !m_links.hasOwnProperty(address);
     });
@@ -68,12 +67,12 @@ function link_request_submit() {
         return;
     }
 
-    if (chunksize > request.length) {
+    if (chunkSize > request.length) {
         GET_links(request);
         m_link_requests = [];
     } else {
-        GET_links(request.slice(0, chunksize));
-        m_link_requests = request.slice(chunksize);
+        GET_links(request.slice(0, chunkSize));
+        m_link_requests = request.slice(chunkSize);
         m_link_timer = setTimeout(link_request_submit, 500);
     }
 

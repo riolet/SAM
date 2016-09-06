@@ -1,3 +1,35 @@
+2016-09-01
+Tried a new schema:
+    Nodes ((ip, subnet)[PK], ip_range, x, y, radius, alias)
+    Ports (port[PK], active, name, description)
+    PortAlias (port[PK/FK], name, description)
+    Links (id[PK], (src_address, subnet)[FK], (dest_address, subnet)[FK], port[FK])
+    Links8 ((link_id[FK], timestamp)[PK], count)
+    Links16 ((link_id[FK], timestamp)[PK], count)
+    Links24 ((link_id[FK], timestamp)[PK], count)
+    Links32 ((link_id[FK], timestamp)[PK], count)
+Issues:
+    Keeping the ip as a 32-bit integer is confusing for the developer/maintainer.
+        It slows down testing, in the absence of an easy translation
+        It must be translated back and forth between display and representation
+    No substantial speed up of anything.
+    Calculating links was even more complex
+        (Aggregating links between /24 destinations and other /16 or /8 sources)
+    Could not easily determine number of unique connections for details panel
+    SQL queries all required joins (not abstracted by web.py) which lock us further into MySQL
+Benefits:
+    Added foreign keys help guarantee db consistency
+    Fewer columns in primary keys,
+        This is from collapsing (ip8, ip16, ip24, ip32) into (ip, subnet)
+    Links positioning reverted to client-side
+        Reduced duplicate information (many x/y pairs in links tables)
+        Reduced response size (not having 2 x 10-digit numbers being trasmitted per link)
+Decision:
+    Did not finish full conversion. Many program were still broken.
+    Benefits did not outweigh issues in my understanding.  Testing did not reveal any significant gains.
+    Decided against this change.
+    Yay for version control branches.
+
 2016-08-31
 Searching for a node by address should select that node too.
 Timerange is now factored into link searches
@@ -5,6 +37,14 @@ Details will be purged when time range is changed.
 Details panel should show data that:
     has NOT been filtered by port number
     but HAS been filtered by time range.
+Details is slow (stats from 1 test):
+    2ms   JS Select function to AJAX query
+    29ms  Transit AJAX query to Python GET page
+    397ms Python SQL queries
+    1ms   Python SQL processing
+    5ms   Transit Python response back to JS
+    6ms   Response to updating DOM
+    11ms  Finished updating DOM
 
 2016-08-30
 Decided to use premade slider noUiSlider instead ( http://refreshless.com/nouislider/ )
