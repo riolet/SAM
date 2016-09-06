@@ -36,6 +36,7 @@ var zNodes24 = 0.0555;
 var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
+var chunkSize = 40;
 
 //for filtering and searching
 var g_timer = null;
