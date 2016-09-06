@@ -1,10 +1,7 @@
-//model
-
 var m_selection = {}
 
-//controller
-
 function sel_init() {
+    "use strict";
     m_selection["selection"] = null;
     m_selection["sidebar"] = document.getElementById("sel_bar");
     m_selection["titles"] = document.getElementById("sel_titles");
@@ -17,21 +14,21 @@ function sel_init() {
 }
 
 function sel_set_selection(node) {
+    "use strict";
     m_selection["selection"] = node;
     sel_clear_display();
 
-    if (node !== null && node["details"]["loaded"] === false) {
+    if (node !== null && node.details.loaded === false) {
         // load details
         m_selection["titles"].firstChild.innerHTML = "Loading selection..."
-        getDetails(node, sel_update_display);
+        GET_details(node, sel_update_display);
     } else {
         sel_update_display();
     }
 }
 
-// view
-
 function sel_clear_display() {
+    "use strict";
     removeChildren(m_selection["titles"]);
     //removeChildren(m_selection["conn_in"]);
     m_selection["conn_in"].innerHTML = "";
@@ -57,7 +54,18 @@ function sel_clear_display() {
     m_selection["titles"].appendChild(document.createElement("h5"));
 }
 
+function sel_remove_all(collection) {
+    "use strict";
+    Object.keys(collection).forEach(function (node_name) {
+        if (collection[node_name].details.loaded) {
+            collection[node_name].details = {"loaded": false};
+        }
+        sel_remove_all(collection[node_name].children);
+    });
+}
+
 function sel_update_display(node) {
+    "use strict";
     if (node === undefined) {
         node = m_selection["selection"]
     }
@@ -148,6 +156,8 @@ function sel_update_display(node) {
                 a.appendChild(document.createTextNode(get_port_name(port.port)));
                 a.setAttribute("data-content", get_port_description(port.port));
                 a.setAttribute("class", "popup");
+                //This works as an alternative, but it's ugly.
+                //a.title = get_port_description(port.port)
             } else {
                 a.appendChild(document.createTextNode(port.port.toString()));
             }

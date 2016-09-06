@@ -1,9 +1,8 @@
 import sys, os
 sys.path.append(os.path.dirname(__file__))
 import web
-import pages.overview
-import pages.map
-import pages.stats
+
+# web.config.debug = False
 
 # Manage routing from here. Regex matches URL and chooses class by name
 urls = (
@@ -12,7 +11,8 @@ urls = (
     '/overview', 'pages.overview.Overview',
     '/map', 'pages.map.Map',
     '/stats', 'pages.stats.Stats',
-    '/query', 'pages.query.Query',
+    '/nodes', 'pages.nodes.Nodes',
+    '/links', 'pages.links.Links',
     '/details', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',

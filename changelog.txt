@@ -1,0 +1,97 @@
+2016-09-01
+Tried a new schema:
+    Nodes ((ip, subnet)[PK], ip_range, x, y, radius, alias)
+    Ports (port[PK], active, name, description)
+    PortAlias (port[PK/FK], name, description)
+    Links (id[PK], (src_address, subnet)[FK], (dest_address, subnet)[FK], port[FK])
+    Links8 ((link_id[FK], timestamp)[PK], count)
+    Links16 ((link_id[FK], timestamp)[PK], count)
+    Links24 ((link_id[FK], timestamp)[PK], count)
+    Links32 ((link_id[FK], timestamp)[PK], count)
+Issues:
+    Keeping the ip as a 32-bit integer is confusing for the developer/maintainer.
+        It slows down testing, in the absence of an easy translation
+        It must be translated back and forth between display and representation
+    No substantial speed up of anything.
+    Calculating links was even more complex
+        (Aggregating links between /24 destinations and other /16 or /8 sources)
+    Could not easily determine number of unique connections for details panel
+    SQL queries all required joins (not abstracted by web.py) which lock us further into MySQL
+Benefits:
+    Added foreign keys help guarantee db consistency
+    Fewer columns in primary keys,
+        This is from collapsing (ip8, ip16, ip24, ip32) into (ip, subnet)
+    Links positioning reverted to client-side
+        Reduced duplicate information (many x/y pairs in links tables)
+        Reduced response size (not having 2 x 10-digit numbers being trasmitted per link)
+Decision:
+    Did not finish full conversion. Many program were still broken.
+    Benefits did not outweigh issues in my understanding.  Testing did not reveal any significant gains.
+    Decided against this change.
+    Yay for version control branches.
+
+2016-08-31
+Searching for a node by address should select that node too.
+Timerange is now factored into link searches
+Details will be purged when time range is changed.
+Details panel should show data that:
+    has NOT been filtered by port number
+    but HAS been filtered by time range.
+Details is slow (stats from 1 test):
+    2ms   JS Select function to AJAX query
+    29ms  Transit AJAX query to Python GET page
+    397ms Python SQL queries
+    1ms   Python SQL processing
+    5ms   Transit Python response back to JS
+    6ms   Response to updating DOM
+    11ms  Finished updating DOM
+
+2016-08-30
+Decided to use premade slider noUiSlider instead ( http://refreshless.com/nouislider/ )
+    It is free and open source, no attribution necessary
+    It can move sliders, handle dates, link the sliders, fire events, and is smooth with the mouse.
+    Integrated into the config menu of the map.
+CANCELED: Custom time range controller
+    X mouse down:
+    X    A = nearest handle
+    X    move A to mouse.
+    X    trigger edit event.
+    X mouse drag:
+    X    B = furthest handle
+    X    move B to mouse.
+    X    trigger edit event.
+    X mouse up:
+    X    trigger changed event
+
+2016-08-29
+Links will be loaded seperate from nodes
+    this allows nodes to be retained and links to be changed (with changing timelines)
+    This also allows control over how links are loaded. (order of loading, chunking the requests)
+    Changing filters now merely deletes links, and requests new links
+        instead of deleting everything and reseting the view
+Loading order started:
+    nodes are ranked by distance from center of screen
+    but nodes that are on screen and larger take priority
+        (like if you're zoomed in on 12.34.56 then 12 and 12.34 would take priority)
+
+2016-08-25
+Started adding timestamps.
+    Decided not to add timestamps to `Node*` tables. Nodes are independent of time?
+        If nothing is connecting to a node, it can just not be displayed.
+        Nodes at different times won't need different names.
+    ? Should `Nodes*` not store number-of-children precalculated if therewill be a potentially changing number?
+    Links will have timestamps, quantized to 5 minute intervals.
+        12 time slots per hour
+        288 time slots per day
+        2016 time slots per week (2016 is not a typo)
+        105120 time slots per year
+    Chose TIMESTAMP over DATETIME for format:
+        stamps will be now-ish, not arbirary like appointments or birthdays
+        timestamps are 32-bit (vs 64-bit for datetime) => faster, lighter
+        Not quite sure what to do about timezones, but timestamps will do it right on the MySQL side
+            (if I do it correctly on the python side)
+Considering continuous import problem.
+    Keep Syslog table as exclusive of batch import via import scripts
+    Add two new buffer tables.  One to receive new imports. One to hold while processing for display.
+    Buffers swap every 5 minutes. There needs to be some way to invoke the processing function. Not sure yet.
+    Stats page will need to be different, or just not based on `Syslog`

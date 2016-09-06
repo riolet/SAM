@@ -96,3 +96,5 @@ dbconfig_local.*
 
 # data dump folder
 data/
+
+temp.*

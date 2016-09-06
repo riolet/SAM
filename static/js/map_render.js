@@ -1,26 +1,26 @@
-//Given a node's level (subnet) return the opacity to render it at.
-function opacity(level, type) {
+//Given a node's subnet, return the opacity to render it at.
+function opacity(subnet, type) {
     "use strict";
     var startZoom = -Infinity;
     var endZoom = Infinity;
 
-    if (level === 8) {
+    if (subnet === 8) {
         endZoom = zLinks16;
-    } else if (level === 16) {
+    } else if (subnet === 16) {
         endZoom = zLinks24;
         if (type === "node") {
             startZoom = zNodes16;
         } else {
             startZoom = zLinks16;
         }
-    } else if (level === 24) {
+    } else if (subnet === 24) {
         endZoom = zLinks32;
         if (type === "node") {
             startZoom = zNodes24;
         } else {
             startZoom = zLinks24;
         }
-    } else if (level === 32) {
+    } else if (subnet === 32) {
         if (type === "node") {
             startZoom = zNodes32;
         } else {
@@ -53,15 +53,15 @@ function magnitudeSquared(x, y) {
 
 function getSubnet() {
     "use strict";
-    var level = currentLevel();
-    if (level === 8) {
+    var subnet = currentSubnet();
+    if (subnet === 8) {
         return "";
     }
     var closest = null;
     var dist = Infinity;
     var tempDist;
     renderCollection.forEach(function (node) {
-        if (node.level === level - 8) {
+        if (node.subnet === subnet - 8) {
             tempDist = magnitudeSquared(
                 node.x * scale + tx - rect.width / 2,
                 node.y * scale + ty - rect.height / 2
@@ -91,7 +91,7 @@ function onScreenRecursive(left, right, top, bottom, collection) {
 
         if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
             selected.push(collection[node]);
-            if (collection[node].childrenLoaded && collection[node].level < currentLevel()) {
+            if (collection[node].childrenLoaded && collection[node].subnet < currentSubnet()) {
                 selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children));
             }
         }
@@ -118,12 +118,14 @@ function onScreen() {
     visible.forEach(function (node) {
         if ((node.client === true && config.show_clients) ||
                 (node.server === true && config.show_servers) ||
-                (node.client === true && node.server === true)) {
+                (node.client === true && node.server === true) ||
+                true) {
+            // TODO: remove true from above, after links work again
             filtered.push(node);
         }
     });
     filtered.sort(function (a, b) {
-        return b.level - a.level;
+        return b.subnet - a.subnet;
     });
     return filtered;
 }
@@ -159,7 +161,7 @@ function resetViewport(collection, fill) {
 function updateRenderRoot() {
     "use strict";
     renderCollection = onScreen();
-    currentSubnet = getSubnet();
+    subnetLabel = getSubnet();
 }
 
 function drawLoopArrow(node) {
@@ -260,15 +262,15 @@ function renderSubnetLabel() {
     "use strict";
     //Draw subnet label
     ctx.font = "3em sans";
-    var text = currentSubnet;
-    if (filter !== "") {
-        text += ":" + filter;
+    var text = subnetLabel;
+    if (config.filter !== "") {
+        text += ":" + config.filter;
     }
     var size = ctx.measureText(text);
     ctx.fillStyle = "#FFFFFF";
     ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 3;
-    if (filter === "") {
+    if (config.filter === "") {
         ctx.globalAlpha = 1.0 - opacity(8, "label");
     } else {
         ctx.globalAlpha = 1.0;
@@ -290,7 +292,7 @@ function renderLabels(node, x, y, scale) {
         } else {
             ctx.globalAlpha = alpha * 0.33;
         }
-        if (node.level === 32) {
+        if (node.subnet === 32) {
             Object.keys(node.ports).forEach(function (p) {
                 var text = get_port_alias(p);
                 ctx.font = "1.5em sans";
@@ -337,12 +339,12 @@ function renderLabels(node, x, y, scale) {
     var size = ctx.measureText(text);
     var px = node.x * scale + x - size.width / 2;
     var py;
-    if (node.level === 32) {
+    if (node.subnet === 32) {
         py = node.y * scale + y + 10;
     } else {
         py = (node.y - node.radius) * scale + y - 5;
     }
-    alpha = opacity(node.level, "label");
+    alpha = opacity(node.subnet, "label");
 
     //ctx.font = fontsize + "em sans";
     if (m_selection["selection"] === null || m_selection["selection"] === node) {
@@ -364,7 +366,7 @@ function renderLabels(node, x, y, scale) {
 
 function renderNode(node) {
     "use strict";
-    if (node.level < 31) {
+    if (node.subnet < 31) {
         ctx.moveTo(node.x + node.radius, node.y);
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
     } else {
@@ -411,19 +413,19 @@ function renderClusters(collection, x, y, scale) {
 
     //Draw the graph edges
     ctx.lineWidth = 2 / scale;
-    drawingLevel = collection[0].level;
+    drawingLevel = collection[0].subnet;
     ctx.beginPath();
-    alpha = opacity(collection[0].level, "links");
+    alpha = opacity(collection[0].subnet, "links");
     ctx.globalAlpha = alpha;
     skip = alpha === 0;
     collection.forEach(function (node) {
-        if (node.level !== drawingLevel) {
+        if (node.subnet !== drawingLevel) {
             ctx.stroke();
             ctx.beginPath();
-            alpha = opacity(node.level, "links");
+            alpha = opacity(node.subnet, "links");
             ctx.globalAlpha = alpha;
             skip = alpha === 0;
-            drawingLevel = node.level;
+            drawingLevel = node.subnet;
         }
         if (!skip) {
             renderLinks(node);
@@ -433,20 +435,20 @@ function renderClusters(collection, x, y, scale) {
 
     // Draw the graph nodes
     ctx.lineWidth = 5 / scale;
-    drawingLevel = collection[0].level;
+    drawingLevel = collection[0].subnet;
     ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
-    alpha = opacity(collection[0].level, "node");
+    alpha = opacity(collection[0].subnet, "node");
     ctx.globalAlpha = alpha;
     skip = alpha === 0;
     collection.forEach(function (node) {
-        if (node.level !== drawingLevel) {
+        if (node.subnet !== drawingLevel) {
             ctx.stroke();
             ctx.beginPath();
-            alpha = opacity(node.level, "node");
+            alpha = opacity(node.subnet, "node");
             ctx.globalAlpha = alpha;
             skip = alpha === 0;
-            drawingLevel = node.level;
+            drawingLevel = node.subnet;
         }
         if (!skip) {
             renderNode(node);
@@ -469,13 +471,13 @@ function renderClusters(collection, x, y, scale) {
         ctx.strokeStyle = colorNormal;
         ctx.globalAlpha = 1;
 
-        //ctx.globalAlpha = opacity(m_selection["selection"].level, "links");
+        //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links");
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
         renderLinks(m_selection["selection"]);
         ctx.stroke();
 
-        //ctx.globalAlpha = opacity(m_selection["selection"].level, "node");
+        //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node");
         ctx.lineWidth = 5 / scale;
         ctx.fillStyle = "#FFFFFF";
         ctx.beginPath();

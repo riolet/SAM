@@ -1,193 +1,8 @@
-function closestEmptyPort(link, used) {
-    "use strict";
-    var right = [1, 0, 2, 7, 3, 6, 4, 5];
-    var top = [3, 2, 4, 1, 5, 0, 6, 7];
-    var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
-    var left = [4, 5, 3, 6, 2, 7, 1, 0];
-
-    var dx = link.x2 - link.x1;
-    var dy = link.y2 - link.y1;
-
-    var chooser = function (i) {
-        return used[i] === false;
-    };
-    var choice;
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //port on right
-            choice = right.find(chooser);
-        } else {
-            //port on left
-            choice = left.find(chooser);
-        }
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //port on bottom
-            choice = bottom.find(chooser);
-        } else {
-            //port on top
-            choice = top.find(chooser);
-        }
-    }
-    return choice;
-}
-
-function preprocessConnection32(links) {
-    "use strict";
-    if (links.length === 0) {
-        return;
-    }
-
-    var destination = findNode(links[0].dest8, links[0].dest16,
-            links[0].dest24, links[0].dest32);
-
-    //
-    //    3_2
-    //  4|   |1
-    //  5|___|0
-    //    6 7
-    //
-    var used = [false, false, false, false, false, false, false, false];
-    var locations = [{"x": destination.x + destination.radius, "y": destination.y + destination.radius / 3, "alias": "", "side": "right"},
-            {"x": destination.x + destination.radius, "y": destination.y - destination.radius / 3, "alias": "", "side": "right"},
-            {"x": destination.x + destination.radius / 3, "y": destination.y - destination.radius, "alias": "", "side": "top"},
-            {"x": destination.x - destination.radius / 3, "y": destination.y - destination.radius, "alias": "", "side": "top"},
-            {"x": destination.x - destination.radius, "y": destination.y - destination.radius / 3, "alias": "", "side": "left"},
-            {"x": destination.x - destination.radius, "y": destination.y + destination.radius / 3, "alias": "", "side": "left"},
-            {"x": destination.x - destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"},
-            {"x": destination.x + destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"}];
-
-    var ports = {};
-    var j;
-    var choice = 0;
-    //the first 8 unique port numbers should be mapped to locations.
-    for (j = 0; j < Object.keys(links).length; j += 1) {
-        if (ports.hasOwnProperty(links[j].port)) {
-            continue;
-        }
-        port_request_add(links[j].port);
-        choice = closestEmptyPort(links[j], used);
-        if (choice === undefined) {
-            continue;
-        }
-        ports[links[j].port] = locations[choice];
-        used[choice] = true;
-        if (Object.keys(ports).length >= 8) {
-            break;
-        }
-    }
-    destination.ports = ports;
-
-    links.forEach(function (link) {
-        var source = findNode(link.source8, link.source16,
-                link.source24, link.source32);
-
-        //offset endpoints by radius
-        var dx = link.x2 - link.x1;
-        var dy = link.y2 - link.y1;
-
-        if (ports.hasOwnProperty(link.port)) {
-            if (ports[link.port].side === "top") {
-                link.x2 = ports[link.port].x;
-                link.y2 = ports[link.port].y - 0.6;
-            } else if (ports[link.port].side === "left") {
-                link.x2 = ports[link.port].x - 0.6;
-                link.y2 = ports[link.port].y;
-            } else if (ports[link.port].side === "right") {
-                link.x2 = ports[link.port].x + 0.6;
-                link.y2 = ports[link.port].y;
-            } else if (ports[link.port].side === "bottom") {
-                link.x2 = ports[link.port].x;
-                link.y2 = ports[link.port].y + 0.6;
-            } else {
-                //this should never execute
-                link.x2 = ports[link.port].x;
-                link.y2 = ports[link.port].y;
-            }
-        } else {
-            //align to corners
-            if (dx > 0) {
-                link.x1 += source.radius;
-                link.x2 -= destination.radius;
-            } else {
-                link.x1 -= source.radius;
-                link.x2 += destination.radius;
-            }
-            if (dy > 0) {
-                link.y1 += source.radius;
-                link.y2 -= destination.radius;
-            } else {
-                link.y1 -= source.radius;
-                link.y2 += destination.radius;
-            }
-        }
-    });
-}
-
-function preprocessConnection(link) {
-    "use strict";
-    //TODO: move this preprocessing into the database (preprocess.py) instead of client-side.
-    var source = {};
-    var destination = {};
-    if (link.hasOwnProperty("source32")) {
-        source = findNode(link.source8, link.source16, link.source24, link.source32);
-        destination = findNode(link.dest8, link.dest16, link.dest24, link.dest32);
-    } else if (link.hasOwnProperty("source24")) {
-        source = findNode(link.source8, link.source16, link.source24);
-        destination = findNode(link.dest8, link.dest16, link.dest24);
-    } else if (link.hasOwnProperty("source16")) {
-        destination = findNode(link.dest8, link.dest16);
-        source = findNode(link.source8, link.source16);
-    } else {
-        destination = findNode(link.dest8);
-        source = findNode(link.source8);
-    }
-
-    var dx = link.x2 - link.x1;
-    var dy = link.y2 - link.y1;
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //leftward flowing
-            link.x1 -= source.radius;
-            link.x2 += destination.radius;
-            link.y1 += source.radius * 0.2;
-            link.y2 += destination.radius * 0.2;
-        } else {
-            //rightward flowing
-            link.x1 += source.radius;
-            link.x2 -= destination.radius;
-            link.y1 -= source.radius * 0.2;
-            link.y2 -= destination.radius * 0.2;
-        }
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //upward flowing
-            link.y1 -= source.radius;
-            link.y2 += destination.radius;
-            link.x1 += source.radius * 0.2;
-            link.x2 += destination.radius * 0.2;
-        } else {
-            //downward flowing
-            link.y1 += source.radius;
-            link.y2 -= destination.radius;
-            link.x1 -= source.radius * 0.2;
-            link.x2 -= destination.radius * 0.2;
-        }
-    }
-}
-
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
-    console.log("Failed to load data:");
-    console.log("\t" + textStatus);
-    console.log("\t" + errorThrown);
+    console.error("Failed to load data: " + errorThrown);
+    console.log("\tText Status: " + textStatus);
 }
 
 /*
@@ -201,6 +16,7 @@ callback: if is a function, call it when done importing.
 ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 */
 function GET_nodes(parents, callback) {
+    "use strict";
     var request = {}
 
     if (parents !== null) {
@@ -216,10 +32,10 @@ function GET_nodes(parents, callback) {
             return parent.address;
         }).join(",");
     }
-    request.filter = filter;
+    request.filter = config.filter;
 
     $.ajax({
-        url: "/query",
+        url: "/nodes",
         type: "GET",
         data: request,
         dataType: "json",
@@ -254,6 +70,22 @@ function POST_node_alias(node, name) {
     });
 }
 
+function GET_links(addrs) {
+    "use strict";
+    var requestData = {
+        "address": addrs.join(","),
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend};
+    $.ajax({
+        url: "/links",
+        type: "GET",
+        data: requestData,
+        error: onNotLoadData,
+        success: GET_links_callback
+    });
+}
+
 function POST_portinfo(request) {
     "use strict";
     $.ajax({
@@ -283,7 +115,7 @@ function checkLoD() {
 
     var nodesToLoad = []
     renderCollection.forEach(function (node) {
-        if (node.level < currentLevel()) {
+        if (node.subnet < currentSubnet()) {
             nodesToLoad.push(node);
         }
     });
@@ -292,22 +124,15 @@ function checkLoD() {
     render(tx, ty, scale);
 }
 
-function getDetails(node, callback) {
+function GET_details(node, callback) {
     "use strict";
-    var temp = node.address.split(".");
-    var requestData = {"ip32": -1, "ip24": -1, "ip16": -1, "ip8": -1};
-    if (temp.length >= 4) {
-        requestData.ip32 = temp[3];
-    }
-    if (temp.length >= 3) {
-        requestData.ip24 = temp[2];
-    }
-    if (temp.length >= 2) {
-        requestData.ip16 = temp[1];
-    }
-    if (temp.length >= 1) {
-        requestData.ip8 = temp[0];
-    }
+
+    var requestData = {
+        "address": node.address,
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend
+        };
 
     $.ajax({
         url: "/details",

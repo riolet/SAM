@@ -16,24 +16,27 @@ var my;
 
 //store the data displayed in the map
 var renderCollection = [];
-var currentSubnet = "";
+var subnetLabel = "";
 
 //settings/options data
-var filter = "";
 var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
-    "show_out": false
+    "show_out": false,
+    "filter": "",
+    "tstart": 1,
+    "tend": 2147483647
 };
 
-//Constants.  Used for zoom levels in map::currentLevel and map_render::opacity
+//Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
 var zNodes16 = 0.00231;
 var zLinks16 = 0.0111;
 var zNodes24 = 0.0555;
 var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
+var chunkSize = 40;
 
 //for filtering and searching
 var g_timer = null;
@@ -62,7 +65,7 @@ function init() {
 
     var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
-    filter = filterElement.value;
+    config.filter = filterElement.value;
 
     var searchElement = document.getElementById("search");
     searchElement.value = "";
@@ -86,7 +89,7 @@ function init() {
     GET_nodes(null);
 }
 
-function currentLevel() {
+function currentSubnet() {
     "use strict";
     if (scale < zNodes16) {
         return 8;
