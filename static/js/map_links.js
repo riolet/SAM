@@ -83,6 +83,8 @@ function link_remove_all(collection) {
     Object.keys(collection).forEach(function (node_name) {
         collection[node_name].inputs = [];
         collection[node_name].outputs = [];
+        collection[node_name].server = false;
+        collection[node_name].client = false;
         link_remove_all(collection[node_name].children);
     });
 }
@@ -109,6 +111,8 @@ function GET_links_callback(result) {
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
     });
+    port_request_submit();
+    updateRenderRoot();
     render(tx, ty, scale);
 }
 
