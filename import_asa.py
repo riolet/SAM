@@ -2,6 +2,7 @@ import sys
 import re
 import common
 from import_base import BaseImporter
+import time
 
 # This implementation is incomplete:
 # TODO: validate implementation with test data
@@ -41,7 +42,10 @@ class ASAImporter(BaseImporter):
                 dictionary['DestinationPort'] = m.group('asa_src_port')
                 dictionary['SourceIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
                 dictionary['SourcePort'] = m.group('asa_dst_port')
-            # dictionary['Timestamp'] = ???
+
+            #ASA logs don't always have a timestamp. If your logs do, you may want to edit the line below to parse it.
+            mysql_time_format = '%Y-%m-%d %H:%M:%S'
+            dictionary['Timestamp'] = time.strftime(mysql_time_format, time.localtime())
             return 0
         else:
             print("error parsing line {0}: {1}".format(line_num, line))
