@@ -13,6 +13,7 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Usage:
     python {0} <input-file>
 """.format(sys.argv[0])
+    mysql_time_format = '%Y-%m-%d %H:%M:%S'
 
     def main(self, argv):
         if len(argv) != 2:

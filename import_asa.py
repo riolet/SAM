@@ -44,8 +44,8 @@ class ASAImporter(BaseImporter):
                 dictionary['SourcePort'] = m.group('asa_dst_port')
 
             #ASA logs don't always have a timestamp. If your logs do, you may want to edit the line below to parse it.
-            mysql_time_format = '%Y-%m-%d %H:%M:%S'
-            dictionary['Timestamp'] = time.strftime(mysql_time_format, time.localtime())
+
+            dictionary['Timestamp'] = time.strftime(self.mysql_time_format, time.localtime())
             return 0
         else:
             print("error parsing line {0}: {1}".format(line_num, line))

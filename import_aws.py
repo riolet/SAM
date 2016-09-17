@@ -1,7 +1,7 @@
 import sys
 import common
 from import_base import BaseImporter
-
+import datetime
 
 # This implementation is incomplete:
 # TODO: validate implementation with test data
@@ -27,7 +27,7 @@ class AWSImporter(BaseImporter):
         dictionary['SourcePort'] = awsLog[5]
         dictionary['DestinationIP'] = common.IPtoInt(*(awsLog[4].split(".")))
         dictionary['DestinationPort'] = awsLog[6]
-        # dictionary['Timestamp'] = ???
+        dictionary['Timestamp'] = datetime.datetime.fromtimestamp((int(awsLog[10]))).strftime(self.mysql_time_format)
         return 0
 
 
