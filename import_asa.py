@@ -25,15 +25,22 @@ class ASAImporter(BaseImporter):
             2 => error in parsing the line. It was too short for some reason
         """
         # regexp to extract from ASA syslog
-        regexp = r"^.* Built (in|out)bound (?P<asa_protocol>.*) connection (?P<asa_conn_id>\d+) for (?P<asa_src_zone>.*):(?P<asa_src_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(?P<asa_src_port>\d+) \(.*/\d+\) to (?P<asa_dst_zone>.*):(?P<asa_dst_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(?P<asa_dst_port>\d+) .*"
+        regexp = r"^.* Built (?P<asa_in_out>in|out)bound (?P<asa_protocol>.*) connection (?P<asa_conn_id>\d+) for (?P<asa_src_zone>.*):(?P<asa_src_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(?P<asa_src_port>\d+) \(.*/\d+\) to (?P<asa_dst_zone>.*):(?P<asa_dst_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(?P<asa_dst_port>\d+) .*"
         m = re.match(regexp, line)
 
         if m:
             # srcIP, srcPort, dstIP, dstPort
-            dictionary['SourceIP'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
-            dictionary['SourcePort'] = m.group('asa_src_port')
-            dictionary['DestinationIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
-            dictionary['DestinationPort'] = m.group('asa_dst_port')
+            # The order of the source and destination depends on the direction, i.e., inbound or outbound
+            if m.group('asa_in_out') == 'in':
+                dictionary['SourceIP'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
+                dictionary['SourcePort'] = m.group('asa_src_port')
+                dictionary['DestinationIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
+                dictionary['DestinationPort'] = m.group('asa_dst_port')
+            else:
+                dictionary['DestinationIP'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
+                dictionary['DestinationPort'] = m.group('asa_src_port')
+                dictionary['SourceIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
+                dictionary['SourcePort'] = m.group('asa_dst_port')
             # dictionary['Timestamp'] = ???
             return 0
         else:
