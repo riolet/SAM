@@ -1,3 +1,7 @@
+2016-10-11
+updated README for asa and aws importers
+split server.py into server and wsgiserver.py for deployment
+
 2016-09-01
 Tried a new schema:
     Nodes ((ip, subnet)[PK], ip_range, x, y, radius, alias)
