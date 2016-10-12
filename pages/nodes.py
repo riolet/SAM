@@ -23,10 +23,10 @@ class Nodes:
         # result = dbaccess.connections()
         result = {}
         if not addresses:
-            result["_"] = list(dbaccess.getNodes())
+            result["_"] = list(dbaccess.get_nodes())
         else:
             for address in addresses:
-                result[address] = list(dbaccess.getNodes(*address.split(".")))
+                result[address] = list(dbaccess.get_nodes(*address.split(".")))
 
         return json.dumps(result, default=decimal_default)
 

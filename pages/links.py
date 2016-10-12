@@ -20,11 +20,11 @@ class Links:
             ips = [int(i) for i in address.split(".")]
             result[address] = {}
             if filter:
-                result[address]['inputs'] = dbaccess.getLinksIn(*ips, filter=filter, timerange=timerange)
-                result[address]['outputs'] = dbaccess.getLinksOut(*ips, filter=filter, timerange=timerange)
+                result[address]['inputs'] = dbaccess.get_links_in(*ips, filter=filter, timerange=timerange)
+                result[address]['outputs'] = dbaccess.get_links_out(*ips, filter=filter, timerange=timerange)
             else:
-                result[address]['inputs'] = dbaccess.getLinksIn(*ips, timerange=timerange)
-                result[address]['outputs'] = dbaccess.getLinksOut(*ips, timerange=timerange)
+                result[address]['inputs'] = dbaccess.get_links_in(*ips, timerange=timerange)
+                result[address]['outputs'] = dbaccess.get_links_out(*ips, timerange=timerange)
         return json.dumps(result, default=decimal_default)
 
     def GET(self):
