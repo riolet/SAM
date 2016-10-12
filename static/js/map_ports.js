@@ -173,13 +173,13 @@ function port_display(port) {
     }
     if (port === undefined || port.alias_name === undefined || port.alias_name === null) {
         document.getElementById("port_alias_name").value = "";
-        m_portinfo.port_alias_name = "";
+        m_portinfo.alias_name = "";
     } else {
         document.getElementById("port_alias_name").value = port.alias_name;
     }
     if (port === undefined || port.alias_description === undefined || port.alias_description === null) {
         document.getElementById("port_alias_description").value = "";
-        m_portinfo.port_alias_description = "";
+        m_portinfo.alias_description = "";
     } else {
         document.getElementById("port_alias_description").value = port.alias_description;
     }

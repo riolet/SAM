@@ -18,7 +18,7 @@ class Nodeinfo:
         node = node.split(".")
         node = [int(i) for i in node]
 
-        result = dbaccess.getNodeInfo(*node)
+        result = dbaccess.get_node_info(*node)
 
         return json.dumps(list(result))
 
@@ -29,6 +29,6 @@ class Nodeinfo:
         if "node" not in get_data or "alias" not in get_data:
             return json.dumps({"code": 1, "message": "'node' and 'alias' fields are required."})
 
-        dbaccess.setNodeInfo(get_data.node, {"alias": get_data.alias})
+        dbaccess.set_node_info(get_data.node, {"alias": get_data.alias})
 
         return json.dumps({"code": 0, "message": ""})

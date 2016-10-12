@@ -254,8 +254,8 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, filter=None, timerange=None):
 
 
 # TODO: this draws from Syslog, but it mustn't when we're not using Syslog anymore.
-def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(1, 2**31-1)):
-    print("getDetails: {0}.{1}.{2}.{3}".format(ip8, ip16, ip24, ip32))
+def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(1, 2**31-1)):
+    print("get_details: {0}.{1}.{2}.{3}".format(ip8, ip16, ip24, ip32))
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determine_range(ip8, ip16, ip24, ip32)
 
@@ -339,17 +339,17 @@ def getDetails(ip8, ip16=-1, ip24=-1, ip32=-1, filter=-1, timerange=(1, 2**31-1)
     return details
 
 
-def getNodeInfo(*address):
+def get_node_info(*address):
     print("-"*50)
     print("getting node info:")
     print("type: " + str(type(address)))
     print(address)
     print("-"*50)
     # TODO: for use getting meta about hosts
-    pass
+    return {}
 
 
-def setNodeInfo(address, data):
+def set_node_info(address, data):
     print("-"*50)
     print("Setting node info!")
     ips = address.split(".")
@@ -368,7 +368,7 @@ def setNodeInfo(address, data):
                                      "ip24": ips[2], "ip32": ips[3]}, **data)
 
 
-def getPortInfo(port):
+def get_port_info(port):
     if isinstance(port, list):
         arg = "("
         for i in port:
@@ -389,16 +389,21 @@ def getPortInfo(port):
     return info
 
 
-def setPortInfo(data):
+def set_port_info(data):
+    MAX_NAME_LENGTH = 10
+    MAX_DESCRIPTION_LENGTH = 255
+
     # update portAliasLUT database of names to include the new information
     exists = common.db.select('portAliasLUT', what="1", where={"port": data['port']})
+    data['alias_name'] = data['alias_name'][:MAX_NAME_LENGTH]
+    data['alias_description'] = data['alias_description'][:MAX_DESCRIPTION_LENGTH]
     if len(exists) == 1:
         common.db.update('portAliasLUT',
                          {"port": data['port']},
                          name=data['alias_name'],
                          description=data['alias_description'])
     else:
-        common.db.insert('portAliasLUT', port=data.port, name=data.alias_name, description=data.alias_description)
+        common.db.insert('portAliasLUT', port=data['port'], name=data['alias_name'], description=data['alias_description'])
 
     # update portLUT database of default values to include the missing information
     exists = common.db.select('portLUT', what="1", where={"port": data['port']})
@@ -407,57 +412,5 @@ def setPortInfo(data):
                          {"port": data['port']},
                          active=data['active'])
     else:
-        common.db.insert('portLUT', port=data.port, active=data['active'], tcp=1, udp=1, name="", description="")
+        common.db.insert('portLUT', port=data['port'], active=data['active'], tcp=1, udp=1, name="", description="")
 
-
-def printLink(row):
-    if "source32" in row:
-        print formatLink(row.source8, row.source16, row.source24, row.source32,
-                         row.dest8, row.dest16, row.dest24, row.dest32)
-    elif "source24" in row:
-        print formatLink(row.source8, row.source16, row.source24, 0,
-                         row.dest8, row.dest16, row.dest24, 0)
-    elif "source16" in row:
-        print formatLink(row.source8, row.source16, 0, 0,
-                         row.dest8, row.dest16, 0, 0)
-    elif "source8" in row:
-        print formatLink(row.source8, 0, 0, 0,
-                         row.dest8, 0, 0, 0)
-
-
-def formatLink(src8=0, src16=0, src24=0, src32=0, dst8=0, dst16=0, dst24=0, dst32=0):
-    return "{0:>15s} --> {1:<15s}".format("{0:d}.{1:d}.{2:d}.{3:d}".format(src8, src16, src24, src32), 
-                                          "{0:d}.{1:d}.{2:d}.{3:d}".format(dst8, dst16, dst24, dst32))
-
-
-def getTableSizes():
-    tableSizes = {}
-
-    rows = common.db.select("Nodes8", what="COUNT(*)")
-    tableSizes["Nodes8"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Nodes16", what="COUNT(*)")
-    tableSizes["Nodes16"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Nodes24", what="COUNT(*)")
-    tableSizes["Nodes24"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Nodes32", what="COUNT(*)")
-    tableSizes["Nodes32"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Links8", what="COUNT(*)")
-    tableSizes["Links8"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Links16", what="COUNT(*)")
-    tableSizes["Links16"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Links24", what="COUNT(*)")
-    tableSizes["Links24"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Links32", what="COUNT(*)")
-    tableSizes["Links32"] = rows[0]["COUNT(*)"]
-
-    rows = common.db.select("Syslog", what="COUNT(*)")
-    tableSizes["Syslog"] = rows[0]["COUNT(*)"]
-
-    return tableSizes

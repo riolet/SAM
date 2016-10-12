@@ -21,7 +21,7 @@ class Details:
         ips = get_data.get("address").split(".")
         ips = [int(i) for i in ips]
 
-        details = dbaccess.getDetails(*ips, filter=filter, timerange=(timestart, timeend))
+        details = dbaccess.get_details(*ips, filter=filter, timerange=(timestart, timeend))
 
         conn_in = {}
         for connection in details['conn_in']:

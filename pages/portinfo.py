@@ -19,7 +19,7 @@ class Portinfo:
         port = port.split(",")
         port = [int(i) for i in port]
 
-        result = dbaccess.getPortInfo(port)
+        result = dbaccess.get_port_info(port)
 
         return json.dumps(list(result))
 
@@ -27,6 +27,6 @@ class Portinfo:
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
-        dbaccess.setPortInfo(get_data)
+        dbaccess.set_port_info(get_data)
 
         return json.dumps({"code": 0, "message": ""})

@@ -1,6 +1,11 @@
+2016-10-12
+finished writing test cases for dbaccess.py
+
 2016-10-11
 updated README for asa and aws importers
 split server.py into server and wsgiserver.py for deployment
+started test cases covering dbaccess.py;
+  rewrote get_links_* functions
 
 2016-09-01
 Tried a new schema:
