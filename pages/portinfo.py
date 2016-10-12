@@ -11,7 +11,7 @@ class Portinfo:
 
         get_data = web.input()
         if "port" not in get_data:
-            return json.dumps({})
+            return json.dumps({'result': 'ERROR: "port" not specified.'})
 
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
@@ -27,6 +27,10 @@ class Portinfo:
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
-        dbaccess.set_port_info(get_data)
+        if 'port' in get_data:
+            dbaccess.set_port_info(get_data)
+            result = "Success!"
+        else:
+            result = "ERROR: 'port' missing from request."
 
-        return json.dumps({"code": 0, "message": ""})
+        return json.dumps({"result": result})

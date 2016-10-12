@@ -18,38 +18,41 @@ class Details:
         timestart = int(timestart)
         timeend = int(timeend)
 
-        ips = get_data.get("address").split(".")
-        ips = [int(i) for i in ips]
+        if 'address' in get_data:
+            ips = get_data["address"].split(".")
+            ips = [int(i) for i in ips]
 
-        details = dbaccess.get_details(*ips, filter=filter, timerange=(timestart, timeend))
+            details = dbaccess.get_details(*ips, filter=filter, timerange=(timestart, timeend))
 
-        conn_in = {}
-        for connection in details['conn_in']:
-            ip = common.IPtoString(connection.pop("ip"))
-            if ip in conn_in:
-                # add a port
-                conn_in[ip] += [connection]
-            else:
-                # add a new entry
-                conn_in[ip] = [connection]
-        # convert to list of tuples to make it sortable
-        conn_in = conn_in.items()
-        conn_in.sort(key=key_by_link_sum, reverse=True)
-        details['conn_in'] = conn_in
+            conn_in = {}
+            for connection in details['conn_in']:
+                ip = common.IPtoString(connection.pop("ip"))
+                if ip in conn_in:
+                    # add a port
+                    conn_in[ip] += [connection]
+                else:
+                    # add a new entry
+                    conn_in[ip] = [connection]
+            # convert to list of tuples to make it sortable
+            conn_in = conn_in.items()
+            conn_in.sort(key=key_by_link_sum, reverse=True)
+            details['conn_in'] = conn_in
 
-        conn_out = {}
-        for connection in details['conn_out']:
-            ip = common.IPtoString(connection.pop("ip"))
-            if ip in conn_out:
-                # add a port
-                conn_out[ip] += [connection]
-            else:
-                # add a new entry
-                conn_out[ip] = [connection]
-        # convert to list of tuples to make it sortable
-        conn_out = conn_out.items()
-        conn_out.sort(key=key_by_link_sum, reverse=True)
-        details['conn_out'] = conn_out
+            conn_out = {}
+            for connection in details['conn_out']:
+                ip = common.IPtoString(connection.pop("ip"))
+                if ip in conn_out:
+                    # add a port
+                    conn_out[ip] += [connection]
+                else:
+                    # add a new entry
+                    conn_out[ip] = [connection]
+            # convert to list of tuples to make it sortable
+            conn_out = conn_out.items()
+            conn_out.sort(key=key_by_link_sum, reverse=True)
+            details['conn_out'] = conn_out
+        else:
+            details = {"result": "ERROR: Malformed request. The 'address' key was missing"}
 
         return json.dumps(details)
 
