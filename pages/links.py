@@ -38,7 +38,11 @@ class Links:
             'filter': optional. If included, only report links to this destination port.
             'tstart': optional. Used with 'tend'. The start of the time range to report links during.
             'tend': optional. Used with 'tstart'. The end of the time range to report links during.
-        :return:
+        :return: A JSON-encoded dictionary where 
+            the keys are the IPs requested and 
+            the values are dictionaries where
+                the keys are ['inputs', 'outputs'] and
+                the values are lists of connections 
         """
         web.header("Content-Type", "application/json")
 

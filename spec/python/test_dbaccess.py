@@ -301,9 +301,11 @@ def test_get_port_info_present():
     assert info.port == 80
     assert sorted(info.keys()) == ['active', 'alias_description', 'alias_name', 'description', 'name', 'port']
 
+
 def test_get_port_info_absent():
     port_info = list(dbaccess.get_port_info(4))
     assert port_info == []
+
 
 def test_get_port_info_many():
     port_info = list(dbaccess.get_port_info([3, 4, 5, 6]))

@@ -17,7 +17,9 @@ class Details:
             'filter': optional. If included, ignored.
             'tstart': optional. Used with 'tend'. The start of the time range to report links during.
             'tend': optional. Used with 'tstart'. The end of the time range to report links during.
-        :return:
+        :return: A JSON-encoded dictionary where
+            the keys are ['conn_in', 'conn_out', 'ports_in', 'unique_in', 'unique_out', 'unique_ports'] and
+            the values are numbers or lists
         """
         web.header("Content-Type", "application/json")
 
