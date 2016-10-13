@@ -7,6 +7,13 @@ import web
 
 class Portinfo:
     def GET(self):
+        """
+        The expected GET data includes:
+            'port': comma-seperated list of port numbers
+                A request for ports 80, 443, and 8080
+                would look like: "80,443,8080"
+        :return:
+        """
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
