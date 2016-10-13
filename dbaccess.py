@@ -94,10 +94,7 @@ def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     return low, high, quot
 
 
-def get_nodes(ip8=-1, ip16=-1, ip24=-1):
-    ip8 = int(ip8)
-    ip16 = int(ip16)
-    ip24 = int(ip24)
+def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
 
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
@@ -111,12 +108,14 @@ def get_nodes(ip8=-1, ip16=-1, ip24=-1):
         rows = common.db.where("Nodes24",
                                ip8=ip8,
                                ip16=ip16)
-    else:
+    elif ip32 < 0 or ip32 > 255:
         # check Nodes32
         rows = common.db.where("Nodes32",
                                ip8=ip8,
                                ip16=ip16,
                                ip24=ip24)
+    else:
+        rows = []
     return rows
 
 

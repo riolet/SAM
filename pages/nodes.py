@@ -18,6 +18,8 @@ class Nodes:
         address_str = get_data.get('address', None)
         if address_str is not None:
             addresses = address_str.split(",")
+        print "address_str is ", address_str
+        print "addresses is ", addresses
 
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
@@ -26,11 +28,20 @@ class Nodes:
             result["_"] = list(dbaccess.get_nodes())
         else:
             for address in addresses:
-                result[address] = list(dbaccess.get_nodes(*address.split(".")))
+                result[address] = list(dbaccess.get_nodes(*map(int, address.split("."))))
 
         return json.dumps(result, default=decimal_default)
 
     def GET(self):
+        """
+        The expected GET data includes:
+            'address': comma-seperated list of dotted-decimal IP addresses.
+                Each address is only as long as the subnet,
+                    so 12.34.0.0/16 would be written as 12.34
+                A request for 1.2.3.0/24, 192.168.0.0/16, and 21.0.0.0/8
+                    would be "1.2.3,192.168,21"
+        :return: A list of the child-nodes of each of the given addresses.
+        """
         web.header("Content-Type", "application/json")
         get_data = web.input()
         return self.get_children(get_data)
