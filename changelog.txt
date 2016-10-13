@@ -3,8 +3,9 @@ fixed several bugs while writing test cases.
 finished writing test cases for dbaccess.py
 added tests for common.py
 added tests for server.py
-added tests for pages/nodes.py
 added tests for pages/map.py
+added tests for pages/nodes.py
+added tests for pages/links.py
 
 2016-10-11
 updated README for asa and aws importers
