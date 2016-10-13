@@ -9,10 +9,20 @@ import common
 
 class Details:
     def GET(self):
+        """
+        The expected GET data includes:
+            'address': dotted-decimal IP addresses.
+                Each address is only as long as the subnet,
+                    so 12.34.0.0/16 would be written as 12.34
+            'filter': optional. If included, ignored.
+            'tstart': optional. Used with 'tend'. The start of the time range to report links during.
+            'tend': optional. Used with 'tstart'. The end of the time range to report links during.
+        :return:
+        """
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
-        filter = get_data.get('filter', '')
+        filter = -1 # get_data.get('filter', -1)
         timestart = get_data.get("tstart", 1)
         timeend = get_data.get("tend", 2**31 - 1)
         timestart = int(timestart)
@@ -22,7 +32,7 @@ class Details:
             ips = get_data["address"].split(".")
             ips = [int(i) for i in ips]
 
-            details = dbaccess.get_details(*ips, filter=filter, timerange=(timestart, timeend))
+            details = dbaccess.get_details(*ips, port=filter, timerange=(timestart, timeend))
 
             conn_in = {}
             for connection in details['conn_in']:

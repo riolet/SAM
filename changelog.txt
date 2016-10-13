@@ -1,3 +1,10 @@
+2016-10-13
+Should the details pane respect the timerange and port filter?
+  Timerange is respected.
+  Filter is ignored.
+added tests for pages/details.py
+ammended tests for dbaccess.py get_details to cover ports and timeranges
+
 2016-10-12
 fixed several bugs while writing test cases.
 finished writing test cases for dbaccess.py

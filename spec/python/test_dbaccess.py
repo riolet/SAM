@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 import common
 
+
 def test_parse_sql():
     expected = ['DROP TABLE IF EXISTS blah',
                 '\n \n \n CREATE TABLE IF NOT EXISTS blah\n'
@@ -161,10 +162,8 @@ def make_timestamp(ts):
 
 
 def test_get_links_out_timerange():
-    tstart = make_timestamp('2016-06-21 17:10')
-    tend = make_timestamp('2016-06-21 18:05')
     time_all = (1, 2**31-1)
-    time_crop = (tstart, tend)
+    time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
     time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
 
     rows = dbaccess.get_links_out(21, 66, 42, 22, timerange=time_all)
@@ -222,6 +221,63 @@ def test_get_details():
     assert len(details['conn_in']) == 7
     assert len(details['conn_out']) == 9
     assert len(details['ports_in']) == 1
+
+
+def test_get_details_port():
+    details = dbaccess.get_details(21,66,40,231, port=445)
+    assert details['unique_in'] == 7
+    assert details['unique_out'] == 0
+    assert details['unique_ports'] == 1
+    assert len(details['conn_in']) == 7
+    assert len(details['conn_out']) == 0
+    assert len(details['ports_in']) == 1
+
+    details = dbaccess.get_details(21,66,40,231, port=80)
+    assert details['unique_in'] == 0
+    assert details['unique_out'] == 2
+    assert details['unique_ports'] == 0
+    assert len(details['conn_in']) == 0
+    assert len(details['conn_out']) == 2
+    assert len(details['ports_in']) == 0
+
+    details = dbaccess.get_details(21,66,40,231, port=1)
+    assert details['unique_in'] == 0
+    assert details['unique_out'] == 0
+    assert details['unique_ports'] == 0
+    assert len(details['conn_in']) == 0
+    assert len(details['conn_out']) == 0
+    assert len(details['ports_in']) == 0
+
+
+def test_get_details_timerange():
+    time_all = (1, 2**31-1)
+    time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
+    time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
+
+    details = dbaccess.get_details(21,66,40,231, timerange=time_all)
+    assert details['unique_in'] == 7
+    assert details['unique_out'] == 4
+    assert details['unique_ports'] == 1
+    assert len(details['conn_in']) == 7
+    assert len(details['conn_out']) == 9
+    assert len(details['ports_in']) == 1
+
+    details = dbaccess.get_details(21,66,40,231, timerange=time_crop)
+    assert details['unique_in'] == 7
+    assert details['unique_out'] == 4
+    assert details['unique_ports'] == 1
+    assert len(details['conn_in']) == 7
+    assert len(details['conn_out']) == 9
+    assert len(details['ports_in']) == 1
+
+    details = dbaccess.get_details(21,66,40,231, timerange=time_tiny)
+    assert details['unique_in'] == 1
+    assert details['unique_out'] == 3
+    assert details['unique_ports'] == 1
+    assert len(details['conn_in']) == 1
+    assert len(details['conn_out']) == 4
+    assert len(details['ports_in']) == 1
+
 
 
 def test_get_node_info():

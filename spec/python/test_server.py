@@ -5,6 +5,8 @@ app = web.application(server.urls, globals())
 
 
 def test_404():
+    req = app.request('/invalidendpoint', method='GET')
+    assert req.status == "404 Not Found"
     req = app.request('/invalidendpoint', method='POST')
     assert req.status == "404 Not Found"
 
