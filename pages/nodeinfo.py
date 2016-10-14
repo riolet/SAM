@@ -27,7 +27,7 @@ class Nodeinfo:
 
         get_data = web.input()
         if "node" not in get_data or "alias" not in get_data:
-            return json.dumps({"code": 1, "message": "'node' and 'alias' fields are required."})
+            return json.dumps({"result": "ERROR: 'node' and 'alias' fields are required."})
 
         dbaccess.set_node_info(get_data.node, {"alias": get_data.alias})
 
