@@ -89,7 +89,6 @@ function init_canvas(c, cx) {
     cx.lineJoin = "bevel";
 
     //Event listeners for detecting clicks and zooms
-    console.log("assigning mousedown");
     c.addEventListener("mousedown", mousedown);
     c.addEventListener("mousemove", mousemove);
     c.addEventListener("mouseup", mouseup);
