@@ -396,24 +396,40 @@ def set_port_info(data):
     MAX_NAME_LENGTH = 10
     MAX_DESCRIPTION_LENGTH = 255
 
+    if not 'port' in data:
+        print "Error setting port info: no port specified"
+        return
+    port = data['port']
+
+    alias_name = ''
+    alias_description = ''
+    active = 0
+    if 'alias_name' in data:
+        alias_name = data['alias_name'][:MAX_NAME_LENGTH]
+    if 'alias_description' in data:
+        alias_description = data['alias_description'][:MAX_DESCRIPTION_LENGTH]
+    if 'active' in data:
+        active = 1 if data['active'] == '1' or data['active'] == 1 else 0
+
     # update portAliasLUT database of names to include the new information
-    exists = common.db.select('portAliasLUT', what="1", where={"port": data['port']})
-    data['alias_name'] = data['alias_name'][:MAX_NAME_LENGTH]
-    data['alias_description'] = data['alias_description'][:MAX_DESCRIPTION_LENGTH]
+    exists = common.db.select('portAliasLUT', what="1", where={"port": port})
+
     if len(exists) == 1:
-        common.db.update('portAliasLUT',
-                         {"port": data['port']},
-                         name=data['alias_name'],
-                         description=data['alias_description'])
+        kwargs = {}
+        if 'alias_name' in data:
+            kwargs['name'] = alias_name
+        if 'alias_description' in data:
+            kwargs['description'] = alias_description
+        if kwargs:
+            common.db.update('portAliasLUT', {"port": port}, **kwargs)
     else:
-        common.db.insert('portAliasLUT', port=data['port'], name=data['alias_name'], description=data['alias_description'])
+        common.db.insert('portAliasLUT', port=port, name=alias_name, description=alias_description)
 
     # update portLUT database of default values to include the missing information
-    exists = common.db.select('portLUT', what="1", where={"port": data['port']})
+    exists = common.db.select('portLUT', what="1", where={"port": port})
     if len(exists) == 1:
-        common.db.update('portLUT',
-                         {"port": data['port']},
-                         active=data['active'])
+        if 'active' in data:
+            common.db.update('portLUT', {"port": port}, active=active)
     else:
-        common.db.insert('portLUT', port=data['port'], active=data['active'], tcp=1, udp=1, name="", description="")
+        common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
 
