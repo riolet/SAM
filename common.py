@@ -31,6 +31,7 @@ db = web.database(**dbconfig.params)
 
 
 def IPtoString(ipNumber):
+    # type: (int) -> str
     """
     Converts an IP address from an integer to dotted decimal notation.
     Args:

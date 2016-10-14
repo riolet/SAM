@@ -388,7 +388,7 @@ def get_port_info(port):
             ON portLUT.port=portAliasLUT.port
         WHERE portLUT.port IN {0}
     """.format(arg)
-    info = common.db.query(query)
+    info = list(common.db.query(query))
     return info
 
 

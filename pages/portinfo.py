@@ -22,13 +22,14 @@ class Portinfo:
         if "port" not in get_data:
             return json.dumps({'result': 'ERROR: "port" not specified.'})
 
-        port = get_data.get('port', "-1")
-        port = port.split(",")
-        port = [int(i) for i in port]
+        portstring = get_data.get('port', "-1")
+        ports = portstring.split(",")
+        ports = [int(i) for i in ports]
 
-        result = dbaccess.get_port_info(port)
+        port_data = dbaccess.get_port_info(ports)
+        result = {str(i.port): i for i in port_data}
 
-        return json.dumps(list(result))
+        return json.dumps(result)
 
     def POST(self):
         """

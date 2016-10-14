@@ -61,17 +61,27 @@ function get_port_description(port) {
     return "";
 }
 
-function update_port(info) {
+function update_port(portnum, info) {
     "use strict";
     var port = {};
     port.active = info.active;
-    port.port = Number(info.port);
+    port.port = portnum;
     port.name = info.name;
     port.description = info.description;
     port.alias_name = info.alias_name;
     port.alias_description = info.alias_description;
 
-    m_ports[Number(info.port)] = port;
+    m_ports[portnum] = port;
+}
+
+function GET_portinfo_callback(result) {
+    "use strict";
+    Object.keys(result).forEach(function (key) {
+        update_port(Number(key), result[key]);
+    });
+    sel_update_display(m_selection["selection"]);
+    var port = result[Object.keys(result).pop()];
+    port_display(port);
 }
 
 function port_click(event) {
@@ -183,13 +193,5 @@ function port_display(port) {
     } else {
         document.getElementById("port_alias_description").value = port.alias_description;
     }
-}
-
-function GET_portinfo_callback(result) {
-    "use strict";
-    result.forEach(update_port);
-    sel_update_display(m_selection["selection"]);
-    var port = result.pop();
-    port_display(port);
 }
 
