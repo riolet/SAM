@@ -44,24 +44,16 @@ var g_timer = null;
 function init() {
     "use strict";
     canvas = document.getElementById("canvas");
-    var navBarHeight = $("#navbar").height();
-    $("#output").css("top", navBarHeight);
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - navBarHeight;
+    ctx = canvas.getContext("2d");
+    init_canvas(canvas, ctx);
+
     rect = canvas.getBoundingClientRect();
     tx = rect.width / 2;
     ty = rect.height / 2;
-    ctx = canvas.getContext("2d");
-    ctx.lineJoin = "bevel";
-    sel_init();
 
-    //Event listeners for detecting clicks and zooms
-    canvas.addEventListener("mousedown", mousedown);
-    canvas.addEventListener("mousemove", mousemove);
-    canvas.addEventListener("mouseup", mouseup);
-    canvas.addEventListener("mouseout", mouseup);
-    canvas.addEventListener("wheel", wheel);
     window.addEventListener("keydown", keydown, false);
+
+    sel_init();
 
     var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
@@ -87,6 +79,22 @@ function init() {
 
     //loadData();
     GET_nodes(null);
+}
+
+function init_canvas(c, cx) {
+    var navBarHeight = $("#navbar").height();
+    $("#output").css("top", navBarHeight);
+    c.width = window.innerWidth;
+    c.height = window.innerHeight - navBarHeight;
+    cx.lineJoin = "bevel";
+
+    //Event listeners for detecting clicks and zooms
+    console.log("assigning mousedown");
+    c.addEventListener("mousedown", mousedown);
+    c.addEventListener("mousemove", mousemove);
+    c.addEventListener("mouseup", mouseup);
+    c.addEventListener("mouseout", mouseup);
+    c.addEventListener("wheel", wheel);
 }
 
 function currentSubnet() {

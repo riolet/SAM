@@ -11,6 +11,7 @@ function deselectText() {
     }
 }
 
+console.log("Loading mousedown");
 function mousedown(event) {
     "use strict";
     deselectText();
