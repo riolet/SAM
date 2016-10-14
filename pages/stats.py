@@ -4,6 +4,7 @@ import json
 import web
 import time
 
+
 class Stats:
     pageTitle = "Stats"
     stats = []
@@ -11,7 +12,7 @@ class Stats:
     def get_timerange(self):
         rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM Links32;")
         row = rows[0]
-        return {'min':time.mktime(row['min'].timetuple()), 'max':time.mktime(row['max'].timetuple())}
+        return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
     def collect_stats(self):
         self.stats = []
@@ -72,6 +73,6 @@ class Stats:
         else:
             self.collect_stats()
             return str(common.render._head(self.pageTitle)) \
-               + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.stats(self.stats)) \
-               + str(common.render._tail())
+                   + str(common.render._header(common.navbar, self.pageTitle)) \
+                   + str(common.render.stats(self.stats)) \
+                   + str(common.render._tail())

@@ -3,10 +3,10 @@
 # and enter your credentials in the duplicate.
 
 params = {
-    'dbn'  : 'mysql',
-    'host' : 'localhost',
-    'user' : 'root',
-    'pw' : '',
-    'db' : 'samapper',
-    'port' : 3306
+    'dbn': 'mysql',
+    'host': 'localhost',
+    'user': 'root',
+    'pw': '',
+    'db': 'samapper',
+    'port': 3306
 }

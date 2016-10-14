@@ -8,8 +8,10 @@ $def with (details)
         <div class="transition hidden">
             <table class="ui celled table">
                 <thead>
+                  <tr>
                     <th>Inbound Connection</th>
                     <th>Occurrences</th>
+                  </tr>
                 </thead>
                 <tbody>
                 $for link in details['conn_in']:
@@ -34,8 +36,10 @@ $def with (details)
         <div class="transition hidden">
             <table class="ui celled table">
                 <thead>
+                  <tr>
                     <th>Outbound Connection</th>
                     <th>Occurrences</th>
+                  </tr>
                 </thead>
                 <tbody>
                 $for link in details['conn_out']:
@@ -59,8 +63,10 @@ $def with (details)
         <div class="transition hidden">
             <table class="ui celled table">
                 <thead>
+                  <tr>
                     <th>Port Accessed</th>
                     <th>Occurrences</th>
+                  </tr>
                 </thead>
                 <tbody>
                 $for link in details['ports_in']:
