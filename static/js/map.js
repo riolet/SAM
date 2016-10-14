@@ -5,7 +5,7 @@ var rect; //render region on screen
 //global transform coordinates, with initial values
 var tx = 0;
 var ty = 0;
-var scale = 0.0007;
+var g_scale = 0.0007;
 
 //mouse interaction variables
 var ismdown = false;
@@ -96,7 +96,7 @@ function init_canvas(c, cx) {
     c.addEventListener("wheel", wheel);
 }
 
-function currentSubnet() {
+function currentSubnet(scale) {
     "use strict";
     if (scale < zNodes16) {
         return 8;

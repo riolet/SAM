@@ -1,5 +1,4 @@
-describe("base map file", function () {
-  describe("zoom levels", function() {
+describe("map.js file", function () {  describe("zoom levels", function() {
     it("defined", function () {
       expect(zNodes16).toBeDefined();
       expect(zNodes24).toBeDefined();
@@ -31,7 +30,14 @@ describe("base map file", function () {
   })
 
 
-  describe("canvas", function () {
+  describe("init", function () {
+    it(" ", function () {
+      expect(1).toEqual(1);
+    });
+  });
+
+
+  describe("init_canvas", function () {
     it('defined', function() {
       document.getElementById = jasmine.createSpy('HTML Element')
         .and.returnValue(document.createElement("canvas"));
@@ -40,6 +46,27 @@ describe("base map file", function () {
       expect(ctx).toBeDefined();
       expect(canvas).not.toBeNull();
       expect(ctx).not.toBeNull();
+    });
+  });
+
+
+  describe("currentSubnet", function () {
+    beforeEach(function () {
+      epsilon = 0.00001;
+    });
+    it("matches 8", function () {
+      expect(currentSubnet(zNodes16 - epsilon)).toEqual(8);
+    });
+    it("matches 16", function () {
+      expect(currentSubnet(zNodes16)).toEqual(16);
+      expect(currentSubnet(zNodes24 - epsilon)).toEqual(16);
+    });
+    it("matches 24", function () {
+      expect(currentSubnet(zNodes24)).toEqual(24);
+      expect(currentSubnet(zNodes32 - epsilon)).toEqual(24);
+    });
+    it("matches 24", function () {
+      expect(currentSubnet(zNodes32)).toEqual(32);
     });
   });
 
@@ -75,7 +102,7 @@ describe("base map file", function () {
   });
 
 
-  describe("remove children", function () {
+  describe("removeChildren", function () {
     it("works without children", function () {
       var div = document.createElement("div");
       removeChildren(div);
