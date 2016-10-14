@@ -20,7 +20,6 @@ def clean_tables():
 
 
 def import_nodes():
-
     # count(children) / 127.5 + 0.5) gives a number between 0.5 and 2.5
     # radius used to be:
     #    (COUNT(cluster.child) / 127.5 + 0.5) * 6000
@@ -33,9 +32,9 @@ def import_nodes():
         SELECT cluster.ip8 AS ip8
             , SUM(cluster.conns) AS connections
             , COUNT(cluster.child) AS children
-            , (331776 * (cluster.ip8 % 16) / 7.5 - 331776) as x
-            , (331776 * (cluster.ip8 DIV 16) / 7.5 - 331776) as y
-            , 20736 as radius
+            , (331776 * (cluster.ip8 % 16) / 7.5 - 331776) AS x
+            , (331776 * (cluster.ip8 DIV 16) / 7.5 - 331776) AS y
+            , 20736 AS radius
         FROM
             (SELECT ip DIV 16777216 AS 'ip8'
                 , (ip - (ip DIV 16777216) * 16777216) DIV 65536 AS 'child'
@@ -58,9 +57,9 @@ def import_nodes():
     query = """
         INSERT INTO Nodes16 (ip8, ip16, connections, children, x, y, radius)
         SELECT cluster.ip8, cluster.ip16, cluster.connections, cluster.children
-            , ((Nodes8.radius * (cluster.ip16 MOD 16) / 7.5 - Nodes8.radius) + Nodes8.x) as x
-            , ((Nodes8.radius * (cluster.ip16 DIV 16) / 7.5 - Nodes8.radius) + Nodes8.y) as y
-            , 864 as radius
+            , ((Nodes8.radius * (cluster.ip16 MOD 16) / 7.5 - Nodes8.radius) + Nodes8.x) AS x
+            , ((Nodes8.radius * (cluster.ip16 DIV 16) / 7.5 - Nodes8.radius) + Nodes8.y) AS y
+            , 864 AS radius
         FROM
             (SELECT aggregate.ip8 AS ip8, aggregate.ip16 AS ip16
                 , SUM(aggregate.conns) AS connections, COUNT(aggregate.child) AS children
@@ -75,10 +74,10 @@ def import_nodes():
                     UNION ALL
                     (SELECT DestinationIP AS ip
                     FROM Syslog)
-                ) as result
+                ) AS result
                 GROUP BY ip8, ip16, child
             ) AS aggregate
-            GROUP BY ip8, ip16) as cluster
+            GROUP BY ip8, ip16) AS cluster
             JOIN Nodes8
             ON Nodes8.ip8 = cluster.ip8;
         """
@@ -88,9 +87,9 @@ def import_nodes():
     query = """
         INSERT INTO Nodes24 (ip8, ip16, ip24, connections, children, x, y, radius)
         SELECT cluster.ip8, cluster.ip16, cluster.ip24, cluster.connections, cluster.children
-            , ((Nodes16.radius * (cluster.ip24 MOD 16) / 7.5 - Nodes16.radius) + Nodes16.x) as x
-            , ((Nodes16.radius * (cluster.ip24 DIV 16) / 7.5 - Nodes16.radius) + Nodes16.y) as y
-            , 36 as radius
+            , ((Nodes16.radius * (cluster.ip24 MOD 16) / 7.5 - Nodes16.radius) + Nodes16.x) AS x
+            , ((Nodes16.radius * (cluster.ip24 DIV 16) / 7.5 - Nodes16.radius) + Nodes16.y) AS y
+            , 36 AS radius
         FROM
             (SELECT aggregate.ip8 AS ip8, aggregate.ip16 AS ip16, aggregate.ip24 AS ip24
                 , SUM(aggregate.conns) AS connections, COUNT(aggregate.child) AS children
@@ -106,7 +105,7 @@ def import_nodes():
                     UNION ALL
                     (SELECT DestinationIP AS ip
                     FROM Syslog)
-                ) as result
+                ) AS result
                 GROUP BY ip8, ip16, ip24, child
             ) AS aggregate
             GROUP BY ip8, ip16, ip24) AS cluster
@@ -119,9 +118,9 @@ def import_nodes():
     query = """
         INSERT INTO Nodes32 (ip8, ip16, ip24, ip32, connections, children, x, y, radius)
         SELECT cluster.ip8, cluster.ip16, cluster.ip24, cluster.ip32, cluster.connections, cluster.children
-            , ((Nodes24.radius * (cluster.ip32 MOD 16) / 7.5 - Nodes24.radius) + Nodes24.x) as x
-            , ((Nodes24.radius * (cluster.ip32 DIV 16) / 7.5 - Nodes24.radius) + Nodes24.y) as y
-            , 1.5 as radius
+            , ((Nodes24.radius * (cluster.ip32 MOD 16) / 7.5 - Nodes24.radius) + Nodes24.x) AS x
+            , ((Nodes24.radius * (cluster.ip32 DIV 16) / 7.5 - Nodes24.radius) + Nodes24.y) AS y
+            , 1.5 AS radius
         FROM
             (SELECT aggregate.ip8 AS ip8
                 , aggregate.ip16 AS ip16
@@ -142,7 +141,7 @@ def import_nodes():
                     UNION ALL
                     (SELECT DestinationIP AS ip
                     FROM Syslog)
-                ) as result
+                ) AS result
                 GROUP BY ip8, ip16, ip24, ip32, child
             ) AS aggregate
             GROUP BY ip8, ip16, ip24, ip32) AS cluster
@@ -165,13 +164,11 @@ def import_links():
         position_link(link)
     set_links16(links)
 
-
     # Populate Links24
     links = get_links24()
     for link in links:
         position_link(link)
     set_links24(links)
-
 
     # Populate Links32
     links = get_links32()
@@ -214,7 +211,6 @@ def position_link(link):
 
 
 def get_links8():
-
     query = """
         SELECT source8, dest8, port, conns, ts,
             src.x AS sx, src.y AS sy, src.radius AS sr,
@@ -222,8 +218,8 @@ def get_links8():
         FROM
             (SELECT SourceIP DIV 16777216 AS source8
                  , DestinationIP DIV 16777216 AS dest8
-                 , DestinationPort as port
-                 , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                 , DestinationPort AS port
+                 , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                  , COUNT(*) AS conns
             FROM Syslog
             GROUP BY source8, dest8, port, ts) AS main
@@ -240,16 +236,16 @@ def get_links8():
 
 def set_links8(links):
     values = [{
-        "source8": i.source8,
-        "dest8": i.dest8,
-        "port": i.port,
-        "links": i.conns,
-        "x1": i.sx,
-        "y1": i.sy,
-        "x2": i.dx,
-        "y2": i.dy,
-        "timestamp": i.ts
-    } for i in links]
+                  "source8": i.source8,
+                  "dest8": i.dest8,
+                  "port": i.port,
+                  "links": i.conns,
+                  "x1": i.sx,
+                  "y1": i.sy,
+                  "x2": i.dx,
+                  "y2": i.dy,
+                  "timestamp": i.ts
+              } for i in links]
     common.db.multiple_insert('Links8', values=values)
 
 
@@ -268,8 +264,8 @@ def get_links16():
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
@@ -293,8 +289,8 @@ def get_links16():
             (SELECT SourceIP DIV 16777216 AS source8
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
@@ -318,8 +314,8 @@ def get_links16():
             (SELECT SourceIP DIV 16777216 AS source8
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
                      , DestinationIP DIV 16777216 AS dest8
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
@@ -341,18 +337,18 @@ def get_links16():
 
 def set_links16(links):
     values = [{
-        "source8": i.source8,
-        "source16": i.source16,
-        "dest8": i.dest8,
-        "dest16": i.dest16,
-        "port": i.port,
-        "links": i.conns,
-        "x1": i.sx,
-        "y1": i.sy,
-        "x2": i.dx,
-        "y2": i.dy,
-        "timestamp": i.ts
-    } for i in links]
+                  "source8": i.source8,
+                  "source16": i.source16,
+                  "dest8": i.dest8,
+                  "dest16": i.dest16,
+                  "port": i.port,
+                  "links": i.conns,
+                  "x1": i.sx,
+                  "y1": i.sy,
+                  "x2": i.dx,
+                  "y2": i.dy,
+                  "timestamp": i.ts
+              } for i in links]
     common.db.multiple_insert('Links16', values=values)
 
 
@@ -375,8 +371,8 @@ def get_links24():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
@@ -402,8 +398,8 @@ def get_links24():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
@@ -428,8 +424,8 @@ def get_links24():
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
                      , (DestinationIP - (DestinationIP DIV 65536) * 65536) DIV 256 AS dest24
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
@@ -454,8 +450,8 @@ def get_links24():
                      , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
                      , DestinationIP DIV 16777216 AS dest8
                      , (DestinationIP - (DestinationIP DIV 16777216) * 16777216) DIV 65536 AS dest16
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) = (DestinationIP DIV 16777216)
@@ -480,8 +476,8 @@ def get_links24():
                      , (SourceIP - (SourceIP DIV 16777216) * 16777216) DIV 65536 AS source16
                      , (SourceIP - (SourceIP DIV 65536) * 65536) DIV 256 AS source24
                      , DestinationIP DIV 16777216 AS dest8
-                     , DestinationPort as port
-                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) as ts
+                     , DestinationPort AS port
+                     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
                      , COUNT(*) AS conns
                 FROM Syslog
                 WHERE (SourceIP DIV 16777216) != (DestinationIP DIV 16777216)
@@ -503,20 +499,20 @@ def get_links24():
 
 def set_links24(links):
     values = [{
-        "source8": i.source8,
-        "source16": i.source16,
-        "source24": i.source24,
-        "dest8": i.dest8,
-        "dest16": i.dest16,
-        "dest24": i.dest24,
-        "port": i.port,
-        "links": i.conns,
-        "x1": i.sx,
-        "y1": i.sy,
-        "x2": i.dx,
-        "y2": i.dy,
-        "timestamp": i.ts
-    } for i in links]
+                  "source8": i.source8,
+                  "source16": i.source16,
+                  "source24": i.source24,
+                  "dest8": i.dest8,
+                  "dest16": i.dest16,
+                  "dest24": i.dest24,
+                  "port": i.port,
+                  "links": i.conns,
+                  "x1": i.sx,
+                  "y1": i.sy,
+                  "x2": i.dx,
+                  "y2": i.dy,
+                  "timestamp": i.ts
+              } for i in links]
     common.db.multiple_insert('Links24', values=values)
 
 
@@ -736,22 +732,22 @@ def get_links32():
 
 def set_links32(links):
     values = [{
-        "source8": i.source8,
-        "source16": i.source16,
-        "source24": i.source24,
-        "source32": i.source32,
-        "dest8": i.dest8,
-        "dest16": i.dest16,
-        "dest24": i.dest24,
-        "dest32": i.dest32,
-        "port": i.port,
-        "links": i.conns,
-        "x1": i.sx,
-        "y1": i.sy,
-        "x2": i.dx,
-        "y2": i.dy,
-        "timestamp": i.ts
-    } for i in links]
+                  "source8": i.source8,
+                  "source16": i.source16,
+                  "source24": i.source24,
+                  "source32": i.source32,
+                  "dest8": i.dest8,
+                  "dest16": i.dest16,
+                  "dest24": i.dest24,
+                  "dest32": i.dest32,
+                  "port": i.port,
+                  "links": i.conns,
+                  "x1": i.sx,
+                  "y1": i.sy,
+                  "x2": i.dx,
+                  "y2": i.dy,
+                  "timestamp": i.ts
+              } for i in links]
     common.db.multiple_insert('Links32', values=values)
 
 
@@ -760,6 +756,7 @@ def preprocess_log():
     import_nodes()
     import_links()
     print("Pre-processing completed successfully.")
+
 
 # If running as a script
 if __name__ == "__main__":
@@ -770,4 +767,3 @@ if __name__ == "__main__":
         print("Database access denied. Check you username / password? (dbconfig_local.py)")
     else:
         preprocess_log()
-

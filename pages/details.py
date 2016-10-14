@@ -24,9 +24,9 @@ class Details:
         web.header("Content-Type", "application/json")
 
         get_data = web.input()
-        filter = -1 # get_data.get('filter', -1)
+        port_filter = -1  # get_data.get('filter', -1)
         timestart = get_data.get("tstart", 1)
-        timeend = get_data.get("tend", 2**31 - 1)
+        timeend = get_data.get("tend", 2 ** 31 - 1)
         timestart = int(timestart)
         timeend = int(timeend)
 
@@ -34,7 +34,7 @@ class Details:
             ips = get_data["address"].split(".")
             ips = [int(i) for i in ips]
 
-            details = dbaccess.get_details(*ips, port=filter, timerange=(timestart, timeend))
+            details = dbaccess.get_details(*ips, port=port_filter, timerange=(timestart, timeend))
 
             conn_in = {}
             for connection in details['conn_in']:

@@ -7,7 +7,6 @@ from datetime import datetime
 
 
 class NFDumpImporter(BaseImporter):
-
     def __init__(self):
         BaseImporter.__init__(self)
         self.instructions = """
@@ -52,9 +51,9 @@ Usage:
             self.insert_data(rows, counter)
             lines_inserted += counter
 
-        #pass through anything else and close the process
+        # pass through anything else and close the process
         proc.poll()
-        while proc.returncode == None:
+        while proc.returncode is None:
             proc.stdout.readline()
             proc.poll()
         proc.wait()
@@ -62,7 +61,7 @@ Usage:
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
 
     def translate(self, line, linenum, dictionary):
-        #remove trailing newline
+        # remove trailing newline
         line = line.rstrip("\n")
         split_data = line.split(",")
         if len(split_data) != 8:

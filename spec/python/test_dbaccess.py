@@ -146,14 +146,14 @@ def test_get_links_out_plain():
 def test_get_links_out_filter():
     test_port = 12345
 
-    rows = dbaccess.get_links_out(21, 66, 42, 22, filter=test_port)
+    rows = dbaccess.get_links_out(21, 66, 42, 22, port_filter=test_port)
     assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24',
                                       'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
     ports = set([int(i.port) for i in rows])
     assert ports == {test_port}
     assert len(rows) == 5
 
-    rows = dbaccess.get_links_out(21, 66, filter=test_port)
+    rows = dbaccess.get_links_out(21, 66, port_filter=test_port)
     assert sorted(rows[0].keys()) == ['dest16', 'dest8', 'links', 'source16', 'source8', 'x1', 'x2', 'y1', 'y2']
     assert len(rows) == 2
     rows = dbaccess.get_links_out(21, 66)

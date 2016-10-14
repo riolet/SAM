@@ -72,7 +72,7 @@ def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     high = 0xFFFFFFFF
     quot = 1
     if 0 <= ip8 <= 255:
-        low = (ip8 << 24)   # 172.0.0.0
+        low = (ip8 << 24)  # 172.0.0.0
         if 0 <= ip16 <= 255:
             low |= (ip16 << 16)  # 172.19.0.0
             if 0 <= ip24 <= 255:
@@ -95,7 +95,6 @@ def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
 
 
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
-
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
         rows = common.db.select("Nodes8")
@@ -119,7 +118,7 @@ def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     return rows
 
 
-def build_links_query(ip, is_dest, ports, filter, timerange):
+def build_links_query(ip, is_dest, ports, port_filter, timerange):
     """
     This helper function builds a query to fulfill the needs of the two "get_links_in/out" functions.
 
@@ -136,31 +135,31 @@ def build_links_query(ip, is_dest, ports, filter, timerange):
 
     # SELECT portion
     selects = ["source8", "dest8", "source16", "dest16", "source24", "dest24", "source32", "dest32"]
-    SELECT = ", ".join(selects[:len(ip)*2])
+    SELECT = ", ".join(selects[:len(ip) * 2])
     if ports:
         SELECT += ", port".format(table)
     SELECT += ", SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2"
 
     # WHERE portion
     if is_dest:
-        parts = ["dest{0} = $seg{1}".format(i*8, i) for i in range(1, len(ip) + 1)]
+        parts = ["dest{0} = $seg{1}".format(i * 8, i) for i in range(1, len(ip) + 1)]
     else:
-        parts = ["source{0} = $seg{1}".format(i*8, i) for i in range(1, len(ip) + 1)]
+        parts = ["source{0} = $seg{1}".format(i * 8, i) for i in range(1, len(ip) + 1)]
     WHERE = "\n\t&& ".join(parts)
     if timerange:
         WHERE += "\n\t&& timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)"
-    if filter:
+    if port_filter:
         WHERE += "\n\t&& port = $filter"
 
     # GROUP BY portion
-    GROUP_BY = ", ".join(selects[:len(ip)*2])
+    GROUP_BY = ", ".join(selects[:len(ip) * 2])
     if ports:
         GROUP_BY += ", port"
 
     # replacement variables
     qvars = dict([("seg{0}".format(i + 1), str(v)) for i, v in enumerate(ip)])
-    if filter:
-        qvars['filter'] = filter
+    if port_filter:
+        qvars['filter'] = port_filter
     if timerange:
         qvars['tstart'] = timerange[0]
         qvars['tend'] = timerange[1]
@@ -172,7 +171,7 @@ def build_links_query(ip, is_dest, ports, filter, timerange):
     return query
 
 
-def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, filter=None, timerange=None):
+def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
 
@@ -192,27 +191,32 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, filter=None, timerange=None):
     :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
     :param ip32: The fourth segment of the IPv4 address: xx.xx.xx.__
     :param filter:  Only consider connections using this destination port. Default is no filtering.
-    :param timerange:  Tuple of (start, end) timestamps. Only connections happening during this time period are considered.
+    :param timerange:  Tuple of (start, end) timestamps. Only connections happening
+    during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
     if 0 <= ip32 <= 255:
-        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=True, ports=True, filter=filter, timerange=timerange)
+        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=True, ports=True, port_filter=port_filter,
+                                  timerange=timerange)
         inputs = list(common.db.query(query))
     elif 0 <= ip24 <= 255:
-        query = build_links_query([ip8, ip16, ip24], is_dest=True, ports=False, filter=filter, timerange=timerange)
+        query = build_links_query([ip8, ip16, ip24], is_dest=True, ports=False, port_filter=port_filter,
+                                  timerange=timerange)
         inputs = list(common.db.query(query))
     elif 0 <= ip16 <= 255:
-        query = build_links_query([ip8, ip16], is_dest=True, ports=False, filter=filter, timerange=timerange)
+        query = build_links_query([ip8, ip16], is_dest=True, ports=False, port_filter=port_filter,
+                                  timerange=timerange)
         inputs = list(common.db.query(query))
     elif 0 <= ip8 <= 255:
-        query = build_links_query([ip8], is_dest=True, ports=False, filter=filter, timerange=timerange)
+        query = build_links_query([ip8], is_dest=True, ports=False, port_filter=port_filter,
+                                  timerange=timerange)
         inputs = list(common.db.query(query))
     else:
         inputs = []
     return inputs
 
 
-def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, filter=None, timerange=None):
+def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
     """
     This function returns a list of the connections going out of a given node from the rest of the graph.
 
@@ -232,20 +236,25 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, filter=None, timerange=None):
     :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
     :param ip32: The fourth segment of the IPv4 address: xx.xx.xx.__
     :param filter:  Only consider connections using this destination port. Default is no filtering.
-    :param timerange:  Tuple of (start, end) timestamps. Only connections happening during this time period are considered.
+    :param timerange:  Tuple of (start, end) timestamps. Only connections happening
+    during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
     if 0 <= ip32 <= 255:
-        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=False, ports=True, filter=filter, timerange=timerange)
+        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=False, ports=True, port_filter=port_filter,
+                                  timerange=timerange)
         outputs = list(common.db.query(query))
     elif 0 <= ip24 <= 255:
-        query = build_links_query([ip8, ip16, ip24], is_dest=False, ports=False, filter=filter, timerange=timerange)
+        query = build_links_query([ip8, ip16, ip24], is_dest=False, ports=False, port_filter=port_filter,
+                                  timerange=timerange)
         outputs = list(common.db.query(query))
     elif 0 <= ip16 <= 255:
-        query = build_links_query([ip8, ip16], is_dest=False, ports=False, filter=filter, timerange=timerange)
+        query = build_links_query([ip8, ip16], is_dest=False, ports=False, port_filter=port_filter,
+                                  timerange=timerange)
         outputs = list(common.db.query(query))
     elif 0 <= ip8 <= 255:
-        query = build_links_query([ip8], is_dest=False, ports=False, filter=filter, timerange=timerange)
+        query = build_links_query([ip8], is_dest=False, ports=False, port_filter=port_filter,
+                                  timerange=timerange)
         outputs = list(common.db.query(query))
     else:
         outputs = []
@@ -253,7 +262,7 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, filter=None, timerange=None):
 
 
 # TODO: this draws from Syslog, but it mustn't when we're not using Syslog anymore.
-def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2**31-1)):
+def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 - 1)):
     print("get_details: {0}.{1}.{2}.{3}".format(ip8, ip16, ip24, ip32))
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determine_range(ip8, ip16, ip24, ip32)
@@ -283,7 +292,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2**31-1))
                 && {0})
             AS tableC;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1], 'port':port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
     rows = common.db.query(query, vars=qvars)
     row = rows[0]
     details['unique_out'] = row.unique_out
@@ -304,7 +313,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2**31-1))
         ORDER BY links DESC
         LIMIT 50;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1], 'port':port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
@@ -321,7 +330,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2**31-1))
         ORDER BY links DESC
         LIMIT 50;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1], 'port':port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
@@ -336,29 +345,29 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2**31-1))
         ORDER BY links DESC
         LIMIT 50;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart':timerange[0], 'tend':timerange[1], 'port':port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
     details['ports_in'] = list(common.db.query(query, vars=qvars))
 
     return details
 
 
 def get_node_info(*address):
-    print("-"*50)
+    print("-" * 50)
     print("getting node info:")
     print("type: " + str(type(address)))
     print(address)
-    print("-"*50)
+    print("-" * 50)
     # TODO: for use getting meta about hosts
     return {}
 
 
 def set_node_info(address, data):
-    print("-"*50)
+    print("-" * 50)
     print("Setting node info!")
     ips = address.split(".")
     print("type data: " + str(type(data)))
     print(data)
-    print("-"*50)
+    print("-" * 50)
     if len(ips) == 1:
         common.db.update('Nodes8', {"ip8": ips[0]}, **data)
     if len(ips) == 2:
@@ -396,7 +405,7 @@ def set_port_info(data):
     MAX_NAME_LENGTH = 10
     MAX_DESCRIPTION_LENGTH = 255
 
-    if not 'port' in data:
+    if 'port' not in data:
         print "Error setting port info: no port specified"
         return
     port = data['port']
@@ -432,4 +441,3 @@ def set_port_info(data):
             common.db.update('portLUT', {"port": port}, active=active)
     else:
         common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
-

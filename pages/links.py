@@ -4,6 +4,7 @@ import web
 import decimal
 import datetime
 
+
 # This class is for getting the links or edges connecting nodes in the graph
 
 
@@ -14,14 +15,14 @@ def decimal_default(obj):
 
 
 class Links:
-    def get_links(self, addresses, filter, timerange):
+    def get_links(self, addresses, port_filter, timerange):
         result = {}
         for address in addresses:
             ips = [int(i) for i in address.split(".")]
             result[address] = {}
-            if filter:
-                result[address]['inputs'] = dbaccess.get_links_in(*ips, filter=filter, timerange=timerange)
-                result[address]['outputs'] = dbaccess.get_links_out(*ips, filter=filter, timerange=timerange)
+            if port_filter:
+                result[address]['inputs'] = dbaccess.get_links_in(*ips, port_filter=port_filter, timerange=timerange)
+                result[address]['outputs'] = dbaccess.get_links_out(*ips, port_filter=port_filter, timerange=timerange)
             else:
                 result[address]['inputs'] = dbaccess.get_links_in(*ips, timerange=timerange)
                 result[address]['outputs'] = dbaccess.get_links_out(*ips, timerange=timerange)
@@ -51,10 +52,10 @@ class Links:
         address_str = get_data.get('address', None)
         if address_str is not None:
             addresses = address_str.split(",")
-        filter = get_data.get('filter', '')
+        port_filter = get_data.get('filter', '')
 
         timestart = get_data.get("tstart", 1)
-        timeend = get_data.get("tend", 2**31 - 1)
+        timeend = get_data.get("tend", 2 ** 31 - 1)
         timestart = int(timestart)
         timeend = int(timeend)
         print("getting links from: {0} \n"
@@ -63,7 +64,7 @@ class Links:
             datetime.datetime.fromtimestamp(timeend)))
         if addresses:
             return self.get_links(addresses,
-                                  filter=filter,
+                                  port_filter=port_filter,
                                   timerange=(timestart, timeend))
         else:
             return json.dumps({'result': "ERROR: no 'address' specified."})

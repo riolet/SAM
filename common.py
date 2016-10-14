@@ -1,6 +1,8 @@
-import sys, os
-base_path = os.path.dirname(__file__)
+import sys
+import os
 import web
+
+base_path = os.path.dirname(__file__)
 
 navbar = [
     {
@@ -46,6 +48,7 @@ def IPtoString(ipNumber):
         (ipNumber & 0xFF00) >> 8,
         ipNumber & 0xFF)
 
+
 def IPtoInt(a, b, c, d):
     """
     Converts a number from a sequence of dotted decimals into a single unsigned int.
@@ -58,4 +61,4 @@ def IPtoInt(a, b, c, d):
     Returns: The IP address as a simple 32-bit unsigned integer
 
     """
-    return (int(a)<<24) + (int(b)<<16) + (int(c)<<8) + int(d)
+    return (int(a) << 24) + (int(b) << 16) + (int(c) << 8) + int(d)
