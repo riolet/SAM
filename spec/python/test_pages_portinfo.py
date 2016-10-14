@@ -27,7 +27,8 @@ def test_get_single():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == [str(test_port)]
-    assert sorted(data[str(test_port)].keys()) == ['active', 'alias_description', 'alias_name', 'description', 'name', 'port']
+    assert sorted(data[str(test_port)].keys()) == ['active', 'alias_description', 'alias_name', 'description', 'name',
+                                                   'port']
 
 
 def test_get_missing():
@@ -71,7 +72,8 @@ def test_post_new_port():
         assert req.status == "200 OK"
         assert req.headers['Content-Type'] == "application/json"
         data = json.loads(req.data)
-        assert data[str(test_port)] == {u'name': u'', u'active': 0, u'alias_name': u'', u'port': test_port, u'alias_description': u'', u'description': u''}
+        assert data[str(test_port)] == {u'name': u'', u'active': 0, u'alias_name': u'', u'port': test_port,
+                                        u'alias_description': u'', u'description': u''}
     finally:
         # remove test_port from database
         common.db.delete("portLUT", where="port={0}".format(test_port))

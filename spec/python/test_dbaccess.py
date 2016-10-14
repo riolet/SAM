@@ -74,7 +74,8 @@ def test_get_links_in_plain():
 
     # connections into 79.146.149.0/24
     rows = dbaccess.get_links_in(79, 146, 149)
-    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest8', 'links', 'source16', 'source24', 'source8', 'x1', 'x2', 'y1', 'y2']
+    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest8', 'links', 'source16', 'source24', 'source8', 'x1',
+                                      'x2', 'y1', 'y2']
     simple = [
         (".".join((str(row.source8), str(row.source16), str(row.source24))),
          ".".join((str(row.dest8), str(row.dest16), str(row.dest24))),
@@ -85,7 +86,8 @@ def test_get_links_in_plain():
     # connections into 79.146.149.40
     rows = dbaccess.get_links_in(79, 146, 149, 40)
     assert len(rows) == 20
-    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24', 'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
+    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24',
+                                      'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
     simple = [
         (int(row.source8),
          int(row.port),
@@ -116,7 +118,8 @@ def test_get_links_out_plain():
 
     # connections into 21.66.138.0/24
     rows = dbaccess.get_links_out(21, 66, 138)
-    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest8', 'links', 'source16', 'source24', 'source8', 'x1', 'x2', 'y1', 'y2']
+    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest8', 'links', 'source16', 'source24', 'source8', 'x1',
+                                      'x2', 'y1', 'y2']
     simple = [
         (".".join((str(row.source8), str(row.source16), str(row.source24))),
          ".".join((str(row.dest8), str(row.dest16), str(row.dest24))),
@@ -127,7 +130,8 @@ def test_get_links_out_plain():
     # connections into 21.66.138.188
     rows = dbaccess.get_links_out(21, 66, 138, 188)
     assert len(rows) == 3
-    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24', 'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
+    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24',
+                                      'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
     simple = [
         (".".join((str(row.source8), str(row.source16), str(row.source24), str(row.source32))),
          ".".join((str(row.dest8), str(row.dest16), str(row.dest24), str(row.dest32))),
@@ -143,7 +147,8 @@ def test_get_links_out_filter():
     test_port = 12345
 
     rows = dbaccess.get_links_out(21, 66, 42, 22, filter=test_port)
-    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24', 'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
+    assert sorted(rows[0].keys()) == ['dest16', 'dest24', 'dest32', 'dest8', 'links', 'port', 'source16', 'source24',
+                                      'source32', 'source8', 'x1', 'x2', 'y1', 'y2']
     ports = set([int(i.port) for i in rows])
     assert ports == {test_port}
     assert len(rows) == 5
@@ -162,7 +167,7 @@ def make_timestamp(ts):
 
 
 def test_get_links_out_timerange():
-    time_all = (1, 2**31-1)
+    time_all = (1, 2 ** 31 - 1)
     time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
     time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
 
@@ -224,7 +229,7 @@ def test_get_details():
 
 
 def test_get_details_port():
-    details = dbaccess.get_details(21,66,40,231, port=445)
+    details = dbaccess.get_details(21, 66, 40, 231, port=445)
     assert details['unique_in'] == 7
     assert details['unique_out'] == 0
     assert details['unique_ports'] == 1
@@ -232,7 +237,7 @@ def test_get_details_port():
     assert len(details['conn_out']) == 0
     assert len(details['ports_in']) == 1
 
-    details = dbaccess.get_details(21,66,40,231, port=80)
+    details = dbaccess.get_details(21, 66, 40, 231, port=80)
     assert details['unique_in'] == 0
     assert details['unique_out'] == 2
     assert details['unique_ports'] == 0
@@ -240,7 +245,7 @@ def test_get_details_port():
     assert len(details['conn_out']) == 2
     assert len(details['ports_in']) == 0
 
-    details = dbaccess.get_details(21,66,40,231, port=1)
+    details = dbaccess.get_details(21, 66, 40, 231, port=1)
     assert details['unique_in'] == 0
     assert details['unique_out'] == 0
     assert details['unique_ports'] == 0
@@ -250,11 +255,11 @@ def test_get_details_port():
 
 
 def test_get_details_timerange():
-    time_all = (1, 2**31-1)
+    time_all = (1, 2 ** 31 - 1)
     time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
     time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
 
-    details = dbaccess.get_details(21,66,40,231, timerange=time_all)
+    details = dbaccess.get_details(21, 66, 40, 231, timerange=time_all)
     assert details['unique_in'] == 7
     assert details['unique_out'] == 4
     assert details['unique_ports'] == 1
@@ -262,7 +267,7 @@ def test_get_details_timerange():
     assert len(details['conn_out']) == 9
     assert len(details['ports_in']) == 1
 
-    details = dbaccess.get_details(21,66,40,231, timerange=time_crop)
+    details = dbaccess.get_details(21, 66, 40, 231, timerange=time_crop)
     assert details['unique_in'] == 7
     assert details['unique_out'] == 4
     assert details['unique_ports'] == 1
@@ -270,14 +275,13 @@ def test_get_details_timerange():
     assert len(details['conn_out']) == 9
     assert len(details['ports_in']) == 1
 
-    details = dbaccess.get_details(21,66,40,231, timerange=time_tiny)
+    details = dbaccess.get_details(21, 66, 40, 231, timerange=time_tiny)
     assert details['unique_in'] == 1
     assert details['unique_out'] == 3
     assert details['unique_ports'] == 1
     assert len(details['conn_in']) == 1
     assert len(details['conn_out']) == 4
     assert len(details['ports_in']) == 1
-
 
 
 def test_get_node_info():

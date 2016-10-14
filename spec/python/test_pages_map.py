@@ -3,6 +3,7 @@ import web
 
 app = web.application(server.urls, globals())
 
+
 def test_exists():
     req = app.request('/map')
     assert req.status == "200 OK"

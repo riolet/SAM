@@ -25,7 +25,8 @@ def test_8():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == ['79']
-    assert sorted(data['79'][0].keys()) == [u'alias', u'children', u'connections', u'ip16', u'ip8', u'radius', u'x', u'y']
+    assert sorted(data['79'][0].keys()) == [u'alias', u'children', u'connections', u'ip16', u'ip8', u'radius', u'x',
+                                            u'y']
     assert [i['ip16'] for i in data['79']] == [35, 80, 106, 119, 146, 179, 229]
 
 
@@ -38,7 +39,8 @@ def test_16():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == ['79.106']
-    assert sorted(data['79.106'][0].keys()) == [u'alias', u'children', u'connections', u'ip16', u'ip24', u'ip8', u'radius', u'x', u'y']
+    assert sorted(data['79.106'][0].keys()) == [u'alias', u'children', u'connections', u'ip16', u'ip24', u'ip8',
+                                                u'radius', u'x', u'y']
     assert [i['ip24'] for i in data['79.106']] == [151, 191, 226]
 
 
@@ -51,7 +53,8 @@ def test_24():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == ['79.106.151']
-    assert sorted(data['79.106.151'][0].keys()) == [u'alias', u'children', u'connections', u'ip16', u'ip24', u'ip32', u'ip8', u'radius', u'x', u'y']
+    assert sorted(data['79.106.151'][0].keys()) == [u'alias', u'children', u'connections', u'ip16', u'ip24', u'ip32',
+                                                    u'ip8', u'radius', u'x', u'y']
     assert [i['ip32'] for i in data['79.106.151']] == [27, 50, 92]
 
 

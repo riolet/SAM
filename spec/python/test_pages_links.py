@@ -7,6 +7,7 @@ import time
 
 app = web.application(server.urls, globals())
 
+
 def test_empty_request():
     req = app.request('/links', 'GET')
     assert req.status == "200 OK"
@@ -75,7 +76,8 @@ def test_simple_request32():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dest16', u'dest24', u'dest32', u'dest8', u'links', u'port', u'source16', u'source24', u'source32', u'source8', u'x1', u'x2', u'y1', u'y2']
+    keys = [u'dest16', u'dest24', u'dest32', u'dest8', u'links', u'port', u'source16', u'source24', u'source32',
+            u'source8', u'x1', u'x2', u'y1', u'y2']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -93,7 +95,6 @@ def test_filter():
     assert len(data[test_ip]['inputs']) == 1
     assert len(data[test_ip]['outputs']) == 1
 
-
     input_data = {"address": test_ip, 'filter': 443}
     GET_data = urllib.urlencode(input_data)
     req = app.request('/links?{0}'.format(GET_data), 'GET')
@@ -104,7 +105,6 @@ def test_filter():
     assert len(data[test_ip]['inputs']) == 0
     assert len(data[test_ip]['outputs']) == 1
 
-
     input_data = {"address": test_ip, 'filter': 8080}
     GET_data = urllib.urlencode(input_data)
     req = app.request('/links?{0}'.format(GET_data), 'GET')
@@ -114,7 +114,6 @@ def test_filter():
     data = json.loads(req.data)
     assert len(data[test_ip]['inputs']) == 1
     assert len(data[test_ip]['outputs']) == 0
-
 
     input_data = {"address": test_ip, 'filter': 2}
     GET_data = urllib.urlencode(input_data)
@@ -135,7 +134,7 @@ def make_timestamp(ts):
 
 def test_timerange():
     test_ip = '21.66.15.183'
-    time_all = (1, 2**31-1)
+    time_all = (1, 2 ** 31 - 1)
     time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
     time_tiny = (make_timestamp('2016-06-21 17:50'), make_timestamp('2016-06-21 17:55'))
     time_out = (make_timestamp('2016-06-21 17:00'), make_timestamp('2016-06-21 17:05'))

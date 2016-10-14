@@ -115,15 +115,13 @@ def make_timestamp(ts):
 
 
 def test_request_timerange():
-    time_all = (1, 2**31-1)
+    time_all = (1, 2 ** 31 - 1)
     time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
     time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
-    
+
     test_ip = '21.66.40.231'
-    
 
-
-    input_data = {"address": test_ip, 'tstart': time_all[0], 'tend':time_all[1]}
+    input_data = {"address": test_ip, 'tstart': time_all[0], 'tend': time_all[1]}
     GET_data = urllib.urlencode(input_data)
     req = app.request('/details?{0}'.format(GET_data), 'GET')
     assert req.status == "200 OK"
@@ -136,7 +134,7 @@ def test_request_timerange():
     assert len(data['conn_out']) == 4
     assert len(data['ports_in']) == 1
 
-    input_data = {"address": test_ip, 'tstart': time_crop[0], 'tend':time_crop[1]}
+    input_data = {"address": test_ip, 'tstart': time_crop[0], 'tend': time_crop[1]}
     GET_data = urllib.urlencode(input_data)
     req = app.request('/details?{0}'.format(GET_data), 'GET')
     assert req.status == "200 OK"
@@ -149,7 +147,7 @@ def test_request_timerange():
     assert len(data['conn_out']) == 4
     assert len(data['ports_in']) == 1
 
-    input_data = {"address": test_ip, 'tstart': time_tiny[0], 'tend':time_tiny[1]}
+    input_data = {"address": test_ip, 'tstart': time_tiny[0], 'tend': time_tiny[1]}
     GET_data = urllib.urlencode(input_data)
     req = app.request('/details?{0}'.format(GET_data), 'GET')
     assert req.status == "200 OK"
