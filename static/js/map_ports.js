@@ -100,12 +100,12 @@ function port_request_add(port_number) {
 function port_request_submit() {
     "use strict";
     var request = m_port_requests.filter(function (element) {
-        return !m_ports.hasOwnProperty(element.port);
+        return !m_ports.hasOwnProperty(element.toString());
     });
 
     //remove duplicates by sorting and comparing neighbors
     request = request.sort().filter(function(item, pos, ary) {
-        return !pos || item != ary[pos - 1];
+        return pos === 0 || item != ary[pos - 1];
     });
 
     m_port_requests = [];

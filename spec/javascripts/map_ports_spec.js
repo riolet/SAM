@@ -178,15 +178,39 @@ describe("map_ports.js file", function () {
       spyOn(window, "GET_portinfo");
     });
 
-    it("removes duplicates", function () {
-      m_port_requests = [47, 47, 47, 50];
+    it("removes duplicates mid", function () {
+      m_port_requests = [40, 47, 47, 47, 50];
+      port_request_submit();
       expect(window.GET_portinfo).toHaveBeenCalledTimes(1);
-      // and called with just 47 50
+      expect(window.GET_portinfo).toHaveBeenCalledWith([40, 47, 50]);
+    });
+    it("removes duplicates start", function () {
+      m_port_requests = [47, 47, 47, 40, 50];
+      port_request_submit();
+      expect(window.GET_portinfo).toHaveBeenCalledTimes(1);
+      expect(window.GET_portinfo).toHaveBeenCalledWith([40, 47, 50]);
+    });
+    it("removes duplicates end", function () {
+      m_port_requests = [40, 50, 47, 47, 47];
+      port_request_submit();
+      expect(window.GET_portinfo).toHaveBeenCalledTimes(1);
+      expect(window.GET_portinfo).toHaveBeenCalledWith([40, 47, 50]);
     });
 
-    //also removes alread-loaded entries
+    it("removes already loaded ports", function () {
+      m_port_requests = [443, 3268, 50, 7680, 8081];
+      port_request_submit();
+      expect(window.GET_portinfo).toHaveBeenCalledTimes(1);
+      expect(window.GET_portinfo).toHaveBeenCalledWith([50]);
+    });
 
-    //doesn't fire if no actual entries left.
+    it("doesn't fire empty requests", function () {
+      m_port_requests = [443, 3268, 7680, 8081];
+      port_request_submit();
+      m_port_requests = [443, 443, 443, 443];
+      port_request_submit();
+      expect(window.GET_portinfo).not.toHaveBeenCalled();
+    });
   });
 
 
