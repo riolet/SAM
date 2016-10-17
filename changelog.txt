@@ -1,3 +1,13 @@
+2016-10-17
+added tests for map_ports.js
+
+2016-10-14
+Started testing the JS
+installed Jasmine testing framework
+added tests for map.js
+wrote python script to create skeleton test files for all functions in js files.
+added partial tests for map_ports.js
+
 2016-10-13
 Should the details pane respect the timerange and port filter?
   Timerange is respected.
