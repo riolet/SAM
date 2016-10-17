@@ -17,8 +17,8 @@ src_files:
   - semantic/semantic.min.js
   - nouislider/*.min.js
   - js/timerange.js
-  - js/map_*.js
   - js/map.js
+  - js/map_*.js
 
 
 # stylesheets
