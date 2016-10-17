@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 
 class Node(object):
@@ -100,17 +101,91 @@ class TestMaker:
         function_names = self.read_function_names(js_file_path)
         print"Function names in {0}:\n\t".format(file_name), "\n\t".join(function_names)
 
-        # determine spec file name and strings
+        # determine spec file name
         out_path = self.out_path(file_name)
 
-        # build the describes
-        suite = self.build_tree(file_name, function_names)
+        # check for existing work
+        existing = self.recover_tree(out_path, file_name)
+        if existing:
+            before, after, existing_names = existing
+            function_names = [name for name in function_names if name not in existing_names]
 
-        # write out the final spec file.
-        self.write(out_path, suite.dumps())
+            if len(function_names) == 0:
+                print "Writing no tests. (all function names exist already)"
+            else:
+                suite = self.build_tree(file_name, function_names)
+                middle = ""
+                for item in suite.contents:
+                    middle += item.dumps_indent(Node.INDENT_STEP)
+                self.write(out_path, "{0}\n{1}\n{2}".format(before, middle, after))
+                print "Writing tests for only ", function_names
+        else:
+            # build the describes
+            suite = self.build_tree(file_name, function_names)
+            # write out the final spec file.
+            self.write(out_path, suite.dumps())
+            print("Writing tests for all function names.")
 
         print "done."
         return
+
+    def recover_tree(self, path, filename):
+        if not os.path.isfile(path):
+            return None
+        with open(path, 'rb') as f:
+            data = f.read()
+
+        target = filename + ".js file"
+        pos_desc = data.find('describe("{0}",'.format(target))
+        pos_open = data.find('{', pos_desc)
+        pos_close = self.find_closing_brace(data, pos_open)
+
+        before = data[:pos_close]
+        after = data[pos_close:]
+        names = self.extract_names(data[pos_open + 1: pos_close])
+
+        return before, after, names
+
+
+    @staticmethod
+    def extract_names(data):
+        names = []
+        matches = re.finditer("""describe\((?P<name>(\"[^\"]+\"|\'[^\']+\'))[^{]+\{""", data)
+        for match in matches:
+            names.append(match.group('name')[1:-1])
+        return names
+
+
+    @staticmethod
+    def find_closing_brace(data, start):
+        """
+        Finds the index of the closing brace, accounting for nested braces.
+        assuming the first character is the opening brace.
+
+        :param data:  The string to search
+        :param start: The position of the openning brace
+        :return:  The index of the closing brace.
+        """
+        i = start
+        end = len(data)
+        levels = 0
+        while i < end:
+            if data[i] == '{':
+                levels += 1
+            elif data[i] == '}':
+                levels -= 1
+            if levels == 0:
+                break
+            i += 1
+        if i == end:
+            return -1
+        return i
+
+    def extract_describe(self, code):
+        match = re.match("""^describe\((?P<name>(\"[^\"]+\"|\'[^\']+\'))[^{]+\{""", code, re.DOTALL)
+        name = match.group('name')[1:-1]
+
+
 
     def write(self, path, data):
         with open(path, 'wb') as f:
