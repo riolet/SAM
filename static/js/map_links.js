@@ -32,8 +32,8 @@ function link_comparator(a, b) {
     var aValue;
     var bValue;
     //determine value of a and b
-    var centerx = (rect.width - 2 * tx) / (2 * scale);
-    var centery = (rect.height - 2 * ty) / (2 * scale);
+    var centerx = (rect.width - 2 * tx) / (2 * g_scale);
+    var centery = (rect.height - 2 * ty) / (2 * g_scale);
 
     var aNode = findNode(a);
     var bNode = findNode(b);
@@ -113,7 +113,7 @@ function GET_links_callback(result) {
     });
     port_request_submit();
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }
 
 function link_closestEmptyPort(link, used) {
