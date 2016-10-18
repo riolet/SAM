@@ -67,7 +67,7 @@ function link_request_submit() {
         return;
     }
 
-    if (chunkSize > request.length) {
+    if (g_chunkSize > request.length) {
         GET_links(request);
         m_link_requests = [];
     } else {
