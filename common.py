@@ -14,6 +14,11 @@ navbar = [
         "name": "Stats",
         "icon": "filter",
         "link": "/stats"
+    },
+    {
+        "name": "Host Details",
+        "icon": "tasks",
+        "link": "/meta"
     }
 ]
 
