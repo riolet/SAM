@@ -5,7 +5,7 @@ var rect; //render region on screen
 //global transform coordinates, with initial values
 var tx = 0;
 var ty = 0;
-var scale = 0.0007;
+var g_scale = 0.0007;
 
 //mouse interaction variables
 var ismdown = false;
@@ -36,7 +36,8 @@ var zNodes24 = 0.0555;
 var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
-var chunkSize = 40;
+//max number of link requests to make at once, in link_request_submit()
+var g_chunkSize = 40;
 
 //for filtering and searching
 var g_timer = null;
@@ -96,7 +97,7 @@ function init_canvas(c, cx) {
     c.addEventListener("wheel", wheel);
 }
 
-function currentSubnet() {
+function currentSubnet(scale) {
     "use strict";
     if (scale < zNodes16) {
         return 8;

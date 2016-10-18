@@ -1,5 +1,5 @@
 //Given a node's subnet, return the opacity to render it at.
-function opacity(subnet, type) {
+function opacity(subnet, type, scale) {
     "use strict";
     var startZoom = -Infinity;
     var endZoom = Infinity;
@@ -51,9 +51,9 @@ function magnitudeSquared(x, y) {
     return x * x + y * y;
 }
 
-function getSubnet() {
+function getSubnetLabel() {
     "use strict";
-    var subnet = currentSubnet();
+    var subnet = currentSubnet(g_scale);
     if (subnet === 8) {
         return "";
     }
@@ -63,8 +63,8 @@ function getSubnet() {
     renderCollection.forEach(function (node) {
         if (node.subnet === subnet - 8) {
             tempDist = magnitudeSquared(
-                node.x * scale + tx - rect.width / 2,
-                node.y * scale + ty - rect.height / 2
+                node.x * g_scale + tx - rect.width / 2,
+                node.y * g_scale + ty - rect.height / 2
             );
             if (tempDist < dist) {
                 dist = tempDist;
@@ -78,7 +78,7 @@ function getSubnet() {
     return closest.address;
 }
 
-function onScreenRecursive(left, right, top, bottom, collection) {
+function onScreenRecursive(left, right, top, bottom, collection, subnet) {
     "use strict";
     var selected = [];
     var x;
@@ -91,8 +91,8 @@ function onScreenRecursive(left, right, top, bottom, collection) {
 
         if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
             selected.push(collection[node]);
-            if (collection[node].childrenLoaded && collection[node].subnet < currentSubnet()) {
-                selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children));
+            if (collection[node].childrenLoaded && collection[node].subnet < subnet) {
+                selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children, subnet));
             }
         }
     });
@@ -100,16 +100,15 @@ function onScreenRecursive(left, right, top, bottom, collection) {
 }
 
 //build a collection of all nodes currently visible in the window.
-function onScreen() {
+function onScreen(x, y, scale) {
     "use strict";
-    var left = -tx / scale;
-    var right = (rect.width - tx) / scale;
-    var top = -ty / scale;
-    var bottom = (rect.height - ty) / scale;
+    var left = -x / scale;
+    var right = (rect.width - x) / scale;
+    var top = -y / scale;
+    var bottom = (rect.height - y) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, m_nodes);
-
+    visible = onScreenRecursive(left, right, top, bottom, m_nodes, currentSubnet(scale));
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
     }
@@ -151,18 +150,18 @@ function resetViewport(collection, fill) {
     });
     var scaleA = fill * rect.width / (bbox.right - bbox.left);
     var scaleB = fill * rect.height / (bbox.bottom - bbox.top);
-    scale = Math.min(scaleA, scaleB);
-    tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * scale;
-    ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * scale;
+    g_scale = Math.min(scaleA, scaleB);
+    tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * g_scale;
+    ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * g_scale;
 }
 
 function updateRenderRoot() {
     "use strict";
-    renderCollection = onScreen();
-    subnetLabel = getSubnet();
+    renderCollection = onScreen(tx, ty, g_scale);
+    subnetLabel = getSubnetLabel();
 }
 
-function drawLoopArrow(node) {
+function drawLoopArrow(node, scale) {
     "use strict";
     var x1 = node.radius * Math.cos(3 * Math.PI / 8);
     var y1 = node.radius * Math.sin(3 * Math.PI / 8);
@@ -187,7 +186,7 @@ function drawLoopArrow(node) {
     ctx.lineTo(x4, y4);
 }
 
-function drawArrow(x1, y1, x2, y2, bIncoming) {
+function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
     "use strict";
     if (bIncoming === undefined) {
         bIncoming = true;
@@ -228,7 +227,7 @@ function drawArrow(x1, y1, x2, y2, bIncoming) {
     ctx.lineTo(x2, y2);
 }
 
-function renderLinks(node) {
+function renderLinks(node, scale) {
     "use strict";
     if (config.show_in) {
         node.inputs.forEach(function (link) {
@@ -236,9 +235,9 @@ function renderLinks(node) {
                     && link.source16 === link.dest16
                     && link.source24 === link.dest24
                     && link.source32 === link.dest32) {
-                drawLoopArrow(node, link.links);
+                drawLoopArrow(node, link.links, scale);
             } else {
-                drawArrow(link.x1, link.y1, link.x2, link.y2);
+                drawArrow(link.x1, link.y1, link.x2, link.y2, scale);
             }
         });
     }
@@ -248,15 +247,15 @@ function renderLinks(node) {
                     && link.source16 === link.dest16
                     && link.source24 === link.dest24
                     && link.source32 === link.dest32) {
-                drawLoopArrow(node, link.links);
+                drawLoopArrow(node, link.links, scale);
             } else {
-                drawArrow(link.x1, link.y1, link.x2, link.y2, false);
+                drawArrow(link.x1, link.y1, link.x2, link.y2, scale, false);
             }
         });
     }
 }
 
-function renderSubnetLabel() {
+function renderSubnetLabel(scale) {
     "use strict";
     //Draw subnet label
     ctx.font = "3em sans";
@@ -269,7 +268,7 @@ function renderSubnetLabel() {
     ctx.strokeStyle = "#5555CC";
     ctx.lineWidth = 3;
     if (config.filter === "") {
-        ctx.globalAlpha = 1.0 - opacity(8, "label");
+        ctx.globalAlpha = 1.0 - opacity(8, "label", scale);
     } else {
         ctx.globalAlpha = 1.0;
     }
@@ -284,7 +283,7 @@ function renderLabels(node, x, y, scale) {
     var alpha = 0;
     if (scale > 25) {
         //Draw port labels at this zoom level
-        alpha = opacity(32, "label");
+        alpha = opacity(32, "label", scale);
         if (m_selection["selection"] === null || m_selection["selection"] === node) {
             ctx.globalAlpha = alpha;
         } else {
@@ -342,7 +341,7 @@ function renderLabels(node, x, y, scale) {
     } else {
         py = (node.y - node.radius) * scale + y - 5;
     }
-    alpha = opacity(node.subnet, "label");
+    alpha = opacity(node.subnet, "label", scale);
 
     //ctx.font = fontsize + "em sans";
     if (m_selection["selection"] === null || m_selection["selection"] === node) {
@@ -413,20 +412,20 @@ function renderClusters(collection, x, y, scale) {
     ctx.lineWidth = 2 / scale;
     drawingLevel = collection[0].subnet;
     ctx.beginPath();
-    alpha = opacity(collection[0].subnet, "links");
+    alpha = opacity(collection[0].subnet, "links", scale);
     ctx.globalAlpha = alpha;
     skip = alpha === 0;
     collection.forEach(function (node) {
         if (node.subnet !== drawingLevel) {
             ctx.stroke();
             ctx.beginPath();
-            alpha = opacity(node.subnet, "links");
+            alpha = opacity(node.subnet, "links", scale);
             ctx.globalAlpha = alpha;
             skip = alpha === 0;
             drawingLevel = node.subnet;
         }
         if (!skip) {
-            renderLinks(node);
+            renderLinks(node, scale);
         }
     });
     ctx.stroke();
@@ -436,14 +435,14 @@ function renderClusters(collection, x, y, scale) {
     drawingLevel = collection[0].subnet;
     ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
-    alpha = opacity(collection[0].subnet, "node");
+    alpha = opacity(collection[0].subnet, "node", scale);
     ctx.globalAlpha = alpha;
     skip = alpha === 0;
     collection.forEach(function (node) {
         if (node.subnet !== drawingLevel) {
             ctx.stroke();
             ctx.beginPath();
-            alpha = opacity(node.subnet, "node");
+            alpha = opacity(node.subnet, "node", scale);
             ctx.globalAlpha = alpha;
             skip = alpha === 0;
             drawingLevel = node.subnet;
@@ -469,13 +468,13 @@ function renderClusters(collection, x, y, scale) {
         ctx.strokeStyle = colorNormal;
         ctx.globalAlpha = 1;
 
-        //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links");
+        //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links", scale);
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
-        renderLinks(m_selection["selection"]);
+        renderLinks(m_selection["selection"], scale);
         ctx.stroke();
 
-        //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node");
+        //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node", scale);
         ctx.lineWidth = 5 / scale;
         ctx.fillStyle = "#FFFFFF";
         ctx.beginPath();
@@ -510,5 +509,9 @@ function render(x, y, scale) {
         renderClusters(renderCollection, x, y, scale);
     }
 
-    renderSubnetLabel(x, y, scale);
+    renderSubnetLabel(scale);
+}
+function render_all() {
+    "use strict";
+    render(tx, ty, g_scale);
 }

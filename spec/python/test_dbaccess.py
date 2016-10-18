@@ -275,12 +275,20 @@ def test_get_details_timerange():
     assert len(details['conn_out']) == 9
     assert len(details['ports_in']) == 1
 
-    details = dbaccess.get_details(21, 66, 40, 231, timerange=time_tiny)
+    details = dbaccess.get_details(79, 35, 103, 221, timerange=time_crop)
     assert details['unique_in'] == 1
-    assert details['unique_out'] == 3
+    assert details['unique_out'] == 0
     assert details['unique_ports'] == 1
     assert len(details['conn_in']) == 1
-    assert len(details['conn_out']) == 4
+    assert len(details['conn_out']) == 0
+    assert len(details['ports_in']) == 1
+
+    details = dbaccess.get_details(21, 66, 40, 231, timerange=time_tiny)
+    assert details['unique_in'] == 3
+    assert details['unique_out'] == 3
+    assert details['unique_ports'] == 1
+    assert len(details['conn_in']) == 3
+    assert len(details['conn_out']) == 7
     assert len(details['ports_in']) == 1
 
 

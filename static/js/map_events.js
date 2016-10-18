@@ -35,7 +35,7 @@ function contains(node, x, y) {
 }
 
 //For onMouseUp, returns node if a node was clicked on, else null.
-function pick(x, y) {
+function pick(x, y, scale) {
     "use strict";
     var best = null;
     var bestDist = +Infinity;
@@ -50,7 +50,7 @@ function pick(x, y) {
             }
         }
     });
-    if (best !== null && best.subnet < currentSubnet() - 8) {
+    if (best !== null && best.subnet < currentSubnet(scale) - 8) {
         best = null;
     }
     return best;
@@ -68,14 +68,14 @@ function mouseup(event) {
 
     if (mx === mdownx && my === mdowny) {
         //mouse hasn't moved. treat this as a "pick" operation
-        var selection = pick((mx - tx) / scale, (my - ty) / scale);
+        var selection = pick((mx - tx) / g_scale, (my - ty) / g_scale, g_scale);
         //updateSelection(selection);
         sel_set_selection(selection);
     }
 
     tx = tx + mx - mdownx;
     ty = ty + my - mdowny;
-    render(tx, ty, scale);
+    render_all();
     checkLoD();
 }
 
@@ -86,7 +86,7 @@ function mousemove(event) {
     }
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
-    render(tx + mx - mdownx, ty + my - mdowny, scale);
+    render(tx + mx - mdownx, ty + my - mdowny, g_scale);
 }
 
 function wheel(event) {
@@ -96,23 +96,23 @@ function wheel(event) {
     my = event.clientY - rect.top;
 
     if (event.deltaY < 0) { // Zoom in
-        if (scale >= 60.0) {
+        if (g_scale >= 60.0) {
             return;
         }
         tx -= mx;
         ty -= my;
-        scale *= 1.15;
+        g_scale *= 1.15;
         tx *= 1.15;
         ty *= 1.15;
         tx += mx;
         ty += my;
     } else if (event.deltaY > 0) { // Zoom out
-        if (scale <= 0.0005) {
+        if (g_scale <= 0.0005) {
             return;
         }
         tx -= mx;
         ty -= my;
-        scale *= 0.87;
+        g_scale *= 0.87;
         tx *= 0.87;
         ty *= 0.87;
         tx += mx;
@@ -120,7 +120,7 @@ function wheel(event) {
     } else {
         return;
     }
-    render(tx, ty, scale);
+    render_all();
     checkLoD();
 }
 
@@ -135,7 +135,7 @@ function keydown(event) {
         resetViewport(m_nodes);
         updateRenderRoot();
         resetViewport(renderCollection);
-        render(tx, ty, scale);
+        render_all();
     }
     return;
 }
@@ -146,7 +146,7 @@ function applyfilter() {
     sel_set_selection(null);
     links_reset();
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }
 function onfilter() {
     "use strict";
@@ -199,7 +199,7 @@ function applysearch() {
     resetViewport([subnet], 0.2);
     sel_set_selection(subnet);
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }
 function onsearch() {
     "use strict";
@@ -238,7 +238,7 @@ function onResize() {
     canvas.height = window.innerHeight - $("#navbar").height();
     rect = canvas.getBoundingClientRect();
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
-    render(tx, ty, scale);
+    render_all();
     checkLoD();
     updateFloatingPanel();
 }
@@ -250,7 +250,7 @@ function updateConfig() {
     config.show_in = document.getElementById("show_in").checked;
     config.show_out = document.getElementById("show_out").checked;
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }
 
 (function () {

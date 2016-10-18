@@ -30,7 +30,7 @@ function Node(alias, address, number, subnet, connections, x, y, radius) {
 function get_node_name(node) {
     "use strict";
     if (node.alias.length === 0) {
-        return node.number;
+        return node.number.toString();
     } else {
         return node.alias;
     }
@@ -39,10 +39,10 @@ function get_node_name(node) {
 function get_node_address(node) {
     "use strict";
     var add = node.address;
-    var terms = 4 - add.split(".").length;
-    while (terms > 0) {
+    var missing_terms = 4 - add.split(".").length;
+    while (missing_terms > 0) {
         add += ".0";
-        terms -= 1;
+        missing_terms -= 1;
     }
     if (node.subnet < 32) {
         add += "/" + node.subnet;
@@ -56,9 +56,9 @@ function set_node_name(node, name) {
     if (oldName === name) {
         return;
     }
-    POST_node_alias(node, name);
+    POST_node_alias(node.address, name);
     node.alias = name;
-    render(tx, ty, scale);
+    render_all();
 }
 
 function node_alias_submit(event) {
@@ -71,9 +71,9 @@ function node_alias_submit(event) {
     return false;
 }
 
-function node_info_click(event) {
+function node_info_click() {
     "use strict";
-    var node = m_selection['selection'];
+    //var node = m_selection['selection'];
 
     $('.ui.modal.nodeinfo')
         .modal({
@@ -83,7 +83,16 @@ function node_info_click(event) {
     ;
 }
 
-function determine_address(node) {
+/**
+ * Determine the last given number in this node's dotted decimal address.
+ * ex: this node is 192.168.174.0/24,
+ *     this returns 174 because it's the right-most number in the subnet.
+ *
+ * @param node object returned from the server. Different from Node object in javascript.
+ *      should contain [ "connections", "alias", "radius", "y", "x", "ip8", "children" ] or more
+ * @returns a subnet-local Number address
+ */
+function determine_number(node) {
     "use strict";
     if (node.hasOwnProperty("ip32")) {
         return node.ip32
@@ -100,14 +109,19 @@ function determine_address(node) {
     return undefined
 }
 
+/**
+ *
+ * @param parent Node object, ex: m_nodes['66'], or null if top-level
+ * @param node the server node object, from a recent AJAX query
+ */
 function import_node(parent, node) {
     "use strict";
-    var address = determine_address(node);
+    var number = determine_number(node);
     if (parent === null) {
-        m_nodes[address] = new Node(node.alias, address, address, 8, node.connections, node.x, node.y, node.radius);
+        m_nodes[number] = new Node(node.alias, number.toString(), number, 8, node.connections, node.x, node.y, node.radius);
     } else {
-        var name = parent.address + "." + address;
-        parent.children[address] = new Node(node.alias, name, address, parent.subnet + 8, node.connections, node.x, node.y, node.radius);
+        var name = parent.address + "." + number.toString();
+        parent.children[number] = new Node(node.alias, name, number, parent.subnet + 8, node.connections, node.x, node.y, node.radius);
     }
 }
 
@@ -123,7 +137,7 @@ function node_update(response) {
             });
             resetViewport(m_nodes);
         } else {
-            parent = findNode(parent_address);
+            var parent = findNode(parent_address);
             response[parent_address].forEach(function (node) {
                 import_node(parent, node);
             });
@@ -131,5 +145,5 @@ function node_update(response) {
     });
     link_request_submit();
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }

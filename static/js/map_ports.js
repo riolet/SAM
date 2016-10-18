@@ -100,12 +100,12 @@ function port_request_add(port_number) {
 function port_request_submit() {
     "use strict";
     var request = m_port_requests.filter(function (element) {
-        return !m_ports.hasOwnProperty(element.port);
+        return !m_ports.hasOwnProperty(element.toString());
     });
 
     //remove duplicates by sorting and comparing neighbors
     request = request.sort().filter(function(item, pos, ary) {
-        return !pos || item != ary[pos - 1];
+        return pos === 0 || item != ary[pos - 1];
     });
 
     m_port_requests = [];
@@ -116,25 +116,21 @@ function port_request_submit() {
 
 function port_save() {
     "use strict";
-    var differences = false;
+    var difference_set = {};
     if (document.getElementById("port_active").checked !== (m_portinfo.active === 1)) {
         //toggle active between 0 and 1
-        m_portinfo.active = 1 - m_portinfo.active;
-        differences = true;
+        difference_set.active = 1 - m_portinfo.active;
     }
     if (document.getElementById("port_alias_name").value !== m_portinfo.alias_name) {
-        m_portinfo.alias_name = document.getElementById("port_alias_name").value;
-        differences = true;
+        difference_set.alias_name = document.getElementById("port_alias_name").value;
     }
     if (document.getElementById("port_alias_description").value !== m_portinfo.alias_description) {
-        m_portinfo.alias_description = document.getElementById("port_alias_description").value;
-        differences = true;
+        difference_set.alias_description = document.getElementById("port_alias_description").value;
     }
-    update_port(m_portinfo);
-    if (differences) {
-        delete m_portinfo.name;
-        delete m_portinfo.description;
-        POST_portinfo(m_portinfo);
+    if (Object.keys(difference_set).length !== 0) {
+        difference_set.port = m_portinfo.port;
+        update_port(difference_set.port, difference_set);
+        POST_portinfo(difference_set);
     }
 }
 

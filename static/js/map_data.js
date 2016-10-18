@@ -46,7 +46,7 @@ function GET_nodes(parents, callback) {
                 callback(response);
             } else {
                 updateRenderRoot();
-                render(tx, ty, scale);
+                render_all();
             }
         }
     });
@@ -58,9 +58,15 @@ function reportErrors(response) {
     }
 }
 
-function POST_node_alias(node, name) {
+/**
+ * Update a node alias on the server.
+ *
+ * @param address  node address, "192.168"
+ * @param name  the new name to use for that address
+ */
+function POST_node_alias(address, name) {
     "use strict";
-    var request = {"node": node.address, "alias": name}
+    var request = {"node": address, "alias": name}
     $.ajax({
         url: "/nodeinfo",
         type: "POST",
@@ -115,13 +121,13 @@ function checkLoD() {
 
     var nodesToLoad = []
     renderCollection.forEach(function (node) {
-        if (node.subnet < currentSubnet()) {
+        if (node.subnet < currentSubnet(g_scale)) {
             nodesToLoad.push(node);
         }
     });
     GET_nodes(nodesToLoad);
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }
 
 function GET_details(node, callback) {

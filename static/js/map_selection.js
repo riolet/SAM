@@ -20,7 +20,7 @@ function sel_set_selection(node) {
 
     if (node !== null && node.details.loaded === false) {
         // load details
-        m_selection["titles"].firstChild.innerHTML = "Loading selection..."
+        m_selection["titles"].firstChild.innerHTML = "Loading selection...";
         GET_details(node, sel_update_display);
     } else {
         sel_update_display();
@@ -29,28 +29,27 @@ function sel_set_selection(node) {
 
 function sel_clear_display() {
     "use strict";
+    // clear all title data
     removeChildren(m_selection["titles"]);
-    //removeChildren(m_selection["conn_in"]);
-    m_selection["conn_in"].innerHTML = "";
-    //removeChildren(m_selection["conn_out"]);
-    m_selection["conn_out"].innerHTML = "";
-    //removeChildren(m_selection["ports_in"]);
-    m_selection["ports_in"].innerHTML = "";
+
+    // clear connection sums
     m_selection["unique_in"].childNodes[0].textContent = "0";
     m_selection["unique_out"].childNodes[0].textContent = "0";
     m_selection["unique_ports"].childNodes[0].textContent = "0";
 
-    var overflow = m_selection["conn_in"].nextElementSibling;
-    overflow.innerHTML = "";
-    overflow = m_selection["conn_out"].nextElementSibling;
-    overflow.innerHTML = "";
-    overflow = m_selection["ports_in"].nextElementSibling;
-    overflow.innerHTML = "";
+    // clear all data from tables
+    m_selection["conn_in"].innerHTML = "";
+    m_selection["conn_in"].nextElementSibling.innerHTML = "";
+    m_selection["conn_out"].innerHTML = "";
+    m_selection["conn_out"].nextElementSibling.innerHTML = "";
+    m_selection["ports_in"].innerHTML = "";
+    m_selection["ports_in"].nextElementSibling.innerHTML = "";
 
-
+    // add "No selection" title back in.
     var h4 = document.createElement("h4");
     h4.appendChild(document.createTextNode("No selection"));
     m_selection["titles"].appendChild(h4);
+    // for spacing.
     m_selection["titles"].appendChild(document.createElement("h5"));
 }
 
@@ -64,6 +63,121 @@ function sel_remove_all(collection) {
     });
 }
 
+function sel_build_title(node) {
+  "use strict";
+  var s_name = get_node_name(node);
+  var s_address = get_node_address(node);
+  var s_name_edit_callback = node_alias_submit;
+
+  var titles = document.createElement("div")
+  var input_group = document.createElement("div");
+  var input = document.createElement("input");
+  input.id = "node_alias_edit";
+  input.type = "text";
+  input.placeholder = "Node Alias";
+  input.style.textAlign = "center";
+  input.value = s_name;
+  input.onkeyup = s_name_edit_callback;
+  input.onblur = s_name_edit_callback;
+  var input_icon = document.createElement("i");
+  input_icon.classList.add("write");
+  input_icon.classList.add("icon");
+  input_group.classList.add("ui");
+  input_group.classList.add("transparent");
+  input_group.classList.add("icon");
+  input_group.classList.add("input");
+  input_group.appendChild(input);
+  input_group.appendChild(input_icon);
+
+  var title = document.createElement("h4");
+  title.appendChild(input_group);
+
+  var subtitle = document.createElement("h5");
+  subtitle.appendChild(document.createTextNode(s_address));
+
+  titles.appendChild(title);
+  titles.appendChild(subtitle);
+  return titles;
+}
+
+function sel_build_port_display(portnum) {
+  var link = document.createElement('a');
+  link.onclick = port_click
+  if (port_loaded(portnum)) {
+    link.appendChild(document.createTextNode(get_port_name(portnum)));
+    link.setAttribute("data-content", get_port_description(portnum));
+    link.setAttribute("class", "popup");
+    //This works as an alternative, but it's ugly.
+    //link.title = get_port_description(port.port)
+  } else {
+    link.appendChild(document.createTextNode(portnum.toString()));
+  }
+  return link;
+}
+
+function sel_build_table_connections(dataset) {
+  "use strict";
+  var tr;
+  var td;
+  var tbody = document.createElement("tbody");
+  dataset.forEach(function (connection) {
+    tr = document.createElement("tr");
+    td = document.createElement("td");
+    td.rowSpan = connection[1].length;
+    td.appendChild(document.createTextNode(connection[0]));
+    tr.appendChild(td);
+    connection[1].forEach(function (port) {
+      td = document.createElement("td");
+      td.appendChild(sel_build_port_display(port.port))
+      tr.appendChild(td);
+      td = document.createElement("td");
+      td.appendChild(document.createTextNode(port.links.toString()));
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      tr = document.createElement("tr");
+    });
+  });
+  return tbody;
+}
+
+function sel_build_table_ports(dataset) {
+  "use strict";
+  var tbody = document.createElement("tbody");
+  var tr;
+  var td;
+  dataset.forEach(function (port) {
+    tr = document.createElement("tr");
+    td = document.createElement("td");
+    td.appendChild(sel_build_port_display(port.port));
+    tr.appendChild(td);
+
+    td = document.createElement("td");
+    td.appendChild(document.createTextNode(port.links.toString()));
+    tr.appendChild(td);
+
+    tbody.appendChild(tr);
+  });
+  return tbody;
+}
+
+function sel_build_overflow(amount, columns) {
+    "use strict";
+    var row = document.createElement("tr");
+    if (amount > 0) {
+        var th = document.createElement("th");
+        th.appendChild(document.createTextNode("Plus " + amount + " more..."));
+        row.appendChild(th);
+
+        if (columns > 1) {
+            th = document.createElement("th");
+            th.colSpan = columns - 1;
+            row.appendChild(th);
+        }
+      return row;
+    }
+    return undefined;
+}
+
 function sel_update_display(node) {
     "use strict";
     if (node === undefined) {
@@ -72,67 +186,14 @@ function sel_update_display(node) {
     if (node === null) {
         return
     }
-    var tr;
-    var th;
-    var td;
-    var h4;
-    var h5;
-    var a;
-    var table;
     var tbody;
+    var row;
     var overflow;
-    var div;
-    var input;
-
-    //clear all data
-    removeChildren(m_selection["titles"]);
-    //removeChildren(m_selection["conn_in"]);
-    table = m_selection["conn_in"].parentElement;
-    overflow = m_selection["conn_in"].nextElementSibling;
-    table.removeChild(m_selection["conn_in"]);
-    tbody = document.createElement("tbody");
-    m_selection["conn_in"] = tbody;
-    table.insertBefore(tbody, overflow);
-    //removeChildren(m_selection["conn_out"]);
-    table = m_selection["conn_out"].parentElement;
-    overflow = m_selection["conn_out"].nextElementSibling;
-    table.removeChild(m_selection["conn_out"]);
-    tbody = document.createElement("tbody");
-    m_selection["conn_out"] = tbody;
-    table.insertBefore(tbody, overflow);
-    //removeChildren(m_selection["ports_in"]);
-    table = m_selection["ports_in"].parentElement;
-    overflow = m_selection["ports_in"].nextElementSibling;
-    table.removeChild(m_selection["ports_in"]);
-    tbody = document.createElement("tbody");
-    m_selection["ports_in"] = tbody;
-    table.insertBefore(tbody, overflow);
+    var overflow_amount;
 
     //fill the title div
-    h4 = document.createElement("h4");
-    div = document.createElement("div");
-    input = document.createElement("input");
-    input.id = "node_alias_edit";
-    input.type = "text";
-    input.placeholder = "Node Alias";
-    input.style.textAlign = "center";
-    input.value = get_node_name(node);
-    input.onkeyup = node_alias_submit;
-    input.onblur = node_alias_submit;
-    a = document.createElement("i");
-    a.classList.add("write");
-    a.classList.add("icon");
-    div.classList.add("ui");
-    div.classList.add("transparent");
-    div.classList.add("icon");
-    div.classList.add("input");
-    div.appendChild(input);
-    div.appendChild(a);
-    h4.appendChild(div);
-    m_selection["titles"].appendChild(h4);
-    h5 = document.createElement("h5");
-    h5.appendChild(document.createTextNode(get_node_address(node)));
-    m_selection["titles"].appendChild(h5);
+    removeChildren(m_selection["titles"]);
+    m_selection["titles"].appendChild(sel_build_title(node));
 
     //fill in the section titles
     m_selection["unique_in"].childNodes[0].textContent = node.details["unique_in"].toString();
@@ -141,152 +202,48 @@ function sel_update_display(node) {
 
     //fill in the tables
     //Input Connections table
-    tbody = document.createElement("tbody");
-    node.details["conn_in"].forEach(function (connection) {
-        tr = document.createElement("tr");
-        td = document.createElement("td");
-        td.rowSpan = connection[1].length;
-        td.appendChild(document.createTextNode(connection[0]));
-        tr.appendChild(td);
-        connection[1].forEach(function (port) {
-            td = document.createElement("td");;
-            a = document.createElement("a");
-            a.onclick = port_click;
-            if (port_loaded(port.port)) {
-                a.appendChild(document.createTextNode(get_port_name(port.port)));
-                a.setAttribute("data-content", get_port_description(port.port));
-                a.setAttribute("class", "popup");
-                //This works as an alternative, but it's ugly.
-                //a.title = get_port_description(port.port)
-            } else {
-                a.appendChild(document.createTextNode(port.port.toString()));
-            }
-            td.appendChild(a);
-            tr.appendChild(td);
-            td = document.createElement("td");
-            td.appendChild(document.createTextNode(port.links.toString()));
-            tr.appendChild(td);
-            tbody.appendChild(tr)
-            tr = document.createElement("tr");
-        });
-    });
-    table = m_selection["conn_in"].parentElement;
-    overflow = m_selection["conn_in"].nextElementSibling;
-    table.removeChild(m_selection["conn_in"]);
-    m_selection["conn_in"] = tbody;
-    table.insertBefore(tbody, overflow);
-
+    tbody = sel_build_table_connections(node.details['conn_in']);
+    m_selection['conn_in'].parentElement.replaceChild(tbody, m_selection['conn_in']);
+    m_selection['conn_in'] = tbody;
 
     //Output Connections table
-    tbody = document.createElement("tbody");
-    node.details["conn_out"].forEach(function (connection) {
-        tr = document.createElement("tr");
-        td = document.createElement("td");
-        td.rowSpan = connection[1].length;
-        td.appendChild(document.createTextNode(connection[0]));
-        tr.appendChild(td);
-        connection[1].forEach(function (port) {
-            td = document.createElement("td");
-            a = document.createElement("a");
-            a.onclick = port_click;
-            if (port_loaded(port.port)) {
-                a.appendChild(document.createTextNode(get_port_name(port.port)));
-                a.setAttribute("data-content", get_port_description(port.port));
-                a.setAttribute("class", "popup");
-            } else {
-                a.appendChild(document.createTextNode(port.port.toString()));
-            }
-            td.appendChild(a);
-            tr.appendChild(td);
-            td = document.createElement("td");
-            td.appendChild(document.createTextNode(port.links.toString()));
-            tr.appendChild(td);
-            tbody.appendChild(tr)
-            tr = document.createElement("tr");
-        });
-    });
-    table = m_selection["conn_out"].parentElement;
-    overflow = m_selection["conn_out"].nextElementSibling;
-    table.removeChild(m_selection["conn_out"]);
-    m_selection["conn_out"] = tbody;
-    table.insertBefore(tbody, overflow);
-
+    tbody = sel_build_table_connections(node.details['conn_out']);
+    m_selection['conn_out'].parentElement.replaceChild(tbody, m_selection['conn_out']);
+    m_selection['conn_out'] = tbody;
 
     //Ports Accessed table
-    tbody = document.createElement("tbody");
-    node.details["ports_in"].forEach(function (port) {
-        tr = document.createElement("tr");
-        td = document.createElement("td");
-        a = document.createElement("a");
-        a.onclick = port_click;
-        if (port_loaded(port.port)) {
-            a.appendChild(document.createTextNode(get_port_name(port.port)));
-            a.setAttribute("data-content", get_port_description(port.port));
-            a.setAttribute("class", "popup");
-        } else {
-            a.appendChild(document.createTextNode(port.port.toString()));
-        }
-        td.appendChild(a);
-        tr.appendChild(td);
-        td = document.createElement("td");
-        td.appendChild(document.createTextNode(port.links.toString()));
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-    });
-    table = m_selection["ports_in"].parentElement;
-    overflow = m_selection["ports_in"].nextElementSibling;
-    table.removeChild(m_selection["ports_in"]);
-    m_selection["ports_in"] = tbody;
-    table.insertBefore(tbody, overflow);
+    tbody = sel_build_table_ports(node.details['ports_in']);
+    m_selection['ports_in'].parentElement.replaceChild(tbody, m_selection['ports_in']);
+    m_selection['ports_in'] = tbody;
 
-    //fill in the overflow table footer for connections in
+    //fill in the overflow table footer
+    //Input Connections
     overflow = m_selection["conn_in"].nextElementSibling;
+    overflow_amount = node.details["unique_in"] - node.details["conn_in"].length;
     removeChildren(overflow);
-    var overflow_text;
-    var overflow_amount = node.details["unique_in"] - node.details["conn_in"].length;
-    if (overflow_amount > 0) {
-        overflow_text = "Plus " + overflow_amount + " more...";
-        tr = document.createElement("tr");
-        th = document.createElement("th");
-        th.appendChild(document.createTextNode(overflow_text));
-        tr.appendChild(th);
-        th = document.createElement("th");
-        th.colSpan = 2;
-        tr.appendChild(th);
-        overflow.appendChild(tr);
+    row = sel_build_overflow(overflow_amount, 3);
+    if (row) {
+      overflow.appendChild(row);
     }
 
-    //fill in the overflow table footer for connections out
+    //Output Connections
     overflow = m_selection["conn_out"].nextElementSibling;
-    removeChildren(overflow);
     overflow_amount = node.details["unique_out"] - node.details["conn_out"].length;
-    if (overflow_amount > 0) {
-        overflow_text = "Plus " + overflow_amount + " more...";
-        tr = document.createElement("tr");
-        th = document.createElement("th");
-        th.appendChild(document.createTextNode(overflow_text));
-        tr.appendChild(th);
-        th = document.createElement("th");
-        th.colSpan = 2;
-        tr.appendChild(th);
-        overflow.appendChild(tr);
-    }
-
-    //fill in the overflow table footer for active ports
-    overflow = m_selection["ports_in"].nextElementSibling;
     removeChildren(overflow);
-    overflow_amount = node.details["unique_ports"] - node.details["ports_in"].length;
-    if (overflow_amount > 0) {
-        overflow_text = "Plus " + overflow_amount + " more...";
-        tr = document.createElement("tr");
-        th = document.createElement("th");
-        th.appendChild(document.createTextNode(overflow_text));
-        tr.appendChild(th);
-        th = document.createElement("th");
-        tr.appendChild(th);
-        overflow.appendChild(tr);
+    row = sel_build_overflow(overflow_amount, 3);
+    if (row) {
+      overflow.appendChild(row);
     }
 
-    //enable new popups (tooltips)
+    //Ports Accessed
+    overflow = m_selection["ports_in"].nextElementSibling;
+    overflow_amount = node.details["unique_ports"] - node.details["ports_in"].length;
+    removeChildren(overflow);
+    row = sel_build_overflow(overflow_amount, 2);
+    if (row) {
+      overflow.appendChild(row);
+    }
+
+    //activate new popups (tooltips)
     $('.popup').popup();
 }

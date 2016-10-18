@@ -267,6 +267,10 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 -
     details = {}
     ipRangeStart, ipRangeEnd, ipQuotient = determine_range(ip8, ip16, ip24, ip32)
 
+    # rounding to 5 minutes, because we're using Syslog.
+    tstart = timerange[0] if timerange[0] < 150 else timerange[0] - 150
+    tend = timerange[1] if timerange[1] > 2**31 - 150 else timerange[1] + 149
+
     WHERE = "Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)"
     if port != -1:
         WHERE += "\n    && DestinationPort = $port"
@@ -292,7 +296,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 -
                 && {0})
             AS tableC;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
     rows = common.db.query(query, vars=qvars)
     row = rows[0]
     details['unique_out'] = row.unique_out
@@ -313,7 +317,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 -
         ORDER BY links DESC
         LIMIT 50;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
     details['conn_in'] = list(common.db.query(query, vars=qvars))
 
     query = """
@@ -330,7 +334,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 -
         ORDER BY links DESC
         LIMIT 50;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
     details['conn_out'] = list(common.db.query(query, vars=qvars))
 
     query = """
@@ -345,7 +349,7 @@ def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 -
         ORDER BY links DESC
         LIMIT 50;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': timerange[0], 'tend': timerange[1], 'port': port}
+    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
     details['ports_in'] = list(common.db.query(query, vars=qvars))
 
     return details
