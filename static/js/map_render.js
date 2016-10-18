@@ -92,7 +92,6 @@ function onScreenRecursive(left, right, top, bottom, collection, subnet) {
         if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
             selected.push(collection[node]);
             if (collection[node].childrenLoaded && collection[node].subnet < subnet) {
-                console.log("Collecting the children of " + node);
                 selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children, subnet));
             }
         }
@@ -103,7 +102,6 @@ function onScreenRecursive(left, right, top, bottom, collection, subnet) {
 //build a collection of all nodes currently visible in the window.
 function onScreen(x, y, scale) {
     "use strict";
-    console.log("onScreen (at scale " + currentSubnet(scale) + ")");
     var left = -x / scale;
     var right = (rect.width - x) / scale;
     var top = -y / scale;
@@ -111,7 +109,6 @@ function onScreen(x, y, scale) {
     var visible = [];
 
     visible = onScreenRecursive(left, right, top, bottom, m_nodes, currentSubnet(scale));
-    console.log(visible);
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
     }

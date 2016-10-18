@@ -1,7 +1,16 @@
 describe("map_node.js file", function () {
+  beforeEach(function () {
+    n1 = new Node("bob", "192.168", 168, 24, 1, 1, 1, 10);
+  });
   describe("Node", function () {
-    it(" ", function () {
-      expect(1).toEqual(1);
+    it("prepares details for population", function () {
+      expect(n1.hasOwnProperty("details")).toEqual(true);
+      expect(n1.details.hasOwnProperty("loaded")).toEqual(true);
+      expect(n1.details.loaded).toBe(false);
+    });
+    it("prepares children for population", function () {
+      expect(typeof(n1.children)).toEqual("object");
+      expect(n1.childrenLoaded).toBe(false);
     });
   });
 
