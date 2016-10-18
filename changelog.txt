@@ -1,4 +1,13 @@
 2016-10-18
+Extracted render config color options to top of file
+Render issue with font transparency solved:
+  see https://jsfiddle.net/n7ndx20f/6/
+  Firefox accepts:
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; and
+    ctx.fillStyle = "#0000007F";
+  Chrome accepts:
+    ctx.globalAlpha = 0.5; and
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
 split update_display function in map_selection into multiple sections
 added tests for map_selection
 

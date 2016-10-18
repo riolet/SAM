@@ -1,3 +1,24 @@
+//rendering configuration settings
+var renderConfig = {
+  backgroundColor: "#AAFFDD",
+  nodeColor: "#5555CC",
+  nodeColorFaded: "#95D5D9",
+  linkColorTcp: "#5555CC",
+  linkColorTcpFaded: "#95D5D9",
+  linkColorUdp: "#55CC55",
+  linkColorUdpFaded: "#95D995",
+  labelColor: "#000000",
+  labelBackgroundColor: "#FFFFFF",
+  labelColorError: "#996666"
+};
+
+function fadeFont(color, alpha) {
+  r = parseInt(color.slice(1, 3), 16);
+  g = parseInt(color.slice(3, 5), 16);
+  b = parseInt(color.slice(5, 7), 16);
+  return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+}
+
 //Given a node's subnet, return the opacity to render it at.
 function opacity(subnet, type, scale) {
     "use strict";
@@ -264,8 +285,8 @@ function renderSubnetLabel(scale) {
         text += ":" + config.filter;
     }
     var size = ctx.measureText(text);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.strokeStyle = "#5555CC";
+    ctx.fillStyle = renderConfig.labelBackgroundColor;
+    ctx.strokeStyle = renderConfig.nodeColor;
     ctx.lineWidth = 3;
     if (config.filter === "") {
         ctx.globalAlpha = 1.0 - opacity(8, "label", scale);
@@ -274,20 +295,23 @@ function renderSubnetLabel(scale) {
     }
     ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
-    ctx.fillStyle = "#000000";
+    ctx.fillStyle = fadeFont(renderConfig.labelColor, ctx.globalAlpha);
+    ctx.globalAlpha = 1.0;
     ctx.fillText(text, (rect.width - size.width) / 2, 55);
 }
 
 function renderLabels(node, x, y, scale) {
     "use strict";
     var alpha = 0;
+    ctx.font = "1.5em sans";
+    ctx.globalAlpha = 1.0;
     if (scale > 25) {
         //Draw port labels at this zoom level
         alpha = opacity(32, "label", scale);
         if (m_selection["selection"] === null || m_selection["selection"] === node) {
-            ctx.globalAlpha = alpha;
+            ctx.fillStyle = fadeFont(renderConfig.labelColor, alpha);
         } else {
-            ctx.globalAlpha = alpha * 0.33;
+            ctx.fillStyle = fadeFont(renderConfig.labelColor, alpha * 0.33);
         }
         if (node.subnet === 32) {
             Object.keys(node.ports).forEach(function (p) {
@@ -345,18 +369,14 @@ function renderLabels(node, x, y, scale) {
 
     //ctx.font = fontsize + "em sans";
     if (m_selection["selection"] === null || m_selection["selection"] === node) {
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.fillStyle = "#FFFFFF";
+        ctx.fillStyle = fadeFont(renderConfig.labelBackgroundColor, alpha * 0.5);
         ctx.fillRect(px, py + 2, size.width, -21);
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = "#000000";
+        ctx.fillStyle = fadeFont(renderConfig.labelColor, alpha);
         ctx.fillText(text, px, py);
     } else {
-        ctx.globalAlpha = alpha * 0.166;
-        ctx.fillStyle = "#FFFFFF";
+        ctx.fillStyle = fadeFont(renderConfig.labelBackgroundColor, alpha * 0.166);
         ctx.fillRect(px, py + 2, size.width, -21);
-        ctx.globalAlpha = alpha * 0.33;
-        ctx.fillStyle = "#000000";
+        ctx.fillStyle = fadeFont(renderConfig.labelColor, alpha * 0.33);
         ctx.fillText(text, px, py);
     }
 }
@@ -399,12 +419,10 @@ function renderClusters(collection, x, y, scale) {
     var alpha = 0;
     var skip = false;
     var drawingLevel;
-    var colorNormal = "#5555CC";
-    var colorUnselected = "#95D5D9";
     if (m_selection["selection"] === null) {
-        ctx.strokeStyle = colorNormal;
+        ctx.strokeStyle = renderConfig.linkColorTcp;
     } else {
-        ctx.strokeStyle = colorUnselected;
+        ctx.strokeStyle = renderConfig.linkColorTcpFaded;
     }
     ctx.globalAlpha = 1;
 
@@ -430,10 +448,15 @@ function renderClusters(collection, x, y, scale) {
     });
     ctx.stroke();
 
+    if (m_selection["selection"] === null) {
+        ctx.strokeStyle = renderConfig.nodeColor;
+    } else {
+        ctx.strokeStyle = renderConfig.nodeColorFaded;
+    }
     // Draw the graph nodes
     ctx.lineWidth = 5 / scale;
     drawingLevel = collection[0].subnet;
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = renderConfig.labelBackgroundColor;
     ctx.beginPath();
     alpha = opacity(collection[0].subnet, "node", scale);
     ctx.globalAlpha = alpha;
@@ -455,8 +478,6 @@ function renderClusters(collection, x, y, scale) {
 
     //Draw the labels
     ctx.resetTransform();
-    ctx.font = "1.5em sans";
-    ctx.fillStyle = "#000000";
     collection.forEach(function (node) {
         renderLabels(node, x, y, scale);
     });
@@ -465,7 +486,7 @@ function renderClusters(collection, x, y, scale) {
     if (m_selection["selection"] !== null) {
 
         ctx.setTransform(scale, 0, 0, scale, x, y, 1);
-        ctx.strokeStyle = colorNormal;
+        ctx.strokeStyle = renderConfig.linkColorTcp;
         ctx.globalAlpha = 1;
 
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links", scale);
@@ -476,14 +497,13 @@ function renderClusters(collection, x, y, scale) {
 
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node", scale);
         ctx.lineWidth = 5 / scale;
-        ctx.fillStyle = "#FFFFFF";
+        ctx.strokeStyle = renderConfig.nodeColor;
+        ctx.fillStyle = renderConfig.labelBackgroundColor;
         ctx.beginPath();
         renderNode(m_selection["selection"]);
         ctx.stroke();
 
         ctx.resetTransform();
-        ctx.font = "1.5em sans";
-        ctx.fillStyle = "#000000";
         renderLabels(m_selection["selection"], x, y, scale);
     }
 }
@@ -491,12 +511,12 @@ function renderClusters(collection, x, y, scale) {
 function render(x, y, scale) {
     "use strict";
     ctx.resetTransform();
-    ctx.fillStyle = "#AAFFDD";
+    ctx.fillStyle = renderConfig.backgroundColor;
     ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (Object.keys(m_nodes).length === 0) {
-        ctx.fillStyle = "#996666";
+        ctx.fillStyle = renderConfig.labelColorError;
         ctx.font = "3em sans";
         var size = ctx.measureText("No data available");
         ctx.fillText("No data available", rect.width / 2 - size.width / 2, rect.height / 2);
@@ -511,6 +531,7 @@ function render(x, y, scale) {
 
     renderSubnetLabel(scale);
 }
+
 function render_all() {
     "use strict";
     render(tx, ty, g_scale);

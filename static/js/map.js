@@ -23,7 +23,7 @@ var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
-    "show_out": false,
+    "show_out": true,
     "filter": "",
     "tstart": 1,
     "tend": 2147483647
