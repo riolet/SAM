@@ -1,3 +1,7 @@
+2016-10-18
+split update_display function in map_selection into multiple sections
+added tests for map_selection
+
 2016-10-17
 fixed bug in timerange for get_details in dbaccess
 reduced usage of global "scale" variable in progression to removing the global.

@@ -1,7 +1,7 @@
 describe("map_ports.js file", function () {
   describe("port_loaded", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports()
+      get_mock_m_ports();
     });
     it("exists", function () {
       expect(port_loaded(443)).toEqual(true)
@@ -17,7 +17,7 @@ describe("map_ports.js file", function () {
 
   describe("get_port_name", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports()
+      get_mock_m_ports();
     });
     it("doesn't exist", function () {
       expect(get_port_name(444)).toEqual("444");
@@ -36,7 +36,7 @@ describe("map_ports.js file", function () {
 
   describe("get_port_alias", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports()
+      get_mock_m_ports();
     });
     it("doesn't exist", function () {
       expect(get_port_alias(444)).toEqual("444");
@@ -55,7 +55,7 @@ describe("map_ports.js file", function () {
 
   describe("get_port_description", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports()
+      get_mock_m_ports();
     });
     it("doesn't exist", function () {
       expect(get_port_description(444)).toEqual("");
@@ -74,7 +74,7 @@ describe("map_ports.js file", function () {
 
   describe("update_port", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports()
+      get_mock_m_ports();
     });
     it("creates new port", function () {
       expect(get_port_alias(4)).toEqual("4");
@@ -145,7 +145,7 @@ describe("map_ports.js file", function () {
 
   describe("port_request_add", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports();
+      get_mock_m_ports();
       m_port_requests = [];
     });
     it("add simple", function () {
@@ -174,7 +174,7 @@ describe("map_ports.js file", function () {
 
   describe("port_request_submit", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports();
+      get_mock_m_ports();
       spyOn(window, "GET_portinfo");
     });
 
@@ -216,7 +216,7 @@ describe("map_ports.js file", function () {
 
   describe("port_save", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports();
+      get_mock_m_ports();
       m_portinfo = {};
       pa_id = document.createElement("input");
       pa_id.type = "checkbox";
@@ -288,7 +288,7 @@ describe("map_ports.js file", function () {
 
   describe("port_display", function () {
     beforeEach(function () {
-      m_ports = get_mock_m_ports();
+      get_mock_m_ports();
       m_portinfo = {};
       pa_id = document.createElement("input");
       pa_id.type = "checkbox";

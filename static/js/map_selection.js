@@ -160,7 +160,7 @@ function sel_build_table_ports(dataset) {
   return tbody;
 }
 
-function sel_build_overflow(parent, amount, columns) {
+function sel_build_overflow(amount, columns) {
     "use strict";
     var row = document.createElement("tr");
     if (amount > 0) {
@@ -168,11 +168,14 @@ function sel_build_overflow(parent, amount, columns) {
         th.appendChild(document.createTextNode("Plus " + amount + " more..."));
         row.appendChild(th);
 
-        th = document.createElement("th");
-        th.colSpan = columns - 1;
-        row.appendChild(th);
+        if (columns > 1) {
+            th = document.createElement("th");
+            th.colSpan = columns - 1;
+            row.appendChild(th);
+        }
+      return row;
     }
-    return row;
+    return undefined;
 }
 
 function sel_update_display(node) {
@@ -218,7 +221,7 @@ function sel_update_display(node) {
     overflow = m_selection["conn_in"].nextElementSibling;
     overflow_amount = node.details["unique_in"] - node.details["conn_in"].length;
     removeChildren(overflow);
-    row = sel_build_overflow(overflow, overflow_amount, 3);
+    row = sel_build_overflow(overflow_amount, 3);
     if (row) {
       overflow.appendChild(row);
     }
@@ -227,7 +230,7 @@ function sel_update_display(node) {
     overflow = m_selection["conn_out"].nextElementSibling;
     overflow_amount = node.details["unique_out"] - node.details["conn_out"].length;
     removeChildren(overflow);
-    row = sel_build_overflow(overflow, overflow_amount, 3);
+    row = sel_build_overflow(overflow_amount, 3);
     if (row) {
       overflow.appendChild(row);
     }
@@ -236,7 +239,7 @@ function sel_update_display(node) {
     overflow = m_selection["ports_in"].nextElementSibling;
     overflow_amount = node.details["unique_ports"] - node.details["ports_in"].length;
     removeChildren(overflow);
-    row = sel_build_overflow(overflow, overflow_amount, 2);
+    row = sel_build_overflow(overflow_amount, 2);
     if (row) {
       overflow.appendChild(row);
     }
