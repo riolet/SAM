@@ -71,8 +71,8 @@ function link_request_submit() {
         GET_links(request);
         m_link_requests = [];
     } else {
-        GET_links(request.slice(0, chunkSize));
-        m_link_requests = request.slice(chunkSize);
+        GET_links(request.slice(0, g_chunkSize));
+        m_link_requests = request.slice(g_chunkSize);
         m_link_timer = setTimeout(link_request_submit, 500);
     }
 
