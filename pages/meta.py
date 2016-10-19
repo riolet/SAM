@@ -8,7 +8,7 @@ class Meta(object):
     def GET(self):
         return str(common.render._head(self.pageTitle,
                                        stylesheets=[],
-                                       scripts=[])) \
+                                       scripts=["/static/js/metadata.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
                + str(common.render.metadata()) \
                + str(common.render._tail())
