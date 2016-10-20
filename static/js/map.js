@@ -18,6 +18,10 @@ var my;
 var renderCollection = [];
 var subnetLabel = "";
 
+// Timing variables
+var MILLIS_PER_MIN = 60000;
+var MINS_PER_UPDATE   = 5;
+
 //settings/options data
 var config = {
     "show_clients": true,
@@ -80,6 +84,9 @@ function init() {
 
     //loadData();
     GET_nodes(null);
+
+	window.setInterval(function(){GET_nodes(null);},Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
+	
 }
 
 function init_canvas(c, cx) {
