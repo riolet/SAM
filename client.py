@@ -20,11 +20,9 @@ else:
 
 def sendData():
 
-
-	while(True):
-		for message in dataArr:
-			sock.sendall(message)
-			time.sleep(7)
+	for message in dataArr:
+		sock.sendall(message)
+		time.sleep(7)
 
 def signal_handler(signal, frame):
     sys.exit(0)
