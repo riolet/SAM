@@ -1,52 +1,37 @@
 $def with ()
 $# "$def with (arg1, ...)" MUST be the first line. See template.py for details
-<h3 class="ui center aligned header">Overview</h3>
 <div class="ui container">
+  <h3 class="ui center aligned header">
+    <div id="hostSearch" class="ui icon input">
+      <input placeholder="Search..." type="text">
+      <i class="circular search link icon"></i>
+    </div>
+  </h3>
   <table class="ui celled striped table">
     <thead>
-    <tr><th colspan="3">
-      <div id="hostSearch" class="ui icon input">
-        <input placeholder="Search..." type="text">
-        <i class="circular search link icon"></i>
-      </div>
-    </th>
-    </tr></thead>
-    <tbody>
-    <tr>
-      <td class="collapsing">
-        <i class="folder icon"></i> node_modules
-      </td>
-      <td>Initial commit</td>
-      <td class="right aligned collapsing">10 hours ago</td>
-    </tr>
-    <tr>
-      <td>
-        <i class="folder icon"></i> test
-      </td>
-      <td>Initial commit</td>
-      <td class="right aligned">10 hours ago</td>
-    </tr>
-    <tr>
-      <td>
-        <i class="folder icon"></i> build
-      </td>
-      <td>Initial commit</td>
-      <td class="right aligned">10 hours ago</td>
-    </tr>
-    <tr>
-      <td>
-        <i class="file outline icon"></i> package.json
-      </td>
-      <td>Initial commit</td>
-      <td class="right aligned">10 hours ago</td>
-    </tr>
-    <tr>
-      <td>
-        <i class="file outline icon"></i> Gruntfile.js
-      </td>
-      <td>Initial commit</td>
-      <td class="right aligned">10 hours ago</td>
-    </tr>
+      <tr><th colspan="2">
+        <h3>Quick Info</h3>
+      </th></tr>
+    </thead>
+    <tbody id="quickinfo">
+      <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
     </tbody>
   </table>
+  <div class="ui pointing secondary menu">
+    <a class="active item" data-tab="inputs">Inputs</a>
+    <a class="item" data-tab="outputs">Outputs</a>
+    <a class="item" data-tab="ports">Ports</a>
+  </div>
+  <div class="ui active tab segment" data-tab="inputs" id="tab-input">
+    <h3 class="ui header">AJAX Tab One</h3>
+  </div>
+  <div class="ui tab segment" data-tab="outputs" id="tab-output">
+    <h3 class="ui header">AJAX Tab Two</h3>
+  </div>
+  <div class="ui tab segment" data-tab="ports" id="tab-ports">
+    <h3 class="ui header">AJAX Tab Three</h3>
+  </div>
 </div>

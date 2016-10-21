@@ -153,9 +153,9 @@ def test_request_timerange():
     assert req.status == "200 OK"
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
-    assert data['unique_in'] == 1
+    assert data['unique_in'] == 3
     assert data['unique_out'] == 3
     assert data['unique_ports'] == 1
-    assert len(data['conn_in']) == 1
+    assert len(data['conn_in']) == 3
     assert len(data['conn_out']) == 3
     assert len(data['ports_in']) == 1

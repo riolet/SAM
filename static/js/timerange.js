@@ -100,13 +100,11 @@ function create_slider(dtmin, dtmax) {
         }
     });
     dateSlider.noUiSlider.on('end', function(){
-        //TODO: remove all saved node details
         sel_remove_all(m_nodes);
-        //TODO: re-load selection if set
         sel_set_selection(m_selection.selection)
         links_reset();
         updateRenderRoot();
-        render(tx, ty, scale);
+        render_all();
     });
 
     inputA.addEventListener('change', function(){

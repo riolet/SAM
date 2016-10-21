@@ -8,7 +8,81 @@ import common
 
 
 class Details:
-    def GET(self):
+    def __init__(self):
+        self.ip_range = (0, 4294967295)
+        self.ips = []
+        self.time_range = None
+        self.port = None
+        self.limit=50
+
+    def process_input(self, GET_data):
+        # ignore port, for now at least.
+        if 'filter' in GET_data:
+            # TODO: ignore port filters. For now.
+            # self.port = GET_data.filter
+            pass
+        if 'tstart' in GET_data and 'tend' in GET_data:
+            self.time_range = (int(GET_data.tstart), int(GET_data.tend))
+        if 'address' in GET_data:
+            ips = GET_data["address"].split(".")
+            self.ips = [int(i) for i in ips]
+            self.ip_range = dbaccess.determine_range(*self.ips)
+
+    def quick_info(self, ip):
+        pass
+
+    def inputs(self, limit=50):
+        inputs = dbaccess.get_details_connections(self.ip_range, True, self.time_range, self.port, self.limit)
+        conn_in = {}
+        for connection in inputs:
+            ip = common.IPtoString(connection.pop("ip"))
+            if ip in conn_in:
+                # add a port
+                conn_in[ip] += [connection]
+            else:
+                # add a new entry
+                conn_in[ip] = [connection]
+        # convert to list of tuples to make it sortable
+        conn_in = conn_in.items()
+        conn_in.sort(key=key_by_link_sum, reverse=True)
+        return conn_in
+
+    def outputs(self, limit=50):
+        outputs = dbaccess.get_details_connections(self.ip_range, False, self.time_range, self.port, self.limit)
+        conn_out = {}
+        for connection in outputs:
+            ip = common.IPtoString(connection.pop("ip"))
+            if ip in conn_out:
+                # add a port
+                conn_out[ip] += [connection]
+            else:
+                # add a new entry
+                conn_out[ip] = [connection]
+        # convert to list of tuples to make it sortable
+        conn_out = conn_out.items()
+        conn_out.sort(key=key_by_link_sum, reverse=True)
+        return conn_out
+
+    def ports(self, limit=50):
+        ports = dbaccess.get_details_ports(self.ip_range, self.time_range, self.port, self.limit)
+        return ports
+
+    def summary(self):
+        summary = dbaccess.get_details_summary(self.ip_range, self.time_range, self.port)
+        return summary
+
+    def selection_info(self):
+        summary = self.summary()
+        details = {}
+        details['unique_out'] = summary.unique_out
+        details['unique_in'] = summary.unique_in
+        details['unique_ports'] = summary.unique_ports
+        details['conn_in'] = self.inputs()
+        details['conn_out'] = self.outputs()
+        details['ports_in'] = self.ports()
+        return details
+
+    def GET(self, component=None):
         """
         The expected GET data includes:
             'address': dotted-decimal IP addresses.
@@ -23,49 +97,15 @@ class Details:
         """
         web.header("Content-Type", "application/json")
 
-        get_data = web.input()
-        port_filter = -1  # get_data.get('filter', -1)
-        timestart = get_data.get("tstart", 1)
-        timeend = get_data.get("tend", 2 ** 31 - 1)
-        timestart = int(timestart)
-        timeend = int(timeend)
+        self.process_input(web.input())
 
-        if 'address' in get_data:
-            ips = get_data["address"].split(".")
-            ips = [int(i) for i in ips]
-
-            details = dbaccess.get_details(*ips, port=port_filter, timerange=(timestart, timeend))
-
-            conn_in = {}
-            for connection in details['conn_in']:
-                ip = common.IPtoString(connection.pop("ip"))
-                if ip in conn_in:
-                    # add a port
-                    conn_in[ip] += [connection]
-                else:
-                    # add a new entry
-                    conn_in[ip] = [connection]
-            # convert to list of tuples to make it sortable
-            conn_in = conn_in.items()
-            conn_in.sort(key=key_by_link_sum, reverse=True)
-            details['conn_in'] = conn_in
-
-            conn_out = {}
-            for connection in details['conn_out']:
-                ip = common.IPtoString(connection.pop("ip"))
-                if ip in conn_out:
-                    # add a port
-                    conn_out[ip] += [connection]
-                else:
-                    # add a new entry
-                    conn_out[ip] = [connection]
-            # convert to list of tuples to make it sortable
-            conn_out = conn_out.items()
-            conn_out.sort(key=key_by_link_sum, reverse=True)
-            details['conn_out'] = conn_out
+        if self.ips:
+            if component:
+                details = {"result": "SUCCESS: {0}".format(component)}
+            else:
+                details = self.selection_info()
         else:
             details = {"result": "ERROR: Malformed request. The 'address' key was missing"}
-
         return json.dumps(details)
 
 
