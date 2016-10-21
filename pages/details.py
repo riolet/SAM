@@ -11,9 +11,17 @@ class Details:
     def __init__(self):
         self.ip_range = (0, 4294967295)
         self.ips = []
+        self.ip_string = ""
         self.time_range = None
         self.port = None
         self.limit=50
+        self.components = {
+            "quick_info": self.quick_info,
+            "inputs": self.inputs,
+            "outputs": self.outputs,
+            "ports": self.ports,
+            "summary": self.summary,
+        }
 
     def process_input(self, GET_data):
         # ignore port, for now at least.
@@ -24,14 +32,43 @@ class Details:
         if 'tstart' in GET_data and 'tend' in GET_data:
             self.time_range = (int(GET_data.tstart), int(GET_data.tend))
         if 'address' in GET_data:
-            ips = GET_data["address"].split(".")
-            self.ips = [int(i) for i in ips]
-            self.ip_range = dbaccess.determine_range(*self.ips)
+            try:
+                self.ip_string = GET_data["address"]
+                ips = self.ip_string.split(".")
+                self.ips = [int(i) for i in ips]
+                self.ip_range = dbaccess.determine_range(*self.ips)
+            except ValueError:
+                print("could not convert address ({0}) to integers.".format(GET_data['address']))
 
-    def quick_info(self, ip):
-        pass
+    def nice_ip_address(self):
+        address = ".".join(map(str, self.ips))
+        zeroes = 4 - len(self.ips)
+        for i in range(zeroes):
+            address += ".0"
+        subnet = 32 - zeroes * 8
+        if subnet != 32:
+            address += "/" + str(subnet)
+        return address
 
-    def inputs(self, limit=50):
+    def quick_info(self):
+        info = []
+        info.append(("IPv4 Address / Subnet", self.nice_ip_address()))
+        node_info = dbaccess.get_node_info(self.ip_string)
+        if node_info:
+            if node_info.alias:
+                info.append(("Name", node_info.alias))
+            else:
+                info.append(("Name", ""))
+
+            summary = self.summary()
+            info.append(("Unique inbound connections", summary.unique_in))
+            info.append(("Unique outbound connections", summary.unique_out))
+            info.append(("Ports accessed", summary.unique_ports))
+        else:
+            info.append(('No host found this address', '...'))
+        return info
+
+    def inputs(self):
         inputs = dbaccess.get_details_connections(self.ip_range, True, self.time_range, self.port, self.limit)
         conn_in = {}
         for connection in inputs:
@@ -47,7 +84,7 @@ class Details:
         conn_in.sort(key=key_by_link_sum, reverse=True)
         return conn_in
 
-    def outputs(self, limit=50):
+    def outputs(self):
         outputs = dbaccess.get_details_connections(self.ip_range, False, self.time_range, self.port, self.limit)
         conn_out = {}
         for connection in outputs:
@@ -63,7 +100,7 @@ class Details:
         conn_out.sort(key=key_by_link_sum, reverse=True)
         return conn_out
 
-    def ports(self, limit=50):
+    def ports(self):
         ports = dbaccess.get_details_ports(self.ip_range, self.time_range, self.port, self.limit)
         return ports
 
@@ -98,10 +135,16 @@ class Details:
         web.header("Content-Type", "application/json")
 
         self.process_input(web.input())
+        details = {}
 
         if self.ips:
             if component:
-                details = {"result": "SUCCESS: {0}".format(component)}
+                components = component.split(",")
+                for c_name in components:
+                    if c_name in self.components:
+                        details[c_name] = self.components[c_name]()
+                    else:
+                        details[c_name] = {"result": "No data source matches request for {0}".format(c_name)}
             else:
                 details = self.selection_info()
         else:

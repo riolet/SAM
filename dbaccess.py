@@ -365,14 +365,23 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
     return list(common.db.query(query, vars=qvars))
 
 
-def get_node_info(*address):
+def get_node_info(address):
     print("-" * 50)
     print("getting node info:")
     print("type: " + str(type(address)))
     print(address)
     print("-" * 50)
     # TODO: placeholder for use getting meta about hosts
-    return {}
+    ips = map(int, address.split("."))
+    subnet = 8 * len(ips)
+    table = "Nodes" + str(subnet)
+    WHERE = " && ".join(["ip{0}={1}".format((i+1)*8, ip) for i, ip in enumerate(ips)])
+    results = common.db.select(table, where=WHERE, limit=1)
+
+    if len(results) == 1:
+        return results[0]
+    else:
+        return {}
 
 
 def set_node_info(address, data):
