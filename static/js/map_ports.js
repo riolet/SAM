@@ -79,7 +79,6 @@ function GET_portinfo_callback(result) {
     Object.keys(result).forEach(function (key) {
         update_port(Number(key), result[key]);
     });
-    sel_update_display(m_selection["selection"]);
     var port = result[Object.keys(result).pop()];
     port_display(port);
 }
@@ -97,7 +96,7 @@ function port_request_add(port_number) {
     }
 }
 
-function port_request_submit() {
+function port_request_submit(callback) {
     "use strict";
     var request = m_port_requests.filter(function (element) {
         return !m_ports.hasOwnProperty(element.toString());
@@ -110,7 +109,7 @@ function port_request_submit() {
 
     m_port_requests = [];
     if (request.length > 0) {
-        GET_portinfo(request);
+        GET_portinfo(request, callback);
     }
 }
 

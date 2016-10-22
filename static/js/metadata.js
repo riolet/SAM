@@ -29,6 +29,9 @@ function present_quick_info(info) {
 
 function present_detailed_info(info) {
     "use strict";
+    if (info === undefined) {
+        info = g_data
+    }
     var old_body;
     var new_body;
     if (info.hasOwnProperty("inputs")) {
@@ -119,7 +122,26 @@ function requestMoreDetails(event) {
             // More details arrived
             // TODO: remove loading icon from tabs??
             // Render into browser
-            present_detailed_info(response);
+            g_data.inputs = response.inputs;
+            g_data.outputs = response.outputs;
+            g_data.ports = response.ports;
+            present_detailed_info(g_data);
+
+            response.inputs.forEach(function (element) {
+                element[1].forEach(function (port) {
+                    port_request_add(port.port);
+                });
+            });
+            response.outputs.forEach(function (element) {
+                element[1].forEach(function (port) {
+                    port_request_add(port.port);
+                });
+            });
+            response.ports.forEach(function (element) {
+                port_request_add(element.port);
+            });
+            port_request_submit(present_detailed_info);
+
             console.log("More Details Arrived. Returning to waiting.");
             //Return to passively waiting
             dispatcher(new StateChangeEvent(restartTypingTimer));

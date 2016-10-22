@@ -103,7 +103,7 @@ function POST_portinfo(request) {
     });
 }
 
-function GET_portinfo(port) {
+function GET_portinfo(port, callback) {
     "use strict";
     var requestData = {"port": port.join(",")};
     $.ajax({
@@ -112,7 +112,13 @@ function GET_portinfo(port) {
         data: requestData,
         dataType: "json",
         error: onNotLoadData,
-        success: GET_portinfo_callback
+        success: function (result) {
+            GET_portinfo_callback(result)
+
+            if (typeof callback === "function") {
+                callback();
+            }
+        }
     });
 }
 
