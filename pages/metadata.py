@@ -1,7 +1,7 @@
 import common
 
 
-class Meta(object):
+class Metadata(object):
     def __init__(self):
         self.pageTitle = "Metadata Test"
 

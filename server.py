@@ -47,7 +47,8 @@ urls = (
     '/details/(.+)', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
-    '/meta', 'pages.meta.Meta',
+    '/metadata', 'pages.metadata.Metadata',
+    '/table', 'pages.table.Table',
 )
 
 # For development testing, uncomment these 3 lines
