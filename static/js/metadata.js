@@ -34,21 +34,21 @@ function present_detailed_info(info) {
     }
     var old_body;
     var new_body;
-    if (info.hasOwnProperty("inputs")) {
+    if (info.hasOwnProperty("inputs") && info.inputs !== null) {
         old_body = document.getElementById("conn_in");
         new_body = sel_build_table_connections(info.inputs);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "conn_in";
     }
 
-    if (info.hasOwnProperty("outputs")) {
+    if (info.hasOwnProperty("outputs") && info.outputs !== null) {
         old_body = document.getElementById("conn_out");
         new_body = sel_build_table_connections(info.outputs);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "conn_out";
     }
 
-    if (info.hasOwnProperty("ports")) {
+    if (info.hasOwnProperty("ports") && info.ports !== null) {
         old_body = document.getElementById("ports_in");
         new_body = sel_build_table_ports(info.ports);
         old_body.parentElement.replaceChild(new_body, old_body);
@@ -118,6 +118,7 @@ function requestMoreDetails(event) {
         //Requesting more details
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting More Details");
+
         GET_data(input.value, "inputs,outputs,ports", function (response) {
             // More details arrived
             // TODO: remove loading icon from tabs??
@@ -129,18 +130,18 @@ function requestMoreDetails(event) {
 
             response.inputs.forEach(function (element) {
                 element[1].forEach(function (port) {
-                    port_request_add(port.port);
+                    ports.request_add(port.port);
                 });
             });
             response.outputs.forEach(function (element) {
                 element[1].forEach(function (port) {
-                    port_request_add(port.port);
+                    ports.request_add(port.port);
                 });
             });
-            response.ports.forEach(function (element) {
-                port_request_add(element.port);
+            response.ports.forEach(function (port) {
+                ports.request_add(port.port);
             });
-            port_request_submit(present_detailed_info);
+            ports.request_submit(present_detailed_info);
 
             console.log("More Details Arrived. Returning to waiting.");
             //Return to passively waiting
@@ -180,6 +181,7 @@ function requestQuickInfo(event) {
             // Render into browser
             present_quick_info(response.quick_info)
             console.log("Quick info Arrived. Proceeding to Request More Details");
+
             //Continue to more details
             dispatcher(new StateChangeEvent(requestMoreDetails));
         });
@@ -210,6 +212,7 @@ function restartTypingTimer(event) {
         g_typing_timer = setTimeout(function () {
             //Timer expired. Run the quick-info request!
             console.log("Proceeding to Request Quick Info");
+
             dispatcher(new StateChangeEvent(requestQuickInfo));
         }, 700);
     }
@@ -228,6 +231,11 @@ function init() {
     $(".input.icon").popup();
     // Make the ports table sortable
     $("table.sortable").tablesort();
+
+    //configure ports
+    ports.display_callback = function() {
+        present_detailed_info();
+    };
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 }

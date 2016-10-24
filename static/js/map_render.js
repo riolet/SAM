@@ -315,7 +315,7 @@ function renderLabels(node, x, y, scale) {
         }
         if (node.subnet === 32) {
             Object.keys(node.ports).forEach(function (p) {
-                var text = get_port_alias(p);
+                var text = ports.get_alias(p);
                 ctx.font = "1.5em sans";
                 var sizeMin = ctx.measureText("mmmmm");
                 var size = Math.max(ctx.measureText(text).width, sizeMin.width);

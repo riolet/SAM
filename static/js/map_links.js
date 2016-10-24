@@ -111,7 +111,7 @@ function GET_links_callback(result) {
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
     });
-    port_request_submit();
+    ports.request_submit();
     updateRenderRoot();
     render_all();
 }
@@ -178,26 +178,26 @@ function link_processPorts(links) {
             {"x": destination.x - destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"},
             {"x": destination.x + destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"}];
 
-    var ports = {};
+    var port_tracker = {};
     var j;
     var choice = 0;
     //the first 8 unique port numbers should be mapped to locations.
     for (j = 0; j < Object.keys(links).length; j += 1) {
-        if (ports.hasOwnProperty(links[j].port)) {
+        if (port_tracker.hasOwnProperty(links[j].port)) {
             continue;
         }
-        port_request_add(links[j].port);
+        ports.request_add(links[j].port);
         choice = link_closestEmptyPort(links[j], used);
         if (choice === undefined) {
             continue;
         }
-        ports[links[j].port] = locations[choice];
+        port_tracker[links[j].port] = locations[choice];
         used[choice] = true;
-        if (Object.keys(ports).length >= 8) {
+        if (Object.keys(port_tracker).length >= 8) {
             break;
         }
     }
-    destination.ports = ports;
+    destination.ports = port_tracker;
 
     links.forEach(function (link) {
         var source = findNode(link.source8, link.source16,
@@ -207,23 +207,23 @@ function link_processPorts(links) {
         var dx = link.x2 - link.x1;
         var dy = link.y2 - link.y1;
 
-        if (ports.hasOwnProperty(link.port)) {
-            if (ports[link.port].side === "top") {
-                link.x2 = ports[link.port].x;
-                link.y2 = ports[link.port].y - 0.6;
-            } else if (ports[link.port].side === "left") {
-                link.x2 = ports[link.port].x - 0.6;
-                link.y2 = ports[link.port].y;
-            } else if (ports[link.port].side === "right") {
-                link.x2 = ports[link.port].x + 0.6;
-                link.y2 = ports[link.port].y;
-            } else if (ports[link.port].side === "bottom") {
-                link.x2 = ports[link.port].x;
-                link.y2 = ports[link.port].y + 0.6;
+        if (port_tracker.hasOwnProperty(link.port)) {
+            if (port_tracker[link.port].side === "top") {
+                link.x2 = port_tracker[link.port].x;
+                link.y2 = port_tracker[link.port].y - 0.6;
+            } else if (port_tracker[link.port].side === "left") {
+                link.x2 = port_tracker[link.port].x - 0.6;
+                link.y2 = port_tracker[link.port].y;
+            } else if (port_tracker[link.port].side === "right") {
+                link.x2 = port_tracker[link.port].x + 0.6;
+                link.y2 = port_tracker[link.port].y;
+            } else if (port_tracker[link.port].side === "bottom") {
+                link.x2 = port_tracker[link.port].x;
+                link.y2 = port_tracker[link.port].y + 0.6;
             } else {
                 //this should never execute
-                link.x2 = ports[link.port].x;
-                link.y2 = ports[link.port].y;
+                link.x2 = port_tracker[link.port].x;
+                link.y2 = port_tracker[link.port].y;
             }
         } else {
             //align to corners

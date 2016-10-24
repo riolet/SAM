@@ -1,4 +1,4 @@
-var m_selection = {}
+var m_selection = {};
 
 function sel_init() {
     "use strict";
@@ -100,21 +100,6 @@ function sel_build_title(node) {
   return titles;
 }
 
-function sel_build_port_display(portnum) {
-  var link = document.createElement('a');
-  link.onclick = port_click
-  if (port_loaded(portnum)) {
-    link.appendChild(document.createTextNode(get_port_name(portnum)));
-    link.setAttribute("data-content", get_port_description(portnum));
-    link.classList.add("popup");
-    //This works as an alternative, but it's ugly.
-    //link.title = get_port_description(port.port)
-  } else {
-    link.appendChild(document.createTextNode(portnum.toString()));
-  }
-  return link;
-}
-
 function sel_build_table_connections(dataset) {
   "use strict";
   var tr;
@@ -128,7 +113,7 @@ function sel_build_table_connections(dataset) {
     tr.appendChild(td);
     connection[1].forEach(function (port) {
       td = document.createElement("td");
-      td.appendChild(sel_build_port_display(port.port))
+      td.appendChild(ports.get_presentation(port.port))
       tr.appendChild(td);
       td = document.createElement("td");
       td.appendChild(document.createTextNode(port.links.toString()));
@@ -148,7 +133,7 @@ function sel_build_table_ports(dataset) {
   dataset.forEach(function (port) {
     tr = document.createElement("tr");
     td = document.createElement("td");
-    td.appendChild(sel_build_port_display(port.port));
+    td.appendChild(ports.get_presentation(port.port));
     tr.appendChild(td);
 
     td = document.createElement("td");
@@ -182,10 +167,10 @@ function sel_update_display(node) {
     "use strict";
     console.log("~+~calling sel_update_display");
     if (node === undefined) {
-        node = m_selection["selection"]
+        node = m_selection["selection"];
     }
-    if (node === null) {
-        return
+    if (node === null || !node.details.loaded) {
+        return;
     }
     var tbody;
     var row;

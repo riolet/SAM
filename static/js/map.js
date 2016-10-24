@@ -78,6 +78,12 @@ function init() {
     $(".input.icon").popup();
     $("table.sortable").tablesort();
 
+    //configure ports
+    ports.display_callback = function() {
+        render_all();
+        sel_update_display();
+    };
+
     //loadData();
     GET_nodes(null);
 }

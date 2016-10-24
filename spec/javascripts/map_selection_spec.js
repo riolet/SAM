@@ -148,43 +148,6 @@ describe("map_selection.js file", function () {
   });
 
 
-  describe("sel_build_port_display", function () {
-    beforeEach(function () {
-      get_mock_m_ports();
-    });
-
-    it("returns a text node", function () {
-      var test_port = 443;
-      var link = sel_build_port_display(test_port);
-      expect(link.innerText).toBe(get_port_name(test_port));
-
-      var test_port = 3268;
-      var link = sel_build_port_display(test_port);
-      expect(link.innerText).toBe(get_port_name(test_port));
-
-      var test_port = 7680;
-      var link = sel_build_port_display(test_port);
-      expect(link.innerText).toBe(get_port_name(test_port));
-
-      var test_port = 8081;
-      var link = sel_build_port_display(test_port);
-      expect(link.innerText).toBe(get_port_name(test_port));
-
-      var test_port = 4;
-      var link = sel_build_port_display(test_port);
-      expect(link.innerText).toBe(get_port_name(test_port));
-    });
-    it("has an onclick attached", function () {
-      var test_port = 3268;
-      var link = sel_build_port_display(test_port);
-      expect(typeof(link.onclick)).toBe("function");
-      var test_port = 4;
-      var link = sel_build_port_display(test_port);
-      expect(typeof(link.onclick)).toBe("function");
-    });
-  });
-
-
   describe("sel_build_table_connections", function () {
     beforeEach(function () {
       details = {"ports_in": [{"port": 445, "links": 4}, {"port": 139, "links": 2}], "conn_in": [["21.66.134.179", [{"port": 445, "links": 4}, {"port": 139, "links": 2}]]], "unique_ports": 2, "unique_out": 1, "unique_in": 1, "conn_out": [["21.66.1.145", [{"port": 5061, "links": 1}]]]};

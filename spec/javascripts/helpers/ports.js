@@ -1,5 +1,5 @@
 function get_mock_m_ports() {
-  response = {
+    response = {
     "443": {
       "port": 443,
       "active": 1,
@@ -32,13 +32,14 @@ function get_mock_m_ports() {
       "alias_name": null,
       "alias_description": null
     }
-  };
+    };
 
-  //GET_portinfo_callback(response);
+    //clear any existing data
+    ports.ports = [];
 
-  //clear any existing data
-  m_ports = [];
-  Object.keys(response).forEach(function (key) {
-      update_port(Number(key), response[key]);
-  });
+    ports.private.GET_response(response);
+
+//    Object.keys(response).forEach(function (key) {
+//        ports.set(Number(key), response[key]);
+//    });
 }
