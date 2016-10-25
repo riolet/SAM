@@ -165,7 +165,6 @@ function sel_build_overflow(amount, columns) {
 
 function sel_update_display(node) {
     "use strict";
-    console.log("~+~calling sel_update_display");
     if (node === undefined) {
         node = m_selection["selection"];
     }
