@@ -1,5 +1,5 @@
 /**
- * class Ports
+ * Class Ports
  * public:
  *   ports = []
  *   display_callback = null
@@ -42,11 +42,9 @@
     // Public functions
     // ==================================
     ports.loaded = function (port) {
-        "use strict";
         return ports.ports.hasOwnProperty(port);
     };
     ports.get_name = function (port) {
-        "use strict";
         if (!ports.loaded(port)){
             return port.toString();
         }
@@ -63,7 +61,6 @@
         return port.toString();
     };
     ports.get_alias = function (port) {
-        "use strict";
         if (!ports.loaded(port)){
             return port.toString();
         }
@@ -80,7 +77,6 @@
         return port.toString();
     };
     ports.get_description = function (port) {
-        "use strict";
         if (!ports.loaded(port)){
             return ""
         }
@@ -109,7 +105,6 @@
         return link;
     };
     ports.set = function (port, new_info) {
-        "use strict";
         // update m_ports
         // POST_portinfo anything new
         // settable properties: active, alias_name, alias_description
@@ -159,13 +154,11 @@
         ports.ports[port] = old_info;
     };
     ports.request_add = function (port) {
-        "use strict";
         if (!ports.loaded(port)) {
             ports.private.requests.push(port);
         }
     };
     ports.request_submit = function (callback) {
-        "use strict";
         var request = ports.private.requests.filter(function (element) {
             return !ports.ports.hasOwnProperty(element.toString());
         });
@@ -181,7 +174,6 @@
         }
     };
     ports.show_edit_window = function (port) {
-        "use strict";
         document.getElementById("port_number").innerHTML = port;
         document.getElementById("port_name").innerHTML = "loading...";
         document.getElementById("port_description").innerHTML = "loading...";
@@ -209,19 +201,16 @@
     // Private functions
     // ==================================
     ports.private.click = function (event) {
-        "use strict";
         var port = parseInt(event.target.innerHTML);
         ports.show_edit_window(port);
     };
     ports.private.GET_response = function (response) {
-        "use strict";
         Object.keys(response).forEach(function (key) {
             ports.set(Number(key), response[key]);
         });
         ports.private.update_displays();
     };
     ports.private.save = function () {
-        "use strict";
         var info = {};
         if (document.getElementById("port_active").checked) {
             info.active = 1;
@@ -234,8 +223,6 @@
         ports.set(ports.private.editing, info);
     };
     ports.private.edit = function (port, portinfo) {
-        "use strict";
-    
         ports.private.editing = port;
     
         if (portinfo === undefined || portinfo.active === undefined) {
