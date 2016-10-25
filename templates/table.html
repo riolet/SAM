@@ -1,10 +1,68 @@
 $def with (columns)
-$# "$def with (arg1, ...)" MUST be the first line. See template.py for details
 <div class="ui">
-    <div class="segment">
-        <p>Filters: none</p>
+    <div class="ui styled fluid accordion">
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Filters: subnet /24, port 443, &gt;1000 conns
+        </div>
+        <div class="content" id="filters">
+            <div class="filter" id="filter1">
+                <button class="ui compact icon button"><i class="delete icon"></i></button>
+                <div class="ui toggle checkbox"><input name="filter1" title="Enable this filter" type="checkbox" checked="">
+                <label class="inline" >Subnet mask is </label></div>
+                <div class="ui selection dropdown">
+                    <input name="subnet" type="hidden">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Choose subnet...</div>
+                    <div class="menu">
+                        <div class="item" data-value="8">/8</div>
+                        <div class="item" data-value="16">/16</div>
+                        <div class="item" data-value="24">/24</div>
+                        <div class="item" data-value="32">/32</div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter" id="filter2">
+                <button class="ui compact icon button"><i class="delete icon"></i></button>
+                <div class="ui toggle checkbox"><input name="filter2" title="Enable this filter" type="checkbox" checked="">
+                <label class="inline">Ports used are </label></div>
+                <div class="ui selection dropdown">
+                    <input name="port-filter-type" type="hidden">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Filter type...</div>
+                    <div class="menu">
+                        <div class="item" data-value="=">equal to</div>
+                        <div class="item" data-value="|">between</div>
+                        <div class="item" data-value="<">less than</div>
+                        <div class="item" data-value=">">greater than</div>
+                    </div>
+                </div>
+                <div class="ui input">
+                    <input placeholder="Port number" type="text" value="443">
+                </div>
+            </div>
+            <div class="filter" id="filter3">
+                <button class="ui compact icon button"><i class="delete icon"></i></button>
+                <div class="ui toggle checkbox"><input name="filter3" title="Enable this filter" type="checkbox" checked="">
+                <label class="inline">Is involved in </label></div>
+                <div class="ui selection dropdown">
+                    <input name="port-filter-type" type="hidden">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Filter type...</div>
+                    <div class="menu">
+                        <div class="item" data-value=">">greater than</div>
+                        <div class="item" data-value="<">less than</div>
+                        <div class="item" data-value="|">between</div>
+                        <div class="item" data-value="=">equal to</div>
+                    </div>
+                </div>
+                <div class="ui input">
+                    <input placeholder="a number of" type="text" value="1000">
+                </div>
+                <span>connections.</span>
+            </div>
+        </div>
     </div>
-
     <table class="ui selectable striped small table">
         <thead>
         <tr>

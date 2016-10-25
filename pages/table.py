@@ -10,7 +10,7 @@ class Table(object):
     def GET(self):
         return str(common.render._head(self.pageTitle,
                                        stylesheets=["/static/css/table.css"],
-                                       scripts=[])) \
+                                       scripts=["/static/js/table.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
                + str(common.render.table(self.columns)) \
                + str(common.render._tail())
