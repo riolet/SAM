@@ -111,8 +111,18 @@
         filters.private.updateSummary();
     };
     filters.getFilters = function () {
-        //collapse the filter list into descriptions that can be transmitted via AJAX
-        console.error("Not implemented");
+        //collapse the filter list into a minimal set of data
+        return filters.filters.reduce(function (data, filter) {
+            var newItem = {}
+            Object.keys(filter).forEach(function (key) {
+                if (key === "html") {
+                    return;
+                }
+                newItem[key] = filter[key];
+            });
+            data.push(newItem);
+            return data;
+        }, []);
     };
 
 
