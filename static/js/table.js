@@ -8,6 +8,7 @@ function init() {
     });
 
     filters.displayDiv = document.getElementById("filters");
+    filters.updateDisplay();
 }
 
 window.onload = function () {

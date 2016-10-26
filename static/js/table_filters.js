@@ -59,6 +59,7 @@
         //remove a filter item from the list
         // ???trigger the removal from the display???
         filters.filters.splice(index, 1);
+        filters.private.updateSummary();
     };
     filters.updateDisplay = function () {
         //compare the existing display to the filters array and update it when there's a mismatch?
@@ -83,19 +84,20 @@
     // ==================================
     // Private methods
     // ==================================
-    filters.private.createSubnetFilterRow = function (mask) {
+    filters.private.createSubnetFilterRow = function (subnet) {
         var filter;
         var filterdiv = filters.private.markupBoilerplate(true);
-        var parts = filters.private.createSubnetFilter(mask);
+        var parts = filters.private.createSubnetFilter(subnet);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         filter = {};
+        filter.enabled = true;
         filter.type = "subnet";
-        filter.mask = mask;
+        filter.subnet = subnet;
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createSubnetFilter = function (mask) {
+    filters.private.createSubnetFilter = function (subnet) {
         var parts = [];
         parts.push(filters.private.markupSpan("Subnet mask is "));
         parts.push(filters.private.markupSelection("subnet", "Choose subnet...", [
@@ -103,7 +105,7 @@
             ['16', '/16'],
             ['24', '/24'],
             ['32', '/32'],
-        ], mask));
+        ], subnet));
         return parts;
     };
     filters.private.createPortFilterRow = function (comparator_port) {
@@ -117,6 +119,7 @@
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
+        filter.enabled = true;
         filter.type = "port";
         filter.comparator = comparator;
         filter.port = port;
@@ -131,7 +134,7 @@
             ['<', 'less than'],
             ['>', 'greater than'],
         ], comparator));
-        parts.push(filters.private.markupInput("80,443,8000-8888", port));
+        parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
         return parts;
     };
     filters.private.createTagFilterRow = function (has_tags) {
@@ -147,6 +150,7 @@
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
+        filter.enabled = true;
         filter.type = "tags";
         filter.has = has;
         filter.tags = tags;
@@ -173,11 +177,12 @@
             comparator = comparator_limit[0];
             limit = comparator_limit[1];
         }
-        var filterdiv = filters.private.markupBoilerplate("Is involved in ", true);
+        var filterdiv = filters.private.markupBoilerplate(true);
         var parts = filters.private.createConnectionsFilter(comparator, limit);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
+        filter.enabled = true;
         filter.type = "connections";
         filter.comparator = comparator;
         filter.limit = limit;
@@ -192,7 +197,7 @@
             ['<', 'less than'],
             ['>', 'greater than'],
         ], comparator));
-        parts.push(filters.private.markupInput("a number of", limit));
+        parts.push(filters.private.markupInput("limit", "a number of", limit));
         parts.push(filters.private.markupSpan("connections."));
         return parts;
     };
@@ -213,6 +218,8 @@
         toggleInput.title = "Enable this filter";
         toggleInput.type = "checkbox";
         toggleInput.checked = enabled;
+        toggleInput.name = "enabled";
+        toggleInput.onchange = filters.private.updateEvent;
         var toggleLabel = document.createElement("label");
         toggleLabel.className = "inline";
         var toggleEnabled = document.createElement("div");
@@ -236,6 +243,7 @@
         var input = document.createElement("input");
         input.name = name;
         input.type = "hidden";
+        input.onchange = filters.private.updateEvent;
 
         //The dropdown icon
         var icon = document.createElement("i");
@@ -288,11 +296,13 @@
         }
         return selectionDiv;
     };
-    filters.private.markupInput = function (placeholderText, preset) {
+    filters.private.markupInput = function (name, placeholderText, preset) {
         //input element
         var input = document.createElement("input");
         input.placeholder = placeholderText;
         input.type = "text";
+        input.onchange = filters.private.updateEvent;
+        input.name = name;
 
         //encompassing div
         var inputdiv = document.createElement("div")
@@ -314,13 +324,8 @@
 
     filters.private.deleteCallback = function (event) {
         var row = event.target.parentElement;
-        var i;
-        for(i = 0; i < filters.filters.length; i += 1) {
-            if (filters.filters[i].html === row) {
-                break;
-            }
-        }
-        if (i !== filters.filters.length) {
+        var i = filters.private.getRowIndex(row);
+        if (i !== -1) {
             filters.deleteFilter(i);
             $(row).remove();
         }
@@ -333,12 +338,12 @@
         if (!filters.private.types.hasOwnProperty(type)) {
             return;
         }
-        var params = filters.private.extractCreationValues(typeSelector);
+        var params = filters.private.extractRowValues(typeSelector);
         filters.addFilter(type, params);
         //filters.private.deleteCallback(event);
         filters.updateDisplay();
     };
-    filters.private.extractCreationValues = function(head) {
+    filters.private.extractRowValues = function(head) {
         var params = [];
         var walker = head.nextElementSibling;
         var inputs;
@@ -356,31 +361,35 @@
     filters.private.updateSummary = function() {
         //build summary
         var summary = "Filter: ";
-        filters.filters.forEach(function (filter) {
-            if (filter.type === "subnet") {
-                summary += "subnet /" + filter.mask
-            } else if (filter.type === "port") {
-                if (filter.comparator === "=") {
-                    summary += "port " + filter.port;
-                } else {
-                    summary += "ports " + filter.comparator + filter.port;
+        if (filters.filters.length > 0) {
+            filters.filters.forEach(function (filter) {
+                if (filter.type === "subnet") {
+                    summary += "subnet /" + filter.subnet;
+                } else if (filter.type === "port") {
+                    if (filter.comparator === "=") {
+                        summary += "port " + filter.port;
+                    } else {
+                        summary += "ports " + filter.comparator + filter.port;
+                    }
+                } else if (filter.type === "connections") {
+                    if (filter.comparator === "=") {
+                        summary += filter.limit + " conns";
+                    } else {
+                        summary += filter.comparator + filter.limit + " conns";
+                    }
+                } else if (filter.type === "tags") {
+                    if (filter.has === "1") {
+                        summary += "tagged (" + filter.tags + ")";
+                    } else {
+                        summary += "no tag (" + filter.tags + ")";
+                    }
                 }
-            } else if (filter.type === "connections") {
-                if (filter.comparator === "=") {
-                    summary += filter.limit + " conns";
-                } else {
-                    summary += filter.comparator + filter.limit + " conns";
-                }
-            } else if (filter.type === "tags") {
-                if (filter.has) {
-                    summary += "tagged (" + filter.tags + ")";
-                } else {
-                    summary += "no tag (" + filter.tags + ")";
-                }
-            }
-            summary += ", ";
-        });
-        summary = summary.slice(0, -2);
+                summary += ", ";
+            });
+            summary = summary.slice(0, -2);
+        } else {
+            summary += "none";
+        }
 
         //display summary
         var header = filters.displayDiv.previousElementSibling
@@ -388,6 +397,29 @@
         header.innerHTML = "";
         header.appendChild(icon);
         header.appendChild(document.createTextNode(summary));
+    }
+    filters.private.updateEvent = function(e) {
+        var input = e.target;
+        var newValue = input.value;
+        if (e.target.parentElement.classList.contains("checkbox")) {
+            newValue = input.checked;
+        }
+        var row = input;
+        while (row !== null && !(row.tagName === "DIV" && row.classList.contains("filter"))) {
+            row = row.parentElement;
+        }
+        var i = filters.private.getRowIndex(row);
+        if (i !== -1) {
+            filters.filters[i][input.name] = newValue;
+            filters.private.updateSummary();
+        }
+    };
+    filters.private.getRowIndex = function(rowHTML) {
+        var i = filters.filters.length - 1;
+        while (i >= 0 && filters.filters[i].html !== rowHTML) {
+            i -= 1;
+        }
+        return i;
     }
 
     //Register filter types, and their constructors
