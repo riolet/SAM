@@ -4,19 +4,43 @@
  *    filters = [];
  *    displayDiv = null;
  *  private:
+ *    types = {};
  *
  *  public methods:
  *    addFilter(type, params)  // Add a new filter to the state
- *    deleteFilter(id)  // Remove a filter from the state
+ *    deleteFilter(index)  // Remove a filter from the state
  *    updateDisplay()  //updates the HTML display from the state
  *    getFilters()  //returns an object encapsulating the filter state (for use in ajax requests)
  *
  *  private methods:
- *    markup(filter)
- *    markupBoilerplate(preface, enabled)
- *    markupSelection(name, placeholderText, options)
- *    markupInput(placeholderText)
- *    createFilterCreator()
+ *      //create filter list HTML items, and filter objects
+ *      createSubnetFilter(subnet)
+ *      createPortFilter(comparator_port)
+ *      createTagFilter(has_tags)
+ *      createConnectionsFilter(comparator_limit)
+ *
+ *      //create HTML for each filter type
+ *      createSubnetFilterRow(subnet)
+ *      createPortFilterRow(comparator, port)
+ *      createTagFilterRow(has, tags)
+ *      createConnectionsFilterRow(comparator, limit)
+ *
+ *      //create form component markup
+ *      markupBoilerplate(enabled)
+ *      markupSelection(name, placeholderText, options, selected)
+ *      markupTags(name, placeholderText, preset)
+ *      markupInput(name, placeholderText, preset)
+ *      markupSpan(text)
+ *
+ *      //+, X callback events to add and delete
+ *      addCallback(event)
+ *      deleteCallback(event)
+ *      updateEvent(event)  //called when an input value changes
+ *      getRowIndex(rowHTML)
+ *      extractRowValues(head)  //reads the HTML for a filter row to get the input values provided by the user.
+ *
+ *      updateSummary()  //the short filter text when the filter panel isn't expanded.
+ *      createFilterCreator()  //the "new filter" row with the '+' button.
  *
  */
 
@@ -95,10 +119,10 @@
     // ==================================
     // Private methods
     // ==================================
-    filters.private.createSubnetFilterRow = function (subnet) {
+    filters.private.createSubnetFilter = function (subnet) {
         var filter;
         var filterdiv = filters.private.markupBoilerplate(true);
-        var parts = filters.private.createSubnetFilter(subnet);
+        var parts = filters.private.createSubnetFilterRow(subnet);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         filter = {};
@@ -108,7 +132,7 @@
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createSubnetFilter = function (subnet) {
+    filters.private.createSubnetFilterRow = function (subnet) {
         var parts = [];
         parts.push(filters.private.markupSpan("Subnet mask is "));
         parts.push(filters.private.markupSelection("subnet", "Choose subnet...", [
@@ -119,14 +143,14 @@
         ], subnet));
         return parts;
     };
-    filters.private.createPortFilterRow = function (comparator_port) {
+    filters.private.createPortFilter = function (comparator_port) {
         var comparator, port;
         if (comparator_port) {
             comparator = comparator_port[0];
             port = comparator_port[1];
         }
         var filterdiv = filters.private.markupBoilerplate(true);
-        var parts = filters.private.createPortFilter(comparator, port);
+        var parts = filters.private.createPortFilterRow(comparator, port);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
@@ -137,7 +161,7 @@
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createPortFilter = function (comparator, port) {
+    filters.private.createPortFilterRow = function (comparator, port) {
         var parts = [];
         parts.push(filters.private.markupSpan("Ports used are "));
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
@@ -148,7 +172,7 @@
         parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
         return parts;
     };
-    filters.private.createTagFilterRow = function (has_tags) {
+    filters.private.createTagFilter = function (has_tags) {
         var has, tags;
         if (has_tags) {
             has = has_tags[0];
@@ -157,7 +181,7 @@
             has = "1";
         }
         var filterdiv = filters.private.markupBoilerplate(true);
-        var parts = filters.private.createTagFilter(has, tags);
+        var parts = filters.private.createTagFilterRow(has, tags);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
@@ -168,7 +192,7 @@
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createTagFilter = function (has, tags) {
+    filters.private.createTagFilterRow = function (has, tags) {
         var parts = [];
         parts.push(filters.private.markupSpan("host "));
         parts.push(filters.private.markupSelection("has", "has/n't", [
@@ -182,14 +206,14 @@
         ], tags));
         return parts;
     };
-    filters.private.createConnectionsFilterRow = function (comparator_limit) {
+    filters.private.createConnectionsFilter = function (comparator_limit) {
         var comparator, limit;
         if (comparator_limit) {
             comparator = comparator_limit[0];
             limit = comparator_limit[1];
         }
         var filterdiv = filters.private.markupBoilerplate(true);
-        var parts = filters.private.createConnectionsFilter(comparator, limit);
+        var parts = filters.private.createConnectionsFilterRow(comparator, limit);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
@@ -200,7 +224,7 @@
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createConnectionsFilter = function (comparator, limit) {
+    filters.private.createConnectionsFilterRow = function (comparator, limit) {
         var parts = [];
         parts.push(filters.private.markupSpan("Is involved in "));
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
@@ -333,14 +357,6 @@
         return span;
     };
 
-    filters.private.deleteCallback = function (event) {
-        var row = event.target.parentElement;
-        var i = filters.private.getRowIndex(row);
-        if (i !== -1) {
-            filters.deleteFilter(i);
-            $(row).remove();
-        }
-    };
     filters.private.addCallback = function (event) {
         var row = event.target.parentElement;
         //extract: filter type
@@ -353,6 +369,37 @@
         filters.addFilter(type, params);
         //filters.private.deleteCallback(event);
         filters.updateDisplay();
+    };
+    filters.private.deleteCallback = function (event) {
+        var row = event.target.parentElement;
+        var i = filters.private.getRowIndex(row);
+        if (i !== -1) {
+            filters.deleteFilter(i);
+            $(row).remove();
+        }
+    };
+    filters.private.updateEvent = function(e) {
+        var input = e.target;
+        var newValue = input.value;
+        if (e.target.parentElement.classList.contains("checkbox")) {
+            newValue = input.checked;
+        }
+        var row = input;
+        while (row !== null && !(row.tagName === "DIV" && row.classList.contains("filter"))) {
+            row = row.parentElement;
+        }
+        var i = filters.private.getRowIndex(row);
+        if (i !== -1) {
+            filters.filters[i][input.name] = newValue;
+            filters.private.updateSummary();
+        }
+    };
+    filters.private.getRowIndex = function(rowHTML) {
+        var i = filters.filters.length - 1;
+        while (i >= 0 && filters.filters[i].html !== rowHTML) {
+            i -= 1;
+        }
+        return i;
     };
     filters.private.extractRowValues = function(head) {
         var params = [];
@@ -408,36 +455,13 @@
         header.innerHTML = "";
         header.appendChild(icon);
         header.appendChild(document.createTextNode(summary));
-    }
-    filters.private.updateEvent = function(e) {
-        var input = e.target;
-        var newValue = input.value;
-        if (e.target.parentElement.classList.contains("checkbox")) {
-            newValue = input.checked;
-        }
-        var row = input;
-        while (row !== null && !(row.tagName === "DIV" && row.classList.contains("filter"))) {
-            row = row.parentElement;
-        }
-        var i = filters.private.getRowIndex(row);
-        if (i !== -1) {
-            filters.filters[i][input.name] = newValue;
-            filters.private.updateSummary();
-        }
     };
-    filters.private.getRowIndex = function(rowHTML) {
-        var i = filters.filters.length - 1;
-        while (i >= 0 && filters.filters[i].html !== rowHTML) {
-            i -= 1;
-        }
-        return i;
-    }
 
     //Register filter types, and their constructors
-    filters.private.types['subnet'] = [filters.private.createSubnetFilterRow, filters.private.createSubnetFilter, 1];
-    filters.private.types['port'] = [filters.private.createPortFilterRow, filters.private.createPortFilter, 2];
-    filters.private.types['connections']= [filters.private.createConnectionsFilterRow, filters.private.createConnectionsFilter, 2];
-    filters.private.types['tags']= [filters.private.createTagFilterRow, filters.private.createTagFilter, 2];
+    filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
+    filters.private.types['port'] = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
+    filters.private.types['connections']= [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 2];
+    filters.private.types['tags']= [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
 
     filters.private.createFilterCreator = function () {
         //The add button
@@ -471,7 +495,7 @@
         });
 
         return filterdiv;
-    }
+    };
 
     // Export ports instance to global scope
     window.filters = filters;

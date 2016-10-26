@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+
+
 function init() {
     "use strict";
 
@@ -8,6 +18,7 @@ function init() {
     });
 
     filters.displayDiv = document.getElementById("filters");
+    //filters.applyCallback = ???
     filters.updateDisplay();
 }
 
