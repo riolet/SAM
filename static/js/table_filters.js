@@ -134,6 +134,39 @@
         parts.push(filters.private.markupInput("Port number", port));
         return parts;
     };
+    filters.private.createTagFilterRow = function (has_tags) {
+        var has, tags;
+        if (has_tags) {
+            has = has_tags[0];
+            tags = has_tags[1];
+        } else {
+            has = "1";
+        }
+        var filterdiv = filters.private.markupBoilerplate(true);
+        var parts = filters.private.createTagFilter(has, tags);
+        parts.forEach(function (part) { filterdiv.appendChild(part); });
+
+        var filter = {};
+        filter.type = "tags";
+        filter.has = has;
+        filter.tags = tags;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createTagFilter = function (has, tags) {
+        var parts = [];
+        parts.push(filters.private.markupSpan("host "));
+        parts.push(filters.private.markupSelection("has", "has/n't", [
+            ["1", "has"],
+            ["0", "doesn't have"],
+        ], has));
+        parts.push(filters.private.markupSpan(" tags: "));
+        parts.push(filters.private.markupTags("tags", "Choose tag(s)", [
+            ['server', "Server"],
+            ["client", "Client"]
+        ], tags));
+        return parts;
+    };
     filters.private.createConnectionsFilterRow = function (comparator_limit) {
         var comparator, limit;
         if (comparator_limit) {
@@ -240,6 +273,21 @@
         }
         return selectionDiv;
     };
+    filters.private.markupTags = function (name, placeholderText, options, selected) {
+        var selectionDiv = filters.private.markupSelection(name, placeholderText, options);
+        selectionDiv.className = "ui multiple search selection dropdown";
+        //$(selectionDiv).dropdown("setup menu", {
+        //    allowAdditions: true
+        //});
+        $(selectionDiv).dropdown({
+            allowAdditions: true
+        });
+        if (selected) {
+            var tags = selected.split(",");
+            $(selectionDiv).dropdown("set exactly", tags);
+        }
+        return selectionDiv;
+    };
     filters.private.markupInput = function (placeholderText, preset) {
         //input element
         var input = document.createElement("input");
@@ -297,8 +345,8 @@
         var i;
         while (walker !== undefined && walker !== null) {
             inputs = walker.getElementsByTagName("input");
-            for (i = 0; i < inputs.length; i += 1) {
-                params.push(inputs[i].value);
+            if (inputs.length > 0) {
+                params.push(inputs[0].value);
             }
             walker = walker.nextElementSibling;
         }
@@ -323,6 +371,12 @@
                 } else {
                     summary += filter.comparator + filter.limit + " conns";
                 }
+            } else if (filter.type === "tags") {
+                if (filter.has) {
+                    summary += "tagged (" + filter.tags + ")";
+                } else {
+                    summary += "no tag (" + filter.tags + ")";
+                }
             }
             summary += ", ";
         });
@@ -339,7 +393,8 @@
     //Register filter types, and their constructors
     filters.private.types['subnet'] = [filters.private.createSubnetFilterRow, filters.private.createSubnetFilter, 1];
     filters.private.types['port'] = [filters.private.createPortFilterRow, filters.private.createPortFilter, 2];
-    filters.private.types['connections']= [filters.private.createConnectionsFilterRow, filters.private.createConnectionsFilter, 2]
+    filters.private.types['connections']= [filters.private.createConnectionsFilterRow, filters.private.createConnectionsFilter, 2];
+    filters.private.types['tags']= [filters.private.createTagFilterRow, filters.private.createTagFilter, 2];
 
     filters.private.createFilterCreator = function () {
         //The add button
