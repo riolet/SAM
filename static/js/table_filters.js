@@ -27,6 +27,7 @@
 
     filters.filters = [];
     filters.displayDiv = null;
+    filters.applyCallback = null;
     filters.private = {};
     filters.private.types = {};
 
@@ -68,11 +69,21 @@
             return;
         }
 
+        //Apply Filter button
+        var buttonIcon = document.createElement("i");
+        buttonIcon.className = "refresh blue icon";
+        var buttonApply = document.createElement("button");
+        buttonApply.className = "ui compact icon button";
+        buttonApply.onclick = filters.applyCallback;
+        buttonApply.appendChild(buttonIcon);
+        buttonApply.appendChild(document.createTextNode("Apply Filter"));
+
         filters.displayDiv.innerHTML = "";
         filters.filters.forEach(function (filter) {
             filters.displayDiv.appendChild(filter.html);
         });
         filters.displayDiv.appendChild(filters.private.createFilterCreator());
+        filters.displayDiv.appendChild(buttonApply);
         filters.private.updateSummary();
     };
     filters.getFilters = function () {
