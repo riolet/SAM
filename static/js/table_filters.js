@@ -131,7 +131,7 @@
             ['<', 'less than'],
             ['>', 'greater than'],
         ], comparator));
-        parts.push(filters.private.markupInput("Port number", port));
+        parts.push(filters.private.markupInput("80,443,8000-8888", port));
         return parts;
     };
     filters.private.createTagFilterRow = function (has_tags) {
