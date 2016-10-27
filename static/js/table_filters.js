@@ -511,6 +511,7 @@
             var filterArgs = filterString.split(';');
             var typeIndex = filterArgs.shift();
             var enabled = filterArgs.shift();
+            enabled = (enabled === "1")
             var type = Object.keys(filters.private.types).sort()[typeIndex];
             var filter = filters.private.types[type][0](filterArgs, enabled);
             decodedFilters.push(filter);
