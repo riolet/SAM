@@ -14,7 +14,16 @@ function importURL() {
 function applyFilter() {
     console.log("applying filter!");
     var filterString = filters.getFilters();
-    window.location.search = "?filters=" + encodeURIComponent(filterString);
+    searchs = [
+        ["filters", encodeURIComponent(filterString)],
+        ["page", 1],
+        ["sort", "Address"]
+    ];
+    var searchString = "";
+    searchs.forEach(function (term) {
+        searchString += "&" + term.join("=");
+    });
+    window.location.search = "?" + searchString.substr(1);
 }
 
 ;(function () {
@@ -27,12 +36,6 @@ function applyFilter() {
     table.private.thead = null;
     table.private.tfoot = null;
     table.private.columns = [];
-    /*
-    table.private.rangeStart = 0;
-    table.private.rangeEnd = 0;
-    table.private.totalPages = 0;
-    table.private.totalRows = 0;
-    */
     table.setTable = function(tableHTML) {
         table.html = tableHTML;
         table.private.thead = document.createElement("thead");
