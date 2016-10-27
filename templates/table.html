@@ -5,19 +5,6 @@ $def with (columns)
         <div class="content" id="filters">
         </div>
     </div>
-    <table class="ui selectable striped small table">
-        <thead>
-        <tr>
-            $for c in columns:
-                <th>$c</th>
-        </tr>
-        </thead>
-        <tbody>
-        $for i in range(10):
-            <tr>
-                $for c in columns:
-                    <td>$c</td>
-            </tr>
-        </tbody>
+    <table class="ui selectable striped small table" id="resultsTable">
     </table>
 </div>

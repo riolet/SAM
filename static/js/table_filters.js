@@ -67,7 +67,7 @@
         if (filters.private.types.hasOwnProperty(type)) {
             source = filters.private.types[type];
             if (params.length === source[2]) {
-                newFilter = source[0](params);
+                newFilter = source[0](params, true);
             } else {
                 console.error("addFilter: Params length didn't match:");
                 console.log(arguments);
@@ -112,7 +112,7 @@
     };
     filters.getFilters = function () {
         //collapse the filter list into a minimal set of data
-        return filters.filters.reduce(function (data, filter) {
+        var filterArray = filters.filters.reduce(function (data, filter) {
             var newItem = {}
             Object.keys(filter).forEach(function (key) {
                 if (key === "html") {
@@ -123,15 +123,19 @@
             data.push(newItem);
             return data;
         }, []);
+        return filters.private.encodeFilters(filterArray);
     };
-
+    filters.setFilters = function (filterString) {
+        filters.filters = filters.private.decodeFilters(filterString);
+        filters.updateDisplay();
+    };
 
     // ==================================
     // Private methods
     // ==================================
-    filters.private.createSubnetFilter = function (subnet) {
+    filters.private.createSubnetFilter = function (subnet, enabled) {
         var filter;
-        var filterdiv = filters.private.markupBoilerplate(true);
+        var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createSubnetFilterRow(subnet);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
@@ -153,13 +157,13 @@
         ], subnet));
         return parts;
     };
-    filters.private.createPortFilter = function (comparator_port) {
+    filters.private.createPortFilter = function (comparator_port, enabled) {
         var comparator, port;
         if (comparator_port) {
             comparator = comparator_port[0];
             port = comparator_port[1];
         }
-        var filterdiv = filters.private.markupBoilerplate(true);
+        var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createPortFilterRow(comparator, port);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
@@ -182,7 +186,7 @@
         parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
         return parts;
     };
-    filters.private.createTagFilter = function (has_tags) {
+    filters.private.createTagFilter = function (has_tags, enabled) {
         var has, tags;
         if (has_tags) {
             has = has_tags[0];
@@ -190,7 +194,7 @@
         } else {
             has = "1";
         }
-        var filterdiv = filters.private.markupBoilerplate(true);
+        var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createTagFilterRow(has, tags);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
@@ -216,13 +220,13 @@
         ], tags));
         return parts;
     };
-    filters.private.createConnectionsFilter = function (comparator_limit) {
+    filters.private.createConnectionsFilter = function (comparator_limit, enabled) {
         var comparator, limit;
         if (comparator_limit) {
             comparator = comparator_limit[0];
             limit = comparator_limit[1];
         }
-        var filterdiv = filters.private.markupBoilerplate(true);
+        var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createConnectionsFilterRow(comparator, limit);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
@@ -466,6 +470,50 @@
         header.appendChild(icon);
         header.appendChild(document.createTextNode(summary));
     };
+    filters.private.encodeFilters = function(filterArray) {
+        var filterString = "";
+        var f_s;
+        filterArray.forEach(function (filter) {
+            //Save type
+            var f_type = Object.keys(filters.private.types).indexOf(filter.type)
+            f_s = f_type.toString();
+            delete filter.type;
+
+            //Save enabled state.
+            if (filter.enabled) {
+                f_s += ";1";
+            } else {
+                f_s += ";0";
+            }
+            delete filter.enabled;
+
+            //Save other data alphabetically
+            var keys = Object.keys(filter);
+            keys.sort();
+            keys.forEach(function(k) {
+                f_s += ";" + filter[k];
+            });
+            filterString += "|" + f_s;
+        });
+        return filterString.substr(1);
+    }
+    filters.private.decodeFilters = function(filterGET) {
+        var decodedFilters = [];
+
+        //split by &
+        var filterList = filterGET.split("|");
+        filterList.forEach(function (filterString) {
+            // Should I decodeURIComponent()?
+            // split by |
+            var filterArgs = filterString.split(';');
+            var typeIndex = filterArgs.shift();
+            var enabled = filterArgs.shift();
+            var type = Object.keys(filters.private.types)[typeIndex];
+            var filter = filters.private.types[type][0](filterArgs, enabled);
+            decodedFilters.push(filter);
+        });
+        return decodedFilters;
+    }
 
     //Register filter types, and their constructors
     filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
@@ -507,6 +555,6 @@
         return filterdiv;
     };
 
-    // Export ports instance to global scope
+    // Export filters instance to global scope
     window.filters = filters;
 })();
