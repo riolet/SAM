@@ -1,12 +1,27 @@
 import common
+import web
 
 
 class Table(object):
     def __init__(self):
         self.pageTitle = "Host List"
         self.columns = ["Address", "Hostname", "Role", "Environment", "Tags"]
+        self.filterFormat = {
+            "subnet": ["subnet"],
+            "port": ["comparator", "port"],
+            "connections": ["comparator", "limit"],
+            "tags": ["has", "tags"]
+        }
 
     def GET(self):
+        print("="*50)
+
+        get_data = web.input()
+        for k, v in get_data.iteritems():
+            print k, "=", v
+
+        print("="*50)
+
         return str(common.render._head(self.pageTitle,
                                        stylesheets=["/static/css/table.css"],
                                        scripts=["/static/js/table.js",
