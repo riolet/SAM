@@ -160,32 +160,31 @@
         ], subnet));
         return parts;
     };
-    filters.private.createPortFilter = function (comparator_port, enabled) {
-        var comparator, port;
-        if (comparator_port) {
-            comparator = comparator_port[0];
-            port = comparator_port[1];
+    filters.private.createPortFilter = function (includes_port, enabled) {
+        var includes, port;
+        if (includes_port) {
+            includes = includes_port[0];
+            port = includes_port[1];
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createPortFilterRow(comparator, port);
+        var parts = filters.private.createPortFilterRow(includes, port);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
         filter.enabled = true;
         filter.type = "port";
-        filter.comparator = comparator;
+        filter.includes = includes;
         filter.port = port;
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createPortFilterRow = function (comparator, port) {
+    filters.private.createPortFilterRow = function (includes, port) {
         var parts = [];
-        parts.push(filters.private.markupSpan("Ports used are "));
-        parts.push(filters.private.markupSelection("comparator", "Filter type...", [
-            ['=', 'equal to'],
-            ['<', 'less than'],
-            ['>', 'greater than'],
-        ], comparator));
+        parts.push(filters.private.markupSpan("Ports accessed "));
+        parts.push(filters.private.markupSelection("includes", "Filter type...", [
+            ['1', 'include'],
+            ['0', 'exclude'],
+        ], includes));
         parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
         return parts;
     };
@@ -441,10 +440,10 @@
                 if (filter.type === "subnet") {
                     summary += "subnet /" + filter.subnet;
                 } else if (filter.type === "port") {
-                    if (filter.comparator === "=") {
-                        summary += "port " + filter.port;
+                    if (filter.includes === "1") {
+                        summary += "includes (" + filter.port + ")";
                     } else {
-                        summary += "ports " + filter.comparator + filter.port;
+                        summary += "excludes (" + filter.port + ")";
                     }
                 } else if (filter.type === "connections") {
                     if (filter.comparator === "=") {
