@@ -126,6 +126,9 @@
         return filters.private.encodeFilters(filterArray);
     };
     filters.setFilters = function (filterString) {
+        if (filterString == "") {
+            return;
+        }
         filters.filters = filters.private.decodeFilters(filterString);
         filters.updateDisplay();
     };
@@ -475,7 +478,7 @@
         var f_s;
         filterArray.forEach(function (filter) {
             //Save type
-            var f_type = Object.keys(filters.private.types).indexOf(filter.type)
+            var f_type = Object.keys(filters.private.types).sort().indexOf(filter.type);
             f_s = f_type.toString();
             delete filter.type;
 
@@ -508,7 +511,7 @@
             var filterArgs = filterString.split(';');
             var typeIndex = filterArgs.shift();
             var enabled = filterArgs.shift();
-            var type = Object.keys(filters.private.types)[typeIndex];
+            var type = Object.keys(filters.private.types).sort()[typeIndex];
             var filter = filters.private.types[type][0](filterArgs, enabled);
             decodedFilters.push(filter);
         });

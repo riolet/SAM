@@ -13,12 +13,15 @@ function importURL() {
 
 function applyFilter() {
     console.log("applying filter!");
-    var filterString = filters.getFilters();
     searchs = [
-        ["filters", encodeURIComponent(filterString)],
         ["page", 1],
         ["sort", "Address"]
     ];
+    var filterString = filters.getFilters();
+    if (filterString.length > 0) {
+        searchs.push(["filters", encodeURIComponent(filterString)])
+    }
+
     var searchString = "";
     searchs.forEach(function (term) {
         searchString += "&" + term.join("=");
