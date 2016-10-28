@@ -89,8 +89,8 @@ function init() {
     filters.updateDisplay();
 
     //Configure Table
-    table.setTable(document.getElementById("resultsTable"));
-    table.setColumns(["Address", "Hostname", "Role", "Environment", "Tags"]);
+    //table.setTable(document.getElementById("resultsTable"));
+    //table.setColumns(["Address", "Hostname", "Role", "Environment", "Tags"]);
 
     //Interpret URL
     importURL();

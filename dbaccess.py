@@ -464,3 +464,23 @@ def set_port_info(data):
             common.db.update('portLUT', {"port": port}, active=active)
     else:
         common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
+
+
+def get_table_info(clauses):
+    WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
+    query = """
+SELECT decodeIP(ipstart) AS address
+    , alias
+    ,(SELECT SUM(links)
+        FROM LinksA AS l_out
+        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
+     ) AS "conn_out"
+    ,(SELECT SUM(links)
+        FROM LinksA AS l_in
+        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
+     ) AS "conn_in"
+FROM NodesF AS nodes
+WHERE {0}
+LIMIT 10;""".format(WHERE)
+    info = list(common.db.query(query))
+    return info

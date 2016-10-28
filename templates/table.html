@@ -1,4 +1,4 @@
-$def with (columns)
+$def with (columns, data)
 <div class="ui">
     <div class="ui styled fluid accordion">
         <div class="title"><i class="dropdown icon"></i>Filters: subnet /24, port 443, &gt;1000 conns</div>
@@ -6,5 +6,18 @@ $def with (columns)
         </div>
     </div>
     <table class="ui selectable striped small table" id="resultsTable">
+        <thead>
+            <tr>
+                $for name in columns:
+                    <th>$name</th>
+            </tr>
+        </thead>
+        <tbody>
+            $for row in data:
+                <tr>
+                    $for item in row:
+                        <td>$item</td>
+                </tr>
+        </tbody>
     </table>
 </div>

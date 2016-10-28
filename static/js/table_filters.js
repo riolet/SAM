@@ -151,7 +151,7 @@
     };
     filters.private.createSubnetFilterRow = function (subnet) {
         var parts = [];
-        parts.push(filters.private.markupSpan("Subnet mask is "));
+        parts.push(filters.private.markupSpan("Return results from subnet "));
         parts.push(filters.private.markupSelection("subnet", "Choose subnet...", [
             ['8', '/8'],
             ['16', '/16'],
@@ -160,31 +160,39 @@
         ], subnet));
         return parts;
     };
-    filters.private.createPortFilter = function (includes_port, enabled) {
-        var includes, port;
-        if (includes_port) {
-            includes = includes_port[0];
-            port = includes_port[1];
+    filters.private.createPortFilter = function (connection_port, enabled) {
+        var connection, port;
+        if (connection_port) {
+            connection = connection_port[0];
+            port = connection_port[1];
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createPortFilterRow(includes, port);
+        var parts = filters.private.createPortFilterRow(connection, port);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
         filter.enabled = true;
         filter.type = "port";
-        filter.includes = includes;
+        filter.connection = connection;
         filter.port = port;
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createPortFilterRow = function (includes, port) {
+    filters.private.createPortFilterRow = function (connection, port) {
         var parts = [];
-        parts.push(filters.private.markupSpan("Ports accessed "));
-        parts.push(filters.private.markupSelection("includes", "Filter type...", [
-            ['1', 'include'],
-            ['0', 'exclude'],
-        ], includes));
+        //parts.push(filters.private.markupSpan("Host "));
+        //connects via port
+        //doesn't connect via port
+        //receives connections via port
+        //doesn't receive connections via port
+
+        parts.push(filters.private.markupSelection("connection", "Filter type...", [
+            ['0', 'connects to'],
+            ['1', "doesn't connect to"],
+            ['2', 'receives connections from'],
+            ['3', "doesn't receive connections from"],
+        ], connection));
+        parts.push(filters.private.markupSpan("another host via port"));
         parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
         return parts;
     };
@@ -440,10 +448,14 @@
                 if (filter.type === "subnet") {
                     summary += "subnet /" + filter.subnet;
                 } else if (filter.type === "port") {
-                    if (filter.includes === "1") {
-                        summary += "includes (" + filter.port + ")";
-                    } else {
-                        summary += "excludes (" + filter.port + ")";
+                    if (filter.connection === "0") {
+                        summary += "conn to (" + filter.port + ")";
+                    } else if (filter.connection === "1") {
+                        summary += "X conn to (" + filter.port + ")";
+                    } else if (filter.connection === "2") {
+                        summary += "conn from (" + filter.port + ")";
+                    } else if (filter.connection === "3") {
+                        summary += "X conn from (" + filter.port + ")";
                     }
                 } else if (filter.type === "connections") {
                     if (filter.comparator === "=") {
