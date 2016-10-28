@@ -52,14 +52,16 @@ class PortFilter(Filter):
         # 3: doesn't receive connection from port n
 
     def where(self):
-        if self.params['connection'] == 0:
-            return "EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
-        elif self.params['connection'] == 1:
-            return "NOT EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
-        elif self.params['connection'] == 2:
+        if self.params['connection'] == '0':
             return "EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.src BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
-        elif self.params['connection'] == 3:
+        elif self.params['connection'] == '1':
             return "NOT EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.src BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
+        elif self.params['connection'] == '2':
+            return "EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
+        elif self.params['connection'] == '3':
+            return "NOT EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
+        print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. ({0}, type: {1})"
+               .format(self.params['connection'], type(self.params['connection'])))
         return ""
 
 

@@ -24,8 +24,25 @@ class Table(object):
         data = []
         if fs:
             data = dbaccess.get_table_info(fs)
+            rows = []
             for i in range(len(data)):
-                data[i] = [data[i].address, data[i].alias, data[i].conn_in, data[i].conn_out]
+                row = [data[i].address]
+                if data[i].alias:
+                    row.append(data[i].alias)
+                else:
+                    row.append("-")
+
+                if data[i].conn_in:
+                    row.append(data[i].conn_in)
+                else:
+                    row.append(0)
+
+                if data[i].conn_out:
+                    row.append(data[i].conn_out)
+                else:
+                    row.append(0)
+
+                rows.append(row)
 
 
         return str(common.render._head(self.pageTitle,
@@ -33,5 +50,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns, data)) \
+               + str(common.render.table(self.columns, rows)) \
                + str(common.render._tail())
