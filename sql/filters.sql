@@ -160,7 +160,21 @@ FROM NodesF AS nodes
 WHERE nodes.subnet = 24
     && EXISTS (SELECT * FROM LinksA WHERE LinksA.port = 443 && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)
 LIMIT 10;
-
+-- connections test
+SELECT decodeIP(ipstart) AS address
+    , alias
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksA AS l_out
+        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
+     ),0) AS "conn_out"
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksA AS l_in
+        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
+     ),0) AS "conn_in"
+FROM NodesF AS nodes
+WHERE nodes.subnet = 16
+HAVING conn_in < 1
+LIMIT 10;
 
 
 

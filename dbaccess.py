@@ -468,6 +468,13 @@ def set_port_info(data):
 
 def get_table_info(clauses):
     WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
+    if WHERE:
+        WHERE = "WHERE " + WHERE
+
+    HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
+    if HAVING:
+        HAVING = "HAVING " + HAVING
+
     query = """
 SELECT decodeIP(ipstart) AS address
     , alias
@@ -480,7 +487,8 @@ SELECT decodeIP(ipstart) AS address
         WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "conn_in"
 FROM NodesF AS nodes
-WHERE {0}
-LIMIT 10;""".format(WHERE)
+{0}
+{1}
+LIMIT 10;""".format(WHERE, HAVING)
     info = list(common.db.query(query))
     return info

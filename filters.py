@@ -25,6 +25,9 @@ class Filter (object):
     def where(self):
         raise NotImplemented("This method must be overridden in the ({0}) class.".format(self.type))
 
+    def having(self):
+        raise NotImplemented("This method must be overridden in the ({0}) class.".format(self.type))
+
 
 class SubnetFilter(Filter):
     def __init__(self, enabled):
@@ -38,6 +41,9 @@ class SubnetFilter(Filter):
             raise ValueError("Subnet is not valid. ({net} not in {valid})".format(net=subnet, valid=valid_subnets))
 
         return "nodes.subnet = {0}".format(subnet)
+
+    def having(self):
+        return ""
 
 
 class PortFilter(Filter):
@@ -64,15 +70,34 @@ class PortFilter(Filter):
                .format(self.params['connection'], type(self.params['connection'])))
         return ""
 
+    def having(self):
+        return ""
+
 
 class ConnectionsFilter(Filter):
     def __init__(self, enabled):
         Filter.__init__(self, "connections", enabled)
         self.params['comparator'] = ""
+        self.params['direction'] = ""
         self.params['limit'] = ""
 
     def where(self):
         return ""
+
+    def having(self):
+        HAVING = ""
+        if self.params['comparator'] not in ['=', '<', '>']:
+            return ""
+        limit = int(self.params['limit'])
+        if self.params['direction'] == "i":
+            src = "conn_in"
+        else:
+            src = "conn_out"
+
+        HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+        if self.params['direction'] == '<':
+            HAVING += " || {src} IS NULL".format(src=src)
+        return HAVING
 
 
 class TagsFilter(Filter):
@@ -84,9 +109,8 @@ class TagsFilter(Filter):
     def where(self):
         return ""
 
-class QueryBuilder (object):
-    def __init__(self, filterArray):
-        self.filters = filterArray
+    def having(self):
+        return ""
 
 
 filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter]

@@ -82,7 +82,6 @@
     };
     filters.deleteFilter = function (index) {
         //remove a filter item from the list
-        // ???trigger the removal from the display???
         filters.filters.splice(index, 1);
         filters.private.updateSummary();
     };
@@ -187,10 +186,10 @@
         //doesn't receive connections via port
 
         parts.push(filters.private.markupSelection("connection", "Filter type...", [
-            ['0', 'connects to'],
-            ['1', "doesn't connect to"],
-            ['2', 'receives connections from'],
-            ['3', "doesn't receive connections from"],
+            ['0', 'Connects to'],
+            ['1', "Doesn't connect to"],
+            ['2', 'Receives connections from'],
+            ['3', "Doesn't receive connections from"],
         ], connection));
         parts.push(filters.private.markupSpan("another host via port"));
         parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
@@ -230,33 +229,39 @@
         ], tags));
         return parts;
     };
-    filters.private.createConnectionsFilter = function (comparator_limit, enabled) {
-        var comparator, limit;
-        if (comparator_limit) {
-            comparator = comparator_limit[0];
-            limit = comparator_limit[1];
+    filters.private.createConnectionsFilter = function (cmp_dir_limit, enabled) {
+        var comparator, direction, limit;
+        if (cmp_dir_limit) {
+            comparator = cmp_dir_limit[0];
+            direction = cmp_dir_limit[1];
+            limit = cmp_dir_limit[2];
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createConnectionsFilterRow(comparator, limit);
+        var parts = filters.private.createConnectionsFilterRow(comparator, direction, limit);
         parts.forEach(function (part) { filterdiv.appendChild(part); });
 
         var filter = {};
         filter.enabled = true;
         filter.type = "connections";
         filter.comparator = comparator;
+        filter.direction = direction;
         filter.limit = limit;
         filter.html = filterdiv;
         return filter;
     };
-    filters.private.createConnectionsFilterRow = function (comparator, limit) {
+    filters.private.createConnectionsFilterRow = function (comparator, direction, limit) {
         var parts = [];
-        parts.push(filters.private.markupSpan("Is involved in "));
+        parts.push(filters.private.markupSpan("Has "));
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
-            ['=', 'equal to'],
-            ['<', 'less than'],
-            ['>', 'greater than'],
+            ['>', 'more than'],
+            ['<', 'fewer than'],
+            ['=', 'exactly'],
         ], comparator));
         parts.push(filters.private.markupInput("limit", "a number of", limit));
+        parts.push(filters.private.markupSelection("direction", "in/outbound", [
+            ['i', 'inbound'],
+            ['o', 'outbound'],
+        ], direction));
         parts.push(filters.private.markupSpan("connections."));
         return parts;
     };
@@ -432,12 +437,21 @@
         var i;
         while (walker !== undefined && walker !== null) {
             inputs = walker.getElementsByTagName("input");
+            console.log(inputs);
             if (inputs.length > 0) {
-                params.push(inputs[0].value);
+                params.push([inputs[0].name, inputs[0].value]);
             }
             walker = walker.nextElementSibling;
         }
-        return params;
+
+        //sort the values by lexical order of keys
+        params.sort(function (a, b) {
+            if (a[0] < b[0]) return -1;
+            if (b[0] < a[0]) return 1;
+            return 0;
+        });
+        //return just the values
+        return params.map(function (e) { return e[1]});
     };
 
     filters.private.updateSummary = function() {
@@ -533,7 +547,7 @@
     //Register filter types, and their constructors
     filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
     filters.private.types['port'] = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
-    filters.private.types['connections']= [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 2];
+    filters.private.types['connections']= [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 3];
     filters.private.types['tags']= [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
 
     filters.private.createFilterCreator = function () {

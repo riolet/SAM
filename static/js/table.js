@@ -83,6 +83,14 @@ function init() {
 
     $(".ui.accordion").accordion("open", 0);
 
+    //toggle buttons
+    $(".ui.swapper.button").state({
+      text: {
+        inactive : 'Vote',
+        active   : 'Voted'
+      }
+    });
+
     //Configure Filters
     filters.displayDiv = document.getElementById("filters");
     filters.applyCallback = applyFilter;
