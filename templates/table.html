@@ -1,4 +1,4 @@
-$def with (columns, rows)
+$def with (columns, rows, spread, prev, next)
 <div class="ui">
     <div class="ui styled fluid accordion">
         <div class="title"><i class="dropdown icon"></i>Filters: subnet /24, port 443, &gt;1000 conns</div>
@@ -21,10 +21,17 @@ $def with (columns, rows)
                     $for item in row[1:]:
                         <td>$item</td>
                 </tr>
-            $if not rows:
-                <tr>
-                    <td colspan="$len(columns)">No matching results.</td>
-                </tr>
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="$len(columns)">
+                    $if prev:
+                        <a href="$prev">prev</a>
+                    $spread
+                    $if next:
+                        <a href="$next">next</a>
+                </td>
+            </tr>
+        </tfoot>
     </table>
 </div>

@@ -466,7 +466,7 @@ def set_port_info(data):
         common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
 
 
-def get_table_info(clauses):
+def get_table_info(clauses, page, page_size):
     WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
     if WHERE:
         WHERE = "WHERE " + WHERE
@@ -489,6 +489,6 @@ SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
 FROM NodesF AS nodes
 {0}
 {1}
-LIMIT 10;""".format(WHERE, HAVING)
+LIMIT {2},{3};""".format(WHERE, HAVING, page * page_size, page_size)
     info = list(common.db.query(query))
     return info
