@@ -21,7 +21,7 @@ class Table(object):
                 print i.testString()
         print("="*50)
 
-        data = []
+        rows = []
         if fs:
             data = dbaccess.get_table_info(fs)
             rows = []

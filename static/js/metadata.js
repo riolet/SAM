@@ -59,6 +59,50 @@ function present_detailed_info(info) {
     $('.popup').popup();
 }
 
+function normalizeIP(ipString) {
+    "use strict";
+    var add_sub = ipString.split("/")
+
+    var address = add_sub[0];
+    var subnet = add_sub[1];
+
+    var segments = address.split(".");
+    var num;
+    var final_ip = "";
+    segments = segments.reduce(function (list, element) {
+        num = parseInt(element);
+        if (!isNaN(num)) {
+            list.push(num);
+        }
+        return list;
+    }, []);
+
+    final_ip = segments.join(".");
+
+    var zeroes_to_add = 4 - segments.length;
+    for (; zeroes_to_add > 0; zeroes_to_add -= 1) {
+        final_ip += ".0";
+    }
+    num = parseInt(subnet);
+    if (num) {
+        final_ip += "/" + subnet;
+    } else {
+        final_ip += "/" + (segments.length * 8);
+    }
+    return final_ip;
+}
+
+function minimizeIP(ip) {
+    var add_sub = ip.split("/");
+    var subnet = parseInt(add_sub[1]) / 8;
+    var segs = add_sub[0].split(".");
+    var i;
+    var minimized_ip = segs[0];
+    for (i = 1; i < subnet; i += 1) {
+        minimized_ip += "." + segs[i];
+    }
+    return minimized_ip;
+}
 
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
@@ -68,7 +112,8 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
 
 function GET_data(ip, part, callback){
     "use strict";
-    var request = {"address": ip}
+
+    var request = {"address": minimizeIP(ip)};
     $.ajax({
         url: "/details/" + part,
         type: "GET",
@@ -119,7 +164,7 @@ function requestMoreDetails(event) {
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting More Details");
 
-        GET_data(input.value, "inputs,outputs,ports", function (response) {
+        GET_data(minimizeIP(input.value), "inputs,outputs,ports", function (response) {
             // More details arrived
             // TODO: remove loading icon from tabs??
             // Render into browser
@@ -175,11 +220,13 @@ function requestQuickInfo(event) {
         console.log("Requesting Quick Info");
         searchbar.classList.add("loading");
         present_quick_info([["Loading", "..."]]);
-        GET_data(input.value, "quick_info", function (response) {
+        var normalizedIP = normalizeIP(input.value);
+        GET_data(normalizedIP, "quick_info", function (response) {
             // Quick info arrived
             searchbar.classList.remove("loading");
             // Render into browser
             present_quick_info(response.quick_info)
+            input.value = normalizedIP;
             console.log("Quick info Arrived. Proceeding to Request More Details");
 
             //Continue to more details
@@ -238,6 +285,11 @@ function init() {
     };
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
+
+    if (g_initial_ip !== '') {
+        input.value = g_initial_ip;
+        dispatcher(new StateChangeEvent(requestQuickInfo));
+    }
 }
 
 window.onload = function () {

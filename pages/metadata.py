@@ -1,4 +1,5 @@
 import common
+import web
 
 
 class Metadata(object):
@@ -6,6 +7,10 @@ class Metadata(object):
         self.pageTitle = "Metadata Test"
 
     def GET(self):
+        get_data = web.input()
+        ip = ''
+        if 'ip' in get_data:
+            ip = get_data['ip']
         return str(common.render._head(self.pageTitle,
                                        stylesheets=[],
                                        scripts=["/static/js/metadata.js",
@@ -14,5 +19,5 @@ class Metadata(object):
                                                 "/static/js/map_data.js",
                                                 "/static/js/tablesort.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.metadata()) \
+               + str(common.render.metadata(ip)) \
                + str(common.render._tail())

@@ -476,7 +476,7 @@ def get_table_info(clauses):
         HAVING = "HAVING " + HAVING
 
     query = """
-SELECT decodeIP(ipstart) AS address
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
     , alias
     ,(SELECT SUM(links)
         FROM LinksA AS l_out
