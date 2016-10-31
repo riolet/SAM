@@ -6,7 +6,7 @@ RETURN CONCAT(ip DIV 16777216, CONCAT(".", CONCAT(ip DIV 65536 MOD 256, CONCAT("
 SELECT decodeIP(356712447);
 
 -- Create the tables
-CREATE TABLE NodesF
+CREATE TABLE IF NOT EXISTS Nodes
 (ipstart           INT UNSIGNED NOT NULL
 ,ipend             INT UNSIGNED NOT NULL
 ,subnet            INT NOT NULL
@@ -14,19 +14,19 @@ CREATE TABLE NodesF
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
-,CONSTRAINT PKNodesF PRIMARY KEY (ipstart, ipend)
+,CONSTRAINT PKNodes PRIMARY KEY (ipstart, ipend)
 );
 
-CREATE TABLE LinksA
+CREATE TABLE IF NOT EXISTS Links
 (src               INT UNSIGNED NOT NULL
 ,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
 ,timestamp         TIMESTAMP NOT NULL
 ,links             INT DEFAULT 1
-,CONSTRAINT PKLinksA PRIMARY KEY (src, dst, port, timestamp)
+,CONSTRAINT PKLinks PRIMARY KEY (src, dst, port, timestamp)
 );
 
-CREATE TABLE LinksB
+CREATE TABLE IF NOT EXISTS LinksIn
 (src_start         INT UNSIGNED NOT NULL
 ,src_end           INT UNSIGNED NOT NULL
 ,dst_start         INT UNSIGNED NOT NULL
@@ -34,15 +34,28 @@ CREATE TABLE LinksB
 ,port              INT NOT NULL
 ,timestamp         TIMESTAMP NOT NULL
 ,links             INT DEFAULT 1
-,CONSTRAINT PKLinksB PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
-,CONSTRAINT FKLinksBSrc FOREIGN KEY (src_start, src_end) REFERENCES NodesF (ipstart, ipend)
-,CONSTRAINT FKLinksBDst FOREIGN KEY (dst_start, dst_end) REFERENCES NodesF (ipstart, ipend)
+,CONSTRAINT PKLinksIn PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
+,CONSTRAINT FKLinksInSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
+,CONSTRAINT FKLinksInDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
+);
+
+CREATE TABLE IF NOT EXISTS LinksOut
+(src_start         INT UNSIGNED NOT NULL
+,src_end           INT UNSIGNED NOT NULL
+,dst_start         INT UNSIGNED NOT NULL
+,dst_end           INT UNSIGNED NOT NULL
+,port              INT NOT NULL
+,timestamp         TIMESTAMP NOT NULL
+,links             INT DEFAULT 1
+,CONSTRAINT PKLinksOut PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
+,CONSTRAINT FKLinksOutSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
+,CONSTRAINT FKLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
 );
 
 
 
--- Fill NodesF
-INSERT INTO NodesF (ipstart, ipend, subnet, x, y, radius)
+-- Fill Nodes
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
 SELECT log.ip, log.ip, 32
     , 0 AS x
     , 0 AS y
@@ -55,7 +68,7 @@ FROM(
     FROM Syslog
 ) AS log;
 
-INSERT INTO NodesF (ipstart, ipend, subnet, x, y, radius)
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
 SELECT twentyfour.__start, twentyfour.__end, 24
     , 0 AS x
     , 0 AS y
@@ -63,12 +76,12 @@ SELECT twentyfour.__start, twentyfour.__end, 24
 FROM(
     SELECT (ipstart DIV 256 * 256) AS __start
          , (ipstart DIV 256 * 256 + 255) AS __end
-    FROM NodesF
+    FROM Nodes
     WHERE ipstart = ipend
     GROUP BY __start, __end
 ) AS twentyfour;
 
-INSERT INTO NodesF (ipstart, ipend, subnet, x, y, radius)
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
 SELECT sixteen.__start, sixteen.__end, 16
     , 0 AS x
     , 0 AS y
@@ -76,12 +89,12 @@ SELECT sixteen.__start, sixteen.__end, 16
 FROM(
     SELECT (ipstart DIV 65536 * 65536) AS __start
          , (ipstart DIV 65536 * 65536 + 65535) AS __end
-    FROM NodesF
+    FROM Nodes
     WHERE ipstart = ipend
     GROUP BY __start, __end
 ) AS sixteen;
 
-INSERT INTO NodesF (ipstart, ipend, subnet, x, y, radius)
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
 SELECT eight.__start, eight.__end, 8
     , 0 AS x
     , 0 AS y
@@ -89,14 +102,14 @@ SELECT eight.__start, eight.__end, 8
 FROM(
     SELECT (ipstart DIV 16777216 * 16777216) AS __start
          , (ipstart DIV 16777216 * 16777216 + 16777215) AS __end
-    FROM NodesF
+    FROM Nodes
     WHERE ipstart = ipend
     GROUP BY __start, __end
 ) AS eight;
 
 
--- Fill LinksA
-INSERT INTO LinksA (src, dst, port, timestamp, links)
+-- Fill Links
+INSERT INTO Links (src, dst, port, timestamp, links)
 SELECT SourceIP, DestinationIP, DestinationPort
     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
     , COUNT(1) AS links
@@ -104,16 +117,16 @@ FROM Syslog
 GROUP BY SourceIP, DestinationIP, DestinationPort, ts;
 
 
---filter by port
+-- filter by port
 -- columns: address, alias, conns_in, conns_out
-SELECT decodeIP(NodesF.ipstart) AS 'address'
-    , NodesF.alias AS 'alias'
+SELECT decodeIP(Nodes.ipstart) AS 'address'
+    , Nodes.alias AS 'alias'
     , SUM(l_in.links) AS 'Conn IN'
-FROM NodesF
-LEFT JOIN LinksA AS l_in
-    ON l_in.dst BETWEEN NodesF.ipstart AND NodesF.ipend
-WHERE NodesF.subnet = 8
-GROUP BY NodesF.ipstart, NodesF.alias
+FROM Nodes
+LEFT JOIN Links AS l_in
+    ON l_in.dst BETWEEN Nodes.ipstart AND Nodes.ipend
+WHERE Nodes.subnet = 8
+GROUP BY Nodes.ipstart, Nodes.alias
 LIMIT 10;
 
 
@@ -121,94 +134,295 @@ LIMIT 10;
 SELECT ipstart
     , alias
     ,(SELECT SUM(links)
-        FROM LinksA AS l_out
+        FROM Links AS l_out
         WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "Conn OUT"
     ,(SELECT SUM(links)
-        FROM LinksA AS l_in
+        FROM Links AS l_in
         WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "Conn IN"
-FROM NodesF AS nodes
+FROM Nodes AS nodes
 WHERE nodes.subnet = 24
 LIMIT 10;
 -- port filter test
 SELECT ipstart
     , alias
     ,(SELECT SUM(links)
-        FROM LinksA AS l_out
+        FROM Links AS l_out
         WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "Conn OUT"
     ,(SELECT SUM(links)
-        FROM LinksA AS l_in
+        FROM Links AS l_in
         WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "Conn IN"
-FROM NodesF AS nodes
-WHERE EXISTS (SELECT * FROM LinksA WHERE LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend AND LinksA.port = 443)
+FROM Nodes AS nodes
+WHERE EXISTS (SELECT * FROM Links WHERE Links.dst BETWEEN nodes.ipstart AND nodes.ipend AND Links.port = 443)
 LIMIT 10;
 -- port AND subnet filter test
 SELECT ipstart
     , alias
     ,(SELECT SUM(links)
-        FROM LinksA AS l_out
+        FROM Links AS l_out
         WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "Conn OUT"
     ,(SELECT SUM(links)
-        FROM LinksA AS l_in
+        FROM Links AS l_in
         WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
      ) AS "Conn IN"
-FROM NodesF AS nodes
+FROM Nodes AS nodes
 WHERE nodes.subnet = 24
-    && EXISTS (SELECT * FROM LinksA WHERE LinksA.port = 443 && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)
+    && EXISTS (SELECT * FROM Links WHERE Links.port = 443 && Links.dst BETWEEN nodes.ipstart AND nodes.ipend)
 LIMIT 10;
 -- connections test
 SELECT decodeIP(ipstart) AS address
     , alias
     ,COALESCE((SELECT SUM(links)
-        FROM LinksA AS l_out
+        FROM Links AS l_out
         WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
      ),0) AS "conn_out"
     ,COALESCE((SELECT SUM(links)
-        FROM LinksA AS l_in
+        FROM Links AS l_in
         WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
      ),0) AS "conn_in"
-FROM NodesF AS nodes
+FROM Nodes AS nodes
 WHERE nodes.subnet = 16
 HAVING conn_in < 1
 LIMIT 10;
 
 
 
---  IGNORE until later
+-- LinksIn and Out
+-- adding /8
+INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src DIV 16777216 * 16777216 AS 'src_start'
+    , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
+    , dst DIV 16777216 * 16777216 AS 'dst_start'
+    , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
 
--- Fill LinksB
-CREATE TABLE LinksB
-(src_start         INT UNSIGNED NOT NULL
-,src_end           INT UNSIGNED NOT NULL
-,dst_start         INT UNSIGNED NOT NULL
-,dst_end           INT UNSIGNED NOT NULL
-,port              INT NOT NULL
-,timestamp         TIMESTAMP NOT NULL
-,links             INT DEFAULT 1
-,CONSTRAINT PKLinksB PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
-,CONSTRAINT FKLinksBSrc FOREIGN KEY (src_start, src_end) REFERENCES NodesF (ipstart, ipend)
-,CONSTRAINT FKLinksBDst FOREIGN KEY (dst_start, dst_end) REFERENCES NodesF (ipstart, ipend)
-);
--- adding /32
-INSERT INTO LinksB (src_start, src_end, dst_start, dst_end, port, timestamp, links)
-SELECT SourceIP AS src_start
-    , SourceIP AS src_end
-    , DestinationIP AS dst_start
-    , DestinationIP AS dst_end
-    , DestinationPort
-    , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
-    , COUNT(1) AS links
-FROM Syslog
-GROUP BY SourceIP, DestinationIP, DestinationPort, ts;
+INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src_start, src_end, dst_start, dst_end, port, timestamp, links
+FROM LinksIn;
+
+-- adding /16
+INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src DIV 65536 * 65536 AS 'src_start'
+    , src DIV 65536 * 65536 + 65535 AS 'src_end'
+    , dst DIV 65536 * 65536 AS 'dst_start'
+    , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) = (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 16777216 * 16777216 AS 'src_start'
+    , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
+    , dst DIV 65536 * 65536 AS 'dst_start'
+    , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) != (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
+
+INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src DIV 65536 * 65536 AS 'src_start'
+    , src DIV 65536 * 65536 + 65535 AS 'src_end'
+    , dst DIV 65536 * 65536 AS 'dst_start'
+    , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) = (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 65536 * 65536 AS 'src_start'
+    , src DIV 65536 * 65536 + 65535 AS 'src_end'
+    , dst DIV 16777216 * 16777216 AS 'dst_start'
+    , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) != (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
+
 
 -- adding /24
+INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src DIV 256 * 256 AS 'src_start'
+    , src DIV 256 * 256 + 255 AS 'src_end'
+    , dst DIV 256 * 256 AS 'dst_start'
+    , dst DIV 256 * 256 + 255 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 65536) = (dst DIV 65536)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 65536 * 65536 AS 'src_start'
+    , src DIV 65536 * 65536 + 65535 AS 'src_end'
+    , dst DIV 256 * 256 AS 'dst_start'
+    , dst DIV 256 * 256 + 255 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) = (dst DIV 16777216)
+  AND (src DIV 65536) != (dst DIV 65536)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 16777216 * 16777216 AS 'src_start'
+    , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
+    , dst DIV 256 * 256 AS 'dst_start'
+    , dst DIV 256 * 256 + 255 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) != (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
 
 
+INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src DIV 256 * 256 AS 'src_start'
+    , src DIV 256 * 256 + 255 AS 'src_end'
+    , dst DIV 256 * 256 AS 'dst_start'
+    , dst DIV 256 * 256 + 255 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 65536) = (dst DIV 65536)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 256 * 256 AS 'src_start'
+    , src DIV 256 * 256 + 255 AS 'src_end'
+    , dst DIV 65536 * 65536 AS 'dst_start'
+    , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) = (dst DIV 16777216)
+  AND (src DIV 65536) != (dst DIV 65536)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 256 * 256 AS 'src_start'
+    , src DIV 256 * 256 + 255 AS 'src_end'
+    , dst DIV 16777216 * 16777216 AS 'dst_start'
+    , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) != (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
 
+-- adding /32
+INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src AS 'src_start'
+    , src AS 'src_end'
+    , dst AS 'dst_start'
+    , dst AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 256) = (dst DIV 256)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 256 * 256 AS 'src_start'
+    , src DIV 256 * 256 + 255 AS 'src_end'
+    , dst AS 'dst_start'
+    , dst AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 65536) = (dst DIV 65536)
+  AND (src DIV 256) != (dst DIV 256)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 65536 * 65536 AS 'src_start'
+    , src DIV 65536 * 65536 + 65535 AS 'src_end'
+    , dst AS 'dst_start'
+    , dst AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) = (dst DIV 16777216)
+  AND (src DIV 65536) != (dst DIV 65536)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src DIV 16777216 * 16777216 AS 'src_start'
+    , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
+    , dst AS 'dst_start'
+    , dst AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) != (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
+
+
+INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+SELECT src AS 'src_start'
+    , src AS 'src_end'
+    , dst AS 'dst_start'
+    , dst AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 256) = (dst DIV 256)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src AS 'src_start'
+    , src AS 'src_end'
+    , dst DIV 256 * 256 AS 'dst_start'
+    , dst DIV 256 * 256 + 255 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 65536) = (dst DIV 65536)
+  AND (src DIV 256) != (dst DIV 256)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src AS 'src_start'
+    , src AS 'src_end'
+    , dst DIV 65536 * 65536 AS 'dst_start'
+    , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) = (dst DIV 16777216)
+  AND (src DIV 65536) != (dst DIV 65536)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
+UNION
+SELECT src AS 'src_start'
+    , src AS 'src_end'
+    , dst DIV 16777216 * 16777216 AS 'dst_start'
+    , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+    , port
+    , timestamp
+    , SUM(links)
+FROM Links
+WHERE (src DIV 16777216) != (dst DIV 16777216)
+GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
 
 
 
