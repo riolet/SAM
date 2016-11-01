@@ -1,75 +1,78 @@
-$def with (columns, rows, spread, prev, next)
+$def with (columns, sorting, rows, spread, prev, next)
 <div class="ui">
-    <div class="ui styled fluid accordion">
-        <div class="title"><i class="dropdown icon"></i>Filters: subnet /24, port 443, &gt;1000 conns</div>
-        <div class="content" id="filters">
-        </div>
+  <div class="ui styled fluid accordion">
+    <div class="title"><i class="dropdown icon"></i>Filters: none</div>
+    <div class="content" id="filters">
     </div>
-    <div class="ui two column grid">
-        <div class="row">
-            <div class="left floated left aligned column">
-                $if prev:
-                    <a href="$prev"><button class="ui button">prev</button></a>
-                $else:
-                    <button class="ui button disabled">prev</button>
-                $spread
-                $if next:
-                    <a href="$next"><button class="ui button">next</button></a>
-                $else:
-                    <button class="ui button disabled">next</button>
-            </div>
-            <div class="right floated right aligned column">
-                Results per page:
-                <div class="ui floated right buttons pagesize">
-                  <button class="ui button">10</button>
-                  <button class="ui button">20</button>
-                  <button class="ui button">50</button>
-                  <button class="ui button">100</button>
-                </div>
-            </div>
+  </div>
+  <div class="ui two column grid">
+    <div class="row">
+      <div class="left floated left aligned column">
+        $if prev:
+          <a href="$prev"><button class="ui button">prev</button></a>
+        $else:
+          <button class="ui button disabled">prev</button>
+        $spread
+        $if next:
+          <a href="$next"><button class="ui button">next</button></a>
+        $else:
+          <button class="ui button disabled">next</button>
+      </div>
+      <div class="right floated right aligned column">
+        Results per page:
+        <div class="ui floated right buttons pagesize">
+          <button class="ui button">10</button>
+          <button class="ui button">20</button>
+          <button class="ui button">50</button>
+          <button class="ui button">100</button>
         </div>
+      </div>
     </div>
-    <table class="ui selectable striped small table" id="resultsTable">
-        <thead>
-            <tr>
-                $for name in columns:
-                    <th>$name</th>
-            </tr>
-        </thead>
-        <tbody>
-            $for row in rows:
-                <tr>
-                    <td>
-                        <a href="/metadata?ip=$row[0]">$row[0]</a>
-                    </td>
-                    $for item in row[1:]:
-                        <td>$item</td>
-                </tr>
-        </tbody>
-        <tfoot></tfoot>
-    </table>
-    <div class="ui two column grid">
-        <div class="row">
-            <div class="left floated left aligned column">
-                $if prev:
-                    <a href="$prev"><button class="ui button">prev</button></a>
-                $else:
-                    <button class="ui button disabled">prev</button>
-                $spread
-                $if next:
-                    <a href="$next"><button class="ui button">next</button></a>
-                $else:
-                    <button class="ui button disabled">next</button>
-            </div>
-            <div class="right floated right aligned column">
-                Results per page:
-                <div class="ui floated right buttons pagesize">
-                  <button class="ui button">10</button>
-                  <button class="ui button">20</button>
-                  <button class="ui button">50</button>
-                  <button class="ui button">100</button>
-                </div>
-            </div>
+  </div>
+  <table class="ui selectable striped sortable small table" id="resultsTable">
+    <thead>
+      <tr>
+        $for i, name in enumerate(columns):
+          $if i == sorting[0]:
+            <th id="header$i" class="sorted $('ascending' if sorting[1] == 'asc' else 'descending')">$name</th>
+          $else:
+            <th id="header$i">$name</th>
+      </tr>
+    </thead>
+    <tbody>
+      $for row in rows:
+        <tr>
+          <td>
+            <a href="/metadata?ip=$row[0]">$row[0]</a>
+          </td>
+          $for item in row[1:]:
+            <td>$item</td>
+        </tr>
+    </tbody>
+    <tfoot></tfoot>
+  </table>
+  <div class="ui two column grid">
+    <div class="row">
+      <div class="left floated left aligned column">
+        $if prev:
+          <a href="$prev"><button class="ui button">prev</button></a>
+        $else:
+          <button class="ui button disabled">prev</button>
+        $spread
+        $if next:
+          <a href="$next"><button class="ui button">next</button></a>
+        $else:
+          <button class="ui button disabled">next</button>
+      </div>
+      <div class="right floated right aligned column">
+        Results per page:
+        <div class="ui floated right buttons pagesize">
+          <button class="ui button">10</button>
+          <button class="ui button">20</button>
+          <button class="ui button">50</button>
+          <button class="ui button">100</button>
         </div>
+      </div>
     </div>
+  </div>
 </div>

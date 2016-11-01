@@ -1,4 +1,5 @@
 var DEFAULT_PAGE_SIZE = 10;
+var DEFAULT_SORT = "0,asc";
 
 ;(function () {
     "use strict";
@@ -49,7 +50,7 @@ function applyFilter(page) {
     searchs = [
         ["page", 1],
         ['page_size', cookie_data.get('page_size', DEFAULT_PAGE_SIZE)],
-        ["sort", "Address"]
+        ["sort", cookie_data.get('sort', DEFAULT_SORT)]
     ];
     var filterString = filters.getFilters();
     if (filterString.length > 0) {
@@ -68,11 +69,25 @@ function btn_pagesize_callback(e) {
     var oldSize = cookie_data.get('page_size', DEFAULT_PAGE_SIZE);
     var newSize = e.target.innerText;
     if (newSize !== oldSize) {
-        cookie_data.set('page_size', e.target.innerText);
+        cookie_data.set('page_size', newSize);
         applyFilter();
     }
 }
 
+function btn_header_callback(e) {
+    "use strict";
+    console.log(e);
+    var oldSort = cookie_data.get('sort', DEFAULT_SORT);
+    var newSort = e.target.id.substr(6) + ",asc";
+    if (newSort !== oldSort) {
+        cookie_data.set('sort', newSort);
+    } else {
+        cookie_data.set('sort', e.target.id.substr(6) + ",desc");
+    }
+    applyFilter();
+}
+
+/*
 ;(function () {
     "use strict";
     var table = {};
@@ -121,6 +136,7 @@ function btn_pagesize_callback(e) {
     // Export table instance to global scope
     window.table = table;
 })();
+*/
 
 function init() {
     "use strict";
@@ -159,6 +175,13 @@ function init() {
             }
         }
     }
+
+    //Configure sorting buttons
+    var sorters = document.getElementsByTagName('TH');
+    for (j=0; j < sorters.length; j += 1) {
+        sorters[j].onclick = btn_header_callback;
+    }
+
 
     //Interpret URL
     importURL();

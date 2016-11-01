@@ -466,7 +466,7 @@ def set_port_info(data):
         common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
 
 
-def get_table_info(clauses, page, page_size):
+def get_table_info(clauses, page, page_size, order_by, order_dir):
     WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
     if WHERE:
         WHERE = "WHERE " + WHERE
@@ -475,6 +475,12 @@ def get_table_info(clauses, page, page_size):
     HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
         HAVING = "HAVING " + HAVING
+
+    cols = ['ipstart', 'alias', 'conn_out', 'conn_in']
+    ORDERBY = ""
+    if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
+        ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
+
 
     query = """
 SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
@@ -490,8 +496,15 @@ SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
           AND l_in.dst_end = nodes.ipend
      ),0) AS "conn_in"
 FROM Nodes AS nodes
-{0}
-{1}
-LIMIT {2},{3};""".format(WHERE, HAVING, page * page_size, page_size + 1)
+{WHERE}
+{HAVING}
+{ORDER}
+LIMIT {START},{RANGE};""".format(
+        WHERE=WHERE,
+        HAVING=HAVING,
+        ORDER=ORDERBY,
+        START=page * page_size,
+        RANGE=page_size + 1)
+
     info = list(common.db.query(query))
     return info
