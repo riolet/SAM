@@ -287,31 +287,51 @@ def build_where_clause(timestamp_range=None, port=None, rounding=True):
     return WHERE
 
 
+def build_where_clause2(timestamp_range=None, port=None, rounding=True):
+    clauses = []
+    t_start = 0
+    t_end = 0
+
+    if timestamp_range:
+        t_start = timestamp_range[0]
+        t_end = timestamp_range[1]
+        if rounding:
+            # rounding to 5 minutes, for use with the Syslog table
+            if t_start > 150:
+                t_start -= 150
+            if t_end <= 2 ** 31 - 150:
+                t_end += 149
+        clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
+
+    if port:
+        clauses.append("port = $port")
+
+    qvars = {'tstart': t_start, 'tend': t_end, 'port': port}
+    WHERE = str(web.db.reparam("\n    && ".join(clauses), qvars))
+    if WHERE:
+        WHERE = "    && " + WHERE
+    return WHERE
+
+
 def get_details_summary(ip_range, timestamp_range=None, port=None):
-    WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
-    query = """
-           SELECT tableA.unique_in, tableB.unique_out, tableC.unique_ports
-           FROM
-               (SELECT COUNT(DISTINCT(SourceIP)) AS 'unique_in'
-               FROM Syslog
-               WHERE DestinationIP >= $start && DestinationIP <= $end
-                {0})
-               AS tableA
-           JOIN
-               (SELECT COUNT(DISTINCT(DestinationIP)) AS 'unique_out'
-               FROM Syslog
-               WHERE SourceIP >= $start && SourceIP <= $end
-                {0})
-               AS tableB
-           JOIN
-               (SELECT COUNT(DISTINCT(DestinationPort)) AS 'unique_ports'
-               FROM Syslog
-               WHERE DestinationIP >= $start && DestinationIP <= $end
-                {0})
-               AS tableC;
-       """.format(WHERE)
+    WHERE = build_where_clause2(timestamp_range=timestamp_range, port=port)
+
+    query2 = """
+        SELECT (
+            SELECT COUNT(DISTINCT src)
+                FROM Links
+                WHERE dst BETWEEN $start AND $end
+                 {0}) AS 'unique_in'
+            , (SELECT COUNT(DISTINCT dst)
+                FROM Links
+                WHERE src BETWEEN $start AND $end
+                 {0}) AS 'unique_out'
+            , (SELECT COUNT(DISTINCT port)
+                FROM Links
+                WHERE dst BETWEEN $start AND $end
+                 {0}) AS 'unique_ports';""".format(WHERE)
     qvars = {'start': ip_range[0], 'end': ip_range[1]}
-    rows = common.db.query(query, vars=qvars)
+    rows = common.db.query(query2, vars=qvars)
     row = rows[0]
     return row
 
@@ -321,46 +341,38 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
         'start': ip_range[0],
         'end': ip_range[1],
         'limit': limit,
-        'WHERE': build_where_clause(timestamp_range, port)
+        'WHERE': build_where_clause2(timestamp_range, port)
     }
     if inbound:
-        qvars['collected'] = "Syslog.SourceIP"
-        qvars['filtered'] = "Syslog.DestinationIP"
+        qvars['collected'] = "src"
+        qvars['filtered'] = "dst"
     else:
-        qvars['filtered'] = "Syslog.SourceIP"
-        qvars['collected'] = "Syslog.DestinationIP"
+        qvars['filtered'] = "src"
+        qvars['collected'] = "dst"
 
     query = """
-        SELECT ip, temp.port, links
-        FROM
-            (SELECT {collected} AS 'ip'
-                , Syslog.DestinationPort as 'port'
-                , COUNT(*) AS 'links'
-            FROM Syslog
-            WHERE {filtered} >= $start && {filtered} <= $end
-             {WHERE}
-            GROUP BY {collected}, Syslog.DestinationPort)
-            AS temp
+        SELECT {collected} AS 'ip', port AS 'port', sum(links) AS 'links'
+        FROM Links
+        WHERE {filtered} BETWEEN $start AND $end
+         {WHERE}
+        GROUP BY {collected}, port
         ORDER BY links DESC
-        LIMIT $limit;
+        LIMIT {limit};
     """.format(**qvars)
     return list(common.db.query(query, vars=qvars))
 
 
 def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
-    WHERE = build_where_clause(timestamp_range, port)
+    WHERE = build_where_clause2(timestamp_range, port)
     query = """
-            SELECT temp.port, links
-            FROM
-                (SELECT DestinationPort AS port, COUNT(*) AS links
-                FROM Syslog
-                WHERE DestinationIP >= $start && DestinationIP <= $end
-                 {0}
-                GROUP BY port
-                ) AS temp
-            ORDER BY links DESC
-            LIMIT $limit;
-        """.format(WHERE)
+        SELECT port AS 'port', sum(links) AS 'links'
+        FROM Links
+        WHERE dst BETWEEN $start AND $end
+         {0}
+        GROUP BY port
+        ORDER BY links DESC
+        LIMIT $limit;
+    """.format(WHERE)
     qvars = {'start': ip_range[0], 'end': ip_range[1], 'limit': limit}
     return list(common.db.query(query, vars=qvars))
 

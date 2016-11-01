@@ -2,10 +2,15 @@ import json
 import web
 import dbaccess
 import common
+import decimal
 
 
 # This class is for getting the main selection details, such as ins, outs, and ports.
 
+def decimal_default(obj):
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
+    raise TypeError
 
 class Details:
     def __init__(self):
@@ -149,7 +154,7 @@ class Details:
                 details = self.selection_info()
         else:
             details = {"result": "ERROR: Malformed request. The 'address' key was missing"}
-        return json.dumps(details)
+        return json.dumps(details, default=decimal_default)
 
 
 def key_by_link_sum(connection):

@@ -116,92 +116,6 @@ SELECT SourceIP, DestinationIP, DestinationPort
 FROM Syslog
 GROUP BY SourceIP, DestinationIP, DestinationPort, ts;
 
-
--- filter by port
--- columns: address, alias, conns_in, conns_out
-SELECT decodeIP(Nodes.ipstart) AS 'address'
-    , Nodes.alias AS 'alias'
-    , SUM(l_in.links) AS 'Conn IN'
-FROM Nodes
-LEFT JOIN Links AS l_in
-    ON l_in.dst BETWEEN Nodes.ipstart AND Nodes.ipend
-WHERE Nodes.subnet = 8
-GROUP BY Nodes.ipstart, Nodes.alias
-LIMIT 10;
-
-
--- subnet filter test
-
-SELECT ipstart
-    , alias
-    ,COALESCE((SELECT SUM(links)
-        FROM LinksOut AS l_out
-        WHERE l_out.src_start = nodes.ipstart
-          AND l_out.src_end = nodes.ipend
-     ),0) AS "Conn OUT"
-    ,COALESCE((SELECT SUM(links)
-        FROM LinksIn AS l_in
-        WHERE l_in.dst_start = nodes.ipstart
-          AND l_in.dst_end = nodes.ipend
-     ),0) AS "Conn IN"
-FROM Nodes AS nodes
-WHERE nodes.subnet = 32
-LIMIT 50;
--- took 0.003753
-
-
-
-
-
--- port filter test
-SELECT ipstart
-    , alias
-    ,(SELECT SUM(links)
-        FROM Links AS l_out
-        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "Conn OUT"
-    ,(SELECT SUM(links)
-        FROM Links AS l_in
-        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "Conn IN"
-FROM Nodes AS nodes
-WHERE EXISTS (SELECT * FROM Links WHERE Links.dst BETWEEN nodes.ipstart AND nodes.ipend AND Links.port = 443)
-LIMIT 10;
-
--- port AND subnet filter test
-SELECT ipstart
-    , alias
-    ,(SELECT SUM(links)
-        FROM Links AS l_out
-        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "Conn OUT"
-    ,(SELECT SUM(links)
-        FROM Links AS l_in
-        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "Conn IN"
-FROM Nodes AS nodes
-WHERE nodes.subnet = 24
-    && EXISTS (SELECT * FROM Links WHERE Links.port = 443 && Links.dst BETWEEN nodes.ipstart AND nodes.ipend)
-LIMIT 10;
-
--- connections test
-SELECT decodeIP(ipstart) AS address
-    , alias
-    ,COALESCE((SELECT SUM(links)
-        FROM Links AS l_out
-        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
-     ),0) AS "conn_out"
-    ,COALESCE((SELECT SUM(links)
-        FROM Links AS l_in
-        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
-     ),0) AS "conn_in"
-FROM Nodes AS nodes
-WHERE nodes.subnet = 16
-HAVING conn_in < 1
-LIMIT 10;
-
-
-
 -- LinksIn and Out
 -- adding /8
 INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
@@ -436,12 +350,34 @@ WHERE (src DIV 16777216) != (dst DIV 16777216)
 GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
 
 
+-- TESTING
+SELECT src AS 'ip', port AS 'port', sum(links) AS 'links'
+FROM Links
+WHERE dst BETWEEN 3170893824 AND 3187671039
+ && Timestamp BETWEEN FROM_UNIXTIME(1466554050) AND FROM_UNIXTIME(1466557649)
+GROUP BY src, port
+ORDER BY links DESC
+LIMIT 50;
+-- 50 rows, 0.13s
 
-
-
-
-
-
+SELECT temp.port, links
+FROM
+    (SELECT DestinationPort AS port, COUNT(*) AS links
+    FROM Syslog
+    WHERE DestinationIP >= 3170893824 && DestinationIP <= 3187671039
+         && Timestamp BETWEEN FROM_UNIXTIME(1466554050) AND FROM_UNIXTIME(1466557649)
+    GROUP BY port
+    ) AS temp
+ORDER BY links DESC
+LIMIT 50;
+-- 20 rows, 0.08s
+SELECT port AS 'port', sum(links) AS 'links'
+FROM Links
+WHERE dst BETWEEN 3170893824 AND 3187671039
+ && Timestamp BETWEEN FROM_UNIXTIME(1466554050) AND FROM_UNIXTIME(1466557649)
+GROUP BY port
+ORDER BY links DESC
+LIMIT 50;
 
 
 
