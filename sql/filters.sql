@@ -131,19 +131,28 @@ LIMIT 10;
 
 
 -- subnet filter test
+
 SELECT ipstart
     , alias
-    ,(SELECT SUM(links)
-        FROM Links AS l_out
-        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "Conn OUT"
-    ,(SELECT SUM(links)
-        FROM Links AS l_in
-        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "Conn IN"
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksOut AS l_out
+        WHERE l_out.src_start = nodes.ipstart
+          AND l_out.src_end = nodes.ipend
+     ),0) AS "Conn OUT"
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksIn AS l_in
+        WHERE l_in.dst_start = nodes.ipstart
+          AND l_in.dst_end = nodes.ipend
+     ),0) AS "Conn IN"
 FROM Nodes AS nodes
-WHERE nodes.subnet = 24
-LIMIT 10;
+WHERE nodes.subnet = 32
+LIMIT 50;
+-- took 0.003753
+
+
+
+
+
 -- port filter test
 SELECT ipstart
     , alias
@@ -158,6 +167,7 @@ SELECT ipstart
 FROM Nodes AS nodes
 WHERE EXISTS (SELECT * FROM Links WHERE Links.dst BETWEEN nodes.ipstart AND nodes.ipend AND Links.port = 443)
 LIMIT 10;
+
 -- port AND subnet filter test
 SELECT ipstart
     , alias
@@ -173,6 +183,7 @@ FROM Nodes AS nodes
 WHERE nodes.subnet = 24
     && EXISTS (SELECT * FROM Links WHERE Links.port = 443 && Links.dst BETWEEN nodes.ipstart AND nodes.ipend)
 LIMIT 10;
+
 -- connections test
 SELECT decodeIP(ipstart) AS address
     , alias

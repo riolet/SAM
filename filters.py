@@ -59,15 +59,17 @@ class PortFilter(Filter):
 
     def where(self):
         if self.params['connection'] == '0':
-            return "EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.src BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '1':
-            return "NOT EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.src BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']))
+
         elif self.params['connection'] == '2':
-            return "EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '3':
-            return "NOT EXISTS (SELECT * FROM LinksA WHERE LinksA.port = '{0}' && LinksA.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(int(self.params['port']))
-        print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. ({0}, type: {1})"
-               .format(self.params['connection'], type(self.params['connection'])))
+            return "NOT EXISTS (SELECT port FROM LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']))
+        else:
+            print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. "
+                   "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
         return ""
 
     def having(self):
@@ -95,8 +97,6 @@ class ConnectionsFilter(Filter):
             src = "conn_out"
 
         HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
-        if self.params['direction'] == '<':
-            HAVING += " || {src} IS NULL".format(src=src)
         return HAVING
 
 

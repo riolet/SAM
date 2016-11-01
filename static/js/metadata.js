@@ -61,14 +61,14 @@ function present_detailed_info(info) {
 
 function normalizeIP(ipString) {
     "use strict";
-    var add_sub = ipString.split("/")
+    var add_sub = ipString.split("/");
 
     var address = add_sub[0];
     var subnet = add_sub[1];
 
     var segments = address.split(".");
     var num;
-    var final_ip = "";
+    var final_ip;
     segments = segments.reduce(function (list, element) {
         num = parseInt(element);
         if (!isNaN(num)) {
@@ -93,9 +93,13 @@ function normalizeIP(ipString) {
 }
 
 function minimizeIP(ip) {
+    "use strict";
     var add_sub = ip.split("/");
     var subnet = parseInt(add_sub[1]) / 8;
     var segs = add_sub[0].split(".");
+    if (isNaN(subnet)) {
+        subnet = Math.min(4, segs.length);
+    }
     var i;
     var minimized_ip = segs[0];
     for (i = 1; i < subnet; i += 1) {
@@ -145,8 +149,8 @@ function abortRequests(requests) {
     "use strict";
     var xhr;
     while (xhr = requests.pop()) {
-        //xhr.abort();
-        clearTimeout(xhr);
+        xhr.abort();
+        //clearTimeout(xhr);
     }
 }
 
@@ -164,7 +168,7 @@ function requestMoreDetails(event) {
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting More Details");
 
-        GET_data(minimizeIP(input.value), "inputs,outputs,ports", function (response) {
+        GET_data(input.value, "inputs,outputs,ports", function (response) {
             // More details arrived
             // TODO: remove loading icon from tabs??
             // Render into browser
@@ -225,7 +229,7 @@ function requestQuickInfo(event) {
             // Quick info arrived
             searchbar.classList.remove("loading");
             // Render into browser
-            present_quick_info(response.quick_info)
+            present_quick_info(response.quick_info);
             input.value = normalizedIP;
             console.log("Quick info Arrived. Proceeding to Request More Details");
 
@@ -270,7 +274,7 @@ function init() {
     var searchbar = document.getElementById("hostSearch");
     var input = searchbar.getElementsByTagName("input")[0];
     input.oninput = dispatcher;
-    sel_init()
+    sel_init();
 
     // Enable tabbed views
     $('.secondary.menu .item').tab();

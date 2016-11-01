@@ -1,3 +1,36 @@
+var DEFAULT_PAGE_SIZE = 10;
+
+;(function () {
+    "use strict";
+    var cookies = {};
+
+    cookies.set = function(name, value, days) {
+        var d = new Date();
+        d.setTime(d.getTime() + (days*24*60*60*1000));
+        var expires = "expires="+ d.toUTCString();
+        document.cookie = name + "=" + value + ";" + expires + ";path=/";
+    };
+    cookies.get = function(name, def_value) {
+        var name_code = name + "=";
+        var ca = document.cookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name_code) == 0) {
+                return c.substring(name_code.length,c.length);
+            }
+        }
+        return def_value;
+    };
+    cookies.del = function(name) {
+        cookies.set(name, '', -1000);
+    };
+
+    window.cookie_data = cookies;
+}());
+
 function importURL() {
     "use strict";
     var tmp;
@@ -11,10 +44,11 @@ function importURL() {
     }
 }
 
-function applyFilter() {
+function applyFilter(page) {
     console.log("applying filter!");
     searchs = [
         ["page", 1],
+        ['page_size', cookie_data.get('page_size', DEFAULT_PAGE_SIZE)],
         ["sort", "Address"]
     ];
     var filterString = filters.getFilters();
@@ -27,6 +61,16 @@ function applyFilter() {
         searchString += "&" + term.join("=");
     });
     window.location.search = "?" + searchString.substr(1);
+}
+
+function btn_pagesize_callback(e) {
+    "use strict";
+    var oldSize = cookie_data.get('page_size', DEFAULT_PAGE_SIZE);
+    var newSize = e.target.innerText;
+    if (newSize !== oldSize) {
+        cookie_data.set('page_size', e.target.innerText);
+        applyFilter();
+    }
 }
 
 ;(function () {
@@ -81,7 +125,9 @@ function applyFilter() {
 function init() {
     "use strict";
 
-    $(".ui.accordion").accordion("open", 0);
+    // For opening the 'filters' accordion
+    //$(".ui.accordion").accordion("open", 0);
+    $(".ui.accordion").accordion();
 
     //toggle buttons
     $(".ui.swapper.button").state({
@@ -99,6 +145,20 @@ function init() {
     //Configure Table
     //table.setTable(document.getElementById("resultsTable"));
     //table.setColumns(["Address", "Hostname", "Role", "Environment", "Tags"]);
+
+    //Configure page_size buttons
+    var buttonGroups = document.getElementsByClassName("buttons pagesize");
+    var i, j, buttons;
+    var saved_pagesize = cookie_data.get("page_size", DEFAULT_PAGE_SIZE);
+    for (i=0; i < buttonGroups.length; i += 1) {
+        buttons = buttonGroups[i].getElementsByTagName("button");
+        for (j=0; j < buttons.length; j += 1) {
+            buttons[j].onclick = btn_pagesize_callback;
+            if (buttons[j].innerText == saved_pagesize) {
+                buttons[j].classList.add("active");
+            }
+        }
+    }
 
     //Interpret URL
     importURL();

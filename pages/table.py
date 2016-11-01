@@ -26,13 +26,15 @@ class Table(object):
             page = int(get_data['page'])
         page_size = 10
         if 'page_size' in get_data:
+            print("custom page size!")
             page_size = int(get_data['page_size'])
 
         rows = []
         if fs:
             # The page-1 is because page 1 should start with result 0;
-            # The page_size+1 is so that IF it gets filled I know there's at least 1 more page to display.
-            data = dbaccess.get_table_info(fs, page - 1, page_size + 1)
+            # Note: get_table_info returns page_size + 1 results,
+            #       so that IF it gets filled I know there's at least 1 more page to display.
+            data = dbaccess.get_table_info(fs, page - 1, page_size)
             rows = []
             for i in range(len(data)):
                 row = [data[i].address]
@@ -54,11 +56,7 @@ class Table(object):
                 rows.append(row)
 
         if rows:
-            spread = "results {0} to {1}".format((page-1)*page_size, (page-1)*page_size + len(rows[:10]))
-            if len(rows) > page_size:
-                spread += " -> "
-            if page > 1:
-                spread = " <- " + spread
+            spread = "Results: {0} to {1}".format((page-1)*page_size, (page-1)*page_size + len(rows[:page_size]))
         else:
             spread = "No matching results."
 
@@ -89,5 +87,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns, rows[:10], spread, prevPage, nextPage)) \
+               + str(common.render.table(self.columns, rows[:page_size], spread, prevPage, nextPage)) \
                + str(common.render._tail())

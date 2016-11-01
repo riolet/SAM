@@ -5,6 +5,30 @@ $def with (columns, rows, spread, prev, next)
         <div class="content" id="filters">
         </div>
     </div>
+    <div class="ui two column grid">
+        <div class="row">
+            <div class="left floated left aligned column">
+                $if prev:
+                    <a href="$prev"><button class="ui button">prev</button></a>
+                $else:
+                    <button class="ui button disabled">prev</button>
+                $spread
+                $if next:
+                    <a href="$next"><button class="ui button">next</button></a>
+                $else:
+                    <button class="ui button disabled">next</button>
+            </div>
+            <div class="right floated right aligned column">
+                Results per page:
+                <div class="ui floated right buttons pagesize">
+                  <button class="ui button">10</button>
+                  <button class="ui button">20</button>
+                  <button class="ui button">50</button>
+                  <button class="ui button">100</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <table class="ui selectable striped small table" id="resultsTable">
         <thead>
             <tr>
@@ -22,16 +46,30 @@ $def with (columns, rows, spread, prev, next)
                         <td>$item</td>
                 </tr>
         </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="$len(columns)">
-                    $if prev:
-                        <a href="$prev">prev</a>
-                    $spread
-                    $if next:
-                        <a href="$next">next</a>
-                </td>
-            </tr>
-        </tfoot>
+        <tfoot></tfoot>
     </table>
+    <div class="ui two column grid">
+        <div class="row">
+            <div class="left floated left aligned column">
+                $if prev:
+                    <a href="$prev"><button class="ui button">prev</button></a>
+                $else:
+                    <button class="ui button disabled">prev</button>
+                $spread
+                $if next:
+                    <a href="$next"><button class="ui button">next</button></a>
+                $else:
+                    <button class="ui button disabled">next</button>
+            </div>
+            <div class="right floated right aligned column">
+                Results per page:
+                <div class="ui floated right buttons pagesize">
+                  <button class="ui button">10</button>
+                  <button class="ui button">20</button>
+                  <button class="ui button">50</button>
+                  <button class="ui button">100</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

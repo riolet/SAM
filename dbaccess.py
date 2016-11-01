@@ -478,17 +478,19 @@ def get_table_info(clauses, page, page_size):
     query = """
 SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
     , alias
-    ,(SELECT SUM(links)
-        FROM LinksA AS l_out
-        WHERE l_out.src BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "conn_out"
-    ,(SELECT SUM(links)
-        FROM LinksA AS l_in
-        WHERE l_in.dst BETWEEN nodes.ipstart AND nodes.ipend
-     ) AS "conn_in"
-FROM NodesF AS nodes
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksOut AS l_out
+        WHERE l_out.src_start = nodes.ipstart
+          AND l_out.src_end = nodes.ipend
+     ),0) AS "conn_out"
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksIn AS l_in
+        WHERE l_in.dst_start = nodes.ipstart
+          AND l_in.dst_end = nodes.ipend
+     ),0) AS "conn_in"
+FROM Nodes AS nodes
 {0}
 {1}
-LIMIT {2},{3};""".format(WHERE, HAVING, page * page_size, page_size)
+LIMIT {2},{3};""".format(WHERE, HAVING, page * page_size, page_size + 1)
     info = list(common.db.query(query))
     return info

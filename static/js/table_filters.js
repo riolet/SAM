@@ -112,7 +112,7 @@
     filters.getFilters = function () {
         //collapse the filter list into a minimal set of data
         var filterArray = filters.filters.reduce(function (data, filter) {
-            var newItem = {}
+            var newItem = {};
             Object.keys(filter).forEach(function (key) {
                 if (key === "html") {
                     return;
@@ -155,7 +155,7 @@
             ['8', '/8'],
             ['16', '/16'],
             ['24', '/24'],
-            ['32', '/32'],
+            ['32', '/32']
         ], subnet));
         return parts;
     };
@@ -220,7 +220,7 @@
         parts.push(filters.private.markupSpan("host "));
         parts.push(filters.private.markupSelection("has", "has/n't", [
             ["1", "has"],
-            ["0", "doesn't have"],
+            ["0", "doesn't have"]
         ], has));
         parts.push(filters.private.markupSpan(" tags: "));
         parts.push(filters.private.markupTags("tags", "Choose tag(s)", [
@@ -255,12 +255,12 @@
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
             ['>', 'more than'],
             ['<', 'fewer than'],
-            ['=', 'exactly'],
+            ['=', 'exactly']
         ], comparator));
         parts.push(filters.private.markupInput("limit", "a number of", limit));
         parts.push(filters.private.markupSelection("direction", "in/outbound", [
             ['i', 'inbound'],
-            ['o', 'outbound'],
+            ['o', 'outbound']
         ], direction));
         parts.push(filters.private.markupSpan("connections."));
         return parts;
@@ -369,7 +369,7 @@
         input.name = name;
 
         //encompassing div
-        var inputdiv = document.createElement("div")
+        var inputdiv = document.createElement("div");
         inputdiv.className = "ui input";
         inputdiv.appendChild(input);
 
@@ -387,7 +387,6 @@
     };
 
     filters.private.addCallback = function (event) {
-        var row = event.target.parentElement;
         //extract: filter type
         var typeSelector = event.target.nextElementSibling;
         var type = typeSelector.getElementsByTagName("input")[0].value;
@@ -434,7 +433,6 @@
         var params = [];
         var walker = head.nextElementSibling;
         var inputs;
-        var i;
         while (walker !== undefined && walker !== null) {
             inputs = walker.getElementsByTagName("input");
             console.log(inputs);
@@ -492,7 +490,7 @@
         }
 
         //display summary
-        var header = filters.displayDiv.previousElementSibling
+        var header = filters.displayDiv.previousElementSibling;
         var icon = header.getElementsByTagName("i")[0];
         header.innerHTML = "";
         header.appendChild(icon);
@@ -524,7 +522,7 @@
             filterString += "|" + f_s;
         });
         return filterString.substr(1);
-    }
+    };
     filters.private.decodeFilters = function(filterGET) {
         var decodedFilters = [];
 
@@ -536,13 +534,13 @@
             var filterArgs = filterString.split(';');
             var typeIndex = filterArgs.shift();
             var enabled = filterArgs.shift();
-            enabled = (enabled === "1")
+            enabled = (enabled === "1");
             var type = Object.keys(filters.private.types).sort()[typeIndex];
             var filter = filters.private.types[type][0](filterArgs, enabled);
             decodedFilters.push(filter);
         });
         return decodedFilters;
-    }
+    };
 
     //Register filter types, and their constructors
     filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
