@@ -12,7 +12,7 @@ class Table(object):
 
     def GET(self):
         print("="*50)
-        fs = None
+        fs = []
         get_data = web.input()
         if "filters" in get_data:
             print "filters: ", get_data["filters"], "\n"
@@ -23,37 +23,41 @@ class Table(object):
 
         page = 1
         if 'page' in get_data:
-            page = int(get_data['page'])
+            try:
+                page = int(get_data['page'])
+            except:
+                page = 1
         page_size = 10
         if 'page_size' in get_data:
-            print("custom page size!")
-            page_size = int(get_data['page_size'])
+            try:
+                page_size = int(get_data['page_size'])
+            except:
+                page_size = 10
 
         rows = []
-        if fs:
-            # The page-1 is because page 1 should start with result 0;
-            # Note: get_table_info returns page_size + 1 results,
-            #       so that IF it gets filled I know there's at least 1 more page to display.
-            data = dbaccess.get_table_info(fs, page - 1, page_size)
-            rows = []
-            for i in range(len(data)):
-                row = [data[i].address]
-                if data[i].alias:
-                    row.append(data[i].alias)
-                else:
-                    row.append("-")
+        # The page-1 is because page 1 should start with result 0;
+        # Note: get_table_info returns page_size + 1 results,
+        #       so that IF it gets filled I know there's at least 1 more page to display.
+        data = dbaccess.get_table_info(fs, page - 1, page_size)
+        rows = []
+        for i in range(len(data)):
+            row = [data[i].address]
+            if data[i].alias:
+                row.append(data[i].alias)
+            else:
+                row.append("-")
 
-                if data[i].conn_in:
-                    row.append(data[i].conn_in)
-                else:
-                    row.append(0)
+            if data[i].conn_in:
+                row.append(data[i].conn_in)
+            else:
+                row.append(0)
 
-                if data[i].conn_out:
-                    row.append(data[i].conn_out)
-                else:
-                    row.append(0)
+            if data[i].conn_out:
+                row.append(data[i].conn_out)
+            else:
+                row.append(0)
 
-                rows.append(row)
+            rows.append(row)
 
         if rows:
             spread = "Results: {0} to {1}".format((page-1)*page_size, (page-1)*page_size + len(rows[:page_size]))

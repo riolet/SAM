@@ -471,6 +471,7 @@ def get_table_info(clauses, page, page_size):
     if WHERE:
         WHERE = "WHERE " + WHERE
 
+
     HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
         HAVING = "HAVING " + HAVING
