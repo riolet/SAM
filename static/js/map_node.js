@@ -94,18 +94,20 @@ function node_info_click() {
  */
 function determine_number(node) {
     "use strict";
-    if (node.hasOwnProperty("ip32")) {
-        return node.ip32
+    var size = parseInt(node.ipend) - parseInt(node.ipstart)
+    if (size === 0) {
+        return node.ipstart % 256;
     }
-    if (node.hasOwnProperty("ip24")) {
-        return node.ip24
+    if (size === 255) {
+        return node.ipstart / 256 % 256;
     }
-    if (node.hasOwnProperty("ip16")) {
-        return node.ip16
+    if (size === 65535) {
+        return node.ipstart / 65536 % 256;
     }
-    if (node.hasOwnProperty("ip8")) {
-        return node.ip8
+    if (size === 16777215) {
+        return node.ipstart / 16777216 % 256;
     }
+    console.error("failed to determine size (" + size + ") when " + node.ipend + " - " + node.ipstart + ".");
     return undefined
 }
 

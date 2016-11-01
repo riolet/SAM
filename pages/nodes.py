@@ -13,14 +13,7 @@ def decimal_default(obj):
 
 
 class Nodes:
-    def get_children(self, get_data):
-        addresses = []
-        address_str = get_data.get('address', None)
-        if address_str is not None:
-            addresses = address_str.split(",")
-        print "address_str is ", address_str
-        print "addresses is ", addresses
-
+    def get_children(self, addresses):
         # should return JSON compatible data...for javascript on the other end.
         # result = dbaccess.connections()
         result = {}
@@ -46,4 +39,12 @@ class Nodes:
         """
         web.header("Content-Type", "application/json")
         get_data = web.input()
-        return self.get_children(get_data)
+
+        addresses = []
+        address_str = get_data.get('address', None)
+        if address_str is not None:
+            addresses = address_str.split(",")
+        print "address_str is ", address_str
+        print "addresses is ", addresses
+
+        return self.get_children(addresses)

@@ -54,7 +54,9 @@ CREATE TABLE IF NOT EXISTS LinksOut
 
 
 
+-- ======================================================
 -- Fill Nodes
+-- ======================================================
 INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
 SELECT log.ip, log.ip, 32
     , 0 AS x
@@ -108,7 +110,77 @@ FROM(
 ) AS eight;
 
 
+
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+SELECT (log.ip * 16777216) AS 'ipstart'
+    , ((log.ip + 1) * 16777216 - 1) AS 'ipend'
+    , 8 AS 'subnet'
+    , (331776 * (log.ip % 16) / 7.5 - 331776) AS 'x'
+    , (331776 * (log.ip DIV 16) / 7.5 - 331776) AS 'y'
+    , 20736 AS 'radius'
+FROM(
+    SELECT SourceIP DIV 16777216 AS 'ip'
+    FROM Syslog
+    UNION
+    SELECT DestinationIP DIV 16777216 AS 'ip'
+    FROM Syslog
+) AS log;
+
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+SELECT (log.ip * 65536) AS 'ipstart'
+    , ((log.ip + 1) * 65536 - 1) AS 'ipend'
+    , 16 AS 'subnet'
+    , ((parent.radius * (log.ip MOD 16) / 7.5 - parent.radius) + parent.x) AS 'x'
+    , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
+    , (parent.radius / 24) AS 'radius'
+FROM(
+    SELECT SourceIP DIV 65536 AS 'ip'
+    FROM Syslog
+    UNION
+    SELECT DestinationIP DIV 65536 AS 'ip'
+    FROM Syslog
+) AS log
+JOIN Nodes AS parent
+    ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216);
+
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+SELECT (log.ip * 256) AS 'ipstart'
+    , ((log.ip + 1) * 256 - 1) AS 'ipend'
+    , 24 AS 'subnet'
+    , ((parent.radius * (log.ip MOD 16) / 7.5 - parent.radius) + parent.x) AS 'x'
+    , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
+    , (parent.radius / 24) AS 'radius'
+FROM(
+    SELECT SourceIP DIV 256 AS 'ip'
+    FROM Syslog
+    UNION
+    SELECT DestinationIP DIV 256 AS 'ip'
+    FROM Syslog
+) AS log
+JOIN Nodes AS parent
+    ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536);
+
+INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+SELECT log.ip AS 'ipstart'
+    , log.ip AS 'ipend'
+    , 32 AS 'subnet'
+    , ((parent.radius * (log.ip MOD 16) / 7.5 - parent.radius) + parent.x) AS 'x'
+    , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
+    , (parent.radius / 24) AS 'radius'
+FROM(
+    SELECT SourceIP AS 'ip'
+    FROM Syslog
+    UNION
+    SELECT DestinationIP AS 'ip'
+    FROM Syslog
+) AS log
+JOIN Nodes AS parent
+    ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256);
+
+
+-- ======================================================
 -- Fill Links
+-- ======================================================
 INSERT INTO Links (src, dst, port, timestamp, links)
 SELECT SourceIP, DestinationIP, DestinationPort
     , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts

@@ -95,24 +95,20 @@ def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
 
 
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
+    range = determine_range(ip8, ip16, ip24, ip32)
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
-        rows = common.db.select("Nodes8")
+        # rows = common.db.select("Nodes8")
+        rows = common.db.select("Nodes", where="subnet=8")
     elif ip16 < 0 or ip16 > 255:
         # check Nodes16
-        rows = common.db.where("Nodes16",
-                               ip8=ip8)
+        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
     elif ip24 < 0 or ip24 > 255:
         # check Nodes24
-        rows = common.db.where("Nodes24",
-                               ip8=ip8,
-                               ip16=ip16)
+        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
     elif ip32 < 0 or ip32 > 255:
         # check Nodes32
-        rows = common.db.where("Nodes32",
-                               ip8=ip8,
-                               ip16=ip16,
-                               ip24=ip24)
+        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
     else:
         rows = []
     return rows
@@ -275,32 +271,6 @@ def build_where_clause(timestamp_range=None, port=None, rounding=True):
                 t_start -= 150
             if t_end <= 2 ** 31 - 150:
                 t_end += 149
-        clauses.append("Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
-
-    if port:
-        clauses.append("DestinationPort = $port")
-
-    qvars = {'tstart': t_start, 'tend': t_end, 'port': port}
-    WHERE = str(web.db.reparam("\n    && ".join(clauses), qvars))
-    if WHERE:
-        WHERE = "    && " + WHERE
-    return WHERE
-
-
-def build_where_clause2(timestamp_range=None, port=None, rounding=True):
-    clauses = []
-    t_start = 0
-    t_end = 0
-
-    if timestamp_range:
-        t_start = timestamp_range[0]
-        t_end = timestamp_range[1]
-        if rounding:
-            # rounding to 5 minutes, for use with the Syslog table
-            if t_start > 150:
-                t_start -= 150
-            if t_end <= 2 ** 31 - 150:
-                t_end += 149
         clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
 
     if port:
@@ -314,7 +284,7 @@ def build_where_clause2(timestamp_range=None, port=None, rounding=True):
 
 
 def get_details_summary(ip_range, timestamp_range=None, port=None):
-    WHERE = build_where_clause2(timestamp_range=timestamp_range, port=port)
+    WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
 
     query2 = """
         SELECT (
@@ -341,7 +311,7 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
         'start': ip_range[0],
         'end': ip_range[1],
         'limit': limit,
-        'WHERE': build_where_clause2(timestamp_range, port)
+        'WHERE': build_where_clause(timestamp_range, port)
     }
     if inbound:
         qvars['collected'] = "src"
@@ -363,7 +333,7 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
 
 
 def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
-    WHERE = build_where_clause2(timestamp_range, port)
+    WHERE = build_where_clause(timestamp_range, port)
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
         FROM Links
@@ -383,12 +353,11 @@ def get_node_info(address):
     print("type: " + str(type(address)))
     print(address)
     print("-" * 50)
-    # TODO: placeholder for use getting meta about hosts
+    # TODO: placeholder for use getting metadata about hosts
     ips = map(int, address.split("."))
-    subnet = 8 * len(ips)
-    table = "Nodes" + str(subnet)
-    WHERE = " && ".join(["ip{0}={1}".format((i+1)*8, ip) for i, ip in enumerate(ips)])
-    results = common.db.select(table, where=WHERE, limit=1)
+    range = determine_range(*ips)
+    WHERE = "ipstart={0} && ipend={1}".format(range[0], range[1])
+    results = common.db.select("Nodes", where=WHERE, limit=1)
 
     if len(results) == 1:
         return results[0]
@@ -399,20 +368,13 @@ def get_node_info(address):
 def set_node_info(address, data):
     print("-" * 50)
     print("Setting node info!")
-    ips = address.split(".")
     print("type data: " + str(type(data)))
     print(data)
     print("-" * 50)
-    if len(ips) == 1:
-        common.db.update('Nodes8', {"ip8": ips[0]}, **data)
-    if len(ips) == 2:
-        common.db.update('Nodes16', {"ip8": ips[0], "ip16": ips[1]}, **data)
-    if len(ips) == 3:
-        common.db.update('Nodes24', {"ip8": ips[0], "ip16": ips[1],
-                                     "ip24": ips[2]}, **data)
-    if len(ips) == 4:
-        common.db.update('Nodes32', {"ip8": ips[0], "ip16": ips[1],
-                                     "ip24": ips[2], "ip32": ips[3]}, **data)
+    ips = map(int, address.split("."))
+    range = determine_range(*ips)
+    where = {"ipstart": range[0], "ipend": range[1]}
+    common.db.update('Nodes', where, **data)
 
 
 def get_port_info(port):
