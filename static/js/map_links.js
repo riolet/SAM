@@ -96,19 +96,13 @@ function links_reset() {
     link_request_submit();
 }
 
-var debug = false;
-
 function GET_links_callback(result) {
     "use strict";
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
     Object.keys(result).forEach(function (address) {
-        if (address === "189.6.71.47") debug = true;
-        if (debug) console.log("callback forEach: " + address);
         var node = findNode(address);
-        if (debug) console.log("Node:");
-        if (debug) console.log(node);
         node.inputs = result[address].inputs;
         node.outputs = result[address].outputs;
         if (node.subnet === 32) {
@@ -119,8 +113,6 @@ function GET_links_callback(result) {
         link_processPosition(node.outputs, node, "src");
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
-        if (debug) console.log("Done.");
-        debug = false;
     });
     ports.request_submit();
     updateRenderRoot();
@@ -171,8 +163,6 @@ function link_processPorts(links, node) {
     }
 
     var destination = node;
-    if (debug) console.log("Destination is:");
-    if (debug) console.log(destination);
     //
     //    3_2
     //  4|   |1
@@ -212,13 +202,10 @@ function link_processPorts(links, node) {
 
     links.forEach(function (link) {
         var source = find_by_range(link.src_start, link.src_end);
-        if (debug) console.log("Source is:");
-        if (debug) console.log(source);
 
         //offset endpoints by radius
         var dx = destination.x - source.x;
         var dy = destination.y - source.y;
-        if (debug) console.log("(dx, dy) = (" + dx + ", " + dy + ")");
 
         if (port_tracker.hasOwnProperty(link.port)) {
             if (port_tracker[link.port].side === "top") {
