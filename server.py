@@ -18,13 +18,22 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         client_address = (self.client_address[0])
         ### proof of multithread
         cur_thread = threading.current_thread()
-        print "thread %s" %cur_thread.name
-        print "received call from client address :%s" %client_address
-        print "received data from port [%s]: %s" %(port,data)
+        #print "thread %s" %cur_thread.name
+        #print "received call from client address :%s" %client_address
+        #print "received data from port [%s]: %s" %(port,data)
 
         ### assemble a response message to client
         response = "%s %s"%(cur_thread.name, data)
         socket.sendto(data.upper(), self.client_address)
+
+        #creates a file based off of the data passed through
+        textFile = open("syslog_file.txt", "wr")
+        textFile.write(data)
+        textFile.close()
+        #os.system("ls")
+        #sys.argv = ["syslog_file"]
+        os.system("python import_paloalto.py syslog_file.txt")
+        os.system("python preprocess.py")
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
     pass
