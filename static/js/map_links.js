@@ -96,15 +96,19 @@ function links_reset() {
     link_request_submit();
 }
 
+var debug = false;
+
 function GET_links_callback(result) {
     "use strict";
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
-    console.log("-> ENTER: GET_links_callback");
-    console.log(result);
     Object.keys(result).forEach(function (address) {
+        if (address === "189.6.71.47") debug = true;
+        if (debug) console.log("callback forEach: " + address);
         var node = findNode(address);
+        if (debug) console.log("Node:");
+        if (debug) console.log(node);
         node.inputs = result[address].inputs;
         node.outputs = result[address].outputs;
         if (node.subnet === 32) {
@@ -115,11 +119,12 @@ function GET_links_callback(result) {
         link_processPosition(node.outputs, node, "src");
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
+        if (debug) console.log("Done.");
+        debug = false;
     });
     ports.request_submit();
     updateRenderRoot();
     render_all();
-    console.log("<- EXIT: GET_links_callback");
 }
 
 function link_closestEmptyPort(link, used) {
@@ -166,7 +171,8 @@ function link_processPorts(links, node) {
     }
 
     var destination = node;
-
+    if (debug) console.log("Destination is:");
+    if (debug) console.log(destination);
     //
     //    3_2
     //  4|   |1
@@ -206,10 +212,13 @@ function link_processPorts(links, node) {
 
     links.forEach(function (link) {
         var source = find_by_range(link.src_start, link.src_end);
+        if (debug) console.log("Source is:");
+        if (debug) console.log(source);
 
         //offset endpoints by radius
-        var dx = link.x2 - link.x1;
-        var dy = link.y2 - link.y1;
+        var dx = destination.x - source.x;
+        var dy = destination.y - source.y;
+        if (debug) console.log("(dx, dy) = (" + dx + ", " + dy + ")");
 
         if (port_tracker.hasOwnProperty(link.port)) {
             if (port_tracker[link.port].side === "top") {
@@ -228,6 +237,29 @@ function link_processPorts(links, node) {
                 //this should never execute
                 link.x2 = port_tracker[link.port].x;
                 link.y2 = port_tracker[link.port].y;
+            }
+            if (Math.abs(dx) > Math.abs(dy)) {
+                //arrow is more horizontal than vertical
+                if (dx < 0) {
+                    //leftward flowing
+                    link.x1 = source.x - source.radius;
+                    link.y1 = source.y + source.radius * 0.2;
+                } else {
+                    //rightward flowing
+                    link.x1 = source.x + source.radius;
+                    link.y1 = source.y - source.radius * 0.2;
+                }
+            } else {
+                //arrow is more vertical than horizontal
+                if (dy < 0) {
+                    //upward flowing
+                    link.y1 = source.y - source.radius;
+                    link.x1 = source.x + source.radius * 0.2;
+                } else {
+                    //downward flowing
+                    link.y1 = source.y + source.radius;
+                    link.x1 = source.x - source.radius * 0.2;
+                }
             }
         } else {
             //align to corners
