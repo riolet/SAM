@@ -92,23 +92,23 @@ describe("map_node.js file", function () {
 
   describe("determine_number", function () {
     it("works with /8", function () {
-      node = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192 };
+      node = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3221225472, "ipend":3238002687};
       expect(determine_number(node)).toEqual(192);
     });
     it("works with /16", function () {
-      node = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168 };
+      node = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232301055};
       expect(determine_number(node)).toEqual(168);
     });
     it("works with /24", function () {
-      node = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168, "ip24":0 };
+      node = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232235775};
       expect(determine_number(node)).toEqual(0);
     });
     it("works with /32", function () {
-      node = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168, "ip24":0, "ip32":7 };
+      node = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235527, "ipend":3232235527};
       expect(determine_number(node)).toEqual(7);
     });
   });
@@ -117,18 +117,18 @@ describe("map_node.js file", function () {
   describe("import_node", function () {
     it("/8 imports", function () {
       m_nodes = {};
-      node8 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192 };
+      node8 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3221225472, "ipend":3238002687};
       import_node(null, node8);
       expect(Object.keys(m_nodes)).toContain("192");
       expect(m_nodes[192].address).toEqual("192");
     });
     it("/16 imports", function () {
       m_nodes = {};
-      node8 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192 };
-      node16 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168 };
+      node8 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3221225472, "ipend":3238002687};
+      node16 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232301055};
       import_node(null, node8);
       import_node(m_nodes[192], node16);
       expect(Object.keys(m_nodes[192].children)).toContain("168");
@@ -136,12 +136,12 @@ describe("map_node.js file", function () {
     });
     it("/24 imports", function () {
       m_nodes = {};
-      node8 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192 };
-      node16 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168 };
-      node24 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168, "ip24":0 };
+      node8 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3221225472, "ipend":3238002687};
+      node16 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232301055};
+      node24 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232235775};
       import_node(null, node8);
       import_node(m_nodes[192], node16);
       import_node(m_nodes[192].children[168], node24);
@@ -150,14 +150,14 @@ describe("map_node.js file", function () {
     });
     it("/32 imports", function () {
       m_nodes = {};
-      node8 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192 };
-      node16 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168 };
-      node24 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-        "ip8":192, "ip16":168, "ip24":0 };
-      node32 = { "connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":0,
-        "ip8":192, "ip16":168, "ip24":0, "ip32":7 };
+      node8 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3221225472, "ipend":3238002687};
+      node16 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232301055};
+      node24 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235520, "ipend":3232235775};
+      node32 = { "alias":'', "radius":1, "y":1, "x":1,
+        "ipstart":3232235527, "ipend":3232235527};
       import_node(null, node8);
       import_node(m_nodes[192], node16);
       import_node(m_nodes[192].children[168], node24);
@@ -172,22 +172,16 @@ describe("map_node.js file", function () {
     beforeEach(function() {
       m_nodes = {};
       response1 = {
-        "192": [{"connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1, "ip8":192}],
+        "192": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3221225472, "ipend":3238002687}]
       };
       response2 = {
-        "192.168":
-            [{"connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-              "ip8":192, "ip16":168}]
+        "192.168": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3232235520, "ipend":3232301055}]
       };
       response3 = {
-        "192.168.0":
-            [{"connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":1,
-              "ip8":192, "ip16":168, "ip24":0}]
+        "192.168.0": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3232235520, "ipend":3232235775}]
       };
       response4 = {
-        "192.168.0.7":
-            [{"connections":1, "alias":'', "radius":1, "y":1, "x":1, "children":0,
-              "ip8":192, "ip16":168, "ip24":0, "ip32":7}]
+        "192.168.0.7": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3232235527, "ipend":3232235527}]
       };
       spyOn(window, "link_request_submit");
       spyOn(window, "updateRenderRoot");
