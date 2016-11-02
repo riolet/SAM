@@ -101,19 +101,25 @@ function GET_links_callback(result) {
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
+    console.log("-> ENTER: GET_links_callback");
+    console.log(result);
     Object.keys(result).forEach(function (address) {
         var node = findNode(address);
         node.inputs = result[address].inputs;
         node.outputs = result[address].outputs;
         if (node.subnet === 32) {
-            link_processPorts(node.inputs);
+            link_processPorts(node.inputs, node);
+        } else {
+            link_processPosition(node.inputs, node, "dst");
         }
+        link_processPosition(node.outputs, node, "src");
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
     });
     ports.request_submit();
     updateRenderRoot();
     render_all();
+    console.log("<- EXIT: GET_links_callback");
 }
 
 function link_closestEmptyPort(link, used) {
@@ -153,14 +159,13 @@ function link_closestEmptyPort(link, used) {
     return choice;
 }
 
-function link_processPorts(links) {
+function link_processPorts(links, node) {
     "use strict";
     if (links.length === 0) {
         return;
     }
 
-    var destination = findNode(links[0].dest8, links[0].dest16,
-            links[0].dest24, links[0].dest32);
+    var destination = node;
 
     //
     //    3_2
@@ -200,8 +205,7 @@ function link_processPorts(links) {
     destination.ports = port_tracker;
 
     links.forEach(function (link) {
-        var source = findNode(link.source8, link.source16,
-                link.source24, link.source32);
+        var source = find_by_range(link.src_start, link.src_end);
 
         //offset endpoints by radius
         var dx = link.x2 - link.x1;
@@ -234,12 +238,66 @@ function link_processPorts(links) {
                 link.x1 = source.x - source.radius;
                 link.x2 = destination.x + destination.radius;
             }
+
             if (dy > 0) {
                 link.y1 = source.y + source.radius;
                 link.y2 = destination.y - destination.radius;
             } else {
                 link.y1 = source.y - source.radius;
                 link.y2 = destination.y + destination.radius;
+            }
+        }
+    });
+}
+
+function link_processPosition(links, node, n_type) {
+    "use strict";
+    var destination;
+    var source;
+    if (n_type === "dst") {
+        destination = node;
+    } else {
+        source = node;
+    }
+    links.forEach(function (link) {
+        if (n_type === "dst") {
+            source = find_by_range(link.src_start, link.src_end);
+        } else {
+            destination = find_by_range(link.dst_start, link.dst_end);
+        }
+
+        var dx = destination.x - source.x;
+        var dy = destination.y - source.y;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            //arrow is more horizontal than vertical
+            if (dx < 0) {
+                //leftward flowing
+                link.x1 = source.x - source.radius;
+                link.x2 = destination.x + destination.radius;
+                link.y1 = source.y + source.radius * 0.2;
+                link.y2 = destination.y + destination.radius * 0.2;
+            } else {
+                //rightward flowing
+                link.x1 = source.x + source.radius;
+                link.x2 = destination.x - destination.radius;
+                link.y1 = source.y - source.radius * 0.2;
+                link.y2 = destination.y - destination.radius * 0.2;
+            }
+        } else {
+            //arrow is more vertical than horizontal
+            if (dy < 0) {
+                //upward flowing
+                link.y1 = source.y - source.radius;
+                link.y2 = destination.y + destination.radius;
+                link.x1 = source.x + source.radius * 0.2;
+                link.x2 = destination.x + destination.radius * 0.2;
+            } else {
+                //downward flowing
+                link.y1 = source.y + source.radius;
+                link.y2 = destination.y - destination.radius;
+                link.x1 = source.x - source.radius * 0.2;
+                link.x2 = destination.x - destination.radius * 0.2;
             }
         }
     });

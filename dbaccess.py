@@ -114,59 +114,6 @@ def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     return rows
 
 
-def build_links_query(ip, is_dest, ports, port_filter, timerange):
-    """
-    This helper function builds a query to fulfill the needs of the two "get_links_in/out" functions.
-
-    :param ip: An array of integer ip segments. as in: "a.b.c.d" -> [a, b, c, d]
-    :param is_dest: True if the IP specifies a destination. False if the IP specifies a source.
-    :param ports: True if the user want's port information in the query. False to omit.
-    :param filter: Either a port number to filter by, or None to do no filtering.
-    :param timerange: A tuple of (start_timestamp, end_timestamp) to filter results by.
-    :return: The db query as a string to get connection information from the database.
-    """
-    # FROM portion
-    table = "Links" + str(len(ip) * 8)
-    FROM = table
-
-    # SELECT portion
-    selects = ["source8", "dest8", "source16", "dest16", "source24", "dest24", "source32", "dest32"]
-    SELECT = ", ".join(selects[:len(ip) * 2])
-    if ports:
-        SELECT += ", port".format(table)
-    SELECT += ", SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2"
-
-    # WHERE portion
-    if is_dest:
-        parts = ["dest{0} = $seg{1}".format(i * 8, i) for i in range(1, len(ip) + 1)]
-    else:
-        parts = ["source{0} = $seg{1}".format(i * 8, i) for i in range(1, len(ip) + 1)]
-    WHERE = "\n\t&& ".join(parts)
-    if timerange:
-        WHERE += "\n\t&& timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)"
-    if port_filter:
-        WHERE += "\n\t&& port = $filter"
-
-    # GROUP BY portion
-    GROUP_BY = ", ".join(selects[:len(ip) * 2])
-    if ports:
-        GROUP_BY += ", port"
-
-    # replacement variables
-    qvars = dict([("seg{0}".format(i + 1), str(v)) for i, v in enumerate(ip)])
-    if port_filter:
-        qvars['filter'] = port_filter
-    if timerange:
-        qvars['tstart'] = timerange[0]
-        qvars['tend'] = timerange[1]
-
-    # final query
-    query = "SELECT {0}\nFROM {1}\nWHERE {2}\nGROUP BY {3}".format(SELECT, FROM, WHERE, GROUP_BY)
-    query = common.db.query(query, vars=qvars, _test=True)
-
-    return query
-
-
 def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
@@ -191,25 +138,27 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    if 0 <= ip32 <= 255:
-        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=True, ports=True, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
-    elif 0 <= ip24 <= 255:
-        query = build_links_query([ip8, ip16, ip24], is_dest=True, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
-    elif 0 <= ip16 <= 255:
-        query = build_links_query([ip8, ip16], is_dest=True, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
-    elif 0 <= ip8 <= 255:
-        query = build_links_query([ip8], is_dest=True, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
+    range = determine_range(ip8, ip16, ip24, ip32)
+    ports = 0 <= ip32 <= 255 # include ports in the results?
+    where = build_where_clause(timerange, port_filter)
+
+    if ports:
+        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        inputs = []
-    return inputs
+        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
+
+    query = """
+    SELECT {select}
+    FROM LinksIn
+    WHERE dst_start = $start && dst_end = $end
+     {where}
+    {group_by}
+    """.format(where=where, select=select, group_by=group_by)
+    qvars = {"start": range[0], "end": range[1]}
+    rows = list(common.db.query(query, vars=qvars))
+    return rows
 
 
 def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
@@ -236,25 +185,27 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=No
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    if 0 <= ip32 <= 255:
-        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=False, ports=True, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
-    elif 0 <= ip24 <= 255:
-        query = build_links_query([ip8, ip16, ip24], is_dest=False, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
-    elif 0 <= ip16 <= 255:
-        query = build_links_query([ip8, ip16], is_dest=False, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
-    elif 0 <= ip8 <= 255:
-        query = build_links_query([ip8], is_dest=False, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
+    range = determine_range(ip8, ip16, ip24, ip32)
+    ports = 0 <= ip32 <= 255 # include ports in the results?
+    where = build_where_clause(timerange, port_filter)
+
+    if ports:
+        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        outputs = []
-    return outputs
+        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
+
+    query = """
+    SELECT {select}
+    FROM LinksOut
+    WHERE src_start = $start && src_end = $end
+     {where}
+    {group_by}
+    """.format(where=where, select=select, group_by=group_by)
+    qvars = {"start": range[0], "end": range[1]}
+    rows = list(common.db.query(query, vars=qvars))
+    return rows
 
 
 def build_where_clause(timestamp_range=None, port=None, rounding=True):

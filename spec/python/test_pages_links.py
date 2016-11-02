@@ -28,7 +28,7 @@ def test_simple_request8():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dest8', u'links', u'source8', u'x1', u'x2', u'y1', u'y2']
+    keys = [u'dst_end', u'dst_start', u'links', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -44,7 +44,7 @@ def test_simple_request16():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dest16', u'dest8', u'links', u'source16', u'source8', u'x1', u'x2', u'y1', u'y2']
+    keys = [u'dst_end', u'dst_start', u'links', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -60,7 +60,7 @@ def test_simple_request24():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dest16', u'dest24', u'dest8', u'links', u'source16', u'source24', u'source8', u'x1', u'x2', u'y1', u'y2']
+    keys = [u'dst_end', u'dst_start', u'links', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -76,8 +76,7 @@ def test_simple_request32():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dest16', u'dest24', u'dest32', u'dest8', u'links', u'port', u'source16', u'source24', u'source32',
-            u'source8', u'x1', u'x2', u'y1', u'y2']
+    keys = [u'dst_end', u'dst_start', u'links', u'port', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
