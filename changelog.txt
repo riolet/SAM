@@ -1,3 +1,64 @@
+2016-11-02
+converted to new schema:
+    map links
+    stats page
+    preprocessor
+    test cases
+Deleted old tables. Syslog no longer gets used by the site.
+
+2016-11-01
+Added column sorting on table view
+converted details requests to new schema
+converted map nodes to new schema
+partly converted map links to new schema
+
+2016-10-31
+Celebrate Halloween with a new DB schema!
+    New tables are Nodes, Links, LinksIn, LinksOut
+    Nodes:    ((ipstart, ipend)[PK], subnet, alias, x, y, radius)
+    Links:    ((src, dst, port, timestamp)[PK], links)
+    LinksIn:  (((src_start, src_end)[FK], (dst_start, dst_end)[FK], port, timestamp)[PK], links)
+    LinksOut: (((src_start, src_end)[FK], (dst_start, dst_end)[FK], port, timestamp)[PK], links)
+    NOTE: Links no longer include position information--this is calculated in the JS based on Node position
+    NOTE: Nodes no longer carry children/connections information. Wasn't being used, wasn't being updated.
+    NOTE: LinksIn/Out are basically views, in that they are created from the contents of Links.
+        LinksIn/Out are precalculations/preaggregations for mapping purposes.
+Added page_size attribute to tables page UI, querystring, python model, and DB query parameters
+Added default node display of all nodes when no filter is specified.
+
+2016-10-24 .. 2016-10-28
+Frontend:
+    Rebuilt the port system
+        organized into a class now
+        can be used by both map and metadata and future table views.
+    Added table view page template
+    Added temp filters to UI
+    Filters modeled as JS objects
+        filter markup is now js-generated
+        filters can be created, deleted, summarized
+    added "tags" filter
+    saved filters in the query string
+    encode/decode filters for backend requests
+Backend:
+    Backend model of filters
+    decoded filters from AJAX requests
+    developed queries to support filters
+    host links from tables page to metadata page
+    added pagination of searches
+Decided to store all search information in a query string
+    This allows the forwards/backwards buttons to work.
+    (good) This allows the python backend to build the webpage for the client
+    (bad) This causes a refresh/flicker of the page when loading a new search result.
+
+2016-10-19 .. 2016-10-21
+created metadata page
+    designed, coded layout
+    designed, coded state machine for loading node information
+Metadata page now loads/displays information on hosts. Does not edit.
+    uses details pane info for now
+        subdivided the get_details function for versatility
+Bugs in port module (js).
+
 2016-10-18
 Extracted render config color options to top of file
 Render issue with font transparency solved:
