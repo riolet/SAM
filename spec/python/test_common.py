@@ -20,3 +20,11 @@ def test_IPtoInt():
     assert convert(0, 0, 0, 0) == 0
     assert convert(255, 255, 255, 255) == 2 ** 32 - 1
     assert convert(254, 220, 186, 152) == 0xFEDCBA98
+
+
+def test_IPStringtoInt():
+    convert = common.IPStringtoInt
+    assert convert("0.0.0.0") == 0
+    assert convert("255.255.255.255") == 0xFFFFFFFF
+    assert convert("254.220.186.152") == 0xFEDCBA98
+    assert convert("6.7.8.9") == 0x06070809

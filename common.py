@@ -72,3 +72,21 @@ def IPtoInt(a, b, c, d):
 
     """
     return (int(a) << 24) + (int(b) << 16) + (int(c) << 8) + int(d)
+
+
+def IPStringtoInt(ip):
+    """
+    Converts a number from a dotted decimal string into a single unsigned int.
+    Args:
+        ip: dotted decimal ip address, like 12.34.56.78
+
+    Returns: The IP address as a simple 32-bit unsigned integer
+
+    """
+    parts = ip.split(".")
+    ip_int = 0
+    for i in range(4):
+        ip_int <<= 8;
+        if len(parts) > i:
+            ip_int += int(parts[i])
+    return ip_int

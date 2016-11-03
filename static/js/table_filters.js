@@ -159,6 +159,25 @@
         ], subnet));
         return parts;
     };
+    filters.private.createMaskFilter = function (mask, enabled) {
+        var filter;
+        var filterdiv = filters.private.markupBoilerplate(enabled);
+        var parts = filters.private.createMaskFilterRow(mask);
+        parts.forEach(function (part) { filterdiv.appendChild(part); });
+
+        filter = {};
+        filter.enabled = true;
+        filter.type = "mask";
+        filter.mask = mask;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createMaskFilterRow = function (mask) {
+        var parts = [];
+        parts.push(filters.private.markupSpan("Search children of "));
+        parts.push(filters.private.markupInput("mask", "192.168.0.0/24", mask));
+        return parts;
+    };
     filters.private.createPortFilter = function (connection_port, enabled) {
         var connection, port;
         if (connection_port) {
@@ -227,6 +246,37 @@
             ['server', "Server"],
             ["client", "Client"]
         ], tags));
+        return parts;
+    };
+    filters.private.createTargetFilter = function (target_to, enabled) {
+        var target, to;
+        if (target_to) {
+            target = target_to[0];
+            to = target_to[1];
+        }
+        var filterdiv = filters.private.markupBoilerplate(enabled);
+        var parts = filters.private.createTargetFilterRow(to, target);
+        parts.forEach(function (part) { filterdiv.appendChild(part); });
+
+        var filter = {};
+        filter.enabled = true;
+        filter.type = "target";
+        filter.to = to;
+        filter.target = target;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createTargetFilterRow = function (to, target) {
+        var parts = [];
+        parts.push(filters.private.markupSpan("Show only hosts that "));
+        parts.push(filters.private.markupSelection("to", "connect to/from", [
+            ["0", "connect to"],
+            ["1", "don't connect to"],
+            ["2", "receive connections from"],
+            ["3", "don't receive connections from"]
+        ], to));
+        parts.push(filters.private.markupSpan(" IP address:"));
+        parts.push(filters.private.markupInput("target", "192.168.0.4", target));
         return parts;
     };
     filters.private.createConnectionsFilter = function (cmp_dir_limit, enabled) {
@@ -459,6 +509,8 @@
             filters.filters.forEach(function (filter) {
                 if (filter.type === "subnet") {
                     summary += "subnet /" + filter.subnet;
+                } else if (filter.type === "mask") {
+                    summary += "within " + filter.mask
                 } else if (filter.type === "port") {
                     if (filter.connection === "0") {
                         summary += "conn to (" + filter.port + ")";
@@ -474,6 +526,16 @@
                         summary += filter.limit + " conns";
                     } else {
                         summary += filter.comparator + filter.limit + " conns";
+                    }
+                } else if (filter.type === "target") {
+                    if (filter.to === "0") {
+                        summary += "to " + filter.target;
+                    } else if (filter.to === "1") {
+                        summary += "not to " + filter.target;
+                    } else if (filter.to === "2") {
+                        summary += "from " + filter.target;
+                    } else if (filter.to === "3") {
+                        summary += "not from " + filter.target;
                     }
                 } else if (filter.type === "tags") {
                     if (filter.has === "1") {
@@ -543,10 +605,12 @@
     };
 
     //Register filter types, and their constructors
-    filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
-    filters.private.types['port'] = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
     filters.private.types['connections']= [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 3];
+    filters.private.types['mask'] = [filters.private.createMaskFilter, filters.private.createMaskFilterRow, 1];
+    filters.private.types['port'] = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
+    filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
     filters.private.types['tags']= [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
+    filters.private.types['target']= [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];
 
     filters.private.createFilterCreator = function () {
         //The add button
