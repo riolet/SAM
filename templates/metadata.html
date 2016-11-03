@@ -1,0 +1,105 @@
+$def with (ip)
+<script>
+  g_initial_ip = "$ip";
+</script>
+<div class="ui container">
+  <h3 class="ui center aligned header">
+    <div id="hostSearch" class="ui icon input">
+      <input placeholder="Search..." type="text">
+      <i class="circular search link icon"></i>
+    </div>
+  </h3>
+  <table class="ui celled striped table">
+    <thead>
+      <tr><th colspan="2">
+        <h3>Quick Info</h3>
+      </th></tr>
+    </thead>
+    <tbody id="quickinfo">
+      <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="ui pointing secondary menu">
+    <a class="active item" data-tab="inputs">Inputs</a>
+    <a class="item" data-tab="outputs">Outputs</a>
+    <a class="item" data-tab="ports">Ports</a>
+  </div>
+  <div class="ui active tab segment" data-tab="inputs" id="tab-input">
+    <table class="ui very compact celled structured table">
+        <thead>
+          <tr>
+            <th>Source IP</th>
+            <th>Dest. Port</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody id="conn_in"></tbody>
+        <tfoot class="full-width" id="conn_in_overflow"></tfoot>
+    </table>
+  </div>
+  <div class="ui tab segment" data-tab="outputs" id="tab-output">
+    <table class="ui very compact celled structured table">
+        <thead>
+          <tr>
+            <th>Dest. IP</th>
+            <th>Dest. Port</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody id="conn_out"></tbody>
+        <tfoot class="full-width" id="conn_out_overflow"></tfoot>
+    </table>
+  </div>
+  <div class="ui tab segment" data-tab="ports" id="tab-ports">
+    <table class="ui very compact sortable celled table">
+        <thead>
+          <tr>
+            <th>Port Accessed</th>
+            <th class="sorted descending">Occurrences</th>
+          </tr>
+        </thead>
+        <tbody id="ports_in"></tbody>
+        <tfoot class="full-width" id="ports_in_overflow"></tfoot>
+    </table>
+  </div>
+</div>
+<!-- The Port update dialog box -->
+<div class="ui modal ports">
+    <div class="header">Port <span id="port_number"></span></div>
+    <div class="content">
+        <table class="ui table">
+            <tr><td class="right aligned">Use Name Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+            <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
+            <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+            <tr>
+              <td class="right aligned">Alias Name:</td>
+              <td>
+                <div class="ui input" data-content="A custom alias to override the default name">
+                  <input placeholder="port name" id="port_alias_name" type="text">
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="right aligned">Alias Description:</td>
+              <td>
+                <div class="ui input" data-content="A custom alias to override the default description">
+                  <input placeholder="port description" id="port_alias_description" type="text">
+                </div>
+              </td>
+            </tr>
+        </table>
+    </div>
+    <div class="actions">
+        <div class="ui blue ok button">
+            <i class="save icon"></i>
+            Save
+        </div>
+        <div class="ui red cancel button">
+            <i class="cancel icon"></i>
+            Cancel
+        </div>
+    </div>
+</div>

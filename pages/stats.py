@@ -10,7 +10,7 @@ class Stats:
     stats = []
 
     def get_timerange(self):
-        rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM Links32;")
+        rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM Links;")
         row = rows[0]
         return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
@@ -23,18 +23,17 @@ class Stats:
             self.stats.append(("Access Denied. Check username/password?", "Error 1045"))
             return
 
-        rows = common.db.query("SELECT COUNT(*) AS 'cnt' FROM Syslog;")
-        self.stats.append(("Number of rows imported from the Syslog:", str(rows[0]['cnt'])))
+        # rows = common.db.query("SELECT COUNT(*) AS 'count' FROM Syslog;")
+        # self.stats.append(("Number of rows imported from the Syslog:", str(rows[0]['count'])))
 
-        rows = common.db.query(
-            "SELECT DestinationIP AS 'Address', COUNT(*) AS 'Connections' FROM Syslog GROUP BY Address;")
+        rows = common.db.query("SELECT dst AS 'Address' FROM Links GROUP BY Address;")
         destIPs = len(rows)
         self.stats.append(("Unique destination IP addresses:", str(destIPs)))
 
-        rows = common.db.query("SELECT SourceIP AS 'Address', COUNT(*) AS 'Connections' FROM Syslog GROUP BY Address;")
+        rows = common.db.query("SELECT src AS 'Address' FROM Links GROUP BY Address;")
         self.stats.append(("Unique source IP addresses:", str(len(rows))))
 
-        rows = common.db.query("SELECT DestinationPort AS 'Port', COUNT(*) AS 'Connections' FROM Syslog GROUP BY Port;")
+        rows = common.db.query("SELECT DISTINCT port AS 'Port' FROM Links;")
         lrows = rows.list()
         self.stats.append(("Unique destination ports:", str(len(lrows))))
         sys_lrows = [i for i in lrows if i['Port'] < 1024]
@@ -45,9 +44,9 @@ class Stats:
         self.stats.append(("Unique private ports (49152..65535):", str(len(prv_lrows))))
 
         rows = common.db.query(
-            "SELECT DestinationIP AS 'Address', \
-            COUNT(DISTINCT DestinationPort) AS 'Ports', COUNT(*) AS 'Connections' \
-            FROM Syslog GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;")
+            "SELECT dst AS 'Address', \
+            COUNT(DISTINCT port) AS 'Ports', COUNT(links) AS 'Connections' \
+            FROM Links GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;")
         if len(rows) > 0:
             lrows = rows.list()
             self.stats.append(("Max ports for one destination: ", str(lrows[0]['Ports'])))
@@ -58,10 +57,9 @@ class Stats:
                 self.stats.append(("Percent of destinations with fewer than 10 ports: ", "{0:0.3f}%"
                                    .format((destIPs - count) * 100 / float(destIPs))))
 
-        rows = common.db.query("SELECT COUNT(*) FROM Syslog GROUP BY SourceIP, DestinationIP, DestinationPort;")
+        rows = common.db.query("SELECT 1 FROM Links GROUP BY src, dst, port;")
         self.stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(rows))))
-        rows = common.db.query(
-            "SELECT COUNT(*) FROM Syslog GROUP BY SourceIP, DestinationIP, DestinationPort HAVING COUNT(*) > 100;")
+        rows = common.db.query("SELECT SUM(links) AS 'links' FROM Links GROUP BY src, dst, port HAVING links > 100;")
         self.stats.append(("Number of distinct connections occurring more than 100 times:", str(len(rows))))
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.

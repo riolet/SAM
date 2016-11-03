@@ -252,10 +252,8 @@ function renderLinks(node, scale) {
     "use strict";
     if (config.show_in) {
         node.inputs.forEach(function (link) {
-            if (link.source8 === link.dest8
-                    && link.source16 === link.dest16
-                    && link.source24 === link.dest24
-                    && link.source32 === link.dest32) {
+            if (link.src_start === link.dst_start
+                    && link.src_end === link.dst_end) {
                 drawLoopArrow(node, link.links, scale);
             } else {
                 drawArrow(link.x1, link.y1, link.x2, link.y2, scale);
@@ -264,10 +262,8 @@ function renderLinks(node, scale) {
     }
     if (config.show_out) {
         node.outputs.forEach(function (link) {
-            if (link.source8 === link.dest8
-                    && link.source16 === link.dest16
-                    && link.source24 === link.dest24
-                    && link.source32 === link.dest32) {
+            if (link.src_start === link.dst_start
+                    && link.src_end === link.dst_end) {
                 drawLoopArrow(node, link.links, scale);
             } else {
                 drawArrow(link.x1, link.y1, link.x2, link.y2, scale, false);
@@ -315,7 +311,7 @@ function renderLabels(node, x, y, scale) {
         }
         if (node.subnet === 32) {
             Object.keys(node.ports).forEach(function (p) {
-                var text = get_port_alias(p);
+                var text = ports.get_alias(p);
                 ctx.font = "1.5em sans";
                 var sizeMin = ctx.measureText("mmmmm");
                 var size = Math.max(ctx.measureText(text).width, sizeMin.width);

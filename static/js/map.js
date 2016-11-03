@@ -82,6 +82,12 @@ function init() {
     $(".input.icon").popup();
     $("table.sortable").tablesort();
 
+    //configure ports
+    ports.display_callback = function() {
+        render_all();
+        sel_update_display();
+    };
+
     //loadData();
     GET_nodes(null);
 
@@ -116,6 +122,45 @@ function currentSubnet(scale) {
         return 24;
     }
     return 32;
+}
+
+function find_by_range(ipstart, ipend) {
+    var segments;
+    var range = ipend - ipstart;
+    if (range === 16777215) {
+        segments = 1;
+    } else if (range === 65535) {
+        segments = 2;
+    } else if (range === 255) {
+        segments = 3;
+    } else if (range === 0) {
+        segments = 4;
+    } else {
+        console.error("invalid ip range? (ipstart=" + ipstart + ", ipend=" + ipend + ")");
+    }
+
+    ips = [(ipstart & 0xff000000) >> 24];
+    if (ips[0] < 0) {
+        ips[0] = 256 + ips[0];
+    }
+
+    if (segments > 1) {
+        ips[1] = (ipstart & 0xff0000) >> 16;
+    } else {
+        ips[1] = undefined;
+    }
+    if (segments > 2) {
+        ips[2] = (ipstart & 0xff00) >> 8;
+    } else {
+        ips[2] = undefined;
+    }
+    if (segments > 3) {
+        ips[3] = (ipstart & 0xff);
+    } else {
+        ips[3] = undefined;
+    }
+
+    return findNode(ips[0], ips[1], ips[2], ips[3]);
 }
 
 function findNode(ip8, ip16, ip24, ip32) {

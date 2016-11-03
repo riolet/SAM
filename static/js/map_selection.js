@@ -1,4 +1,4 @@
-var m_selection = {}
+var m_selection = {};
 
 function sel_init() {
     "use strict";
@@ -30,7 +30,7 @@ function sel_set_selection(node) {
 function sel_clear_display() {
     "use strict";
     // clear all title data
-    removeChildren(m_selection["titles"]);
+    m_selection["titles"].innerHTML = "";
 
     // clear connection sums
     m_selection["unique_in"].childNodes[0].textContent = "0";
@@ -100,21 +100,6 @@ function sel_build_title(node) {
   return titles;
 }
 
-function sel_build_port_display(portnum) {
-  var link = document.createElement('a');
-  link.onclick = port_click
-  if (port_loaded(portnum)) {
-    link.appendChild(document.createTextNode(get_port_name(portnum)));
-    link.setAttribute("data-content", get_port_description(portnum));
-    link.setAttribute("class", "popup");
-    //This works as an alternative, but it's ugly.
-    //link.title = get_port_description(port.port)
-  } else {
-    link.appendChild(document.createTextNode(portnum.toString()));
-  }
-  return link;
-}
-
 function sel_build_table_connections(dataset) {
   "use strict";
   var tr;
@@ -128,7 +113,7 @@ function sel_build_table_connections(dataset) {
     tr.appendChild(td);
     connection[1].forEach(function (port) {
       td = document.createElement("td");
-      td.appendChild(sel_build_port_display(port.port))
+      td.appendChild(ports.get_presentation(port.port))
       tr.appendChild(td);
       td = document.createElement("td");
       td.appendChild(document.createTextNode(port.links.toString()));
@@ -148,7 +133,7 @@ function sel_build_table_ports(dataset) {
   dataset.forEach(function (port) {
     tr = document.createElement("tr");
     td = document.createElement("td");
-    td.appendChild(sel_build_port_display(port.port));
+    td.appendChild(ports.get_presentation(port.port));
     tr.appendChild(td);
 
     td = document.createElement("td");
@@ -181,10 +166,10 @@ function sel_build_overflow(amount, columns) {
 function sel_update_display(node) {
     "use strict";
     if (node === undefined) {
-        node = m_selection["selection"]
+        node = m_selection["selection"];
     }
-    if (node === null) {
-        return
+    if (node === null || !node.details.loaded) {
+        return;
     }
     var tbody;
     var row;
@@ -192,7 +177,7 @@ function sel_update_display(node) {
     var overflow_amount;
 
     //fill the title div
-    removeChildren(m_selection["titles"]);
+    m_selection["titles"].innerHTML = "";
     m_selection["titles"].appendChild(sel_build_title(node));
 
     //fill in the section titles
@@ -220,7 +205,7 @@ function sel_update_display(node) {
     //Input Connections
     overflow = m_selection["conn_in"].nextElementSibling;
     overflow_amount = node.details["unique_in"] - node.details["conn_in"].length;
-    removeChildren(overflow);
+    overflow.innerHTML = "";
     row = sel_build_overflow(overflow_amount, 3);
     if (row) {
       overflow.appendChild(row);
@@ -229,7 +214,7 @@ function sel_update_display(node) {
     //Output Connections
     overflow = m_selection["conn_out"].nextElementSibling;
     overflow_amount = node.details["unique_out"] - node.details["conn_out"].length;
-    removeChildren(overflow);
+    overflow.innerHTML = "";
     row = sel_build_overflow(overflow_amount, 3);
     if (row) {
       overflow.appendChild(row);
@@ -238,7 +223,7 @@ function sel_update_display(node) {
     //Ports Accessed
     overflow = m_selection["ports_in"].nextElementSibling;
     overflow_amount = node.details["unique_ports"] - node.details["ports_in"].length;
-    removeChildren(overflow);
+    overflow.innerHTML = "";
     row = sel_build_overflow(overflow_amount, 2);
     if (row) {
       overflow.appendChild(row);

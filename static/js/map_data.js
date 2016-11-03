@@ -53,8 +53,8 @@ function GET_nodes(parents, callback) {
 }
 
 function reportErrors(response) {
-    if (response.code !== 0) {
-        console.log("Error: " + response.message);
+    if (response.hasOwnProperty("result")) {
+        console.log("Result: " + response.result);
     }
 }
 
@@ -103,7 +103,7 @@ function POST_portinfo(request) {
     });
 }
 
-function GET_portinfo(port) {
+function GET_portinfo(port, callback) {
     "use strict";
     var requestData = {"port": port.join(",")};
     $.ajax({
@@ -112,7 +112,13 @@ function GET_portinfo(port) {
         data: requestData,
         dataType: "json",
         error: onNotLoadData,
-        success: GET_portinfo_callback
+        success: function (response) {
+            ports.private.GET_response(response);
+
+            if (typeof callback === "function") {
+                callback();
+            }
+        }
     });
 }
 
@@ -157,18 +163,18 @@ function GET_details(node, callback) {
 
             result.conn_in.forEach(function (element) {
                 element[1].forEach(function (port) {
-                    port_request_add(port.port);
+                    ports.request_add(port.port);
                 });
             });
             result.conn_out.forEach(function (element) {
                 element[1].forEach(function (port) {
-                    port_request_add(port.port);
+                    ports.request_add(port.port);
                 });
             });
             result.ports_in.forEach(function (element) {
-                port_request_add(element.port);
+                ports.request_add(element.port);
             });
-            port_request_submit();
+            ports.request_submit();
 
             if (typeof callback === "function") {
                 callback();

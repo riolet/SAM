@@ -95,80 +95,23 @@ def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
 
 
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
+    range = determine_range(ip8, ip16, ip24, ip32)
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
-        rows = common.db.select("Nodes8")
+        # rows = common.db.select("Nodes8")
+        rows = common.db.select("Nodes", where="subnet=8")
     elif ip16 < 0 or ip16 > 255:
         # check Nodes16
-        rows = common.db.where("Nodes16",
-                               ip8=ip8)
+        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
     elif ip24 < 0 or ip24 > 255:
         # check Nodes24
-        rows = common.db.where("Nodes24",
-                               ip8=ip8,
-                               ip16=ip16)
+        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
     elif ip32 < 0 or ip32 > 255:
         # check Nodes32
-        rows = common.db.where("Nodes32",
-                               ip8=ip8,
-                               ip16=ip16,
-                               ip24=ip24)
+        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
     else:
         rows = []
     return rows
-
-
-def build_links_query(ip, is_dest, ports, port_filter, timerange):
-    """
-    This helper function builds a query to fulfill the needs of the two "get_links_in/out" functions.
-
-    :param ip: An array of integer ip segments. as in: "a.b.c.d" -> [a, b, c, d]
-    :param is_dest: True if the IP specifies a destination. False if the IP specifies a source.
-    :param ports: True if the user want's port information in the query. False to omit.
-    :param filter: Either a port number to filter by, or None to do no filtering.
-    :param timerange: A tuple of (start_timestamp, end_timestamp) to filter results by.
-    :return: The db query as a string to get connection information from the database.
-    """
-    # FROM portion
-    table = "Links" + str(len(ip) * 8)
-    FROM = table
-
-    # SELECT portion
-    selects = ["source8", "dest8", "source16", "dest16", "source24", "dest24", "source32", "dest32"]
-    SELECT = ", ".join(selects[:len(ip) * 2])
-    if ports:
-        SELECT += ", port".format(table)
-    SELECT += ", SUM(links) as links, MAX(x1) as x1, MAX(y1) as y1, MAX(x2) as x2, MAX(y2) as y2"
-
-    # WHERE portion
-    if is_dest:
-        parts = ["dest{0} = $seg{1}".format(i * 8, i) for i in range(1, len(ip) + 1)]
-    else:
-        parts = ["source{0} = $seg{1}".format(i * 8, i) for i in range(1, len(ip) + 1)]
-    WHERE = "\n\t&& ".join(parts)
-    if timerange:
-        WHERE += "\n\t&& timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)"
-    if port_filter:
-        WHERE += "\n\t&& port = $filter"
-
-    # GROUP BY portion
-    GROUP_BY = ", ".join(selects[:len(ip) * 2])
-    if ports:
-        GROUP_BY += ", port"
-
-    # replacement variables
-    qvars = dict([("seg{0}".format(i + 1), str(v)) for i, v in enumerate(ip)])
-    if port_filter:
-        qvars['filter'] = port_filter
-    if timerange:
-        qvars['tstart'] = timerange[0]
-        qvars['tend'] = timerange[1]
-
-    # final query
-    query = "SELECT {0}\nFROM {1}\nWHERE {2}\nGROUP BY {3}".format(SELECT, FROM, WHERE, GROUP_BY)
-    query = common.db.query(query, vars=qvars, _test=True)
-
-    return query
 
 
 def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
@@ -195,25 +138,27 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    if 0 <= ip32 <= 255:
-        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=True, ports=True, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
-    elif 0 <= ip24 <= 255:
-        query = build_links_query([ip8, ip16, ip24], is_dest=True, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
-    elif 0 <= ip16 <= 255:
-        query = build_links_query([ip8, ip16], is_dest=True, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
-    elif 0 <= ip8 <= 255:
-        query = build_links_query([ip8], is_dest=True, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        inputs = list(common.db.query(query))
+    range = determine_range(ip8, ip16, ip24, ip32)
+    ports = 0 <= ip32 <= 255 # include ports in the results?
+    where = build_where_clause(timerange, port_filter)
+
+    if ports:
+        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        inputs = []
-    return inputs
+        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
+
+    query = """
+    SELECT {select}
+    FROM LinksIn
+    WHERE dst_start = $start && dst_end = $end
+     {where}
+    {group_by}
+    """.format(where=where, select=select, group_by=group_by)
+    qvars = {"start": range[0], "end": range[1]}
+    rows = list(common.db.query(query, vars=qvars))
+    return rows
 
 
 def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
@@ -240,148 +185,147 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=No
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    if 0 <= ip32 <= 255:
-        query = build_links_query([ip8, ip16, ip24, ip32], is_dest=False, ports=True, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
-    elif 0 <= ip24 <= 255:
-        query = build_links_query([ip8, ip16, ip24], is_dest=False, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
-    elif 0 <= ip16 <= 255:
-        query = build_links_query([ip8, ip16], is_dest=False, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
-    elif 0 <= ip8 <= 255:
-        query = build_links_query([ip8], is_dest=False, ports=False, port_filter=port_filter,
-                                  timerange=timerange)
-        outputs = list(common.db.query(query))
+    range = determine_range(ip8, ip16, ip24, ip32)
+    ports = 0 <= ip32 <= 255 # include ports in the results?
+    where = build_where_clause(timerange, port_filter)
+
+    if ports:
+        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        outputs = []
-    return outputs
-
-
-# TODO: this draws from Syslog, but it mustn't when we're not using Syslog anymore.
-def get_details(ip8, ip16=-1, ip24=-1, ip32=-1, port=-1, timerange=(1, 2 ** 31 - 1)):
-    print("get_details: {0}.{1}.{2}.{3}".format(ip8, ip16, ip24, ip32))
-    details = {}
-    ipRangeStart, ipRangeEnd, ipQuotient = determine_range(ip8, ip16, ip24, ip32)
-
-    # rounding to 5 minutes, because we're using Syslog.
-    tstart = timerange[0] if timerange[0] < 150 else timerange[0] - 150
-    tend = timerange[1] if timerange[1] > 2**31 - 150 else timerange[1] + 149
-
-    WHERE = "Timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)"
-    if port != -1:
-        WHERE += "\n    && DestinationPort = $port"
+        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
+        group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
 
     query = """
-        SELECT tableA.unique_in, tableB.unique_out, tableC.unique_ports
-        FROM
-            (SELECT COUNT(DISTINCT(SourceIP)) AS 'unique_in'
-            FROM Syslog
-            WHERE DestinationIP >= $start && DestinationIP <= $end
-                && {0})
-            AS tableA
-        JOIN
-            (SELECT COUNT(DISTINCT(DestinationIP)) AS 'unique_out'
-            FROM Syslog
-            WHERE SourceIP >= $start && SourceIP <= $end
-                && {0})
-            AS tableB
-        JOIN
-            (SELECT COUNT(DISTINCT(DestinationPort)) AS 'unique_ports'
-            FROM Syslog
-            WHERE DestinationIP >= $start && DestinationIP <= $end
-                && {0})
-            AS tableC;
-    """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
-    rows = common.db.query(query, vars=qvars)
+    SELECT {select}
+    FROM LinksOut
+    WHERE src_start = $start && src_end = $end
+     {where}
+    {group_by}
+    """.format(where=where, select=select, group_by=group_by)
+    qvars = {"start": range[0], "end": range[1]}
+    rows = list(common.db.query(query, vars=qvars))
+    return rows
+
+
+def build_where_clause(timestamp_range=None, port=None, rounding=True):
+    clauses = []
+    t_start = 0
+    t_end = 0
+
+    if timestamp_range:
+        t_start = timestamp_range[0]
+        t_end = timestamp_range[1]
+        if rounding:
+            # rounding to 5 minutes, for use with the Syslog table
+            if t_start > 150:
+                t_start -= 150
+            if t_end <= 2 ** 31 - 150:
+                t_end += 149
+        clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
+
+    if port:
+        clauses.append("port = $port")
+
+    qvars = {'tstart': t_start, 'tend': t_end, 'port': port}
+    WHERE = str(web.db.reparam("\n    && ".join(clauses), qvars))
+    if WHERE:
+        WHERE = "    && " + WHERE
+    return WHERE
+
+
+def get_details_summary(ip_range, timestamp_range=None, port=None):
+    WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
+
+    query2 = """
+        SELECT (
+            SELECT COUNT(DISTINCT src)
+                FROM Links
+                WHERE dst BETWEEN $start AND $end
+                 {0}) AS 'unique_in'
+            , (SELECT COUNT(DISTINCT dst)
+                FROM Links
+                WHERE src BETWEEN $start AND $end
+                 {0}) AS 'unique_out'
+            , (SELECT COUNT(DISTINCT port)
+                FROM Links
+                WHERE dst BETWEEN $start AND $end
+                 {0}) AS 'unique_ports';""".format(WHERE)
+    qvars = {'start': ip_range[0], 'end': ip_range[1]}
+    rows = common.db.query(query2, vars=qvars)
     row = rows[0]
-    details['unique_out'] = row.unique_out
-    details['unique_in'] = row.unique_in
-    details['unique_ports'] = row.unique_ports
+    return row
+
+
+def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, limit=50):
+    qvars = {
+        'start': ip_range[0],
+        'end': ip_range[1],
+        'limit': limit,
+        'WHERE': build_where_clause(timestamp_range, port)
+    }
+    if inbound:
+        qvars['collected'] = "src"
+        qvars['filtered'] = "dst"
+    else:
+        qvars['filtered'] = "src"
+        qvars['collected'] = "dst"
 
     query = """
-        SELECT ip, temp.port, links
-        FROM
-            (SELECT Syslog.SourceIP AS 'ip'
-                , Syslog.DestinationPort as 'port'
-                , COUNT(*) AS 'links'
-            FROM Syslog
-            WHERE DestinationIP >= $start && DestinationIP <= $end
-                && {0}
-            GROUP BY Syslog.SourceIP, Syslog.DestinationPort)
-            AS temp
+        SELECT {collected} AS 'ip', port AS 'port', sum(links) AS 'links'
+        FROM Links
+        WHERE {filtered} BETWEEN $start AND $end
+         {WHERE}
+        GROUP BY {collected}, port
         ORDER BY links DESC
-        LIMIT 50;
-    """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
-    details['conn_in'] = list(common.db.query(query, vars=qvars))
+        LIMIT {limit};
+    """.format(**qvars)
+    return list(common.db.query(query, vars=qvars))
 
+
+def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
+    WHERE = build_where_clause(timestamp_range, port)
     query = """
-        SELECT ip, temp.port, links
-        FROM
-            (SELECT Syslog.DestinationIP AS 'ip'
-                , Syslog.DestinationPort as 'port'
-                , COUNT(*) AS 'links'
-            FROM Syslog
-            WHERE SourceIP >= $start && SourceIP <= $end
-                && {0}
-            GROUP BY Syslog.DestinationIP, Syslog.DestinationPort)
-            AS temp
+        SELECT port AS 'port', sum(links) AS 'links'
+        FROM Links
+        WHERE dst BETWEEN $start AND $end
+         {0}
+        GROUP BY port
         ORDER BY links DESC
-        LIMIT 50;
+        LIMIT $limit;
     """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
-    details['conn_out'] = list(common.db.query(query, vars=qvars))
-
-    query = """
-        SELECT temp.port, links
-        FROM
-            (SELECT DestinationPort AS port, COUNT(*) AS links
-            FROM Syslog
-            WHERE DestinationIP >= $start && DestinationIP <= $end
-                && {0}
-            GROUP BY port
-            ) AS temp
-        ORDER BY links DESC
-        LIMIT 50;
-    """.format(WHERE)
-    qvars = {'start': ipRangeStart, 'end': ipRangeEnd, 'tstart': tstart, 'tend': tend, 'port': port}
-    details['ports_in'] = list(common.db.query(query, vars=qvars))
-
-    return details
+    qvars = {'start': ip_range[0], 'end': ip_range[1], 'limit': limit}
+    return list(common.db.query(query, vars=qvars))
 
 
-def get_node_info(*address):
+def get_node_info(address):
     print("-" * 50)
     print("getting node info:")
     print("type: " + str(type(address)))
     print(address)
     print("-" * 50)
-    # TODO: for use getting meta about hosts
-    return {}
+    # TODO: placeholder for use getting metadata about hosts
+    ips = map(int, address.split("."))
+    range = determine_range(*ips)
+    WHERE = "ipstart={0} && ipend={1}".format(range[0], range[1])
+    results = common.db.select("Nodes", where=WHERE, limit=1)
+
+    if len(results) == 1:
+        return results[0]
+    else:
+        return {}
 
 
 def set_node_info(address, data):
     print("-" * 50)
     print("Setting node info!")
-    ips = address.split(".")
     print("type data: " + str(type(data)))
     print(data)
     print("-" * 50)
-    if len(ips) == 1:
-        common.db.update('Nodes8', {"ip8": ips[0]}, **data)
-    if len(ips) == 2:
-        common.db.update('Nodes16', {"ip8": ips[0], "ip16": ips[1]}, **data)
-    if len(ips) == 3:
-        common.db.update('Nodes24', {"ip8": ips[0], "ip16": ips[1],
-                                     "ip24": ips[2]}, **data)
-    if len(ips) == 4:
-        common.db.update('Nodes32', {"ip8": ips[0], "ip16": ips[1],
-                                     "ip24": ips[2], "ip32": ips[3]}, **data)
+    ips = map(int, address.split("."))
+    range = determine_range(*ips)
+    where = {"ipstart": range[0], "ipend": range[1]}
+    common.db.update('Nodes', where, **data)
 
 
 def get_port_info(port):
@@ -445,3 +389,47 @@ def set_port_info(data):
             common.db.update('portLUT', {"port": port}, active=active)
     else:
         common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
+
+
+def get_table_info(clauses, page, page_size, order_by, order_dir):
+    WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
+    if WHERE:
+        WHERE = "WHERE " + WHERE
+
+
+    HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
+    if HAVING:
+        HAVING = "HAVING " + HAVING
+
+    cols = ['ipstart', 'alias', 'conn_out', 'conn_in']
+    ORDERBY = ""
+    if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
+        ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
+
+
+    query = """
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
+    , alias
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksOut AS l_out
+        WHERE l_out.src_start = nodes.ipstart
+          AND l_out.src_end = nodes.ipend
+     ),0) AS "conn_out"
+    ,COALESCE((SELECT SUM(links)
+        FROM LinksIn AS l_in
+        WHERE l_in.dst_start = nodes.ipstart
+          AND l_in.dst_end = nodes.ipend
+     ),0) AS "conn_in"
+FROM Nodes AS nodes
+{WHERE}
+{HAVING}
+{ORDER}
+LIMIT {START},{RANGE};""".format(
+        WHERE=WHERE,
+        HAVING=HAVING,
+        ORDER=ORDERBY,
+        START=page * page_size,
+        RANGE=page_size + 1)
+
+    info = list(common.db.query(query))
+    return info

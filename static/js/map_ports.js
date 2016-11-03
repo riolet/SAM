@@ -1,193 +1,264 @@
+/**
+ * Class Ports
+ * public:
+ *   ports = []
+ *   display_callback = null
+ * private:
+ *   requests = []
+ *   editing = undefined
+ *
+ * public functions:
+ *   loaded(port)
+ *   get_name(port)
+ *   get_alias(port)
+ *   get_description(port)
+ *   get_presentation(port)
+ *   set(port, new_info)
+ *   request_add(port)
+ *   request_submit(callback)
+ *   show_edit_window(port)
+ *
+ * private functions:
+ *   click(event)
+ *   GET_response(response)
+ *   save()
+ *   edit(portinfo)
+ *   update_displays()
+ *
+ */
 
-var m_portinfo;
-var m_ports = [];
-var m_port_requests = [];
-
-function port_loaded(port) {
+;(function () {
     "use strict";
-    return m_ports.hasOwnProperty(port);
-}
+    var ports = {};
+    // Member variables
+    ports.ports = [];
+    ports.display_callback = null;
+    ports.private = {};
+    ports.private.requests = [];
+    ports.private.editing = undefined;
 
-function get_port_name(port) {
-    "use strict";
-    if (!m_ports.hasOwnProperty(port)){
-        return port.toString();
-    }
 
-    if (m_ports[port].active) {
-        if (m_ports[port].alias_name !== "" && m_ports[port].alias_name !== null) {
-            return port.toString() + " - " + m_ports[port].alias_name;
-        } else if (m_ports[port].name.length !== 0) {
-            return port.toString() + " - " + m_ports[port].name;
-        } else {
+    // ==================================
+    // Public functions
+    // ==================================
+    ports.loaded = function (port) {
+        return ports.ports.hasOwnProperty(port);
+    };
+    ports.get_name = function (port) {
+        if (!ports.loaded(port)){
             return port.toString();
         }
-    }
-    return port.toString();
-}
 
-function get_port_alias(port) {
-    "use strict";
-    if (!m_ports.hasOwnProperty(port)){
+        if (ports.ports[port].active) {
+            if (ports.ports[port].alias_name !== "" && ports.ports[port].alias_name !== null) {
+                return port.toString() + " - " + ports.ports[port].alias_name;
+            } else if (ports.ports[port].name.length !== 0) {
+                return port.toString() + " - " + ports.ports[port].name;
+            } else {
+                return port.toString();
+            }
+        }
         return port.toString();
-    }
-
-    if (m_ports[port].active) {
-        if (m_ports[port].alias_name !== null && m_ports[port].alias_name.length !== 0) {
-            return m_ports[port].alias_name;
-        } else if (m_ports[port].name !== null && m_ports[port].name.length !== 0) {
-            return m_ports[port].name;
-        } else {
+    };
+    ports.get_alias = function (port) {
+        if (!ports.loaded(port)){
             return port.toString();
         }
-    }
-    return port.toString();
-}
 
-function get_port_description(port) {
-    "use strict";
-    if (!m_ports.hasOwnProperty(port)){
-        return ""
-    }
-
-    if (m_ports[port].active) {
-        //this checks name and uses description on purpose
-        if (m_ports[port].alias_name !== "" && m_ports[port].alias_name !== null && m_ports[port].alias_description !== null) {
-            return m_ports[port].alias_description;
-        } else {
-            return m_ports[port].description;
+        if (ports.ports[port].active) {
+            if (ports.ports[port].alias_name !== null && ports.ports[port].alias_name.length !== 0) {
+                return ports.ports[port].alias_name;
+            } else if (ports.ports[port].name !== null && ports.ports[port].name.length !== 0) {
+                return ports.ports[port].name;
+            } else {
+                return port.toString();
+            }
         }
-    }
-    return "";
-}
+        return port.toString();
+    };
+    ports.get_description = function (port) {
+        if (!ports.loaded(port)){
+            return ""
+        }
+        if (ports.ports[port].active) {
+            //this checks name and uses description on purpose
+            if (ports.ports[port].alias_name !== "" && ports.ports[port].alias_name !== null && ports.ports[port].alias_description !== null) {
+                return ports.ports[port].alias_description;
+            } else {
+                return ports.ports[port].description;
+            }
+        }
+        return "";
+    };
+    ports.get_presentation = function (port) {
+        var link = document.createElement('a');
+        link.onclick = ports.private.click;
+        if (ports.loaded(port)) {
+            link.appendChild(document.createTextNode(ports.get_name(port)));
+            link.setAttribute("data-content", ports.get_description(port));
+            link.classList.add("popup");
+            //This works as an alternative, but it's ugly.
+            //link.title = get_port_description(port.port)
+        } else {
+            link.appendChild(document.createTextNode(port.toString()));
+        }
+        return link;
+    };
+    ports.set = function (port, new_info) {
+        // update m_ports
+        // POST_portinfo anything new
+        // settable properties: active, alias_name, alias_description
+        var old_info = {};
+        var delta = {};
 
-function update_port(portnum, info) {
-    "use strict";
-    var port = {};
-    port.active = info.active;
-    port.port = portnum;
-    port.name = info.name;
-    port.description = info.description;
-    port.alias_name = info.alias_name;
-    port.alias_description = info.alias_description;
+        if (ports.loaded(port)) {
+            old_info = ports.ports[port];
+        } else {
+            old_info = {
+                'port': port,
+                'active': 1,
+                'name': '',
+                'description': '',
+                'alias_name': '',
+                'alias_description': ''
+            };
+        }
 
-    m_ports[portnum] = port;
-}
+        if (new_info.hasOwnProperty("active") && new_info.active !== old_info.active) {
+            delta.active = old_info.active = new_info.active;
+        }
+        if (new_info.hasOwnProperty("alias_name") && new_info.alias_name !== old_info.alias_name) {
+            old_info.alias_name = new_info.alias_name;
+            if (new_info.alias_name !== null) {
+                delta.alias_name = new_info.alias_name;
+            }
+        }
+        if (new_info.hasOwnProperty("alias_description") && new_info.alias_description !== old_info.alias_description) {
+            old_info.alias_description = new_info.alias_description;
+            if (new_info.alias_name !== null) {
+                delta.alias_description = new_info.alias_description;
+            }
+        }
+        if (new_info.hasOwnProperty("name") && new_info.name !== old_info.name) {
+            old_info.name = new_info.name;
+        }
+        if (new_info.hasOwnProperty("description") && new_info.description !== old_info.description) {
+            old_info.description = new_info.description;
+        }
+        if (Object.keys(delta).length > 0) {
+            delta.port = port;
+            POST_portinfo(delta);
+            ports.private.update_displays();
+        }
 
-function GET_portinfo_callback(result) {
-    "use strict";
-    Object.keys(result).forEach(function (key) {
-        update_port(Number(key), result[key]);
-    });
-    sel_update_display(m_selection["selection"]);
-    var port = result[Object.keys(result).pop()];
-    port_display(port);
-}
+        ports.ports[port] = old_info;
+    };
+    ports.request_add = function (port) {
+        if (!ports.loaded(port)) {
+            ports.private.requests.push(port);
+        }
+    };
+    ports.request_submit = function (callback) {
+        var request = ports.private.requests.filter(function (element) {
+            return !ports.ports.hasOwnProperty(element.toString());
+        });
 
-function port_click(event) {
-    "use strict";
-    var port = Number((event.target.innerHTML.split(" ")[0]));
-    show_window(port)
-}
+        //remove duplicates by sorting and comparing neighbors
+        request = request.sort().filter(function(item, pos, ary) {
+            return pos === 0 || item != ary[pos - 1];
+        });
 
-function port_request_add(port_number) {
-    "use strict";
-    if (!port_loaded(port_number)) {
-        m_port_requests.push(port_number);
-    }
-}
-
-function port_request_submit() {
-    "use strict";
-    var request = m_port_requests.filter(function (element) {
-        return !m_ports.hasOwnProperty(element.toString());
-    });
-
-    //remove duplicates by sorting and comparing neighbors
-    request = request.sort().filter(function(item, pos, ary) {
-        return pos === 0 || item != ary[pos - 1];
-    });
-
-    m_port_requests = [];
-    if (request.length > 0) {
-        GET_portinfo(request);
-    }
-}
-
-function port_save() {
-    "use strict";
-    var difference_set = {};
-    if (document.getElementById("port_active").checked !== (m_portinfo.active === 1)) {
-        //toggle active between 0 and 1
-        difference_set.active = 1 - m_portinfo.active;
-    }
-    if (document.getElementById("port_alias_name").value !== m_portinfo.alias_name) {
-        difference_set.alias_name = document.getElementById("port_alias_name").value;
-    }
-    if (document.getElementById("port_alias_description").value !== m_portinfo.alias_description) {
-        difference_set.alias_description = document.getElementById("port_alias_description").value;
-    }
-    if (Object.keys(difference_set).length !== 0) {
-        difference_set.port = m_portinfo.port;
-        update_port(difference_set.port, difference_set);
-        POST_portinfo(difference_set);
-    }
-}
-
-function show_window(port) {
-    "use strict";
-    document.getElementById("port_number").innerHTML = port;
-    document.getElementById("port_name").innerHTML = "loading...";
-    document.getElementById("port_description").innerHTML = "loading...";
-    document.getElementById("port_alias_name").value = "";
-    document.getElementById("port_alias_description").value = "";
-
-    if (m_ports.hasOwnProperty(port)){
-        port_display(m_ports[port]);
-    } else {
-        m_portinfo = {"port":port};
-        GET_portinfo([port]);
-    }
-    $('.ui.modal.ports')
-        .modal({
-            onApprove : port_save
-        })
-        .modal('show')
-    ;
-}
-
-function port_display(port) {
-    "use strict";
-    if (port !== undefined) {
-        m_portinfo = port;
-    }
-    if (port === undefined || port.active === undefined) {
-        document.getElementById("port_active").checked = true;
-        m_portinfo.active = 1;
-    } else {
-        document.getElementById("port_active").checked = (port.active === 1);
-    }
-    if (port === undefined || port.name === undefined || port.name === null || port.name === "") {
-        document.getElementById("port_name").innerHTML = "none";
-    } else {
-        document.getElementById("port_name").innerHTML = port.name;
-    }
-    if (port === undefined || port.description === undefined || port.description === null || port.description === "") {
-        document.getElementById("port_description").innerHTML = "none";
-    } else {
-        document.getElementById("port_description").innerHTML = port.description;
-    }
-    if (port === undefined || port.alias_name === undefined || port.alias_name === null) {
+        ports.private.requests = [];
+        if (request.length > 0) {
+            GET_portinfo(request, callback);
+        }
+    };
+    ports.show_edit_window = function (port) {
+        document.getElementById("port_number").innerHTML = port;
+        document.getElementById("port_name").innerHTML = "loading...";
+        document.getElementById("port_description").innerHTML = "loading...";
         document.getElementById("port_alias_name").value = "";
-        m_portinfo.alias_name = "";
-    } else {
-        document.getElementById("port_alias_name").value = port.alias_name;
-    }
-    if (port === undefined || port.alias_description === undefined || port.alias_description === null) {
         document.getElementById("port_alias_description").value = "";
-        m_portinfo.alias_description = "";
-    } else {
-        document.getElementById("port_alias_description").value = port.alias_description;
-    }
-}
+
+        if (ports.loaded(port)) {
+            ports.private.edit(port, ports.ports[port]);
+        } else {
+            ports.request_add(port);
+            ports.request_submit(function () {
+                ports.private.edit(port, ports.ports[port]);
+            });
+        }
+        $('.ui.modal.ports')
+            .modal({
+                onApprove : ports.private.save
+            })
+            .modal('show')
+        ;
+    };
+
+
+    // ==================================
+    // Private functions
+    // ==================================
+    ports.private.click = function (event) {
+        var port = parseInt(event.target.innerHTML);
+        ports.show_edit_window(port);
+    };
+    ports.private.GET_response = function (response) {
+        Object.keys(response).forEach(function (key) {
+            ports.set(Number(key), response[key]);
+        });
+        ports.private.update_displays();
+    };
+    ports.private.save = function () {
+        var info = {};
+        if (document.getElementById("port_active").checked) {
+            info.active = 1;
+        } else {
+            info.active = 0;
+        }
+        info.alias_name = document.getElementById("port_alias_name").value;
+        info.alias_description = document.getElementById("port_alias_description").value;
+        
+        ports.set(ports.private.editing, info);
+    };
+    ports.private.edit = function (port, portinfo) {
+        ports.private.editing = port;
+    
+        if (portinfo === undefined || portinfo.active === undefined) {
+            document.getElementById("port_active").checked = true;
+        } else {
+            document.getElementById("port_active").checked = (portinfo.active === 1);
+        }
+        if (portinfo === undefined || portinfo.name === undefined || portinfo.name === null || portinfo.name === "") {
+            document.getElementById("port_name").innerHTML = "none";
+        } else {
+            document.getElementById("port_name").innerHTML = portinfo.name;
+        }
+        if (portinfo === undefined || portinfo.description === undefined || portinfo.description === null || portinfo.description === "") {
+            document.getElementById("port_description").innerHTML = "none";
+        } else {
+            document.getElementById("port_description").innerHTML = portinfo.description;
+        }
+        if (portinfo === undefined || portinfo.alias_name === undefined || portinfo.alias_name === null) {
+            document.getElementById("port_alias_name").value = "";
+        } else {
+            document.getElementById("port_alias_name").value = portinfo.alias_name;
+        }
+        if (portinfo === undefined || portinfo.alias_description === undefined || portinfo.alias_description === null) {
+            document.getElementById("port_alias_description").value = "";
+        } else {
+            document.getElementById("port_alias_description").value = portinfo.alias_description;
+        }
+    };
+    ports.private.update_displays = function () {
+        if (typeof(ports.display_callback) === "function") {
+            ports.display_callback();
+        }
+    };
+
+    // Export ports instance to global scope
+    window.ports = ports;
+})();
+
 
