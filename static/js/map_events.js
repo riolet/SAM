@@ -209,29 +209,6 @@ function onsearch() {
     g_timer = setTimeout(applysearch, 700);
 }
 
-function updateFloatingPanel() {
-    "use strict";
-    var side = document.getElementById("sel_bar");
-    var heightAvailable = rect.height - 40;
-    side.style.maxHeight = heightAvailable + "px";
-
-    heightAvailable -= 10; //for padding
-    heightAvailable -= 10; //for borders
-
-    var contentTitles = $("#selectionInfo div.title");
-    var i;
-    for (i = 0; i < contentTitles.length; i += 1) {
-        //offsetHeight is height + vertical padding + vertical borders
-        heightAvailable -= contentTitles[i].offsetHeight;
-    }
-    heightAvailable -= document.getElementById("sel_titles").offsetHeight;
-
-    var contentBlocks = $("#selectionInfo div.content");
-    for (i = 0; i < contentBlocks.length; i += 1) {
-        contentBlocks[i].style.maxHeight = heightAvailable + "px";
-    }
-}
-
 function onResize() {
     "use strict";
     canvas.width = window.innerWidth;
@@ -240,7 +217,7 @@ function onResize() {
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render_all();
     checkLoD();
-    updateFloatingPanel();
+    sel_panel_height();
 }
 
 function updateConfig() {
