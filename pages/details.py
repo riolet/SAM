@@ -69,6 +69,7 @@ class Details:
             info.append(("Unique inbound connections", summary.unique_in))
             info.append(("Unique outbound connections", summary.unique_out))
             info.append(("Ports accessed", summary.unique_ports))
+            # info.append(("Connections per second", ))
         else:
             info.append(('No host found this address', '...'))
         return info

@@ -67,48 +67,21 @@ def reset_port_names():
     common.db.multiple_insert('portLUT', values=ports)
 
 
-def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
-    low = 0x00000000
-    high = 0xFFFFFFFF
-    quot = 1
-    if 0 <= ip8 <= 255:
-        low = (ip8 << 24)  # 172.0.0.0
-        if 0 <= ip16 <= 255:
-            low |= (ip16 << 16)  # 172.19.0.0
-            if 0 <= ip24 <= 255:
-                low |= (ip24 << 8)
-                if 0 <= ip32 <= 255:
-                    low |= ip32
-                    high = low
-                else:
-                    high = low | 0xFF
-                    quot = 0x1
-            else:
-                high = low | 0xFFFF
-                quot = 0x100
-        else:
-            high = low | 0xFFFFFF
-            quot = 0x10000
-    else:
-        quot = 0x1000000
-    return low, high, quot
-
-
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
-    range = determine_range(ip8, ip16, ip24, ip32)
+    r = common.determine_range(ip8, ip16, ip24, ip32)
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
         # rows = common.db.select("Nodes8")
         rows = common.db.select("Nodes", where="subnet=8")
     elif ip16 < 0 or ip16 > 255:
         # check Nodes16
-        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
+        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     elif ip24 < 0 or ip24 > 255:
         # check Nodes24
-        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
+        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     elif ip32 < 0 or ip32 > 255:
         # check Nodes32
-        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(range[0], range[1]))
+        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     else:
         rows = []
     return rows
@@ -133,13 +106,13 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
     :param ip16: The second segment of the IPv4 address: xx.__.xx.xx
     :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
     :param ip32: The fourth segment of the IPv4 address: xx.xx.xx.__
-    :param filter:  Only consider connections using this destination port. Default is no filtering.
+    :param port_filter:  Only consider connections using this destination port. Default is no filtering.
     :param timerange:  Tuple of (start, end) timestamps. Only connections happening
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    range = determine_range(ip8, ip16, ip24, ip32)
-    ports = 0 <= ip32 <= 255 # include ports in the results?
+    r = common.determine_range(ip8, ip16, ip24, ip32)
+    ports = 0 <= ip32 <= 255  # include ports in the results?
     where = build_where_clause(timerange, port_filter)
 
     if ports:
@@ -156,7 +129,7 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
      {where}
     {group_by}
     """.format(where=where, select=select, group_by=group_by)
-    qvars = {"start": range[0], "end": range[1]}
+    qvars = {"start": r[0], "end": r[1]}
     rows = list(common.db.query(query, vars=qvars))
     return rows
 
@@ -180,13 +153,13 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=No
     :param ip16: The second segment of the IPv4 address: xx.__.xx.xx
     :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
     :param ip32: The fourth segment of the IPv4 address: xx.xx.xx.__
-    :param filter:  Only consider connections using this destination port. Default is no filtering.
+    :param port_filter:  Only consider connections using this destination port. Default is no filtering.
     :param timerange:  Tuple of (start, end) timestamps. Only connections happening
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    range = determine_range(ip8, ip16, ip24, ip32)
-    ports = 0 <= ip32 <= 255 # include ports in the results?
+    r = common.determine_range(ip8, ip16, ip24, ip32)
+    ports = 0 <= ip32 <= 255  # include ports in the results?
     where = build_where_clause(timerange, port_filter)
 
     if ports:
@@ -203,7 +176,7 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=No
      {where}
     {group_by}
     """.format(where=where, select=select, group_by=group_by)
-    qvars = {"start": range[0], "end": range[1]}
+    qvars = {"start": r[0], "end": r[1]}
     rows = list(common.db.query(query, vars=qvars))
     return rows
 
@@ -306,8 +279,8 @@ def get_node_info(address):
     print("-" * 50)
     # TODO: placeholder for use getting metadata about hosts
     ips = map(int, address.split("."))
-    range = determine_range(*ips)
-    WHERE = "ipstart={0} && ipend={1}".format(range[0], range[1])
+    r = common.determine_range(*ips)
+    WHERE = "ipstart={0} && ipend={1}".format(r[0], r[1])
     results = common.db.select("Nodes", where=WHERE, limit=1)
 
     if len(results) == 1:
@@ -323,8 +296,8 @@ def set_node_info(address, data):
     print(data)
     print("-" * 50)
     ips = map(int, address.split("."))
-    range = determine_range(*ips)
-    where = {"ipstart": range[0], "ipend": range[1]}
+    r = common.determine_range(*ips)
+    where = {"ipstart": r[0], "ipend": r[1]}
     common.db.update('Nodes', where, **data)
 
 
@@ -396,7 +369,6 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if WHERE:
         WHERE = "WHERE " + WHERE
 
-
     HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
         HAVING = "HAVING " + HAVING
@@ -405,7 +377,6 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     ORDERBY = ""
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
-
 
     query = """
 SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
