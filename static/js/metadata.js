@@ -6,7 +6,6 @@ var g_data = {"quick": null, "inputs": null, "outputs": null, "ports": null};
 function buildKeyValueRow(key, value) {
     "use strict";
     var tr = document.createElement("TR");
-
     var td = document.createElement("TD");
     td.appendChild(document.createTextNode(key.toString()));
     tr.appendChild(td);
@@ -14,8 +13,26 @@ function buildKeyValueRow(key, value) {
     td = document.createElement("TD");
     td.appendChild(document.createTextNode(value.toString()));
     tr.appendChild(td);
-
     return tr;
+}
+
+function buildKeyMultiValueRows(key, values) {
+    "use strict";
+    var rows = [];
+    var tr = document.createElement("TR");
+    var td = document.createElement("TD");
+    td.appendChild(document.createTextNode(key.toString()));
+    tr.appendChild(td);
+    td.rowSpan = values.length;
+
+    values.forEach(function (e) {
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(e.toString()));
+        tr.appendChild(td);
+        rows.push(tr);
+        tr = document.createElement("TR");
+    });
+    return rows;
 }
 
 function present_quick_info(info) {
@@ -23,7 +40,13 @@ function present_quick_info(info) {
     var target = document.getElementById("quickinfo");
     target.innerHTML = "";
     info.forEach(function (kv_pair) {
-       target.appendChild(buildKeyValueRow(kv_pair[0], kv_pair[1]));
+        if (Array.isArray(kv_pair[1])) {
+            buildKeyMultiValueRows(kv_pair[0], kv_pair[1]).forEach(function (row) {
+                target.appendChild(row);
+            });
+        } else {
+            target.appendChild(buildKeyValueRow(kv_pair[0], kv_pair[1]));
+        }
     });
 }
 

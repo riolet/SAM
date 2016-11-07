@@ -272,16 +272,47 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
 
 
 def get_node_info(address):
-    print("-" * 50)
-    print("getting node info:")
-    print("type: " + str(type(address)))
-    print(address)
-    print("-" * 50)
-    # TODO: placeholder for use getting metadata about hosts
     ips = map(int, address.split("."))
-    r = common.determine_range(*ips)
-    WHERE = "ipstart={0} && ipend={1}".format(r[0], r[1])
-    results = common.db.select("Nodes", where=WHERE, limit=1)
+    ipstart, ipend, _ = common.determine_range(*ips)
+    query = """
+        SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
+            , COALESCE(n.hostname, '') AS 'hostname'
+            , l_out.unique_out
+            , COALESCE(l_out.total_out, 0) AS 'total_out'
+            , l_in.unique_in
+            , COALESCE(l_in.total_in, 0) AS 'total_in'
+            , COALESCE(l_in.ports_used, 0) AS 'ports_used'
+            , t.seconds
+        FROM (
+            SELECT ipstart, subnet, alias AS 'hostname'
+            FROM Nodes
+            WHERE ipstart = $start AND ipend = $end
+        ) AS n
+        LEFT JOIN (
+            SELECT $start AS 's1', COUNT(DISTINCT dst) AS 'unique_out', SUM(links) AS 'total_out'
+            FROM Links
+            WHERE src BETWEEN $start AND $end
+            GROUP BY 's1'
+        ) AS l_out
+            ON n.ipstart = l_out.s1
+        LEFT JOIN (
+            SELECT $start AS 's1', COUNT(DISTINCT src) AS 'unique_in', SUM(links) AS 'total_in', COUNT(DISTINCT port) AS 'ports_used'
+            FROM Links
+            WHERE dst BETWEEN $start AND $end
+            GROUP BY 's1'
+        ) AS l_in
+            ON n.ipstart = l_in.s1
+        LEFT JOIN (
+            SELECT $start AS 's1'
+                , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
+            FROM Links
+            GROUP BY 's1'
+        ) AS t
+            ON n.ipstart = t.s1
+        LIMIT 1;
+    """
+    qvars = {"start": ipstart, "end": ipend}
+    results = common.db.query(query, vars=qvars)
 
     if len(results) == 1:
         return results[0]

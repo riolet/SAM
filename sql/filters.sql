@@ -16,11 +16,11 @@ FROM (
 -- 208.192.108.150
 -- 3502271638
 
-SELECT CONCAT(decodeIP(ipstart), CONCAT("/", subnet)) AS "address"
-    , COUNT(DISTINCT l_in.src) AS "unique_in"
-    , COALESCE(SUM(l_in.links),0) AS "total_in"
-    , COUNT(DISTINCT l_out.dst) AS "unique_out"
-    , COALESCE(SUM(l_out.links),0) AS "total_out"
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+    , COUNT(DISTINCT l_in.src) AS 'unique_in'
+    , COALESCE(SUM(l_in.links),0) AS 'total_in'
+    , COUNT(DISTINCT l_out.dst) AS 'unique_out'
+    , COALESCE(SUM(l_out.links),0) AS 'total_out'
 FROM Nodes
 LEFT JOIN Links AS l_in
     ON l_in.dst BETWEEN Nodes.ipstart AND Nodes.ipend
@@ -29,8 +29,8 @@ LEFT JOIN Links AS l_out
 WHERE ipstart = 3186647296 AND ipend = 3186647551;
 
 
-SELECT CONCAT(decodeIP(ipstart), CONCAT("/", subnet)) AS "address"
-    , COUNT(DISTINCT src) AS "unique_in"
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+    , COUNT(DISTINCT src) AS 'unique_in'
 FROM Nodes
 LEFT JOIN Links AS l_in
     ON l_in.dst BETWEEN Nodes.ipstart AND Nodes.ipend
@@ -40,11 +40,11 @@ WHERE ipstart = 3186647296 AND ipend = 3186647551;
 
 (3170893824, 3187671039
 
-SELECT CONCAT(decodeIP(ipstart), CONCAT("/", subnet)) AS "address"
-    , COUNT(l_in.u_in) AS "unique_in"
-    , SUM(l_in.t_in) AS "total_in"
-    , COUNT(l_out.u_out) AS "unique_out"
-    , SUM(l_out.t_out) AS "total_out"
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+    , COUNT(l_in.u_in) AS 'unique_in'
+    , SUM(l_in.t_in) AS 'total_in'
+    , COUNT(l_out.u_out) AS 'unique_out'
+    , SUM(l_out.t_out) AS 'total_out'
 FROM (
     SELECT ipstart, ipend, subnet
     FROM Nodes
@@ -68,7 +68,7 @@ LEFT JOIN (
 
 
 -- Node info
-SELECT CONCAT(decodeIP(ipstart), CONCAT("/", subnet)) AS "address", alias AS "hostname"
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address', alias AS 'hostname'
 FROM Nodes
 WHERE ipstart = 3170893824 AND ipend = 3187671039;
 -- Out Connections
@@ -83,18 +83,16 @@ WHERE dst BETWEEN 3170893824 AND 3187671039
 GROUP BY 's1';
 
 -- COMBINED
-SELECT CONCAT(decodeIP(n.ipstart), CONCAT("/", n.subnet)) AS "address"
-    , n.hostname
+SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
+    , COALESCE(n.hostname, '') AS 'hostname'
     , l_out.unique_out
     , l_out.total_out
-    , (l_out.total_out / t.seconds) AS "out / s"
     , l_in.unique_in
     , l_in.total_in
-    , (l_in.total_in / t.seconds) AS "in / s"
     , l_in.ports_used
     , t.seconds
 FROM (
-    SELECT ipstart, subnet, alias AS "hostname"
+    SELECT ipstart, subnet, alias AS 'hostname'
     FROM Nodes
     WHERE ipstart = 3170893824 AND ipend = 3187671039
 ) AS n

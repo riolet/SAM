@@ -41,7 +41,7 @@ class Details:
                 self.ip_string = GET_data["address"]
                 ips = self.ip_string.split(".")
                 self.ips = [int(i) for i in ips]
-                self.ip_range = dbaccess.determine_range(*self.ips)
+                self.ip_range = common.determine_range(*self.ips)
             except ValueError:
                 print("could not convert address ({0}) to integers.".format(GET_data['address']))
 
@@ -60,16 +60,56 @@ class Details:
         info.append(("IPv4 Address / Subnet", self.nice_ip_address()))
         node_info = dbaccess.get_node_info(self.ip_string)
         if node_info:
-            if node_info.alias:
-                info.append(("Name", node_info.alias))
-            else:
-                info.append(("Name", ""))
+            #node_info has:
+            # hostname
+            # unique_out
+            # total_out
+            # unique_in
+            # total_in
+            # ports_used
+            # seconds
+            info.append(("Name", node_info.hostname))
 
-            summary = self.summary()
-            info.append(("Unique inbound connections", summary.unique_in))
-            info.append(("Unique outbound connections", summary.unique_out))
-            info.append(("Ports accessed", summary.unique_ports))
-            # info.append(("Connections per second", ))
+            in_per = float(node_info.total_in / node_info.seconds)
+            in_per_time = "second"
+            if 0 < in_per < 1:
+                in_per *= 60
+                in_per_time = "minute"
+            if 0 < in_per < 1:
+                in_per *= 60
+                in_per_time = "hour"
+            info.append(("Inbound connections",
+                         ["{0} Total Connections".format(node_info.total_in),
+                          "{0} Unique Connections (source & port)".format(node_info.unique_in),
+                          "{0:.2f} Connections / {1}".format(in_per, in_per_time)
+                          ]))
+
+            out_per = float(node_info.total_out / node_info.seconds)
+            out_per_time = "second"
+            if 0 < out_per < 1:
+                out_per *= 60
+                out_per_time = "minute"
+            if 0 < out_per < 1:
+                out_per *= 60
+                out_per_time = "hour"
+            info.append(("Outbound connections",
+                         ["{0} Total Connections".format(node_info.total_out),
+                          "{0} Unique Connections (destination & port)".format(node_info.unique_out),
+                          "{0:.2f} Connections / {1}".format(out_per, out_per_time)
+                          ]))
+            role = float(node_info.total_in / (node_info.total_in + node_info.total_out))
+            if role <= 0:
+                role_text = "client"
+            elif role < 0.35:
+                role_text = "mostly client"
+            elif role < 0.65:
+                role_text = "mixed client/server"
+            elif role < 1.0:
+                role_text = "mostly server"
+            else:
+                role_text = "server"
+            info.append(("Role (0.00 = Client, 1.00 = Server)", "{0:.2f} ({1})".format(role, role_text)))
+            info.append(("Local ports accessed", node_info.ports_used))
         else:
             info.append(('No host found this address', '...'))
         return info
