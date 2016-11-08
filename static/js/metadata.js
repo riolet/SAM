@@ -63,16 +63,17 @@ function build_role_text(ratio) {
     "use strict";
     var role_text = ratio + " (";
     if (ratio <= 0) {
-        role_text += "client)";
+        role_text += "client";
     } else if (ratio < 0.35) {
-        role_text += "mostly client)";
+        role_text += "mostly client";
     } else if (ratio < 0.65) {
-        role_text += "mixed client/server)";
+        role_text += "mixed client/server";
     } else if (ratio < 1) {
-        role_text += "mostly server)";
+        role_text += "mostly server";
     } else {
         role_text += "server";
     }
+    role_text += ")";
     return role_text;
 }
 
