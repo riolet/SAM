@@ -191,7 +191,7 @@ function sel_panel_height() {
     }
 }
 
-function createLink(node) {
+function sel_create_link(node) {
     var address = get_node_address(node);
     var link = "/metadata?ip=" + address;
     var text = "More details for " + address;
@@ -276,7 +276,7 @@ function sel_update_display(node) {
     row = document.getElementById("sel_link");
     row.innerHTML = "";
     row.style.display = "block";
-    row.appendChild(createLink(node));
+    row.appendChild(sel_create_link(node));
 
 
     //activate new popups (tooltips)

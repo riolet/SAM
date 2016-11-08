@@ -1,7 +1,7 @@
 var g_typing_timer = null;
 var g_running_requests = [];
 var g_state = null;
-var g_data = {"quick": null, "inputs": null, "outputs": null, "ports": null};
+var g_data = {"quick": null, "inputs": null, "outputs": null, "ports": null, "children": null};
 
 function buildKeyValueRow(key, value) {
     "use strict";
@@ -33,6 +33,62 @@ function buildKeyMultiValueRows(key, values) {
         tr = document.createElement("TR");
     });
     return rows;
+}
+
+function build_table_children(dataset) {
+    "use strict";
+    var tbody = document.createElement("TBODY");
+    var tr, td;
+    dataset.forEach(function (row) {
+        tr = document.createElement("TR");
+        // each row has .address .hostname .subnet .endpoints .ratio
+        td = document.createElement("TD");
+        td.appendChild(create_link(row.address, row.subnet));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(row.hostname));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(row.endpoints));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(build_role_text(row.ratio)));
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    });
+    return tbody;
+}
+
+function build_role_text(ratio) {
+    "use strict";
+    var role_text = ratio + " (";
+    if (ratio <= 0) {
+        role_text += "client)";
+    } else if (ratio < 0.35) {
+        role_text += "mostly client)";
+    } else if (ratio < 0.65) {
+        role_text += "mixed client/server)";
+    } else if (ratio < 1) {
+        role_text += "mostly server)";
+    } else {
+        role_text += "server";
+    }
+    return role_text;
+}
+
+function create_link(address, subnet) {
+    "use strict";
+    var text = address + "/" + subnet;
+    var link = "/metadata?ip=" + text;
+
+    var icon = document.createElement("I");
+    icon.className = "tasks icon";
+
+    var a = document.createElement("A");
+    a.appendChild(icon);
+    a.appendChild(document.createTextNode(text));
+    a.href = link;
+    return a;
 }
 
 function present_quick_info(info) {
@@ -76,6 +132,13 @@ function present_detailed_info(info) {
         new_body = sel_build_table_ports(info.ports);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "ports_in";
+    }
+
+    if (info.hasOwnProperty("children") && info.children !== null) {
+        old_body = document.getElementById("child_nodes");
+        new_body = build_table_children(info.children);
+        old_body.parentElement.replaceChild(new_body, old_body);
+        new_body.id = "child_nodes";
     }
 
     //enable the tooltips on ports
@@ -191,13 +254,13 @@ function requestMoreDetails(event) {
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting More Details");
 
-        GET_data(input.value, "inputs,outputs,ports", function (response) {
+        GET_data(input.value, "inputs,outputs,ports,children", function (response) {
             // More details arrived
-            // TODO: remove loading icon from tabs??
             // Render into browser
             g_data.inputs = response.inputs;
             g_data.outputs = response.outputs;
             g_data.ports = response.ports;
+            g_data.children = response.children;
             present_detailed_info(g_data);
 
             response.inputs.forEach(function (element) {

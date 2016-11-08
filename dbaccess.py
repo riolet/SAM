@@ -230,11 +230,12 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
     return row
 
 
-def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, limit=50):
+def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
     qvars = {
         'start': ip_range[0],
         'end': ip_range[1],
-        'limit': limit,
+        'page': page_size * (page-1),
+        'page_size': page_size,
         'WHERE': build_where_clause(timestamp_range, port)
     }
     if inbound:
@@ -244,14 +245,18 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
         qvars['filtered'] = "src"
         qvars['collected'] = "dst"
 
+    sort_dir = "DESC" if order[0] == "-" else "ASC"
+    sort_by = order[1:] if order[1:] in ['ip', 'port', 'links'] else "links"
+    qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
+
     query = """
         SELECT {collected} AS 'ip', port AS 'port', sum(links) AS 'links'
         FROM Links
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
         GROUP BY {collected}, port
-        ORDER BY links DESC
-        LIMIT {limit};
+        ORDER BY {order}
+        LIMIT {page}, {page_size};
     """.format(**qvars)
     return list(common.db.query(query, vars=qvars))
 
@@ -268,6 +273,56 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
         LIMIT $limit;
     """.format(WHERE)
     qvars = {'start': ip_range[0], 'end': ip_range[1], 'limit': limit}
+    return list(common.db.query(query, vars=qvars))
+
+
+def get_details_children(ip_range, subnet):
+    start = ip_range[0]
+    end = ip_range[1]
+    quotient = ip_range[2]
+    child_subnet_start = subnet + 1
+    child_subnet_end = subnet + 8
+    query = """
+        SELECT decodeIP(`n`.ipstart) AS 'address'
+          , COALESCE(`n`.alias, '') AS 'hostname'
+          , `n`.subnet AS 'subnet'
+          , `sn`.kids AS 'endpoints'
+          , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
+        FROM Nodes AS `n`
+        LEFT JOIN (
+            SELECT dst_start DIV $quot * $quot AS 'low'
+                , dst_end DIV $quot * $quot + $quot_1 AS 'high'
+                , sum(links) AS 'links'
+            FROM LinksIn
+            GROUP BY low, high
+            ) AS `l_in`
+        ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
+        LEFT JOIN (
+            SELECT src_start DIV $quot * $quot AS 'low'
+                , src_end DIV $quot * $quot + $quot_1 AS 'high'
+                , sum(links) AS 'links'
+            FROM LinksOut
+            GROUP BY low, high
+            ) AS `l_out`
+        ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
+        LEFT JOIN (
+            SELECT ipstart DIV $quot * $quot AS 'low'
+                , ipend DIV $quot * $quot + $quot_1 AS 'high'
+                , COUNT(ipstart) AS 'kids'
+            FROM Nodes
+            WHERE ipstart = ipend
+            GROUP BY low, high
+            ) AS `sn`
+            ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
+        WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
+            AND `n`.subnet BETWEEN $s_start AND $s_end;
+        """
+    qvars = {'ip_start': start,
+             'ip_end': end,
+             's_start': child_subnet_start,
+             's_end': child_subnet_end,
+             'quot': quotient,
+             'quot_1': quotient - 1}
     return list(common.db.query(query, vars=qvars))
 
 

@@ -9,7 +9,10 @@ $def with (ip)
       <i class="circular search link icon"></i>
     </div>
   </h3>
-  <table class="ui celled striped table">
+<!--
+----------------- Quick Info -----------------
+-->
+  <table class="ui celled striped structured table">
     <thead>
       <tr><th colspan="2">
         <h3>Quick Info</h3>
@@ -22,12 +25,20 @@ $def with (ip)
       </tr>
     </tbody>
   </table>
+<!--
+----------------- Tab Headers-----------------
+-->
   <div class="ui pointing secondary menu">
-    <a class="active item" data-tab="inputs">Inputs</a>
-    <a class="item" data-tab="outputs">Outputs</a>
-    <a class="item" data-tab="ports">Ports</a>
+    <a class="active item" data-tab="inputs">Unique Inputs</a>
+    <a class="item" data-tab="outputs">Unique Outputs</a>
+    <a class="item" data-tab="ports">Local Ports</a>
+    <a class="item" data-tab="children">Child Nodes</a>
   </div>
+<!--
+----------------- TAB: inputs -----------------
+-->
   <div class="ui active tab segment" data-tab="inputs" id="tab-input">
+    <h5>page switcher goes here</h5>
     <table class="ui very compact celled structured table">
         <thead>
           <tr>
@@ -40,7 +51,11 @@ $def with (ip)
         <tfoot class="full-width" id="conn_in_overflow"></tfoot>
     </table>
   </div>
+<!--
+----------------- TAB: outputs -----------------
+-->
   <div class="ui tab segment" data-tab="outputs" id="tab-output">
+    <h5>page switcher goes here</h5>
     <table class="ui very compact celled structured table">
         <thead>
           <tr>
@@ -53,7 +68,11 @@ $def with (ip)
         <tfoot class="full-width" id="conn_out_overflow"></tfoot>
     </table>
   </div>
+<!--
+----------------- TAB: ports -----------------
+-->
   <div class="ui tab segment" data-tab="ports" id="tab-ports">
+    <h5>page switcher goes here</h5>
     <table class="ui very compact sortable celled table">
         <thead>
           <tr>
@@ -65,8 +84,28 @@ $def with (ip)
         <tfoot class="full-width" id="ports_in_overflow"></tfoot>
     </table>
   </div>
+<!--
+----------------- TAB: children -----------------
+-->
+  <div class="ui tab segment" data-tab="children" id="tab-children">
+    <h5>page switcher goes here</h5>
+    <table class="ui very compact celled structured table">
+        <thead>
+          <tr>
+            <th>Address</th>
+            <th>Name</th>
+            <th>Endpoints</th>
+            <th>Role (0=client, 1=server)</th>
+          </tr>
+        </thead>
+        <tbody id="child_nodes"></tbody>
+        <tfoot class="full-width" id="child_nodes_overflow"></tfoot>
+    </table>
+  </div>
 </div>
-<!-- The Port update dialog box -->
+<!--
+----------------- Port info update dialog -----------------
+-->
 <div class="ui modal ports">
     <div class="header">Port <span id="port_number"></span></div>
     <div class="content">

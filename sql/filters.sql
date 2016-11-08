@@ -1,70 +1,74 @@
 -- TESTING
-SELECT *
-FROM (
-    SELECT COUNT(DISTINCT src)
-    FROM Links
-    WHERE dst BETWEEN 3502271638 AND 3502271638
-    FULL OUTER JOIN
-    SELECT COUNT(DISTINCT dst)
-    FROM Links
-    WHERE src BETWEEN 3502271638 AND 3502271638
-    FULL OUTER JOIN
-    SELECT COUNT(DISTINCT port)
-    FROM Links
-    WHERE dst BETWEEN 3502271638 AND 3502271638
-
--- 208.192.108.150
--- 3502271638
-
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
-    , COUNT(DISTINCT l_in.src) AS 'unique_in'
-    , COALESCE(SUM(l_in.links),0) AS 'total_in'
-    , COUNT(DISTINCT l_out.dst) AS 'unique_out'
-    , COALESCE(SUM(l_out.links),0) AS 'total_out'
-FROM Nodes
-LEFT JOIN Links AS l_in
-    ON l_in.dst BETWEEN Nodes.ipstart AND Nodes.ipend
-LEFT JOIN Links AS l_out
-    ON l_out.src BETWEEN Nodes.ipstart AND Nodes.ipend
-WHERE ipstart = 3186647296 AND ipend = 3186647551;
-
-
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
-    , COUNT(DISTINCT src) AS 'unique_in'
-FROM Nodes
-LEFT JOIN Links AS l_in
-    ON l_in.dst BETWEEN Nodes.ipstart AND Nodes.ipend
-WHERE ipstart = 3186647296 AND ipend = 3186647551;
-
-
-
-(3170893824, 3187671039
-
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
-    , COUNT(l_in.u_in) AS 'unique_in'
-    , SUM(l_in.t_in) AS 'total_in'
-    , COUNT(l_out.u_out) AS 'unique_out'
-    , SUM(l_out.t_out) AS 'total_out'
-FROM (
-    SELECT ipstart, ipend, subnet
+-- Endpoints work. Links almost work properly. (getting 3x correct value in test case)
+SELECT decodeIP(`n`.ipstart) AS 'address'
+  , `n`.alias AS 'hostname'
+  , `n`.subnet AS 'subnet'
+  , `sn`.kids AS 'endpoints'
+  , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
+FROM Nodes AS `n`
+LEFT JOIN (
+    SELECT dst_start DIV 65536 * 65536 AS 'low'
+        , dst_end DIV 65536 * 65536 + 65535 AS 'high'
+        , sum(links) AS 'links'
+    FROM LinksIn
+    GROUP BY low, high
+    ) AS `l_in`
+ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
+LEFT JOIN (
+    SELECT src_start DIV 65536 * 65536 AS 'low'
+        , src_end DIV 65536 * 65536 + 65535 AS 'high'
+        , sum(links) AS 'links'
+    FROM LinksOut
+    GROUP BY low, high
+    ) AS `l_out`
+ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
+LEFT JOIN (
+    SELECT ipstart DIV 65536 * 65536 AS 'low'
+        , ipend DIV 65536 * 65536 + 65535 AS 'high'
+        , COUNT(ipstart) AS 'kids'
     FROM Nodes
-    WHERE ipstart = 3170893824 AND ipend = 3187671039
-) AS n
-LEFT JOIN (
-    SELECT 3170893824 AS 'dst', src AS 'u_in', sum(links) AS 't_in'
-    FROM Links
-    WHERE dst BETWEEN 3170893824 AND 3187671039
-    GROUP BY src
-) AS l_in
-    ON l_in.dst = n.ipstart
-LEFT JOIN (
-    SELECT 3170893824 AS 'src', dst AS 'u_out', sum(links) AS 't_out'
-    FROM Links
-    WHERE src BETWEEN 3170893824 AND 3187671039
-    GROUP BY dst
-) AS l_out
-    ON l_out.src = n.ipstart;
+    WHERE ipstart = ipend
+    GROUP BY low, high
+    ) AS `sn`
+    ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
+WHERE `n`.ipstart BETWEEN 1325400064 AND 1342177279
+    AND `n`.subnet BETWEEN 9 AND 16;
 
+
+-- client and server connections, ratio test
+-- 79. x.x.x range: 1325400064 .. 1342177279
+-- 79.35.x.x range: 1327693824 .. 1327759359
+SELECT SUM(links) FROM LinksIn WHERE dst_start = 1327693824 AND dst_end = 1327759359;
+-- 29008
+SELECT SUM(links) FROM LinksOut WHERE src_start = 1327693824 AND src_end = 1327759359;
+-- 25
+-- ratio: 0.9991389108944994
+SELECT SUM(links) FROM Links WHERE dst BETWEEN 1327693824 AND 1327759359;
+-- 29008
+SELECT SUM(links) FROM Links WHERE src BETWEEN 1327693824 AND 1327759359;
+-- 25
+
+
+-- The problem is that it duplicates entries with the successive joins.
+SELECT decodeIP(`n`.ipstart) AS 'address'
+  , `n`.alias AS 'hostname'
+  , `n`.subnet AS 'subnet'
+  , COALESCE(sum(LinksIn.links),0) AS 'l_in'
+  , COALESCE(sum(LinksOut.links),0) AS 'l_out'
+FROM Nodes AS `n`
+LEFT JOIN LinksIn
+    ON LinksIn.dst_start = `n`.ipstart AND LinksIn.dst_end = `n`.ipend
+LEFT JOIN LinksOut
+    ON LinksOut.src_start = `n`.ipstart AND LinksOut.src_end = `n`.ipend
+WHERE `n`.ipstart BETWEEN 1327693824 AND 1327759359
+    AND `n`.subnet BETWEEN 9 AND 16
+GROUP BY `n`.ipstart, `n`.subnet, `n`.alias;
+
+  , COALESCE(sum(LinksIn.links),0) / (COALESCE(sum(LinksIn.links),0) + COALESCE(sum(LinksOut.links),0)) AS 'ratio'
+
+
+-- 189.x.x.x
+-- 3170893824 to 3187671039
 
 
 -- Node info
@@ -102,18 +106,24 @@ LEFT JOIN (
     WHERE src BETWEEN 3170893824 AND 3187671039
     GROUP BY 's1'
 ) AS l_out
-    ON n.ipstart = l_out.s1
+ON n.ipstart = l_out.s1
 LEFT JOIN (
     SELECT 3170893824 AS 's1', COUNT(DISTINCT src) AS 'unique_in', SUM(links) AS 'total_in', COUNT(DISTINCT port) AS 'ports_used'
     FROM Links
     WHERE dst BETWEEN 3170893824 AND 3187671039
     GROUP BY 's1'
 ) AS l_in
-    ON n.ipstart = l_in.s1
+ON n.ipstart = l_in.s1
 LEFT JOIN (
     SELECT 3170893824 AS 's1'
         , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
     FROM Links
     GROUP BY 's1'
 ) AS t
-    ON n.ipstart = t.s1;
+ON n.ipstart = t.s1
+LEFT JOIN (
+    SELECT 3170893824 AS 's1', COUNT(ipstart) AS 'kids'
+    FROM Nodes
+    WHERE ipstart = ipend AND ipstart BETWEEN 3170893824 AND 3187671039
+) AS kids
+ON n.ipstart = kids.s1

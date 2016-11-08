@@ -15,16 +15,19 @@ def decimal_default(obj):
 class Details:
     def __init__(self):
         self.ip_range = (0, 4294967295)
+        self.subnet = 0
         self.ips = []
         self.ip_string = ""
         self.time_range = None
         self.port = None
-        self.limit=50
+        self.page = 1
+        self.page_size=50
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
             "outputs": self.outputs,
             "ports": self.ports,
+            "children": self.children,
             "summary": self.summary,
         }
 
@@ -42,8 +45,21 @@ class Details:
                 ips = self.ip_string.split(".")
                 self.ips = [int(i) for i in ips]
                 self.ip_range = common.determine_range(*self.ips)
+                self.subnet = len(ips) * 8
             except ValueError:
-                print("could not convert address ({0}) to integers.".format(GET_data['address']))
+                print("details.py: process_input: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
+        if 'page' in GET_data:
+            try:
+                page = int(GET_data['page'])
+                self.page = max(0, page)
+            except ValueError:
+                print("details.py: process_input: Could not interpret page number: {0}".format(repr(GET_data['page'])))
+        if 'page_size' in GET_data:
+            try:
+                page_size = int(GET_data['page_size'])
+                self.page_size = max(0, page_size)
+            except ValueError:
+                print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))
@@ -79,9 +95,9 @@ class Details:
                 in_per *= 60
                 in_per_time = "hour"
             info.append(("Inbound connections",
-                         ["{0} Total Connections".format(node_info.total_in),
-                          "{0} Unique Connections (source & port)".format(node_info.unique_in),
-                          "{0:.2f} Connections / {1}".format(in_per, in_per_time)
+                         ["{0} total connections".format(node_info.total_in),
+                          "{0} unique connections (source & port)".format(node_info.unique_in),
+                          "{0:.2f} connections / {1}".format(in_per, in_per_time)
                           ]))
 
             out_per = float(node_info.total_out / node_info.seconds)
@@ -93,9 +109,9 @@ class Details:
                 out_per *= 60
                 out_per_time = "hour"
             info.append(("Outbound connections",
-                         ["{0} Total Connections".format(node_info.total_out),
-                          "{0} Unique Connections (destination & port)".format(node_info.unique_out),
-                          "{0:.2f} Connections / {1}".format(out_per, out_per_time)
+                         ["{0} total connections".format(node_info.total_out),
+                          "{0} unique connections (destination & port)".format(node_info.unique_out),
+                          "{0:.2f} connections / {1}".format(out_per, out_per_time)
                           ]))
             role = float(node_info.total_in / (node_info.total_in + node_info.total_out))
             if role <= 0:
@@ -108,14 +124,21 @@ class Details:
                 role_text = "mostly server"
             else:
                 role_text = "server"
-            info.append(("Role (0.00 = Client, 1.00 = Server)", "{0:.2f} ({1})".format(role, role_text)))
+            info.append(("Role (0 = client, 1 = server)", "{0:.2f} ({1})".format(role, role_text)))
             info.append(("Local ports accessed", node_info.ports_used))
         else:
             info.append(('No host found this address', '...'))
         return info
 
     def inputs(self):
-        inputs = dbaccess.get_details_connections(self.ip_range, True, self.time_range, self.port, self.limit)
+        inputs = dbaccess.get_details_connections(
+            ip_range=self.ip_range,
+            inbound=True,
+            timestamp_range=self.time_range,
+            port=self.port,
+            page=self.page,
+            page_size=self.page_size,
+            order="-links")
         conn_in = {}
         for connection in inputs:
             ip = common.IPtoString(connection.pop("ip"))
@@ -131,7 +154,14 @@ class Details:
         return conn_in
 
     def outputs(self):
-        outputs = dbaccess.get_details_connections(self.ip_range, False, self.time_range, self.port, self.limit)
+        outputs = dbaccess.get_details_connections(
+            ip_range=self.ip_range,
+            inbound=False,
+            timestamp_range=self.time_range,
+            port=self.port,
+            page=self.page,
+            page_size=self.page_size,
+            order="-links")
         conn_out = {}
         for connection in outputs:
             ip = common.IPtoString(connection.pop("ip"))
@@ -147,8 +177,12 @@ class Details:
         return conn_out
 
     def ports(self):
-        ports = dbaccess.get_details_ports(self.ip_range, self.time_range, self.port, self.limit)
+        ports = dbaccess.get_details_ports(self.ip_range, self.time_range, self.port, self.page_size)
         return ports
+
+    def children(self):
+        children = dbaccess.get_details_children(self.ip_range, self.subnet)
+        return children
 
     def summary(self):
         summary = dbaccess.get_details_summary(self.ip_range, self.time_range, self.port)
