@@ -159,7 +159,24 @@ class TagsFilter(Filter):
         return ""
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter]
+class RoleFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "role", enabled)
+        self.params['ratio'] = ""
+        self.params['comparator'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        cmp = self.params['comparator']
+        if cmp not in ['<', '>']:
+            cmp = '<'
+        ratio = float(self.params['ratio'])
+        return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
+
+
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 

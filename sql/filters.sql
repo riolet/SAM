@@ -118,23 +118,14 @@ SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
         FROM LinksOut AS l_out
         WHERE l_out.src_start = nodes.ipstart
           AND l_out.src_end = nodes.ipend
-     ),0) AS "conn_out"
+     ),0) AS 'conn_out'
     , COALESCE((SELECT SUM(links)
         FROM LinksIn AS l_in
         WHERE l_in.dst_start = nodes.ipstart
           AND l_in.dst_end = nodes.ipend
-     ),0) AS "conn_in"
+     ),0) AS 'conn_in'
 FROM Nodes AS nodes
 WHERE EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '5061' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)
+HAVING (conn_in / (conn_in + conn_out)) > 0.5
 ORDER BY ipstart asc
-LIMIT 0,10;
-
-
-LEFT JOIN (
-    SELECT dst_start DIV 65536 * 65536 AS 'low'
-        , dst_end DIV 65536 * 65536 + 65535 AS 'high'
-        , sum(links) AS 'links'
-    FROM LinksIn
-    GROUP BY low, high
-    ) AS l_in
-ON l_in.low = nodes.ipstart AND l_in.high = nodes.ipend
+LIMIT 0,11;
