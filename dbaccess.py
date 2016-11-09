@@ -397,8 +397,7 @@ def set_node_info(address, data):
     print("type data: " + str(type(data)))
     print(data)
     print("-" * 50)
-    ips = map(int, address.split("."))
-    r = common.determine_range(*ips)
+    r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
     common.db.update('Nodes', where, **data)
 
@@ -481,18 +480,18 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
     query = """
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS address
-    , alias
-    ,COALESCE((SELECT SUM(links)
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+    , COALESCE(alias, '') AS 'alias'
+    , COALESCE((SELECT SUM(links)
         FROM LinksOut AS l_out
         WHERE l_out.src_start = nodes.ipstart
           AND l_out.src_end = nodes.ipend
-     ),0) AS "conn_out"
-    ,COALESCE((SELECT SUM(links)
+     ),0) AS 'conn_out'
+    , COALESCE((SELECT SUM(links)
         FROM LinksIn AS l_in
         WHERE l_in.dst_start = nodes.ipstart
           AND l_in.dst_end = nodes.ipend
-     ),0) AS "conn_in"
+     ),0) AS 'conn_in'
 FROM Nodes AS nodes
 {WHERE}
 {HAVING}

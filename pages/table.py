@@ -4,11 +4,71 @@ import filters
 import dbaccess
 
 
+def role_text(ratio):
+    if ratio <= 0:
+        desc = "client"
+    elif ratio < 0.35:
+        desc = "mostly client"
+    elif ratio < 0.65:
+        desc = "mixed client/server"
+    elif ratio < 1:
+        desc = "mostly server"
+    else:
+        desc = "server"
+
+    return "{0:.2f} ({1})".format(ratio, desc)
+
+
+class Columns(object):
+    def __init__(self, **kwargs):
+        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags']
+        self.columns = {
+            'address': {
+                'nice_name': "Address",
+                'active': 'address' in kwargs,
+                'get': lambda x: x.address},
+            'alias': {
+                'nice_name': "Hostname",
+                'active': 'alias' in kwargs,
+                'get': lambda x: '' if not x.alias else x.alias},
+            'conn_in': {
+                'nice_name': "Total inbound connections",
+                'active': 'conn_in' in kwargs,
+                'get': lambda x: x.conn_in},
+            'conn_out': {
+                'nice_name': "Total outbound connections",
+                'active': 'conn_out' in kwargs,
+                'get': lambda x: x.conn_out},
+            'role': {
+                'nice_name': "Role (0 = client, 1 = server)",
+                'active': 'role' in kwargs,
+                'get': lambda x: role_text(float(x.conn_in) / float(x.conn_in + x.conn_out))},
+            'environment': {
+                'nice_name': "Environment",
+                'active': 'environment' in kwargs,
+                'get': lambda x: '-'},
+            'tags': {
+                'nice_name': "Tags",
+                'active': 'tags' in kwargs,
+                'get': lambda x: '-'},
+        }
+
+    def translate_row(self, data):
+        row = []
+        for c in self.all:
+            if self.columns[c]['active']:
+                row.append((c, self.columns[c]['get'](data)))
+        return row
+
+    def headers(self):
+        headers = [(c, self.columns[c]['nice_name']) for c in self.all if self.columns[c]['active']]
+        return headers
+
+
 class Table(object):
     def __init__(self):
         self.pageTitle = "Host List"
-        # self.columns = ["Address", "Hostname", "Role", "Environment", "Tags"]
-        self.columns = ["Address", "Hostname", "Connections out", "Connections in"]
+        self.columns = Columns(address=1, alias=1, role=1, environment=1, tags=1)
 
     def filters(self, GET_data):
         fs = []
@@ -40,24 +100,8 @@ class Table(object):
         #       so that IF it gets filled I know there's at least 1 more page to display.
         data = dbaccess.get_table_info(filters, page - 1, page_size, order[0], order[1])
         rows = []
-        for i in range(len(data)):
-            row = [data[i].address]
-            if data[i].alias:
-                row.append(data[i].alias)
-            else:
-                row.append("-")
-
-            if data[i].conn_out:
-                row.append(data[i].conn_out)
-            else:
-                row.append(0)
-
-            if data[i].conn_in:
-                row.append(data[i].conn_in)
-            else:
-                row.append(0)
-
-            rows.append(row)
+        for tr in data:
+            rows.append(self.columns.translate_row(tr))
         return rows
 
     def next_page(self, rows, page, page_size):
@@ -130,5 +174,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns, order, rows[:page_size], spread, prevPage, nextPage)) \
+               + str(common.render.table(self.columns.headers(), order, rows[:page_size], spread, prevPage, nextPage)) \
                + str(common.render._tail())

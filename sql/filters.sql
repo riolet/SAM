@@ -111,30 +111,30 @@ LEFT JOIN (
 LIMIT 1;
 
 
-
-SELECT 352321536 AS 's1', COUNT(DISTINCT dst, port) AS 'unique_out_ip'
-FROM Links
-WHERE src BETWEEN 352321536 AND 369098751
-GROUP BY 's1';
-
-
-SELECT dst AS 'ip', port AS 'port', sum(links) AS 'links'
-FROM Links
-WHERE src BETWEEN 352321536 AND 369098751
-GROUP BY dst, port
-ORDER BY links DESC;
--- 1415 results
-
-SELECT dst AS 'ip', sum(links) AS 'links'
-FROM Links
-WHERE src BETWEEN 352321536 AND 369098751
-GROUP BY dst
-ORDER BY links DESC;
+-- testing ratio for tables
+SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+    , COALESCE(alias, '') AS 'alias'
+    , COALESCE((SELECT SUM(links)
+        FROM LinksOut AS l_out
+        WHERE l_out.src_start = nodes.ipstart
+          AND l_out.src_end = nodes.ipend
+     ),0) AS "conn_out"
+    , COALESCE((SELECT SUM(links)
+        FROM LinksIn AS l_in
+        WHERE l_in.dst_start = nodes.ipstart
+          AND l_in.dst_end = nodes.ipend
+     ),0) AS "conn_in"
+FROM Nodes AS nodes
+WHERE EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '5061' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)
+ORDER BY ipstart asc
+LIMIT 0,10;
 
 
-SELECT src AS 'ip', port AS 'port', sum(links) AS 'links'
-FROM Links
-WHERE dst BETWEEN 352321536 AND 369098751
-GROUP BY src, port
-ORDER BY links DESC;
--- 468 results
+LEFT JOIN (
+    SELECT dst_start DIV 65536 * 65536 AS 'low'
+        , dst_end DIV 65536 * 65536 + 65535 AS 'high'
+        , sum(links) AS 'links'
+    FROM LinksIn
+    GROUP BY low, high
+    ) AS l_in
+ON l_in.low = nodes.ipstart AND l_in.high = nodes.ipend
