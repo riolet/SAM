@@ -1,10 +1,16 @@
 $def with (columns, sorting, rows, spread, prev, next)
 <div class="ui">
+<!--
+----------------- Filters -----------------
+-->
   <div class="ui styled fluid accordion">
     <div class="title"><i class="dropdown icon"></i>Filters: none</div>
     <div class="content" id="filters">
     </div>
   </div>
+<!--
+----------------- Pagination -----------------
+-->
   <div class="ui two column grid">
     <div class="row">
       <div class="left floated left aligned column">
@@ -29,6 +35,9 @@ $def with (columns, sorting, rows, spread, prev, next)
       </div>
     </div>
   </div>
+<!--
+----------------- Table -----------------
+-->
   <table class="ui selectable striped sortable small table" id="resultsTable">
     <thead>
       <tr>
@@ -51,6 +60,9 @@ $def with (columns, sorting, rows, spread, prev, next)
     </tbody>
     <tfoot></tfoot>
   </table>
+<!--
+----------------- Pagination -----------------
+-->
   <div class="ui two column grid">
     <div class="row">
       <div class="left floated left aligned column">

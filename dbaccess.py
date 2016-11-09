@@ -261,8 +261,16 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
+def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_size=50):
     WHERE = build_where_clause(timestamp_range, port)
+    first_result = (page - 1) * page_size
+    qvars = {
+        'start': ip_range[0],
+        'end': ip_range[1],
+        'first': first_result,
+        'size': page_size
+    }
+
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
         FROM Links
@@ -270,9 +278,8 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, limit=50):
          {0}
         GROUP BY port
         ORDER BY links DESC
-        LIMIT $limit;
+        LIMIT $first, $size;
     """.format(WHERE)
-    qvars = {'start': ip_range[0], 'end': ip_range[1], 'limit': limit}
     return list(common.db.query(query, vars=qvars))
 
 
@@ -282,6 +289,12 @@ def get_details_children(ip_range, subnet):
     quotient = ip_range[2]
     child_subnet_start = subnet + 1
     child_subnet_end = subnet + 8
+    qvars = {'ip_start': start,
+             'ip_end': end,
+             's_start': child_subnet_start,
+             's_end': child_subnet_end,
+             'quot': quotient,
+             'quot_1': quotient - 1}
     query = """
         SELECT decodeIP(`n`.ipstart) AS 'address'
           , COALESCE(`n`.alias, '') AS 'hostname'
@@ -317,12 +330,6 @@ def get_details_children(ip_range, subnet):
         WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
             AND `n`.subnet BETWEEN $s_start AND $s_end;
         """
-    qvars = {'ip_start': start,
-             'ip_end': end,
-             's_start': child_subnet_start,
-             's_end': child_subnet_end,
-             'quot': quotient,
-             'quot_1': quotient - 1}
     return list(common.db.query(query, vars=qvars))
 
 
@@ -332,9 +339,11 @@ def get_node_info(address):
     query = """
         SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
             , COALESCE(n.hostname, '') AS 'hostname'
-            , l_out.unique_out
+            , COALESCE(l_out.unique_out_ip, 0) AS 'unique_out_ip'
+            , COALESCE(l_out.unique_out_conn, 0) AS 'unique_out_conn'
             , COALESCE(l_out.total_out, 0) AS 'total_out'
-            , l_in.unique_in
+            , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
+            , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
             , COALESCE(l_in.total_in, 0) AS 'total_in'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
             , t.seconds
@@ -344,14 +353,21 @@ def get_node_info(address):
             WHERE ipstart = $start AND ipend = $end
         ) AS n
         LEFT JOIN (
-            SELECT $start AS 's1', COUNT(DISTINCT dst) AS 'unique_out', SUM(links) AS 'total_out'
+            SELECT $start AS 's1'
+            , COUNT(DISTINCT dst) AS 'unique_out_ip'
+            , COUNT(DISTINCT dst, port) AS 'unique_out_conn'
+            , SUM(links) AS 'total_out'
             FROM Links
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_out
             ON n.ipstart = l_out.s1
         LEFT JOIN (
-            SELECT $start AS 's1', COUNT(DISTINCT src) AS 'unique_in', SUM(links) AS 'total_in', COUNT(DISTINCT port) AS 'ports_used'
+            SELECT $start AS 's1'
+            , COUNT(DISTINCT src) AS 'unique_in_ip'
+            , COUNT(DISTINCT src, port) AS 'unique_in_conn'
+            , SUM(links) AS 'total_in'
+            , COUNT(DISTINCT port) AS 'ports_used'
             FROM Links
             WHERE dst BETWEEN $start AND $end
             GROUP BY 's1'

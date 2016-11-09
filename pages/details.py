@@ -72,62 +72,37 @@ class Details:
         return address
 
     def quick_info(self):
-        info = []
-        info.append(("IPv4 Address / Subnet", self.nice_ip_address()))
+        info = {}
         node_info = dbaccess.get_node_info(self.ip_string)
+
+        info['address'] = self.nice_ip_address()
+        
         if node_info:
             #node_info has:
             # hostname
-            # unique_out
+            # unique_out_ip
+            # unique_out_conn
             # total_out
-            # unique_in
+            # unique_in_ip
+            # unique_in_conn
             # total_in
             # ports_used
             # seconds
-            info.append(("Name", node_info.hostname))
-
-            in_per = float(node_info.total_in / node_info.seconds)
-            in_per_time = "second"
-            if 0 < in_per < 1:
-                in_per *= 60
-                in_per_time = "minute"
-            if 0 < in_per < 1:
-                in_per *= 60
-                in_per_time = "hour"
-            info.append(("Inbound connections",
-                         ["{0} total connections".format(node_info.total_in),
-                          "{0} unique connections (source & port)".format(node_info.unique_in),
-                          "{0:.2f} connections / {1}".format(in_per, in_per_time)
-                          ]))
-
-            out_per = float(node_info.total_out / node_info.seconds)
-            out_per_time = "second"
-            if 0 < out_per < 1:
-                out_per *= 60
-                out_per_time = "minute"
-            if 0 < out_per < 1:
-                out_per *= 60
-                out_per_time = "hour"
-            info.append(("Outbound connections",
-                         ["{0} total connections".format(node_info.total_out),
-                          "{0} unique connections (destination & port)".format(node_info.unique_out),
-                          "{0:.2f} connections / {1}".format(out_per, out_per_time)
-                          ]))
-            role = float(node_info.total_in / (node_info.total_in + node_info.total_out))
-            if role <= 0:
-                role_text = "client"
-            elif role < 0.35:
-                role_text = "mostly client"
-            elif role < 0.65:
-                role_text = "mixed client/server"
-            elif role < 1.0:
-                role_text = "mostly server"
-            else:
-                role_text = "server"
-            info.append(("Role (0 = client, 1 = server)", "{0:.2f} ({1})".format(role, role_text)))
-            info.append(("Local ports accessed", node_info.ports_used))
+            info['name'] = node_info.hostname
+            info['in'] = {}
+            info['in']['total'] = node_info.total_in
+            info['in']['u_ip'] = node_info.unique_in_ip
+            info['in']['u_conn'] = node_info.unique_in_conn
+            info['in']['seconds'] = node_info.seconds
+            info['out'] = {}
+            info['out']['total'] = node_info.total_out
+            info['out']['u_ip'] = node_info.unique_out_ip
+            info['out']['u_conn'] = node_info.unique_out_conn
+            info['out']['seconds'] = node_info.seconds
+            info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
+            info['ports'] = node_info.ports_used
         else:
-            info.append(('No host found this address', '...'))
+            info['error'] = 'No host found this address'
         return info
 
     def inputs(self):
@@ -151,7 +126,13 @@ class Details:
         # convert to list of tuples to make it sortable
         conn_in = conn_in.items()
         conn_in.sort(key=key_by_link_sum, reverse=True)
-        return conn_in
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "component": "inputs",
+            "rows": conn_in
+        }
+        return response
 
     def outputs(self):
         outputs = dbaccess.get_details_connections(
@@ -174,15 +155,43 @@ class Details:
         # convert to list of tuples to make it sortable
         conn_out = conn_out.items()
         conn_out.sort(key=key_by_link_sum, reverse=True)
-        return conn_out
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "component": "outputs",
+            "rows": conn_out
+        }
+        return response
 
     def ports(self):
-        ports = dbaccess.get_details_ports(self.ip_range, self.time_range, self.port, self.page_size)
-        return ports
+        ports = dbaccess.get_details_ports(
+            ip_range=self.ip_range,
+            timestamp_range=self.time_range,
+            port=self.port,
+            page=self.page,
+            page_size=self.page_size)
+
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "component": "ports",
+            "rows": ports
+        }
+        return response
 
     def children(self):
-        children = dbaccess.get_details_children(self.ip_range, self.subnet)
-        return children
+        children = dbaccess.get_details_children(
+            ip_range=self.ip_range,
+            subnet=self.subnet)
+        first = self.page_size * (self.page - 1)
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "count": len(children),
+            "component": "children",
+            "rows": children[first:first + self.page_size]
+        }
+        return response
 
     def summary(self):
         summary = dbaccess.get_details_summary(self.ip_range, self.time_range, self.port)

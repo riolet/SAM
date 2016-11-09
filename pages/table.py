@@ -68,7 +68,10 @@ class Table(object):
                 ampPos = path.find('&', page_i)
                 nextPage = "{0}page={1}{2}".format(path[:page_i], page + 1, path[ampPos:])
             else:
-                nextPage = path + "&page={0}".format(page + 1)
+                if "?" in path:
+                    nextPage = path + "&page={0}".format(page + 1)
+                else:
+                    nextPage = path + "?page={0}".format(page + 1)
         else:
             nextPage = False
         return nextPage
@@ -88,8 +91,8 @@ class Table(object):
 
     def spread(self, rows, page, page_size):
         if rows:
-            start = (page - 1) * page_size
-            end = start + len(rows[:page_size])
+            start = (page - 1) * page_size + 1
+            end = start + len(rows[:page_size]) - 1
             spread = "Results: {0} to {1}".format(start, end)
         else:
             spread = "No matching results."

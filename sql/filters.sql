@@ -71,59 +71,70 @@ GROUP BY `n`.ipstart, `n`.subnet, `n`.alias;
 -- 3170893824 to 3187671039
 
 
--- Node info
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address', alias AS 'hostname'
-FROM Nodes
-WHERE ipstart = 3170893824 AND ipend = 3187671039;
--- Out Connections
-SELECT 3170893824 AS 's1', COUNT(DISTINCT dst) AS 'unique_out', SUM(links) AS 'total_out'
-FROM Links
-WHERE src BETWEEN 3170893824 AND 3187671039
-GROUP BY 's1';
--- In Connections, ports
-SELECT 3170893824 AS 's1', COUNT(DISTINCT src) AS 'unique_in', SUM(links) AS 'total_in', COUNT(DISTINCT port) AS 'ports_used'
-FROM Links
-WHERE dst BETWEEN 3170893824 AND 3187671039
-GROUP BY 's1';
-
--- COMBINED
+-- Node Info COMBINED
 SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
     , COALESCE(n.hostname, '') AS 'hostname'
-    , l_out.unique_out
-    , l_out.total_out
-    , l_in.unique_in
-    , l_in.total_in
-    , l_in.ports_used
+    , l_out.unique_out_ip
+    , l_out.unique_out_conn
+    , COALESCE(l_out.total_out, 0) AS 'total_out'
+    , l_in.unique_in_ip
+    , l_in.unique_in_conn
+    , COALESCE(l_in.total_in, 0) AS 'total_in'
+    , COALESCE(l_in.ports_used, 0) AS 'ports_used'
     , t.seconds
 FROM (
     SELECT ipstart, subnet, alias AS 'hostname'
     FROM Nodes
-    WHERE ipstart = 3170893824 AND ipend = 3187671039
+    WHERE ipstart = 352321536 AND ipend = 369098751
 ) AS n
 LEFT JOIN (
-    SELECT 3170893824 AS 's1', COUNT(DISTINCT dst) AS 'unique_out', SUM(links) AS 'total_out'
+    SELECT 352321536 AS 's1', COUNT(DISTINCT dst) AS 'unique_out_ip', COUNT(DISTINCT dst, port) AS 'unique_out_conn', SUM(links) AS 'total_out'
     FROM Links
-    WHERE src BETWEEN 3170893824 AND 3187671039
+    WHERE src BETWEEN 352321536 AND 369098751
     GROUP BY 's1'
 ) AS l_out
-ON n.ipstart = l_out.s1
+    ON n.ipstart = l_out.s1
 LEFT JOIN (
-    SELECT 3170893824 AS 's1', COUNT(DISTINCT src) AS 'unique_in', SUM(links) AS 'total_in', COUNT(DISTINCT port) AS 'ports_used'
+    SELECT 352321536 AS 's1', COUNT(DISTINCT src) AS 'unique_in_ip', COUNT(DISTINCT src, port) AS 'unique_in_conn', SUM(links) AS 'total_in', COUNT(DISTINCT port) AS 'ports_used'
     FROM Links
-    WHERE dst BETWEEN 3170893824 AND 3187671039
+    WHERE dst BETWEEN 352321536 AND 369098751
     GROUP BY 's1'
 ) AS l_in
-ON n.ipstart = l_in.s1
+    ON n.ipstart = l_in.s1
 LEFT JOIN (
-    SELECT 3170893824 AS 's1'
+    SELECT 352321536 AS 's1'
         , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
     FROM Links
     GROUP BY 's1'
 ) AS t
-ON n.ipstart = t.s1
-LEFT JOIN (
-    SELECT 3170893824 AS 's1', COUNT(ipstart) AS 'kids'
-    FROM Nodes
-    WHERE ipstart = ipend AND ipstart BETWEEN 3170893824 AND 3187671039
-) AS kids
-ON n.ipstart = kids.s1
+    ON n.ipstart = t.s1
+LIMIT 1;
+
+
+
+SELECT 352321536 AS 's1', COUNT(DISTINCT dst, port) AS 'unique_out_ip'
+FROM Links
+WHERE src BETWEEN 352321536 AND 369098751
+GROUP BY 's1';
+
+
+SELECT dst AS 'ip', port AS 'port', sum(links) AS 'links'
+FROM Links
+WHERE src BETWEEN 352321536 AND 369098751
+GROUP BY dst, port
+ORDER BY links DESC;
+-- 1415 results
+
+SELECT dst AS 'ip', sum(links) AS 'links'
+FROM Links
+WHERE src BETWEEN 352321536 AND 369098751
+GROUP BY dst
+ORDER BY links DESC;
+
+
+SELECT src AS 'ip', port AS 'port', sum(links) AS 'links'
+FROM Links
+WHERE dst BETWEEN 352321536 AND 369098751
+GROUP BY src, port
+ORDER BY links DESC;
+-- 468 results
