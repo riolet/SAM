@@ -174,11 +174,13 @@ function present_quick_info(info) {
             input.onkeyup = hostname_edit_callback;
             var i = document.createElement("I");
             i.className = "write icon"
-            var div = document.createElement("TD");
+            var div = document.createElement("DIV");
             div.className = "ui transparent left icon input";
             div.appendChild(input);
             div.appendChild(i);
-            target.appendChild(buildKeyValueRow("Name", div));
+            var td = document.createElement("TD");
+            td.appendChild(div);
+            target.appendChild(buildKeyValueRow("Name", td));
         }
         if (info.hasOwnProperty("tags")) {
             console.log("tags found:");
