@@ -274,10 +274,9 @@
             ["0", "doesn't have"]
         ], has));
         parts.push(filters.private.markupSpan(" tags: "));
-        parts.push(filters.private.markupTags("tags", "Choose tag(s)", [
-            ['server', "Server"],
-            ["client", "Client"]
-        ], tags));
+        parts.push(filters.private.markupTags("tags", "Choose tag(s)"
+            , known_tags.map(function (tag) { return [tag,tag]; })
+            , tags));
         return parts;
     };
     filters.private.createTargetFilter = function (target_to, enabled) {

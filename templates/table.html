@@ -1,4 +1,4 @@
-$def with (columns, sorting, rows, spread, prev, next)
+$def with (columns, sorting, rows, tags, spread, prev, next)
 <div class="ui">
 <!--
 ----------------- Filters -----------------
@@ -52,14 +52,17 @@ $def with (columns, sorting, rows, spread, prev, next)
       $for row in rows:
         <tr data-content="$row[0][1]">
           $for item in row:
+            <td class="td_$item[0]">
             $if item[0] == "address":
-              <td class="td_$item[0]">
-                <a href="/metadata?ip=$item[1]"><i class="tasks icon"></i>$item[1]</a>
-              </td>
+              <a href="/metadata?ip=$item[1]"><i class="tasks icon"></i>$item[1]</a>
             $elif item[0] == "alias":
-              <td class="td_$item[0]"><div class="ui transparent left icon input"><input data-content="$item[1]" placeholder="-" type="text" value="$item[1]"><i class="write icon"></i></div></td>
+              <div class="ui transparent left icon input"><input data-content="$item[1]" placeholder="-" type="text" value="$item[1]"><i class="write icon"></i></div>
+            $elif item[0] == "tags":
+              $for tag in item[1]:
+                <span class="ui teal small label">$tag</span>
             $else:
-              <td class="td_$item[0]">$item[1]</td>
+              $item[1]
+            </td>
         </tr>
     </tbody>
     <tfoot></tfoot>
@@ -92,3 +95,11 @@ $def with (columns, sorting, rows, spread, prev, next)
     </div>
   </div>
 </div>
+<!--
+----------------- Javascript transcription -----------------
+-->
+<script>
+  var known_tags = [];
+  $for tag in tags:
+    known_tags.push("$tag");
+</script>

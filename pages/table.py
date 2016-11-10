@@ -50,7 +50,7 @@ class Columns(object):
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
-                'get': lambda x: '-'},
+                'get': lambda x: []},
         }
 
     def translate_row(self, data):
@@ -103,6 +103,9 @@ class Table(object):
         for tr in data:
             rows.append(self.columns.translate_row(tr))
         return rows
+
+    def tags(self):
+        return ['tag 1', 'tag 2', 'tag 3']
 
     def next_page(self, rows, page, page_size):
         if len(rows) > page_size:
@@ -164,6 +167,7 @@ class Table(object):
         page_size = self.page_size(GET_data)
         order = self.order(GET_data)
         rows = self.rows(filters, page, page_size, order)
+        tags = self.tags()
 
         nextPage = self.next_page(rows, page, page_size)
         prevPage = self.prev_page(page)
@@ -174,5 +178,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns.headers(), order, rows[:page_size], spread, prevPage, nextPage)) \
+               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, spread, prevPage, nextPage)) \
                + str(common.render._tail())
