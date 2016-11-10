@@ -87,6 +87,7 @@ class Details:
             # unique_in_conn
             # total_in
             # ports_used
+            # endpoints
             # seconds
             info['name'] = node_info.hostname
             info['in'] = {}
@@ -101,6 +102,7 @@ class Details:
             info['out']['seconds'] = node_info.seconds
             info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
             info['ports'] = node_info.ports_used
+            info['endpoints'] = int(node_info.endpoints)
         else:
             info['error'] = 'No host found this address'
         return info

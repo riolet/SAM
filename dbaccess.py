@@ -326,7 +326,7 @@ def get_details_children(ip_range, subnet):
             WHERE ipstart = ipend
             GROUP BY low, high
             ) AS `sn`
-            ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
+        ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
         WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
             AND `n`.subnet BETWEEN $s_start AND $s_end;
         """
@@ -346,6 +346,7 @@ def get_node_info(address):
             , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
             , COALESCE(l_in.total_in, 0) AS 'total_in'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
+            , children.endpoints AS 'endpoints'
             , t.seconds
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
@@ -373,6 +374,13 @@ def get_node_info(address):
             GROUP BY 's1'
         ) AS l_in
             ON n.ipstart = l_in.s1
+        LEFT JOIN (
+            SELECT $start AS 's1'
+            , COUNT(ipstart) AS 'endpoints'
+            FROM Nodes
+            WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
+        ) AS children
+            ON n.ipstart = children.s1
         LEFT JOIN (
             SELECT $start AS 's1'
                 , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'

@@ -134,6 +134,10 @@ function present_quick_info(info) {
         if (info.hasOwnProperty("ports")) {
             target.appendChild(buildKeyValueRow("Local ports accessed", info.ports));
         }
+        if (info.hasOwnProperty("endpoints")) {
+            var possible = Math.pow(2, 32 - getSubnet());
+            target.appendChild(buildKeyValueRow("Endpoints represented", info.endpoints + " (of " + possible + " possible)"));
+        }
     }
 }
 
@@ -243,6 +247,13 @@ function present_detailed_info(info) {
 
     //enable the tooltips on ports
     $('.popup').popup();
+}
+
+function getSubnet() {
+    var searchbar = document.getElementById("hostSearch");
+    var input = searchbar.getElementsByTagName("input")[0];
+    var normalizedIP = normalizeIP(input.value);
+    return parseInt(normalizedIP.split("/")[1]);
 }
 
 function normalizeIP(ipString) {
@@ -453,7 +464,6 @@ function requestQuickInfo(event) {
             // Render into browser
             present_quick_info(response.quick_info);
             g_data.quick = response.quick_info;
-            input.value = normalizedIP;
             console.log("Quick info Arrived. Proceeding to Request More Details");
 
             //Continue to more details
