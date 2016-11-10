@@ -45,6 +45,9 @@ function sel_clear_display() {
     m_selection["ports_in"].innerHTML = "";
     m_selection["ports_in"].nextElementSibling.innerHTML = "";
 
+    // remove link to details page
+    document.getElementById("sel_link").style.display = "none";
+
     // add "No selection" title back in.
     var h4 = document.createElement("h4");
     h4.appendChild(document.createTextNode("No selection"));
@@ -163,6 +166,45 @@ function sel_build_overflow(amount, columns) {
     return undefined;
 }
 
+function sel_panel_height() {
+    "use strict";
+    var side = document.getElementById("sel_bar");
+    var heightAvailable = rect.height - 40;
+    side.style.maxHeight = heightAvailable + "px";
+
+    heightAvailable -= 10; //for padding
+    heightAvailable -= 10; //for borders
+
+    var contentTitles = $("#selectionInfo div.title");
+    var i;
+    for (i = 0; i < contentTitles.length; i += 1) {
+        //offsetHeight is height + vertical padding + vertical borders
+        heightAvailable -= contentTitles[i].offsetHeight;
+    }
+    heightAvailable -= document.getElementById("sel_titles").offsetHeight;
+    heightAvailable -= document.getElementById("sel_link").offsetHeight;
+
+    var contentBlocks = $("#selectionInfo div.content");
+    for (i = 0; i < contentBlocks.length; i += 1) {
+        contentBlocks[i].style.maxHeight = heightAvailable + "px";
+    }
+}
+
+function sel_create_link(node) {
+    var address = get_node_address(node);
+    var link = "/metadata?ip=" + address;
+    var text = "More details for " + address;
+
+    var icon = document.createElement("I");
+    icon.className = "tasks icon";
+
+    var a = document.createElement("A");
+    a.appendChild(icon);
+    a.appendChild(document.createTextNode(text));
+    a.href = link;
+    return a;
+}
+
 function sel_update_display(node) {
     "use strict";
     if (node === undefined) {
@@ -187,17 +229,17 @@ function sel_update_display(node) {
 
     //fill in the tables
     //Input Connections table
-    tbody = sel_build_table_connections(node.details['conn_in']);
+    tbody = sel_build_table_connections(node.details['conn_in'].rows);
     m_selection['conn_in'].parentElement.replaceChild(tbody, m_selection['conn_in']);
     m_selection['conn_in'] = tbody;
 
     //Output Connections table
-    tbody = sel_build_table_connections(node.details['conn_out']);
+    tbody = sel_build_table_connections(node.details['conn_out'].rows);
     m_selection['conn_out'].parentElement.replaceChild(tbody, m_selection['conn_out']);
     m_selection['conn_out'] = tbody;
 
     //Ports Accessed table
-    tbody = sel_build_table_ports(node.details['ports_in']);
+    tbody = sel_build_table_ports(node.details['ports_in'].rows);
     m_selection['ports_in'].parentElement.replaceChild(tbody, m_selection['ports_in']);
     m_selection['ports_in'] = tbody;
 
@@ -229,6 +271,16 @@ function sel_update_display(node) {
       overflow.appendChild(row);
     }
 
+    //Link to metadata
+    row = document.getElementById("sel_link");
+    row.innerHTML = "";
+    row.style.display = "block";
+    row.appendChild(sel_create_link(node));
+
+
     //activate new popups (tooltips)
     $('.popup').popup();
+
+    //refresh the panel size
+    sel_panel_height();
 }

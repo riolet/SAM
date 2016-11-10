@@ -15,16 +15,19 @@ def decimal_default(obj):
 class Details:
     def __init__(self):
         self.ip_range = (0, 4294967295)
+        self.subnet = 0
         self.ips = []
         self.ip_string = ""
         self.time_range = None
         self.port = None
-        self.limit=50
+        self.page = 1
+        self.page_size=50
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
             "outputs": self.outputs,
             "ports": self.ports,
+            "children": self.children,
             "summary": self.summary,
         }
 
@@ -41,9 +44,22 @@ class Details:
                 self.ip_string = GET_data["address"]
                 ips = self.ip_string.split(".")
                 self.ips = [int(i) for i in ips]
-                self.ip_range = dbaccess.determine_range(*self.ips)
+                self.ip_range = common.determine_range(*self.ips)
+                self.subnet = len(ips) * 8
             except ValueError:
-                print("could not convert address ({0}) to integers.".format(GET_data['address']))
+                print("details.py: process_input: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
+        if 'page' in GET_data:
+            try:
+                page = int(GET_data['page'])
+                self.page = max(0, page)
+            except ValueError:
+                print("details.py: process_input: Could not interpret page number: {0}".format(repr(GET_data['page'])))
+        if 'page_size' in GET_data:
+            try:
+                page_size = int(GET_data['page_size'])
+                self.page_size = max(0, page_size)
+            except ValueError:
+                print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))
@@ -56,25 +72,48 @@ class Details:
         return address
 
     def quick_info(self):
-        info = []
-        info.append(("IPv4 Address / Subnet", self.nice_ip_address()))
+        info = {}
         node_info = dbaccess.get_node_info(self.ip_string)
-        if node_info:
-            if node_info.alias:
-                info.append(("Name", node_info.alias))
-            else:
-                info.append(("Name", ""))
 
-            summary = self.summary()
-            info.append(("Unique inbound connections", summary.unique_in))
-            info.append(("Unique outbound connections", summary.unique_out))
-            info.append(("Ports accessed", summary.unique_ports))
+        info['address'] = self.nice_ip_address()
+        
+        if node_info:
+            #node_info has:
+            # hostname
+            # unique_out_ip
+            # unique_out_conn
+            # total_out
+            # unique_in_ip
+            # unique_in_conn
+            # total_in
+            # ports_used
+            # seconds
+            info['name'] = node_info.hostname
+            info['in'] = {}
+            info['in']['total'] = node_info.total_in
+            info['in']['u_ip'] = node_info.unique_in_ip
+            info['in']['u_conn'] = node_info.unique_in_conn
+            info['in']['seconds'] = node_info.seconds
+            info['out'] = {}
+            info['out']['total'] = node_info.total_out
+            info['out']['u_ip'] = node_info.unique_out_ip
+            info['out']['u_conn'] = node_info.unique_out_conn
+            info['out']['seconds'] = node_info.seconds
+            info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
+            info['ports'] = node_info.ports_used
         else:
-            info.append(('No host found this address', '...'))
+            info['error'] = 'No host found this address'
         return info
 
     def inputs(self):
-        inputs = dbaccess.get_details_connections(self.ip_range, True, self.time_range, self.port, self.limit)
+        inputs = dbaccess.get_details_connections(
+            ip_range=self.ip_range,
+            inbound=True,
+            timestamp_range=self.time_range,
+            port=self.port,
+            page=self.page,
+            page_size=self.page_size,
+            order="-links")
         conn_in = {}
         for connection in inputs:
             ip = common.IPtoString(connection.pop("ip"))
@@ -87,10 +126,23 @@ class Details:
         # convert to list of tuples to make it sortable
         conn_in = conn_in.items()
         conn_in.sort(key=key_by_link_sum, reverse=True)
-        return conn_in
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "component": "inputs",
+            "rows": conn_in
+        }
+        return response
 
     def outputs(self):
-        outputs = dbaccess.get_details_connections(self.ip_range, False, self.time_range, self.port, self.limit)
+        outputs = dbaccess.get_details_connections(
+            ip_range=self.ip_range,
+            inbound=False,
+            timestamp_range=self.time_range,
+            port=self.port,
+            page=self.page,
+            page_size=self.page_size,
+            order="-links")
         conn_out = {}
         for connection in outputs:
             ip = common.IPtoString(connection.pop("ip"))
@@ -103,11 +155,43 @@ class Details:
         # convert to list of tuples to make it sortable
         conn_out = conn_out.items()
         conn_out.sort(key=key_by_link_sum, reverse=True)
-        return conn_out
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "component": "outputs",
+            "rows": conn_out
+        }
+        return response
 
     def ports(self):
-        ports = dbaccess.get_details_ports(self.ip_range, self.time_range, self.port, self.limit)
-        return ports
+        ports = dbaccess.get_details_ports(
+            ip_range=self.ip_range,
+            timestamp_range=self.time_range,
+            port=self.port,
+            page=self.page,
+            page_size=self.page_size)
+
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "component": "ports",
+            "rows": ports
+        }
+        return response
+
+    def children(self):
+        children = dbaccess.get_details_children(
+            ip_range=self.ip_range,
+            subnet=self.subnet)
+        first = self.page_size * (self.page - 1)
+        response = {
+            "page": self.page,
+            "page_size": self.page_size,
+            "count": len(children),
+            "component": "children",
+            "rows": children[first:first + self.page_size]
+        }
+        return response
 
     def summary(self):
         summary = dbaccess.get_details_summary(self.ip_range, self.time_range, self.port)

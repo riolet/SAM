@@ -1,6 +1,9 @@
+import common
+
+
 class Filter (object):
-    def __init__(self, type, enabled):
-        self.type = type
+    def __init__(self, f_type, enabled):
+        self.type = f_type
         self.enabled = enabled
         self.params = {}
 
@@ -8,6 +11,7 @@ class Filter (object):
         keys = self.params.keys()
         keys.sort()
         if len(keys) != len(params):
+            print("Wrong number of parameters for constructor")
             raise ValueError("Wrong number of parameters for constructor")
         for index, key in enumerate(keys):
             self.params[key] = params[index]
@@ -41,6 +45,19 @@ class SubnetFilter(Filter):
             raise ValueError("Subnet is not valid. ({net} not in {valid})".format(net=subnet, valid=valid_subnets))
 
         return "nodes.subnet = {0}".format(subnet)
+
+    def having(self):
+        return ""
+
+
+class MaskFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "mask", enabled)
+        self.params['mask'] = ""
+
+    def where(self):
+        r = common.determine_range_string(self.params['mask'])
+        return "nodes.ipstart BETWEEN {0} AND {1}".format(r[0], r[1])
 
     def having(self):
         return ""
@@ -100,6 +117,35 @@ class ConnectionsFilter(Filter):
         return HAVING
 
 
+class TargetFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "target", enabled)
+        self.params['target'] = ""
+        self.params['to'] = ""
+
+    def where(self):
+        # ip_segments = [int(x) for x in self.params['target'].split(".")]
+        # target = common.IPtoInt(*ip_segments)
+        r = common.determine_range_string(self.params['target'])
+        if self.params['to'] == '0':
+            return "EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
+        elif self.params['to'] == '1':
+            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
+        
+        if self.params['to'] == '2':
+            return "EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
+        elif self.params['to'] == '3':
+            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
+
+        else:
+            print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "
+                   "({0}, type: {1})".format(self.params['to'], type(self.params['to'])))
+        return ""
+
+    def having(self):
+        return ""
+
+
 class TagsFilter(Filter):
     def __init__(self, enabled):
         Filter.__init__(self, "tags", enabled)
@@ -113,18 +159,38 @@ class TagsFilter(Filter):
         return ""
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter]
+class RoleFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "role", enabled)
+        self.params['ratio'] = ""
+        self.params['comparator'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        cmp = self.params['comparator']
+        if cmp not in ['<', '>']:
+            cmp = '<'
+        ratio = float(self.params['ratio'])
+        return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
+
+
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 
 def readEncoded(filterString):
     filters = []
     for encodedFilter in filterString.split("|"):
-        params = encodedFilter.split(";")
-        typeIndex, enabled, params = params[0], params[1], params[2:]
-        enabled = (enabled == "1") #convert to boolean
-        filterClass = filterTypes[int(typeIndex)]
-        f = filterClass(enabled)
-        f.load(params)
-        filters.append(f)
+        try:
+            params = encodedFilter.split(";")
+            typeIndex, enabled, params = params[0], params[1], params[2:]
+            enabled = (enabled == "1") #convert to boolean
+            filterClass = filterTypes[int(typeIndex)]
+            f = filterClass(enabled)
+            f.load(params)
+            filters.append(f)
+        except:
+            print("ERROR: unable to decode filter: " + encodedFilter)
     return filters

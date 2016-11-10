@@ -68,7 +68,7 @@ function init() {
     searchElement.value = "";
     searchElement.oninput = onsearch;
 
-    updateFloatingPanel();
+    sel_panel_height();
 
     document.getElementById("show_clients").checked = config.show_clients;
     document.getElementById("show_servers").checked = config.show_servers;
