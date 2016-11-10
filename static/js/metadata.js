@@ -44,7 +44,7 @@ function build_table_children(dataset) {
         tr = document.createElement("TR");
         // each row has .address .hostname .subnet .endpoints .ratio
         td = document.createElement("TD");
-        td.appendChild(create_link(row.address, row.subnet));
+        td.appendChild(build_link(row.address, row.subnet));
         tr.appendChild(td);
         td = document.createElement("TD");
         td.appendChild(document.createTextNode(row.hostname));
@@ -78,7 +78,7 @@ function build_role_text(ratio) {
     return role_text;
 }
 
-function create_link(address, subnet) {
+function build_link(address, subnet) {
     "use strict";
     var text = address + "/" + subnet;
     var link = "/metadata?ip=" + text;
@@ -91,6 +91,51 @@ function create_link(address, subnet) {
     a.appendChild(document.createTextNode(text));
     a.href = link;
     return a;
+}
+
+function build_pagination(page, page_size, component, total) {
+    var has_prev = page > 1;
+    var has_next = total > page * page_size;
+    var page_first = (page - 1) * page_size + 1;
+    var page_last = Math.min(total, page_first + page_size - 1);
+    var searchbar = document.getElementById("hostSearch");
+    var input = searchbar.getElementsByTagName("input")[0];
+    var normalizedIP = normalizeIP(input.value);
+
+    var div = document.createElement("DIV");
+    var a, button, span;
+
+    // PREV button
+    button = document.createElement("BUTTON");
+    button.appendChild(document.createTextNode("prev"));
+    if (has_prev) {
+        button.className = "ui button";
+        button.onclick = function () {
+            GET_page(normalizedIP, component, page - 1);
+        }
+    } else {
+        button.className = "ui button disabled";
+    }
+    div.appendChild(button);
+
+    // descriptive text
+    span = document.createElement("SPAN");
+    span.appendChild(document.createTextNode("showing " + page_first + "-" + page_last + " of " + total));
+    div.appendChild(span);
+
+    // NEXT button
+    button = document.createElement("BUTTON");
+    button.appendChild(document.createTextNode("next"));
+    if (has_next) {
+        button.className = "ui button";
+        button.onclick = function () {
+            GET_page(normalizedIP, component, page + 1);
+        }
+    } else {
+        button.className = "ui button disabled";
+    }
+    div.appendChild(button);
+    return div;
 }
 
 function present_quick_info(info) {
@@ -139,51 +184,6 @@ function present_quick_info(info) {
             target.appendChild(buildKeyValueRow("Endpoints represented", info.endpoints + " (of " + possible + " possible)"));
         }
     }
-}
-
-function build_pagination(page, page_size, component, total) {
-    var has_prev = page > 1;
-    var has_next = total > page * page_size;
-    var page_first = (page - 1) * page_size + 1;
-    var page_last = Math.min(total, page_first + page_size - 1);
-    var searchbar = document.getElementById("hostSearch");
-    var input = searchbar.getElementsByTagName("input")[0];
-    var normalizedIP = normalizeIP(input.value);
-
-    var div = document.createElement("DIV");
-    var a, button, span;
-
-    // PREV button
-    button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode("prev"));
-    if (has_prev) {
-        button.className = "ui button";
-        button.onclick = function () {
-            GET_page(normalizedIP, component, page - 1);
-        }
-    } else {
-        button.className = "ui button disabled";
-    }
-    div.appendChild(button);
-
-    // descriptive text
-    span = document.createElement("SPAN");
-    span.appendChild(document.createTextNode("showing " + page_first + "-" + page_last + " of " + total));
-    div.appendChild(span);
-
-    // NEXT button
-    button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode("next"));
-    if (has_next) {
-        button.className = "ui button";
-        button.onclick = function () {
-            GET_page(normalizedIP, component, page + 1);
-        }
-    } else {
-        button.className = "ui button disabled";
-    }
-    div.appendChild(button);
-    return div;
 }
 
 function present_detailed_info(info) {
@@ -249,6 +249,9 @@ function present_detailed_info(info) {
     $('.popup').popup();
 }
 
+/********************
+   Helper functions
+ ********************/
 function getSubnet() {
     var searchbar = document.getElementById("hostSearch");
     var input = searchbar.getElementsByTagName("input")[0];
@@ -305,10 +308,37 @@ function minimizeIP(ip) {
     return minimized_ip;
 }
 
+/*******************
+   AJAX Connection
+ *******************/
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
     console.error("Failed to load data: " + errorThrown);
     console.log("\tText Status: " + textStatus);
+}
+
+function hostname_edit_callback(event) {
+    "use strict";
+    if (event.keyCode === 13 || event.type === "blur") {
+        var input = event.target;
+        var new_name = input.value;
+        var old_name = input.dataset.content;
+        var address = event.target.parentNode.parentNode.parentNode.dataset.content;
+
+        if (new_name !== old_name) {
+            input.dataset.content = new_name;
+            var request = {"node": address, "alias": new_name}
+            $.ajax({
+                url: "/nodeinfo",
+                type: "POST",
+                data: request,
+                error: function(x, s, e) {console.error("Failed to set name: " + e); console.log("\tText Status: " + s);},
+                success: function(r) {if (r.hasOwnProperty("result")) console.log("Result: " + r.result);}
+            });
+        }
+        return true;
+    }
+    return false;
 }
 
 function GET_data(ip, part, callback){
@@ -350,6 +380,18 @@ function GET_page(ip, part, page) {
     });
 }
 
+function abortRequests(requests) {
+    "use strict";
+    var xhr;
+    while (xhr = requests.pop()) {
+        xhr.abort();
+        //clearTimeout(xhr);
+    }
+}
+
+/***************************
+   Searching state-machine
+ ***************************/
 function StateChangeEvent(newState) {
     "use strict";
     this.type = "stateChange";
@@ -365,15 +407,6 @@ function dispatcher(event) {
         console.error("g_state is null");
     } else {
         g_state(event);
-    }
-}
-
-function abortRequests(requests) {
-    "use strict";
-    var xhr;
-    while (xhr = requests.pop()) {
-        xhr.abort();
-        //clearTimeout(xhr);
     }
 }
 
@@ -502,6 +535,9 @@ function restartTypingTimer(event) {
     }
 }
 
+/***************************
+       Initialization
+ ***************************/
 function init() {
     "use strict";
     var searchbar = document.getElementById("hostSearch");

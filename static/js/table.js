@@ -106,7 +106,6 @@ function hostname_edit_callback(event) {
         var old_name = input.dataset.content;
         var address = event.target.parentNode.parentNode.parentNode.dataset.content;
 
-        //TODO: check if name has been changed?
         if (new_name !== old_name) {
             input.dataset.content = new_name;
             var request = {"node": address, "alias": new_name}
