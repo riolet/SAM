@@ -658,6 +658,7 @@
         //The type selector
         var typeOptions = Object.keys(filters.private.types).map(function (x) { return [x, x]; });
         var typeSelector = filters.private.markupSelection("type", "Filter Type", typeOptions);
+        typeSelector.id = "addFilterType";
 
         //The encompassing div
         var filterdiv = document.createElement("div");

@@ -46,7 +46,17 @@ function importURL() {
 }
 
 function applyFilter(page) {
-    console.log("applying filter!");
+    // Apply last filter if it was fully filled out
+    var typeSelector = document.getElementById("addFilterType");
+    var type = typeSelector.getElementsByTagName("input")[0].value;
+    if (filters.private.types.hasOwnProperty(type)) {
+        var params = filters.private.extractRowValues(typeSelector);
+        if (params.every(function (el) { return !!el; })) {
+            filters.addFilter(type, params);
+        }
+    }
+
+    // Gather terms for query string
     searchs = [
         ["page", 1],
         ['page_size', cookie_data.get('page_size', DEFAULT_PAGE_SIZE)],
@@ -57,6 +67,7 @@ function applyFilter(page) {
         searchs.push(["filters", encodeURIComponent(filterString)])
     }
 
+    // Put together new URL target
     var searchString = "";
     searchs.forEach(function (term) {
         searchString += "&" + term.join("=");
