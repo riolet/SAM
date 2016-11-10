@@ -141,18 +141,29 @@ function build_pagination(page, page_size, component, total) {
     return div;
 }
 
+function build_label(text, color, disabled) {
+    "use strict";
+    var label = document.createElement("SPAN");
+    label.className = "ui " + color + " small label";
+    if (disabled) {
+        label.classList.add("disabled");
+    }
+    label.appendChild(document.createTextNode(text));
+    return label;
+}
+
 function present_quick_info(info) {
     "use strict";
     var target = document.getElementById("quickinfo");
     target.innerHTML = "";
+    if (info.hasOwnProperty("address")) {
+        target.appendChild(buildKeyValueRow("IPv4 address / subnet", info.address));
+    }
     if (info.hasOwnProperty("error")) {
         target.appendChild(buildKeyValueRow(info.error, "..."));
     } else if (info.hasOwnProperty("message")) {
         target.appendChild(buildKeyValueRow(info.message, "..."));
     } else {
-        if (info.hasOwnProperty("address")) {
-            target.appendChild(buildKeyValueRow("IPv4 address / subnet", info.address));
-        }
         if (info.hasOwnProperty("name")) {
             var input = document.createElement("INPUT");
             input.placeholder = '-';
@@ -168,6 +179,18 @@ function present_quick_info(info) {
             div.appendChild(input);
             div.appendChild(i);
             target.appendChild(buildKeyValueRow("Name", div));
+        }
+        if (info.hasOwnProperty("tags")) {
+            console.log("tags found:");
+            console.log(info.tags);
+            var tag_div = document.createElement("TD");
+            info.tags.tags.forEach(function (tag) {
+                tag_div.appendChild(build_label(tag, "teal", false));
+            });
+            info.tags.p_tags.forEach(function (tag) {
+                tag_div.appendChild(build_label(tag, "teal", true));
+            });
+            target.appendChild(buildKeyValueRow("Tags", tag_div));
         }
         if (info.hasOwnProperty("in")) {
             var key = "Inbound connections";
@@ -517,11 +540,18 @@ function requestQuickInfo(event) {
             searchbar.classList.remove("loading");
             // Render into browser
             present_quick_info(response.quick_info);
+            console.log(response);
             g_data.quick = response.quick_info;
-            console.log("Quick info Arrived. Proceeding to Request More Details");
+            if (response.quick_info.hasOwnProperty("error")) {
+                console.log("Quick info Arrived. No host found. Back to waiting.");
+                //Return to waiting
+                dispatcher(new StateChangeEvent(restartTypingTimer));
+            } else {
+                console.log("Quick info Arrived. Proceeding to Request More Details");
+                //Continue to more details
+                dispatcher(new StateChangeEvent(requestMoreDetails));
+            }
 
-            //Continue to more details
-            dispatcher(new StateChangeEvent(requestMoreDetails));
         });
     } else if (event.type === "input") {
         //Aborting requests

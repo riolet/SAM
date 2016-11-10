@@ -153,7 +153,11 @@ class TagsFilter(Filter):
         self.params['tags'] = ""
 
     def where(self):
-        return ""
+        tags = str(self.params['tags']).split(",")
+        phrase = "EXISTS (SELECT 1 FROM Tags WHERE tag={0} AND Tags.ipstart <= nodes.ipstart AND Tags.ipend >= nodes.ipend)"
+        if self.params['has'] != '1':
+            phrase = "NOT " + phrase
+        return "\n AND ".join([phrase.format(common.web.sqlquote(tag)) for tag in tags])
 
     def having(self):
         return ""

@@ -333,9 +333,25 @@ def get_details_children(ip_range, subnet):
     return list(common.db.query(query, vars=qvars))
 
 
+def get_tags(address):
+    ipstart, ipend = common.determine_range_string(address)
+    WHERE = 'ipstart <= $start AND ipend >= $end'
+    qvars = {'start': ipstart, 'end': ipend}
+    data = common.db.select("Tags", vars=qvars, where=WHERE)
+    parent_tags = []
+    tags = []
+    for row in data:
+        if row.ipend == ipend and row.ipstart == ipstart:
+            tags.append(row.tag)
+        else:
+            parent_tags.append(row.tag)
+    return {"p_tags": parent_tags, "tags": tags}
+
+def get_tag_list():
+    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag")]
+
 def get_node_info(address):
-    ips = map(int, address.split("."))
-    ipstart, ipend, _ = common.determine_range(*ips)
+    ipstart, ipend = common.determine_range_string(address)
     query = """
         SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
             , COALESCE(n.hostname, '') AS 'hostname'
@@ -482,14 +498,18 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if HAVING:
         HAVING = "HAVING " + HAVING
 
-    cols = ['ipstart', 'alias', 'conn_out', 'conn_in']
+    cols = ['nodes.ipstart', 'nodes.alias', 'conn_out', 'conn_in']
     ORDERBY = ""
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
+    # note: group concat max length is default at 1024.
+    # if info is lost, try:
+    # SET group_concat_max_len = 2048
+
     query = """
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
-    , COALESCE(alias, '') AS 'alias'
+SELECT CONCAT(decodeIP(nodes.ipstart), CONCAT('/', subnet)) AS 'address'
+    , COALESCE(nodes.alias, '') AS 'alias'
     , COALESCE((SELECT SUM(links)
         FROM LinksOut AS l_out
         WHERE l_out.src_start = nodes.ipstart
@@ -500,11 +520,62 @@ SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
         WHERE l_in.dst_start = nodes.ipstart
           AND l_in.dst_end = nodes.ipend
      ),0) AS 'conn_in'
+     , GROUP_CONCAT(t.tag SEPARATOR ", ") AS "tags"
+     , GROUP_CONCAT(pt.tag SEPARATOR ", ") AS "parent_tags"
 FROM Nodes AS nodes
+JOIN Tags AS t
+    ON t.ipstart = nodes.ipstart AND t.ipend = nodes.ipend
+JOIN Tags AS pt
+    ON pt.ipstart < nodes.ipstart AND pt.ipend > nodes.ipend
 {WHERE}
+GROUP BY nodes.ipstart, nodes.subnet, nodes.alias, conn_out, conn_in
 {HAVING}
 {ORDER}
 LIMIT {START},{RANGE};""".format(
+        WHERE=WHERE,
+        HAVING=HAVING,
+        ORDER=ORDERBY,
+        START=page * page_size,
+        RANGE=page_size + 1)
+
+    query = """
+SELECT CONCAT(decodeIP(old.ipstart), CONCAT('/', old.subnet)) AS 'address'
+    , old.alias
+    , old.conn_out
+    , old.conn_in
+    , t.tags
+    , GROUP_CONCAT(pt.tag SEPARATOR ', ') AS 'parent_tags'
+FROM (
+    SELECT nodes.ipstart
+        , nodes.ipend
+        , nodes.subnet
+        , COALESCE(nodes.alias, '') AS 'alias'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart
+              AND l_out.src_end = nodes.ipend
+         ),0) AS 'conn_out'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart
+              AND l_in.dst_end = nodes.ipend
+         ),0) AS 'conn_in'
+    FROM Nodes AS nodes
+    {WHERE}
+    {HAVING}
+    {ORDER}
+    LIMIT {START},{RANGE}
+) AS `old`
+LEFT JOIN (
+    SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
+    FROM Tags
+    GROUP BY ipstart, ipend
+) AS t
+    ON t.ipstart = old.ipstart AND t.ipend = old.ipend
+LEFT JOIN Tags AS pt
+    ON pt.ipstart < old.ipstart AND pt.ipend > old.ipend
+GROUP BY old.ipstart, old.subnet, old.alias, old.conn_out, old.conn_in, t.tags;
+    """.format(
         WHERE=WHERE,
         HAVING=HAVING,
         ORDER=ORDERBY,

@@ -78,8 +78,10 @@ class Details:
         info['address'] = self.nice_ip_address()
         
         if node_info:
+            tags = dbaccess.get_tags(self.ip_string)
             #node_info has:
             # hostname
+            # tags
             # unique_out_ip
             # unique_out_conn
             # total_out
@@ -90,6 +92,7 @@ class Details:
             # endpoints
             # seconds
             info['name'] = node_info.hostname
+            info['tags'] = tags
             info['in'] = {}
             info['in']['total'] = node_info.total_in
             info['in']['u_ip'] = node_info.unique_in_ip

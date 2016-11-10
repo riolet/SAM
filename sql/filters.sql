@@ -70,57 +70,73 @@ GROUP BY `n`.ipstart, `n`.subnet, `n`.alias;
 -- 189.x.x.x
 -- 3170893824 to 3187671039
 
+     , GROUP_CONCAT(t.tag SEPARATOR ", ") AS "tags"
+     , GROUP_CONCAT(pt.tag SEPARATOR ", ") AS "parent_tags"
 
--- Node Info COMBINED
-SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
-    , COALESCE(n.hostname, '') AS 'hostname'
-    , COALESCE(l_out.unique_out_ip, 0) AS 'unique_out_ip'
-    , COALESCE(l_out.unique_out_conn, 0) AS 'unique_out_conn'
-    , COALESCE(l_out.total_out, 0) AS 'total_out'
-    , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
-    , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
-    , COALESCE(l_in.total_in, 0) AS 'total_in'
-    , COALESCE(l_in.ports_used, 0) AS 'ports_used'
-    , children.endpoints AS 'endpoints'
-    , t.seconds
+SELECT CONCAT(decodeIP(old.ipstart), CONCAT('/', old.subnet)) AS 'address'
+    , old.alias
+    , old.conn_out
+    , old.conn_in
+    , t.tags
+    , GROUP_CONCAT(pt.tag SEPARATOR ', ') AS 'parent_tags'
 FROM (
-    SELECT ipstart, subnet, alias AS 'hostname'
-    FROM Nodes
-    WHERE ipstart = 356647193 AND ipend = 356647193
-) AS n
+    SELECT nodes.ipstart
+        , nodes.ipend
+        , nodes.subnet
+        , COALESCE(nodes.alias, '') AS 'alias'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart
+              AND l_out.src_end = nodes.ipend
+         ),0) AS 'conn_out'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart
+              AND l_in.dst_end = nodes.ipend
+         ),0) AS 'conn_in'
+    FROM Nodes AS nodes
+    WHERE nodes.ipstart BETWEEN 1340416000 AND 1340416255
+    ORDER BY nodes.ipstart asc
+    LIMIT 10,11
+) AS `old`
 LEFT JOIN (
-    SELECT 356647193 AS 's1'
-    , COUNT(DISTINCT dst) AS 'unique_out_ip'
-    , COUNT(DISTINCT dst, port) AS 'unique_out_conn'
-    , SUM(links) AS 'total_out'
-    FROM Links
-    WHERE src BETWEEN 356647193 AND 356647193
-    GROUP BY 's1'
-) AS l_out
-    ON n.ipstart = l_out.s1
-LEFT JOIN (
-    SELECT 356647193 AS 's1'
-    , COUNT(DISTINCT src) AS 'unique_in_ip'
-    , COUNT(DISTINCT src, port) AS 'unique_in_conn'
-    , SUM(links) AS 'total_in'
-    , COUNT(DISTINCT port) AS 'ports_used'
-    FROM Links
-    WHERE dst BETWEEN 356647193 AND 356647193
-    GROUP BY 's1'
-) AS l_in
-    ON n.ipstart = l_in.s1
-LEFT JOIN (
-    SELECT 356647193 AS 's1'
-    , COUNT(ipstart) AS 'endpoints'
-    FROM Nodes
-    WHERE ipstart = ipend AND ipstart BETWEEN 356647193 AND 356647193
-) AS children
-    ON n.ipstart = children.s1
-LEFT JOIN (
-    SELECT 356647193 AS 's1'
-        , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
-    FROM Links
-    GROUP BY 's1'
+    SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
+    FROM Tags
+    GROUP BY ipstart, ipend
 ) AS t
-    ON n.ipstart = t.s1
-LIMIT 1;
+    ON t.ipstart = old.ipstart AND t.ipend = old.ipend
+LEFT JOIN Tags AS pt
+    ON pt.ipstart < old.ipstart AND pt.ipend > old.ipend
+GROUP BY old.ipstart, old.subnet, old.alias, old.conn_out, old.conn_in, t.tags;
+
+SELECT CONCAT(decodeIP(old.ipstart), CONCAT('/', old.subnet)) AS 'address'
+    , old.alias
+    , old.conn_out
+    , old.conn_in
+    , t.tag
+    , pt.tag
+FROM (
+    SELECT nodes.ipstart
+        , nodes.ipend
+        , nodes.subnet
+        , COALESCE(nodes.alias, '') AS 'alias'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart
+              AND l_out.src_end = nodes.ipend
+         ),0) AS 'conn_out'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart
+              AND l_in.dst_end = nodes.ipend
+         ),0) AS 'conn_in'
+    FROM Nodes AS nodes
+    WHERE nodes.ipstart BETWEEN 1340416000 AND 1340416255
+    ORDER BY nodes.ipstart asc
+    LIMIT 10,11
+) AS `old`
+LEFT JOIN Tags AS t
+    ON t.ipstart = old.ipstart AND t.ipend = old.ipend
+LEFT JOIN Tags AS pt
+    ON pt.ipstart < old.ipstart AND pt.ipend > old.ipend
+;

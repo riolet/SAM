@@ -50,8 +50,9 @@ class Columns(object):
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
-                'get': lambda x: []},
+                'get': lambda x: [x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
         }
+
 
     def translate_row(self, data):
         row = []
@@ -105,7 +106,7 @@ class Table(object):
         return rows
 
     def tags(self):
-        return ['tag 1', 'tag 2', 'tag 3']
+        return dbaccess.get_tag_list()
 
     def next_page(self, rows, page, page_size):
         if len(rows) > page_size:
