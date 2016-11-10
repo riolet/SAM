@@ -10,10 +10,13 @@ function buildKeyValueRow(key, value) {
     var td = document.createElement("TD");
     td.appendChild(document.createTextNode(key));
     tr.appendChild(td);
-
-    td = document.createElement("TD");
-    td.appendChild(document.createTextNode(value));
-    tr.appendChild(td);
+    if (typeof(value) == "object") {
+        tr.appendChild(value);
+    } else {
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(value));
+        tr.appendChild(td);
+    }
     return tr;
 }
 
@@ -151,7 +154,20 @@ function present_quick_info(info) {
             target.appendChild(buildKeyValueRow("IPv4 address / subnet", info.address));
         }
         if (info.hasOwnProperty("name")) {
-            target.appendChild(buildKeyValueRow("Name", info.name));
+            var input = document.createElement("INPUT");
+            input.placeholder = '-';
+            input.type='text';
+            input.value=info.name;
+            input.dataset.content=info.name;
+            input.onblur = hostname_edit_callback;
+            input.onkeyup = hostname_edit_callback;
+            var i = document.createElement("I");
+            i.className = "write icon"
+            var div = document.createElement("TD");
+            div.className = "ui transparent left icon input";
+            div.appendChild(input);
+            div.appendChild(i);
+            target.appendChild(buildKeyValueRow("Name", div));
         }
         if (info.hasOwnProperty("in")) {
             var key = "Inbound connections";
@@ -180,7 +196,7 @@ function present_quick_info(info) {
             target.appendChild(buildKeyValueRow("Local ports accessed", info.ports));
         }
         if (info.hasOwnProperty("endpoints")) {
-            var possible = Math.pow(2, 32 - getSubnet());
+            var possible = Math.pow(2, 32 - getIP_Subnet().subnet);
             target.appendChild(buildKeyValueRow("Endpoints represented", info.endpoints + " (of " + possible + " possible)"));
         }
     }
@@ -252,11 +268,16 @@ function present_detailed_info(info) {
 /********************
    Helper functions
  ********************/
-function getSubnet() {
+function getIP_Subnet() {
     var searchbar = document.getElementById("hostSearch");
     var input = searchbar.getElementsByTagName("input")[0];
     var normalizedIP = normalizeIP(input.value);
-    return parseInt(normalizedIP.split("/")[1]);
+    var split = normalizedIP.split("/")
+    return {
+        "normal": normalizedIP,
+        "ip": split[0],
+        "subnet": parseInt(split[1])
+    };
 }
 
 function normalizeIP(ipString) {
@@ -323,11 +344,11 @@ function hostname_edit_callback(event) {
         var input = event.target;
         var new_name = input.value;
         var old_name = input.dataset.content;
-        var address = event.target.parentNode.parentNode.parentNode.dataset.content;
+        var ip = getIP_Subnet().normal;
 
         if (new_name !== old_name) {
             input.dataset.content = new_name;
-            var request = {"node": address, "alias": new_name}
+            var request = {"node": ip, "alias": new_name}
             $.ajax({
                 url: "/nodeinfo",
                 type: "POST",
