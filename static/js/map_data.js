@@ -161,17 +161,17 @@ function GET_details(node, callback) {
             node.details["ports_in"] = result.ports_in;
             node.details["loaded"] = true;
 
-            result.conn_in.forEach(function (element) {
+            result.conn_in.rows.forEach(function (element) {
                 element[1].forEach(function (port) {
                     ports.request_add(port.port);
                 });
             });
-            result.conn_out.forEach(function (element) {
+            result.conn_out.rows.forEach(function (element) {
                 element[1].forEach(function (port) {
                     ports.request_add(port.port);
                 });
             });
-            result.ports_in.forEach(function (element) {
+            result.ports_in.rows.forEach(function (element) {
                 ports.request_add(element.port);
             });
             ports.request_submit();

@@ -166,7 +166,6 @@ function sel_build_overflow(amount, columns) {
     return undefined;
 }
 
-//function updateFloatingPanel()
 function sel_panel_height() {
     "use strict";
     var side = document.getElementById("sel_bar");
@@ -191,7 +190,7 @@ function sel_panel_height() {
     }
 }
 
-function createLink(node) {
+function sel_create_link(node) {
     var address = get_node_address(node);
     var link = "/metadata?ip=" + address;
     var text = "More details for " + address;
@@ -230,17 +229,17 @@ function sel_update_display(node) {
 
     //fill in the tables
     //Input Connections table
-    tbody = sel_build_table_connections(node.details['conn_in']);
+    tbody = sel_build_table_connections(node.details['conn_in'].rows);
     m_selection['conn_in'].parentElement.replaceChild(tbody, m_selection['conn_in']);
     m_selection['conn_in'] = tbody;
 
     //Output Connections table
-    tbody = sel_build_table_connections(node.details['conn_out']);
+    tbody = sel_build_table_connections(node.details['conn_out'].rows);
     m_selection['conn_out'].parentElement.replaceChild(tbody, m_selection['conn_out']);
     m_selection['conn_out'] = tbody;
 
     //Ports Accessed table
-    tbody = sel_build_table_ports(node.details['ports_in']);
+    tbody = sel_build_table_ports(node.details['ports_in'].rows);
     m_selection['ports_in'].parentElement.replaceChild(tbody, m_selection['ports_in']);
     m_selection['ports_in'] = tbody;
 
@@ -276,9 +275,12 @@ function sel_update_display(node) {
     row = document.getElementById("sel_link");
     row.innerHTML = "";
     row.style.display = "block";
-    row.appendChild(createLink(node));
+    row.appendChild(sel_create_link(node));
 
 
     //activate new popups (tooltips)
     $('.popup').popup();
+
+    //refresh the panel size
+    sel_panel_height();
 }

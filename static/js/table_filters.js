@@ -178,6 +178,38 @@
         parts.push(filters.private.markupInput("mask", "192.168.0.0/24", mask));
         return parts;
     };
+
+    filters.private.createRoleFilter = function (cmp_ratio, enabled) {
+        var comparator, ratio;
+        if (cmp_ratio) {
+            comparator = cmp_ratio[0];
+            ratio = cmp_ratio[1];
+        }
+        var filter;
+        var filterdiv = filters.private.markupBoilerplate(enabled);
+        var parts = filters.private.createRoleFilterRow(comparator, ratio);
+        parts.forEach(function (part) { filterdiv.appendChild(part); });
+
+        filter = {};
+        filter.enabled = true;
+        filter.type = "role";
+        filter.comparator = comparator;
+        filter.ratio = ratio;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createRoleFilterRow = function (comparator, ratio) {
+        var parts = [];
+        parts.push(filters.private.markupSpan("Client/Server ratio is "));
+        parts.push(filters.private.markupSelection("comparator", "more/less than", [
+            ['>', 'more than'],
+            ['<', 'less than']
+        ], comparator));
+        parts.push(filters.private.markupInput("ratio", "0.5", ratio));
+        parts.push(filters.private.markupSpan(" (0 = client, 1 = server)"));
+        return parts;
+    };
+
     filters.private.createPortFilter = function (connection_port, enabled) {
         var connection, port;
         if (connection_port) {
@@ -242,10 +274,9 @@
             ["0", "doesn't have"]
         ], has));
         parts.push(filters.private.markupSpan(" tags: "));
-        parts.push(filters.private.markupTags("tags", "Choose tag(s)", [
-            ['server', "Server"],
-            ["client", "Client"]
-        ], tags));
+        parts.push(filters.private.markupTags("tags", "Choose tag(s)"
+            , known_tags.map(function (tag) { return [tag,tag]; })
+            , tags));
         return parts;
     };
     filters.private.createTargetFilter = function (target_to, enabled) {
@@ -543,6 +574,8 @@
                     } else {
                         summary += "no tag (" + filter.tags + ")";
                     }
+                } else if (filter.type === "role") {
+                    summary += filter.comparator + Math.round(filter.ratio * 100) + "% server"
                 }
                 summary += ", ";
             });
@@ -611,6 +644,7 @@
     filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
     filters.private.types['tags']= [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
     filters.private.types['target']= [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];
+    filters.private.types['role']= [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
 
     filters.private.createFilterCreator = function () {
         //The add button
@@ -624,6 +658,7 @@
         //The type selector
         var typeOptions = Object.keys(filters.private.types).map(function (x) { return [x, x]; });
         var typeSelector = filters.private.markupSelection("type", "Filter Type", typeOptions);
+        typeSelector.id = "addFilterType";
 
         //The encompassing div
         var filterdiv = document.createElement("div");

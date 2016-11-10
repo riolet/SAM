@@ -1,22 +1,9 @@
 import common
 
 
-def determine_range_string(ip):
-    parts = ip.split("/")
-    address = common.IPStringtoInt(parts[0])
-    if len(parts) == 2:
-        subnet = int(parts[1])
-    else:
-        subnet = min(parts[0].count("."), 3) * 8 + 8
-    mask = ((1 << 32) - 1) ^ ((1 << (32 - subnet)) - 1)
-    low = address & mask
-    high = address | (0xffffffff ^ mask)
-    return low, high
-
-
 class Filter (object):
-    def __init__(self, type, enabled):
-        self.type = type
+    def __init__(self, f_type, enabled):
+        self.type = f_type
         self.enabled = enabled
         self.params = {}
 
@@ -69,8 +56,8 @@ class MaskFilter(Filter):
         self.params['mask'] = ""
 
     def where(self):
-        range = determine_range_string(self.params['mask'])
-        return "nodes.ipstart BETWEEN {0} AND {1}".format(range[0], range[1])
+        r = common.determine_range_string(self.params['mask'])
+        return "nodes.ipstart BETWEEN {0} AND {1}".format(r[0], r[1])
 
     def having(self):
         return ""
@@ -139,16 +126,16 @@ class TargetFilter(Filter):
     def where(self):
         # ip_segments = [int(x) for x in self.params['target'].split(".")]
         # target = common.IPtoInt(*ip_segments)
-        range = determine_range_string(self.params['target'])
+        r = common.determine_range_string(self.params['target'])
         if self.params['to'] == '0':
-            return "EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=range[0], upper=range[1])
+            return "EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
         elif self.params['to'] == '1':
-            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=range[0], upper=range[1])
+            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
         
         if self.params['to'] == '2':
-            return "EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=range[0], upper=range[1])
+            return "EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
         elif self.params['to'] == '3':
-            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=range[0], upper=range[1])
+            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
 
         else:
             print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "
@@ -172,7 +159,24 @@ class TagsFilter(Filter):
         return ""
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter]
+class RoleFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "role", enabled)
+        self.params['ratio'] = ""
+        self.params['comparator'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        cmp = self.params['comparator']
+        if cmp not in ['<', '>']:
+            cmp = '<'
+        ratio = float(self.params['ratio'])
+        return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
+
+
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 

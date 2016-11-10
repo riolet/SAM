@@ -46,7 +46,17 @@ function importURL() {
 }
 
 function applyFilter(page) {
-    console.log("applying filter!");
+    // Apply last filter if it was fully filled out
+    var typeSelector = document.getElementById("addFilterType");
+    var type = typeSelector.getElementsByTagName("input")[0].value;
+    if (filters.private.types.hasOwnProperty(type)) {
+        var params = filters.private.extractRowValues(typeSelector);
+        if (params.every(function (el) { return !!el; })) {
+            filters.addFilter(type, params);
+        }
+    }
+
+    // Gather terms for query string
     searchs = [
         ["page", 1],
         ['page_size', cookie_data.get('page_size', DEFAULT_PAGE_SIZE)],
@@ -57,6 +67,7 @@ function applyFilter(page) {
         searchs.push(["filters", encodeURIComponent(filterString)])
     }
 
+    // Put together new URL target
     var searchString = "";
     searchs.forEach(function (term) {
         searchString += "&" + term.join("=");
@@ -85,6 +96,31 @@ function btn_header_callback(e) {
         cookie_data.set('sort', e.target.id.substr(6) + ",desc");
     }
     applyFilter();
+}
+
+function hostname_edit_callback(event) {
+    "use strict";
+    if (event.keyCode === 13 || event.type === "blur") {
+        var input = event.target;
+        var new_name = input.value;
+        var old_name = input.dataset.content;
+        var address = event.target.parentNode.parentNode.parentNode.dataset.content;
+
+        //TODO: check if name has been changed?
+        if (new_name !== old_name) {
+            input.dataset.content = new_name;
+            var request = {"node": address, "alias": new_name}
+            $.ajax({
+                url: "/nodeinfo",
+                type: "POST",
+                data: request,
+                error: function(x, s, e) {console.error("Failed to set name: " + e); console.log("\tText Status: " + s);},
+                success: function(r) {if (r.hasOwnProperty("result")) console.log("Result: " + r.result);}
+            });
+        }
+        return true;
+    }
+    return false;
 }
 
 /*
@@ -182,6 +218,10 @@ function init() {
         sorters[j].onclick = btn_header_callback;
     }
 
+    //Create name inputs
+    var targets = $(".td_alias").find("input");
+    targets.keyup(hostname_edit_callback);
+    targets.blur(hostname_edit_callback);
 
     //Interpret URL
     importURL();
