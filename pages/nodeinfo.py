@@ -44,6 +44,8 @@ class Nodeinfo:
             dbaccess.set_node_info(get_data.node, {"alias": get_data.alias})
 
         if 'tags' in get_data:
-            dbaccess.set_tags(get_data.node, get_data.tags.split(','))
+            tags = get_data.tags.split(',')
+            tags = [i for i in tags if i]
+            dbaccess.set_tags(get_data.node, tags)
 
         return json.dumps({"code": 0, "message": ""})
