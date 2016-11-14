@@ -1,16 +1,87 @@
+/*global
+    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip
+*/
 var g_typing_timer = null;
 var g_running_requests = [];
 var g_state = null;
-var g_page_size = 50;
 var g_data = {"quick": null, "inputs": null, "outputs": null, "ports": null, "children": null};
 
+/********************
+   Helper functions
+ ********************/
+function normalizeIP(ipString) {
+    "use strict";
+    var add_sub = ipString.split("/");
+
+    var address = add_sub[0];
+    var subnet = add_sub[1];
+
+    var segments = address.split(".");
+    var num;
+    var final_ip;
+    segments = segments.reduce(function (list, element) {
+        num = parseInt(element);
+        if (!isNaN(num)) {
+            list.push(num);
+        }
+        return list;
+    }, []);
+
+    final_ip = segments.join(".");
+
+    var zeroes_to_add = 4 - segments.length;
+    while (zeroes_to_add > 0) {
+        final_ip += ".0";
+        zeroes_to_add -= 1;
+    }
+    num = parseInt(subnet);
+    if (num) {
+        final_ip += "/" + subnet;
+    } else {
+        final_ip += "/" + (segments.length * 8);
+    }
+    return final_ip;
+}
+
+function getIP_Subnet() {
+    "use strict";
+    var searchbar = document.getElementById("hostSearch");
+    var input = searchbar.getElementsByTagName("input")[0];
+    var normalizedIP = normalizeIP(input.value);
+    var split = normalizedIP.split("/");
+    return {
+        "normal": normalizedIP,
+        "ip": split[0],
+        "subnet": parseInt(split[1])
+    };
+}
+
+function minimizeIP(ip) {
+    "use strict";
+    var add_sub = ip.split("/");
+    var subnet = parseInt(add_sub[1]) / 8;
+    var segs = add_sub[0].split(".");
+    if (isNaN(subnet)) {
+        subnet = Math.min(4, segs.length);
+    }
+    var i;
+    var minimized_ip = segs[0];
+    for (i = 1; i < subnet; i += 1) {
+        minimized_ip += "." + segs[i];
+    }
+    return minimized_ip;
+}
+
+/**************************
+   Presentation Functions
+ **************************/
 function buildKeyValueRow(key, value) {
     "use strict";
     var tr = document.createElement("TR");
     var td = document.createElement("TD");
     td.appendChild(document.createTextNode(key));
     tr.appendChild(td);
-    if (typeof(value) == "object") {
+    if (typeof(value) === "object") {
         tr.appendChild(value);
     } else {
         td = document.createElement("TD");
@@ -39,28 +110,19 @@ function buildKeyMultiValueRows(key, values) {
     return rows;
 }
 
-function build_table_children(dataset) {
+function build_link(address, subnet) {
     "use strict";
-    var tbody = document.createElement("TBODY");
-    var tr, td;
-    dataset.forEach(function (row) {
-        tr = document.createElement("TR");
-        // each row has .address .hostname .subnet .endpoints .ratio
-        td = document.createElement("TD");
-        td.appendChild(build_link(row.address, row.subnet));
-        tr.appendChild(td);
-        td = document.createElement("TD");
-        td.appendChild(document.createTextNode(row.hostname));
-        tr.appendChild(td);
-        td = document.createElement("TD");
-        td.appendChild(document.createTextNode(row.endpoints));
-        tr.appendChild(td);
-        td = document.createElement("TD");
-        td.appendChild(document.createTextNode(build_role_text(row.ratio)));
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-    });
-    return tbody;
+    var text = address + "/" + subnet;
+    var link = "/metadata?ip=" + text;
+
+    var icon = document.createElement("I");
+    icon.className = "tasks icon";
+
+    var a = document.createElement("A");
+    a.appendChild(icon);
+    a.appendChild(document.createTextNode(text));
+    a.href = link;
+    return a;
 }
 
 function build_role_text(ratio) {
@@ -81,22 +143,33 @@ function build_role_text(ratio) {
     return role_text;
 }
 
-function build_link(address, subnet) {
+function build_table_children(dataset) {
     "use strict";
-    var text = address + "/" + subnet;
-    var link = "/metadata?ip=" + text;
-
-    var icon = document.createElement("I");
-    icon.className = "tasks icon";
-
-    var a = document.createElement("A");
-    a.appendChild(icon);
-    a.appendChild(document.createTextNode(text));
-    a.href = link;
-    return a;
+    var tbody = document.createElement("TBODY");
+    var tr;
+    var td;
+    dataset.forEach(function (row) {
+        tr = document.createElement("TR");
+        // each row has .address .hostname .subnet .endpoints .ratio
+        td = document.createElement("TD");
+        td.appendChild(build_link(row.address, row.subnet));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(row.hostname));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(row.endpoints));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(build_role_text(row.ratio)));
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    });
+    return tbody;
 }
 
 function build_pagination(page, page_size, component, total) {
+    "use strict";
     var has_prev = page > 1;
     var has_next = total > page * page_size;
     var page_first = (page - 1) * page_size + 1;
@@ -106,7 +179,8 @@ function build_pagination(page, page_size, component, total) {
     var normalizedIP = normalizeIP(input.value);
 
     var div = document.createElement("DIV");
-    var a, button, span;
+    var button;
+    var span;
 
     // PREV button
     button = document.createElement("BUTTON");
@@ -115,7 +189,7 @@ function build_pagination(page, page_size, component, total) {
         button.className = "ui button";
         button.onclick = function () {
             GET_page(normalizedIP, component, page - 1);
-        }
+        };
     } else {
         button.className = "ui button disabled";
     }
@@ -133,7 +207,7 @@ function build_pagination(page, page_size, component, total) {
         button.className = "ui button";
         button.onclick = function () {
             GET_page(normalizedIP, component, page + 1);
-        }
+        };
     } else {
         button.className = "ui button disabled";
     }
@@ -155,6 +229,13 @@ function build_label(text, color, disabled) {
 function present_quick_info(info) {
     "use strict";
     var target = document.getElementById("quickinfo");
+    var input;
+    var key;
+    var values;
+    var i;
+    var div;
+    var td;
+    var tag_div;
     target.innerHTML = "";
     if (info.hasOwnProperty("address")) {
         target.appendChild(buildKeyValueRow("IPv4 address / subnet", info.address));
@@ -165,27 +246,25 @@ function present_quick_info(info) {
         target.appendChild(buildKeyValueRow(info.message, "..."));
     } else {
         if (info.hasOwnProperty("name")) {
-            var input = document.createElement("INPUT");
-            input.placeholder = '-';
-            input.type='text';
-            input.value=info.name;
-            input.dataset.content=info.name;
+            input = document.createElement("INPUT");
+            input.placeholder = "-";
+            input.type = "text";
+            input.value = info.name;
+            input.dataset.content = info.name;
             input.onblur = hostname_edit_callback;
             input.onkeyup = hostname_edit_callback;
-            var i = document.createElement("I");
-            i.className = "write icon"
-            var div = document.createElement("DIV");
+            i = document.createElement("I");
+            i.className = "write icon";
+            div = document.createElement("DIV");
             div.className = "ui transparent left icon input";
             div.appendChild(input);
             div.appendChild(i);
-            var td = document.createElement("TD");
+            td = document.createElement("TD");
             td.appendChild(div);
             target.appendChild(buildKeyValueRow("Name", td));
         }
         if (info.hasOwnProperty("tags")) {
-            console.log("tags found:");
-            console.log(info.tags);
-            var tag_div = document.createElement("TD");
+            tag_div = document.createElement("TD");
             info.tags.tags.forEach(function (tag) {
                 tag_div.appendChild(build_label(tag, "teal", false));
             });
@@ -195,24 +274,24 @@ function present_quick_info(info) {
             target.appendChild(buildKeyValueRow("Tags", tag_div));
         }
         if (info.hasOwnProperty("in")) {
-            var key = "Inbound connections";
-            var values =
-                [ info.in.total + " total connections"
-                , info.in.u_ip + " unique source IPs"
-                , info.in.u_conn + " unique connections (source and port)"
-                , parseFloat(info.in.total / info.in.seconds).toFixed(3) + " connections per second"
-                ];
-            buildKeyMultiValueRows(key, values).forEach(function (row) {target.appendChild(row);});
+            key = "Inbound connections";
+            values = [info.in.total + " total connections",
+                    info.in.u_ip + " unique source IPs",
+                    info.in.u_conn + " unique connections (source and port)",
+                    parseFloat(info.in.total / info.in.seconds).toFixed(3) + " connections per second"];
+            buildKeyMultiValueRows(key, values).forEach(function (row) {
+                target.appendChild(row);
+            });
         }
         if (info.hasOwnProperty("out")) {
-            var key = "Outbound connections";
-            var values =
-                [ info.out.total + " total connections"
-                , info.out.u_ip + " unique destination IPs"
-                , info.out.u_conn + " unique connections (destination and port)"
-                , parseFloat(info.out.total / info.out.seconds).toFixed(3) + " connections per second"
-                ];
-            buildKeyMultiValueRows(key, values).forEach(function (row) {target.appendChild(row);});
+            key = "Outbound connections";
+            values = [info.out.total + " total connections",
+                    info.out.u_ip + " unique destination IPs",
+                    info.out.u_conn + " unique connections (destination and port)",
+                    parseFloat(info.out.total / info.out.seconds).toFixed(3) + " connections per second"];
+            buildKeyMultiValueRows(key, values).forEach(function (row) {
+                target.appendChild(row);
+            });
         }
         if (info.hasOwnProperty("role")) {
             target.appendChild(buildKeyValueRow("Role (0 = client, 1 = server)", build_role_text(info.role)));
@@ -230,7 +309,7 @@ function present_quick_info(info) {
 function present_detailed_info(info) {
     "use strict";
     if (info === undefined) {
-        info = g_data
+        info = g_data;
     }
     var old_body;
     var new_body;
@@ -287,71 +366,7 @@ function present_detailed_info(info) {
     }
 
     //enable the tooltips on ports
-    $('.popup').popup();
-}
-
-/********************
-   Helper functions
- ********************/
-function getIP_Subnet() {
-    var searchbar = document.getElementById("hostSearch");
-    var input = searchbar.getElementsByTagName("input")[0];
-    var normalizedIP = normalizeIP(input.value);
-    var split = normalizedIP.split("/")
-    return {
-        "normal": normalizedIP,
-        "ip": split[0],
-        "subnet": parseInt(split[1])
-    };
-}
-
-function normalizeIP(ipString) {
-    "use strict";
-    var add_sub = ipString.split("/");
-
-    var address = add_sub[0];
-    var subnet = add_sub[1];
-
-    var segments = address.split(".");
-    var num;
-    var final_ip;
-    segments = segments.reduce(function (list, element) {
-        num = parseInt(element);
-        if (!isNaN(num)) {
-            list.push(num);
-        }
-        return list;
-    }, []);
-
-    final_ip = segments.join(".");
-
-    var zeroes_to_add = 4 - segments.length;
-    for (; zeroes_to_add > 0; zeroes_to_add -= 1) {
-        final_ip += ".0";
-    }
-    num = parseInt(subnet);
-    if (num) {
-        final_ip += "/" + subnet;
-    } else {
-        final_ip += "/" + (segments.length * 8);
-    }
-    return final_ip;
-}
-
-function minimizeIP(ip) {
-    "use strict";
-    var add_sub = ip.split("/");
-    var subnet = parseInt(add_sub[1]) / 8;
-    var segs = add_sub[0].split(".");
-    if (isNaN(subnet)) {
-        subnet = Math.min(4, segs.length);
-    }
-    var i;
-    var minimized_ip = segs[0];
-    for (i = 1; i < subnet; i += 1) {
-        minimized_ip += "." + segs[i];
-    }
-    return minimized_ip;
+    $(".popup").popup();
 }
 
 /*******************
@@ -373,13 +388,20 @@ function hostname_edit_callback(event) {
 
         if (new_name !== old_name) {
             input.dataset.content = new_name;
-            var request = {"node": ip, "alias": new_name}
+            var request = {"node": ip, "alias": new_name};
             $.ajax({
                 url: "/nodeinfo",
                 type: "POST",
                 data: request,
-                error: function(x, s, e) {console.error("Failed to set name: " + e); console.log("\tText Status: " + s);},
-                success: function(r) {if (r.hasOwnProperty("result")) console.log("Result: " + r.result);}
+                error: function (x, s, e) {
+                    console.error("Failed to set name: " + e);
+                    console.log("\tText Status: " + s);
+                },
+                success: function (r) {
+                    if (r.hasOwnProperty("result")) {
+                        console.log("Result: " + r.result);
+                    }
+                }
             });
         }
         return true;
@@ -387,7 +409,7 @@ function hostname_edit_callback(event) {
     return false;
 }
 
-function GET_data(ip, part, callback){
+function GET_data(ip, part, callback) {
     "use strict";
 
     var request = {"address": minimizeIP(ip)};
@@ -416,7 +438,7 @@ function GET_page(ip, part, page) {
     "use strict";
 
     var request = {"address": minimizeIP(ip),
-                   "page": page};
+            "page": page};
     $.ajax({
         url: "/details/" + part,
         type: "GET",
@@ -428,10 +450,10 @@ function GET_page(ip, part, page) {
 
 function abortRequests(requests) {
     "use strict";
-    var xhr;
-    while (xhr = requests.pop()) {
+    var xhr = requests.pop();
+    while (xhr) {
         xhr.abort();
-        //clearTimeout(xhr);
+        xhr = requests.pop();
     }
 }
 
@@ -456,7 +478,28 @@ function dispatcher(event) {
     }
 }
 
+function restartTypingTimer(event) {
+    "use strict";
+    //typing happens:
+    //  restart the timer
+    //timer times out:
+    //  advance to request quick-info
+    if (event.type === "input") {
+        console.log("Restarting Timer");
+        if (g_typing_timer !== null) {
+            clearTimeout(g_typing_timer);
+        }
+        g_typing_timer = setTimeout(function () {
+            //Timer expired. Run the quick-info request!
+            console.log("Proceeding to Request Quick Info");
+
+            dispatcher(new StateChangeEvent(requestQuickInfo));
+        }, 700);
+    }
+}
+
 function scanForPorts(response) {
+    "use strict";
     if (response.hasOwnProperty("inputs")) {
         response.inputs.rows.forEach(function (element) {
             element[1].forEach(function (port) {
@@ -488,7 +531,7 @@ function requestMoreDetails(event) {
     //  proceed to waiting
     var searchbar = document.getElementById("hostSearch");
 
-    if (event.type == "stateChange") {
+    if (event.type === "stateChange") {
         //Requesting more details
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting More Details");
@@ -530,12 +573,12 @@ function requestQuickInfo(event) {
     //  proceed to requestMoreDetails()
     var searchbar = document.getElementById("hostSearch");
 
-    if (event.type == "stateChange") {
+    if (event.type === "stateChange") {
         //Requesting Quick Info
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting Quick Info");
         searchbar.classList.add("loading");
-        present_quick_info({'__order': ['Loading'], Loading: "..."});
+        present_quick_info({"__order": ["Loading"], Loading: "..."});
         var normalizedIP = normalizeIP(input.value);
         GET_data(normalizedIP, "quick_info", function (response) {
             // Quick info arrived
@@ -561,30 +604,10 @@ function requestQuickInfo(event) {
         abortRequests(g_running_requests);
         searchbar.classList.remove("loading");
         //Clear quickinfo
-        present_quick_info({'__order': ['Waiting'], Waiting: "..."});
+        present_quick_info({"__order": ["Waiting"], Waiting: "..."});
         //Continue to typing timer
         dispatcher(new StateChangeEvent(restartTypingTimer));
         dispatcher(event);
-    }
-}
-
-function restartTypingTimer(event) {
-    "use strict";
-    //typing happens:
-    //  restart the timer
-    //timer times out:
-    //  advance to request quick-info
-    if (event.type === "input") {
-        console.log("Restarting Timer");
-        if (g_typing_timer !== null) {
-            clearTimeout(g_typing_timer);
-        }
-        g_typing_timer = setTimeout(function () {
-            //Timer expired. Run the quick-info request!
-            console.log("Proceeding to Request Quick Info");
-
-            dispatcher(new StateChangeEvent(requestQuickInfo));
-        }, 700);
     }
 }
 
@@ -599,20 +622,20 @@ function init() {
     sel_init();
 
     // Enable tabbed views
-    $('.secondary.menu .item').tab();
+    $(".secondary.menu .item").tab();
     // Enable the port data popup window
     $(".input.icon").popup();
     // Make the ports table sortable
     $("table.sortable").tablesort();
 
     //configure ports
-    ports.display_callback = function() {
+    ports.display_callback = function () {
         present_detailed_info();
     };
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 
-    if (g_initial_ip !== '') {
+    if (g_initial_ip !== "") {
         input.value = g_initial_ip;
         dispatcher(new StateChangeEvent(requestQuickInfo));
     }
