@@ -1,5 +1,5 @@
 /*global
-    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip
+    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip, g_known_tags
 */
 var g_typing_timer = null;
 var g_running_requests = [];
@@ -218,7 +218,7 @@ function build_pagination(page, page_size, component, total) {
 function build_label(text, color, disabled) {
     "use strict";
     var label = document.createElement("SPAN");
-    label.className = "ui " + color + " small label";
+    label.className = "ui " + color + " label";
     if (disabled) {
         label.classList.add("disabled");
     }
@@ -265,12 +265,57 @@ function present_quick_info(info) {
         }
         if (info.hasOwnProperty("tags")) {
             tag_div = document.createElement("TD");
-            info.tags.tags.forEach(function (tag) {
-                tag_div.appendChild(build_label(tag, "teal", false));
+
+            //create a selection box
+            /*
+            <div class="ui multiple selection dropdown">
+              <input name="gender" value="default,default2" type="hidden">
+              <i class="dropdown icon"></i>
+              <div class="default text">Default</div>
+              <div class="menu">
+                  <div class="item" data-value="0">Value</div>
+                  <div class="item" data-value="1">Another Value</div>
+                  <div class="item" data-value="default">Default Value</div>
+                  <div class="item" data-value="default2">Second Default</div>
+              </div>
+            </div>
+            */
+            div = document.createElement("DIV");
+            div.className = "ui multiple search selection dropdown";
+            input = document.createElement("INPUT");
+            input.name = "tags";
+            input.value = info.tags.tags.join(",");
+            input.type = "hidden";
+            div.appendChild(input);
+            i = document.createElement("I");
+            i.className = "dropdown icon";
+            div.appendChild(i);
+            key = document.createElement("DIV");
+            key.className = "default text";
+            key.appendChild(document.createTextNode("tags"));
+            div.appendChild(key);
+            values = document.createElement("DIV");
+            values.className = "menu";
+            g_known_tags.forEach(function (tag) {
+                key = document.createElement("DIV");
+                key.className = "item";
+                key.dataset.value = tag;
+                key.appendChild(document.createTextNode(tag));
+                values.appendChild(key);
             });
+            div.appendChild(values);
+            tag_div.appendChild(div);
+
+            //Activate the selector
+            $(div).dropdown({
+                allowAdditions: true
+            });
+
+            //display a span of inherited tags inline
             info.tags.p_tags.forEach(function (tag) {
                 tag_div.appendChild(build_label(tag, "teal", true));
             });
+            //attach the row to the table
             target.appendChild(buildKeyValueRow("Tags", tag_div));
         }
         if (info.hasOwnProperty("in")) {

@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS LinksOut
 ,CONSTRAINT FKLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
 );
 
+-- Create the table of tags
 CREATE TABLE IF NOT EXISTS Tags
 (ipstart           INT UNSIGNED NOT NULL
 ,ipend             INT UNSIGNED NOT NULL
