@@ -426,6 +426,37 @@ def set_node_info(address, data):
     common.db.update('Nodes', where, **data)
 
 
+def set_tags(address, new_tags):
+    table = 'Tags'
+    what = "ipstart, ipend, tag"
+    r = common.determine_range_string(address)
+    row = {"ipstart": r[0], "ipend": r[1]}
+    where = "ipstart = $ipstart AND ipend = $ipend"
+
+    existing = list(common.db.select(table, vars=row, what=what, where=where))
+    old_tags = [x.tag for x in existing]
+    removals = [x for x in old_tags if x not in new_tags]
+    additions = [x for x in new_tags if x not in old_tags]
+    print("-"*70)
+    print("-"*70)
+    print("TAG FACTORY")
+    print("old_tags: " + repr(old_tags))
+    print("new_tags: " + repr(new_tags))
+    print("additions: " + repr(additions))
+    print("removals: " + repr(removals))
+    print("-"*70)
+    print("-"*70)
+
+    for tag in additions:
+        row['tag'] = tag
+        common.db.insert("Tags", **row)
+
+    for tag in removals:
+        row['tag'] = tag
+        where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
+        common.db.delete("Tags", where=where, vars=row)
+
+
 def get_port_info(port):
     if isinstance(port, list):
         arg = "("

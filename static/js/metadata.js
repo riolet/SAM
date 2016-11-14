@@ -268,7 +268,7 @@ function present_quick_info(info) {
 
             //create a selection box
             /*
-            <div class="ui multiple selection dropdown">
+            <div class="ui multiple search selection dropdown">
               <input name="gender" value="default,default2" type="hidden">
               <i class="dropdown icon"></i>
               <div class="default text">Default</div>
@@ -308,7 +308,8 @@ function present_quick_info(info) {
 
             //Activate the selector
             $(div).dropdown({
-                allowAdditions: true
+                allowAdditions: true,
+                onChange: tag_change_callback
             });
 
             //display a span of inherited tags inline
@@ -423,6 +424,11 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
     console.log("\tText Status: " + textStatus);
 }
 
+function ajax_error(x, s, e) {
+    console.error("Server error: " + e);
+    console.log("\tText Status: " + s);
+}
+
 function hostname_edit_callback(event) {
     "use strict";
     if (event.keyCode === 13 || event.type === "blur") {
@@ -438,10 +444,7 @@ function hostname_edit_callback(event) {
                 url: "/nodeinfo",
                 type: "POST",
                 data: request,
-                error: function (x, s, e) {
-                    console.error("Failed to set name: " + e);
-                    console.log("\tText Status: " + s);
-                },
+                error: ajax_error,
                 success: function (r) {
                     if (r.hasOwnProperty("result")) {
                         console.log("Result: " + r.result);
@@ -452,6 +455,37 @@ function hostname_edit_callback(event) {
         return true;
     }
     return false;
+}
+
+function tag_change_callback(new_tags) {
+    var ip = getIP_Subnet().normal;
+    var request = {"node": ip, "tags": new_tags};
+    $.ajax({
+        url: "/nodeinfo",
+        type: "POST",
+        data: request,
+        error: ajax_error,
+        success: function (r) {
+            if (r.hasOwnProperty("result")) {
+                console.log("Result: " + r.result);
+            }
+        }
+    });
+
+}
+
+function POST_tags(ip, tags, callback) {
+    "use strict";
+
+    var request = {"address": minimizeIP(ip),
+            "tags": tags};
+    $.ajax({
+        url: "/details/" + part,
+        type: "GET",
+        data: request,
+        error: onNotLoadData,
+        success: GET_page_callback
+    });
 }
 
 function GET_data(ip, part, callback) {
