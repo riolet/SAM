@@ -1,5 +1,5 @@
 /*global
-    ports, window, filters, cookie_data, $, g_known_tags
+    ports, window, filters, cookie_data, $, g_known_tags, g_known_envs
 */
 
 /**
@@ -186,7 +186,6 @@
         parts.push(filters.private.markupInput("mask", "192.168.0.0/24", mask));
         return parts;
     };
-
     filters.private.createRoleFilter = function (cmp_ratio, enabled) {
         var comparator;
         var ratio;
@@ -220,7 +219,28 @@
         parts.push(filters.private.markupSpan(" (0 = client, 1 = server)"));
         return parts;
     };
+    filters.private.createEnvFilter = function (env, enabled) {
+        var filter;
+        var filterdiv = filters.private.markupBoilerplate(enabled);
+        var parts = filters.private.createEnvFilterRow(env);
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
+        filter = {};
+        filter.enabled = true;
+        filter.type = "env";
+        filter.env = env;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createEnvFilterRow = function (env) {
+        var parts = [];
+        parts.push(filters.private.markupSpan("Node environment is "));
+        parts.push(filters.private.markupSelection("env", "Choose environment",
+                g_known_envs.map(function (e) { return [e, e];}), env));
+        return parts;
+    };
     filters.private.createPortFilter = function (connection_port, enabled) {
         var connection;
         var port;
@@ -257,7 +277,8 @@
             ["3", "Doesn't receive connections from"]
         ], connection));
         parts.push(filters.private.markupSpan("another host via port"));
-        parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
+        //parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
+        parts.push(filters.private.markupInput("port", "443", port));
         return parts;
     };
     filters.private.createTagFilter = function (has_tags, enabled) {
@@ -603,6 +624,8 @@
                     } else {
                         summary += "no tag (" + filter.tags + ")";
                     }
+                } else if (filter.type === "env") {
+                    summary += "env: " + filter.env;
                 } else if (filter.type === "role") {
                     summary += filter.comparator + Math.round(filter.ratio * 100) + "% server";
                 }
@@ -668,12 +691,13 @@
 
     //Register filter types, and their constructors
     filters.private.types.connections = [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 3];
+    filters.private.types.env = [filters.private.createEnvFilter, filters.private.createEnvFilterRow, 1];
     filters.private.types.mask = [filters.private.createMaskFilter, filters.private.createMaskFilterRow, 1];
     filters.private.types.port = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
-    filters.private.types.subnet = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
+    filters.private.types.role = [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
     filters.private.types.tags = [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
     filters.private.types.target = [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];
-    filters.private.types.role = [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
+    filters.private.types.subnet = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
 
     filters.private.createFilterCreator = function () {
         //The add button

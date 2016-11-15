@@ -163,6 +163,19 @@ class TagsFilter(Filter):
         return ""
 
 
+class EnvFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "env", enabled)
+        self.params['env'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        env = self.params['env']
+        return "env = {0}".format(common.web.sqlquote(env))
+
+
 class RoleFilter(Filter):
     def __init__(self, enabled):
         Filter.__init__(self, "role", enabled)
@@ -180,7 +193,7 @@ class RoleFilter(Filter):
         return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter]
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter, EnvFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 
