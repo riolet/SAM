@@ -13,7 +13,7 @@ def test_blank():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == [u'_']
-    assert sorted(data['_'][0].keys()) == [u'alias', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
+    assert sorted(data['_'][0].keys()) == [u'alias', u'env', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
     assert [common.IPtoString(i['ipstart']) for i in data['_']] == \
            ['21.0.0.0', '53.0.0.0', '79.0.0.0', '110.0.0.0', '121.0.0.0', '136.0.0.0', '189.0.0.0', '208.0.0.0']
 
@@ -27,7 +27,7 @@ def test_8():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == ['79']
-    assert sorted(data['79'][0].keys()) == [u'alias', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
+    assert sorted(data['79'][0].keys()) == [u'alias', u'env', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
     assert [common.IPtoString(i['ipstart']) for i in data['79']] == \
            ['79.35.0.0', '79.80.0.0', '79.106.0.0', '79.119.0.0', '79.146.0.0', '79.179.0.0', '79.229.0.0']
 
@@ -41,7 +41,7 @@ def test_16():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == ['79.106']
-    assert sorted(data['79.106'][0].keys()) == [u'alias', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
+    assert sorted(data['79.106'][0].keys()) == [u'alias', u'env', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
     assert [common.IPtoString(i['ipstart']) for i in data['79.106']] == \
            ['79.106.151.0', '79.106.191.0', '79.106.226.0']
 
@@ -55,7 +55,7 @@ def test_24():
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
     assert data.keys() == ['79.106.151']
-    assert sorted(data['79.106.151'][0].keys()) == [u'alias', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
+    assert sorted(data['79.106.151'][0].keys()) == [u'alias', u'env', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
     assert [common.IPtoString(i['ipstart']) for i in data['79.106.151']] == \
            ['79.106.151.27', '79.106.151.50', '79.106.151.92']
 
