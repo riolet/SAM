@@ -326,16 +326,98 @@ def get_details_children(ip_range, subnet):
             WHERE ipstart = ipend
             GROUP BY low, high
             ) AS `sn`
-            ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
+        ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
         WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
             AND `n`.subnet BETWEEN $s_start AND $s_end;
         """
     return list(common.db.query(query, vars=qvars))
 
 
+def get_tags(address):
+    ipstart, ipend = common.determine_range_string(address)
+    WHERE = 'ipstart <= $start AND ipend >= $end'
+    qvars = {'start': ipstart, 'end': ipend}
+    data = common.db.select("Tags", vars=qvars, where=WHERE)
+    parent_tags = []
+    tags = []
+    for row in data:
+        if row.ipend == ipend and row.ipstart == ipstart:
+            tags.append(row.tag)
+        else:
+            parent_tags.append(row.tag)
+    return {"p_tags": parent_tags, "tags": tags}
+
+
+def get_tag_list():
+    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag") if row.tag]
+
+
+def set_tags(address, new_tags):
+    table = 'Tags'
+    what = "ipstart, ipend, tag"
+    r = common.determine_range_string(address)
+    row = {"ipstart": r[0], "ipend": r[1]}
+    where = "ipstart = $ipstart AND ipend = $ipend"
+
+    existing = list(common.db.select(table, vars=row, what=what, where=where))
+    old_tags = [x.tag for x in existing]
+    removals = [x for x in old_tags if x not in new_tags]
+    additions = [x for x in new_tags if x not in old_tags]
+
+    # print("-"*70, '\n', '-'*70)
+    # print("TAG FACTORY")
+    # print("old_tags: " + repr(old_tags))
+    # print("new_tags: " + repr(new_tags))
+    # print("additions: " + repr(additions))
+    # print("removals: " + repr(removals))
+    # print("-"*70, '\n', '-'*70)
+
+    for tag in additions:
+        row['tag'] = tag
+        common.db.insert("Tags", **row)
+
+    for tag in removals:
+        row['tag'] = tag
+        where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
+        common.db.delete("Tags", where=where, vars=row)
+
+
+def get_env(address):
+    ipstart, ipend = common.determine_range_string(address)
+    WHERE = 'ipstart <= $start AND ipend >= $end'
+    qvars = {'start': ipstart, 'end': ipend}
+    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
+    parent_env = "production"
+    env = "inherit"
+    nearest_distance = -1
+    for row in data:
+        if row.ipend == ipend and row.ipstart == ipstart:
+            if row.env:
+                env = row.env
+        else:
+            dist = row.ipend - ipend + ipstart - row.ipstart
+            if nearest_distance == -1 or dist < nearest_distance:
+                if row.env and row.env != "inherit":
+                    parent_env = row.env
+    return {"env": env, "p_env": parent_env}
+
+
+def get_env_list():
+    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
+    envs.add("production")
+    envs.add("inherit")
+    envs.add("dev")
+    return envs
+
+
+def set_env(address, env):
+    r = common.determine_range_string(address)
+    where = {"ipstart": r[0], "ipend": r[1]}
+    common.db.update('Nodes', where, env=env)
+
+
 def get_node_info(address):
-    ips = map(int, address.split("."))
-    ipstart, ipend, _ = common.determine_range(*ips)
+    ipstart, ipend = common.determine_range_string(address)
     query = """
         SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
             , COALESCE(n.hostname, '') AS 'hostname'
@@ -346,6 +428,7 @@ def get_node_info(address):
             , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
             , COALESCE(l_in.total_in, 0) AS 'total_in'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
+            , children.endpoints AS 'endpoints'
             , t.seconds
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
@@ -373,6 +456,13 @@ def get_node_info(address):
             GROUP BY 's1'
         ) AS l_in
             ON n.ipstart = l_in.s1
+        LEFT JOIN (
+            SELECT $start AS 's1'
+            , COUNT(ipstart) AS 'endpoints'
+            FROM Nodes
+            WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
+        ) AS children
+            ON n.ipstart = children.s1
         LEFT JOIN (
             SELECT $start AS 's1'
                 , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
@@ -474,29 +564,60 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if HAVING:
         HAVING = "HAVING " + HAVING
 
-    cols = ['ipstart', 'alias', 'conn_out', 'conn_in']
+    cols = ['nodes.ipstart', 'nodes.alias', 'conn_out', 'conn_in']
     ORDERBY = ""
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
+    # note: group concat max length is default at 1024.
+    # if info is lost, try:
+    # SET group_concat_max_len = 2048
     query = """
-SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
-    , COALESCE(alias, '') AS 'alias'
-    , COALESCE((SELECT SUM(links)
-        FROM LinksOut AS l_out
-        WHERE l_out.src_start = nodes.ipstart
-          AND l_out.src_end = nodes.ipend
-     ),0) AS 'conn_out'
-    , COALESCE((SELECT SUM(links)
-        FROM LinksIn AS l_in
-        WHERE l_in.dst_start = nodes.ipstart
-          AND l_in.dst_end = nodes.ipend
-     ),0) AS 'conn_in'
-FROM Nodes AS nodes
-{WHERE}
-{HAVING}
-{ORDER}
-LIMIT {START},{RANGE};""".format(
+SELECT CONCAT(decodeIP(old.ipstart), CONCAT('/', old.subnet)) AS 'address'
+    , old.alias
+    , old.env
+    , old.conn_out
+    , old.conn_in
+    , t.tags
+    , GROUP_CONCAT(pt.tag SEPARATOR ', ') AS 'parent_tags'
+FROM (
+    SELECT nodes.ipstart
+        , nodes.ipend
+        , nodes.subnet
+        , COALESCE((
+            SELECT env
+            FROM Nodes nz
+            WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
+            ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
+            LIMIT 1
+        ), 'production') AS "env"
+        , COALESCE(nodes.alias, '') AS 'alias'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart
+              AND l_out.src_end = nodes.ipend
+         ),0) AS 'conn_out'
+        , COALESCE((SELECT SUM(links)
+            FROM LinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart
+              AND l_in.dst_end = nodes.ipend
+         ),0) AS 'conn_in'
+    FROM Nodes AS nodes
+    {WHERE}
+    {HAVING}
+    {ORDER}
+    LIMIT {START},{RANGE}
+) AS `old`
+LEFT JOIN (
+    SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
+    FROM Tags
+    GROUP BY ipstart, ipend
+) AS t
+    ON t.ipstart = old.ipstart AND t.ipend = old.ipend
+LEFT JOIN Tags AS pt
+    ON (pt.ipstart <= old.ipstart AND pt.ipend > old.ipend) OR (pt.ipstart < old.ipstart AND pt.ipend >= old.ipend)
+GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in, t.tags;
+    """.format(
         WHERE=WHERE,
         HAVING=HAVING,
         ORDER=ORDERBY,

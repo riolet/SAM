@@ -11,10 +11,12 @@ CREATE TABLE IF NOT EXISTS Nodes
 ,ipend             INT UNSIGNED NOT NULL
 ,subnet            INT NOT NULL
 ,alias             VARCHAR(96)
+,env               VARCHAR(64)
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
 ,CONSTRAINT PKNodes PRIMARY KEY (ipstart, ipend)
+,INDEX nenv (env)
 );
 
 -- Create the Links table
@@ -51,4 +53,13 @@ CREATE TABLE IF NOT EXISTS LinksOut
 ,CONSTRAINT PKLinksOut PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
 ,CONSTRAINT FKLinksOutSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
 ,CONSTRAINT FKLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
+);
+
+-- Create the table of tags
+CREATE TABLE IF NOT EXISTS Tags
+(ipstart           INT UNSIGNED NOT NULL
+,ipend             INT UNSIGNED NOT NULL
+,tag               VARCHAR(32)
+,CONSTRAINT PKTags PRIMARY KEY (ipstart, ipend, tag)
+,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES Nodes (ipstart, ipend)
 );

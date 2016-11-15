@@ -78,6 +78,8 @@ class Details:
         info['address'] = self.nice_ip_address()
         
         if node_info:
+            tags = dbaccess.get_tags(self.ip_string)
+            envs = dbaccess.get_env(self.ip_string)
             #node_info has:
             # hostname
             # unique_out_ip
@@ -87,8 +89,11 @@ class Details:
             # unique_in_conn
             # total_in
             # ports_used
+            # endpoints
             # seconds
             info['name'] = node_info.hostname
+            info['tags'] = tags
+            info['envs'] = envs
             info['in'] = {}
             info['in']['total'] = node_info.total_in
             info['in']['u_ip'] = node_info.unique_in_ip
@@ -101,6 +106,7 @@ class Details:
             info['out']['seconds'] = node_info.seconds
             info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
             info['ports'] = node_info.ports_used
+            info['endpoints'] = int(node_info.endpoints)
         else:
             info['error'] = 'No host found this address'
         return info

@@ -153,10 +153,27 @@ class TagsFilter(Filter):
         self.params['tags'] = ""
 
     def where(self):
-        return ""
+        tags = str(self.params['tags']).split(",")
+        phrase = "EXISTS (SELECT 1 FROM Tags WHERE tag={0} AND Tags.ipstart <= nodes.ipstart AND Tags.ipend >= nodes.ipend)"
+        if self.params['has'] != '1':
+            phrase = "NOT " + phrase
+        return "\n AND ".join([phrase.format(common.web.sqlquote(tag)) for tag in tags])
 
     def having(self):
         return ""
+
+
+class EnvFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "env", enabled)
+        self.params['env'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        env = self.params['env']
+        return "env = {0}".format(common.web.sqlquote(env))
 
 
 class RoleFilter(Filter):
@@ -176,7 +193,7 @@ class RoleFilter(Filter):
         return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter]
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter, EnvFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 

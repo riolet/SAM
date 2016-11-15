@@ -1,3 +1,7 @@
+/*global
+    ports, window, filters, cookie_data, $, g_known_tags, g_known_envs
+*/
+
 /**
  *  Class Filters:
  *  public:
@@ -40,12 +44,12 @@
  *      extractRowValues(head)  //reads the HTML for a filter row to get the input values provided by the user.
  *
  *      updateSummary()  //the short filter text when the filter panel isn't expanded.
- *      createFilterCreator()  //the "new filter" row with the '+' button.
+ *      createFilterCreator()  //the "new filter" row with the "+" button.
  *
  */
 
 
-;(function () {
+(function () {
     "use strict";
     var filters = {};
 
@@ -125,7 +129,7 @@
         return filters.private.encodeFilters(filterArray);
     };
     filters.setFilters = function (filterString) {
-        if (filterString == "") {
+        if (filterString === "") {
             return;
         }
         filters.filters = filters.private.decodeFilters(filterString);
@@ -139,7 +143,9 @@
         var filter;
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createSubnetFilterRow(subnet);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         filter = {};
         filter.enabled = true;
@@ -152,10 +158,10 @@
         var parts = [];
         parts.push(filters.private.markupSpan("Return results from subnet "));
         parts.push(filters.private.markupSelection("subnet", "Choose subnet...", [
-            ['8', '/8'],
-            ['16', '/16'],
-            ['24', '/24'],
-            ['32', '/32']
+            ["8", "/8"],
+            ["16", "/16"],
+            ["24", "/24"],
+            ["32", "/32"]
         ], subnet));
         return parts;
     };
@@ -163,7 +169,9 @@
         var filter;
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createMaskFilterRow(mask);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         filter = {};
         filter.enabled = true;
@@ -178,9 +186,9 @@
         parts.push(filters.private.markupInput("mask", "192.168.0.0/24", mask));
         return parts;
     };
-
     filters.private.createRoleFilter = function (cmp_ratio, enabled) {
-        var comparator, ratio;
+        var comparator;
+        var ratio;
         if (cmp_ratio) {
             comparator = cmp_ratio[0];
             ratio = cmp_ratio[1];
@@ -188,7 +196,9 @@
         var filter;
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createRoleFilterRow(comparator, ratio);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         filter = {};
         filter.enabled = true;
@@ -202,23 +212,47 @@
         var parts = [];
         parts.push(filters.private.markupSpan("Client/Server ratio is "));
         parts.push(filters.private.markupSelection("comparator", "more/less than", [
-            ['>', 'more than'],
-            ['<', 'less than']
+            [">", "more than"],
+            ["<", "less than"]
         ], comparator));
         parts.push(filters.private.markupInput("ratio", "0.5", ratio));
         parts.push(filters.private.markupSpan(" (0 = client, 1 = server)"));
         return parts;
     };
+    filters.private.createEnvFilter = function (env, enabled) {
+        var filter;
+        var filterdiv = filters.private.markupBoilerplate(enabled);
+        var parts = filters.private.createEnvFilterRow(env);
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
+        filter = {};
+        filter.enabled = true;
+        filter.type = "env";
+        filter.env = env;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createEnvFilterRow = function (env) {
+        var parts = [];
+        parts.push(filters.private.markupSpan("Node environment is "));
+        parts.push(filters.private.markupSelection("env", "Choose environment",
+                g_known_envs.map(function (e) { return [e, e];}), env));
+        return parts;
+    };
     filters.private.createPortFilter = function (connection_port, enabled) {
-        var connection, port;
+        var connection;
+        var port;
         if (connection_port) {
             connection = connection_port[0];
             port = connection_port[1];
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createPortFilterRow(connection, port);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         var filter = {};
         filter.enabled = true;
@@ -237,17 +271,19 @@
         //doesn't receive connections via port
 
         parts.push(filters.private.markupSelection("connection", "Filter type...", [
-            ['0', 'Connects to'],
-            ['1', "Doesn't connect to"],
-            ['2', 'Receives connections from'],
-            ['3', "Doesn't receive connections from"],
+            ["0", "Connects to"],
+            ["1", "Doesn't connect to"],
+            ["2", "Receives connections from"],
+            ["3", "Doesn't receive connections from"]
         ], connection));
         parts.push(filters.private.markupSpan("another host via port"));
-        parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
+        //parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
+        parts.push(filters.private.markupInput("port", "443", port));
         return parts;
     };
     filters.private.createTagFilter = function (has_tags, enabled) {
-        var has, tags;
+        var has;
+        var tags;
         if (has_tags) {
             has = has_tags[0];
             tags = has_tags[1];
@@ -256,7 +292,9 @@
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createTagFilterRow(has, tags);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         var filter = {};
         filter.enabled = true;
@@ -269,25 +307,27 @@
     filters.private.createTagFilterRow = function (has, tags) {
         var parts = [];
         parts.push(filters.private.markupSpan("host "));
-        parts.push(filters.private.markupSelection("has", "has/n't", [
+        parts.push(filters.private.markupSelection("has", "has/not", [
             ["1", "has"],
             ["0", "doesn't have"]
         ], has));
         parts.push(filters.private.markupSpan(" tags: "));
-        parts.push(filters.private.markupTags("tags", "Choose tag(s)"
-            , known_tags.map(function (tag) { return [tag,tag]; })
-            , tags));
+        parts.push(filters.private.markupTags("tags", "Choose tag(s)",
+                g_known_tags.map(function (tag) { return [tag, tag];}), tags));
         return parts;
     };
     filters.private.createTargetFilter = function (target_to, enabled) {
-        var target, to;
+        var target;
+        var to;
         if (target_to) {
             target = target_to[0];
             to = target_to[1];
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createTargetFilterRow(to, target);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         var filter = {};
         filter.enabled = true;
@@ -311,7 +351,9 @@
         return parts;
     };
     filters.private.createConnectionsFilter = function (cmp_dir_limit, enabled) {
-        var comparator, direction, limit;
+        var comparator;
+        var direction;
+        var limit;
         if (cmp_dir_limit) {
             comparator = cmp_dir_limit[0];
             direction = cmp_dir_limit[1];
@@ -319,7 +361,9 @@
         }
         var filterdiv = filters.private.markupBoilerplate(enabled);
         var parts = filters.private.createConnectionsFilterRow(comparator, direction, limit);
-        parts.forEach(function (part) { filterdiv.appendChild(part); });
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
 
         var filter = {};
         filter.enabled = true;
@@ -334,14 +378,14 @@
         var parts = [];
         parts.push(filters.private.markupSpan("Has "));
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
-            ['>', 'more than'],
-            ['<', 'fewer than'],
-            ['=', 'exactly']
+            [">", "more than"],
+            ["<", "fewer than"],
+            ["=", "exactly"]
         ], comparator));
         parts.push(filters.private.markupInput("limit", "a number of", limit));
         parts.push(filters.private.markupSelection("direction", "in/outbound", [
-            ['i', 'inbound'],
-            ['o', 'outbound']
+            ["i", "inbound"],
+            ["o", "outbound"]
         ], direction));
         parts.push(filters.private.markupSpan("connections."));
         return parts;
@@ -405,7 +449,7 @@
         options.forEach(function (item) {
             menuitem = document.createElement("div");
             menuitem.className = "item";
-            menuitem.dataset['value'] = item[0];
+            menuitem.dataset.value = item[0];
             menuitem.appendChild(document.createTextNode(item[1]));
             menu.appendChild(menuitem);
         });
@@ -420,7 +464,7 @@
 
         //Transform to semantic-ui styled selection box
         if (selected) {
-            $(selectionDiv).dropdown('set exactly', selected);
+            $(selectionDiv).dropdown("set exactly", selected);
         } else {
             $(selectionDiv).dropdown();
         }
@@ -487,7 +531,7 @@
             $(row).remove();
         }
     };
-    filters.private.updateEvent = function(e) {
+    filters.private.updateEvent = function (e) {
         var input = e.target;
         var newValue = input.value;
         if (e.target.parentElement.classList.contains("checkbox")) {
@@ -503,14 +547,14 @@
             filters.private.updateSummary();
         }
     };
-    filters.private.getRowIndex = function(rowHTML) {
+    filters.private.getRowIndex = function (rowHTML) {
         var i = filters.filters.length - 1;
         while (i >= 0 && filters.filters[i].html !== rowHTML) {
             i -= 1;
         }
         return i;
     };
-    filters.private.extractRowValues = function(head) {
+    filters.private.extractRowValues = function (head) {
         var params = [];
         var walker = head.nextElementSibling;
         var inputs;
@@ -525,15 +569,21 @@
 
         //sort the values by lexical order of keys
         params.sort(function (a, b) {
-            if (a[0] < b[0]) return -1;
-            if (b[0] < a[0]) return 1;
+            if (a[0] < b[0]) {
+                return -1;
+            }
+            if (b[0] < a[0]) {
+                return 1;
+            }
             return 0;
         });
         //return just the values
-        return params.map(function (e) { return e[1]});
+        return params.map(function (e) {
+            return e[1];
+        });
     };
 
-    filters.private.updateSummary = function() {
+    filters.private.updateSummary = function () {
         //build summary
         var summary = "Filter: ";
         if (filters.filters.length > 0) {
@@ -541,7 +591,7 @@
                 if (filter.type === "subnet") {
                     summary += "subnet /" + filter.subnet;
                 } else if (filter.type === "mask") {
-                    summary += "within " + filter.mask
+                    summary += "within " + filter.mask;
                 } else if (filter.type === "port") {
                     if (filter.connection === "0") {
                         summary += "conn to (" + filter.port + ")";
@@ -574,8 +624,10 @@
                     } else {
                         summary += "no tag (" + filter.tags + ")";
                     }
+                } else if (filter.type === "env") {
+                    summary += "env: " + filter.env;
                 } else if (filter.type === "role") {
-                    summary += filter.comparator + Math.round(filter.ratio * 100) + "% server"
+                    summary += filter.comparator + Math.round(filter.ratio * 100) + "% server";
                 }
                 summary += ", ";
             });
@@ -591,7 +643,7 @@
         header.appendChild(icon);
         header.appendChild(document.createTextNode(summary));
     };
-    filters.private.encodeFilters = function(filterArray) {
+    filters.private.encodeFilters = function (filterArray) {
         var filterString = "";
         var f_s;
         filterArray.forEach(function (filter) {
@@ -611,14 +663,14 @@
             //Save other data alphabetically
             var keys = Object.keys(filter);
             keys.sort();
-            keys.forEach(function(k) {
+            keys.forEach(function (k) {
                 f_s += ";" + filter[k];
             });
             filterString += "|" + f_s;
         });
         return filterString.substr(1);
     };
-    filters.private.decodeFilters = function(filterGET) {
+    filters.private.decodeFilters = function (filterGET) {
         var decodedFilters = [];
 
         //split by &
@@ -626,7 +678,7 @@
         filterList.forEach(function (filterString) {
             // Should I decodeURIComponent()?
             // split by |
-            var filterArgs = filterString.split(';');
+            var filterArgs = filterString.split(";");
             var typeIndex = filterArgs.shift();
             var enabled = filterArgs.shift();
             enabled = (enabled === "1");
@@ -638,13 +690,14 @@
     };
 
     //Register filter types, and their constructors
-    filters.private.types['connections']= [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 3];
-    filters.private.types['mask'] = [filters.private.createMaskFilter, filters.private.createMaskFilterRow, 1];
-    filters.private.types['port'] = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
-    filters.private.types['subnet'] = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
-    filters.private.types['tags']= [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
-    filters.private.types['target']= [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];
-    filters.private.types['role']= [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
+    filters.private.types.connections = [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 3];
+    filters.private.types.env = [filters.private.createEnvFilter, filters.private.createEnvFilterRow, 1];
+    filters.private.types.mask = [filters.private.createMaskFilter, filters.private.createMaskFilterRow, 1];
+    filters.private.types.port = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
+    filters.private.types.role = [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
+    filters.private.types.tags = [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
+    filters.private.types.target = [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];
+    filters.private.types.subnet = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
 
     filters.private.createFilterCreator = function () {
         //The add button
@@ -656,7 +709,9 @@
         addButton.appendChild(addIcon);
 
         //The type selector
-        var typeOptions = Object.keys(filters.private.types).map(function (x) { return [x, x]; });
+        var typeOptions = Object.keys(filters.private.types).map(function (x) {
+            return [x, x];
+        });
         var typeSelector = filters.private.markupSelection("type", "Filter Type", typeOptions);
         typeSelector.id = "addFilterType";
 
@@ -671,10 +726,12 @@
             action: "activate",
             onChange: function (type) {
                 while (typeSelector.nextElementSibling !== null) {
-                    filterdiv.removeChild(typeSelector.nextElementSibling)
+                    filterdiv.removeChild(typeSelector.nextElementSibling);
                 }
                 var filterParts = filters.private.types[type][1]();
-                filterParts.forEach(function (part) { filterdiv.appendChild(part); });
+                filterParts.forEach(function (part) {
+                    filterdiv.appendChild(part);
+                });
             }
         });
 
@@ -683,4 +740,4 @@
 
     // Export filters instance to global scope
     window.filters = filters;
-})();
+}());
