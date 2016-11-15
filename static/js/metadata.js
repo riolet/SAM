@@ -218,7 +218,7 @@ function build_pagination(page, page_size, component, total) {
 function build_label(text, color, disabled) {
     "use strict";
     var label = document.createElement("SPAN");
-    label.className = "ui " + color + " label";
+    label.className = "ui " + color + " large label";
     if (disabled) {
         label.classList.add("disabled");
     }
