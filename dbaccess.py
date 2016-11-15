@@ -584,7 +584,13 @@ FROM (
     SELECT nodes.ipstart
         , nodes.ipend
         , nodes.subnet
-        , COALESCE(nodes.env, "production") AS "env"
+        , COALESCE((
+            SELECT env
+            FROM Nodes nz
+            WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
+            ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
+            LIMIT 1
+        ), 'production') AS "env"
         , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((SELECT SUM(links)
             FROM LinksOut AS l_out
