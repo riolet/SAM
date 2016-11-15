@@ -1,9 +1,12 @@
-$def with (ip, tags)
+$def with (ip, tags, envs)
 <script>
   g_initial_ip = "$ip";
   var g_known_tags = [];
   $for tag in tags:
     g_known_tags.push("$tag");
+  var g_known_envs = [];
+  $for env in envs:
+    g_known_envs.push("$env");
 </script>
 <div class="ui container">
   <h3 class="ui center aligned header">

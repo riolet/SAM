@@ -46,7 +46,7 @@ class Columns(object):
             'environment': {
                 'nice_name': "Environment",
                 'active': 'environment' in kwargs,
-                'get': lambda x: '-'},
+                'get': lambda x: x.env},
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
@@ -107,6 +107,9 @@ class Table(object):
 
     def tags(self):
         return dbaccess.get_tag_list()
+
+    def envs(self):
+        return dbaccess.get_env_list()
 
     def next_page(self, rows, page, page_size):
         if len(rows) > page_size:
@@ -169,6 +172,7 @@ class Table(object):
         order = self.order(GET_data)
         rows = self.rows(filters, page, page_size, order)
         tags = self.tags()
+        envs = self.envs()
 
         nextPage = self.next_page(rows, page, page_size)
         prevPage = self.prev_page(page)
@@ -179,5 +183,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, spread, prevPage, nextPage)) \
+               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, envs, spread, prevPage, nextPage)) \
                + str(common.render._tail())

@@ -1,4 +1,4 @@
-$def with (columns, sorting, rows, tags, spread, prev, next)
+$def with (columns, sorting, rows, tags, envs, spread, prev, next)
 <div class="ui">
 <!--
 ----------------- Filters -----------------
@@ -101,7 +101,10 @@ $def with (columns, sorting, rows, tags, spread, prev, next)
 ----------------- Javascript transcription -----------------
 -->
 <script>
-  var known_tags = [];
+  var g_known_tags = [];
   $for tag in tags:
-    known_tags.push("$tag");
+    g_known_tags.push("$tag");
+  var g_known_envs = [];
+  $for env in envs:
+    g_known_envs.push("$env");
 </script>

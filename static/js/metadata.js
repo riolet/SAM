@@ -1,5 +1,5 @@
 /*global
-    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip, g_known_tags
+    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip, g_known_tags, g_known_envs
 */
 var g_typing_timer = null;
 var g_running_requests = [];
@@ -319,11 +319,52 @@ function present_quick_info(info) {
             //attach the row to the table
             target.appendChild(buildKeyValueRow("Tags", tag_div));
         }
+        if (info.hasOwnProperty("envs")) {
+            tag_div = document.createElement("TD");
+
+            div = document.createElement("DIV");
+            div.className = "ui search selection dropdown";
+            input = document.createElement("INPUT");
+            input.name = "env";
+            input.value = info.envs.env;
+            input.type = "hidden";
+            div.appendChild(input);
+            i = document.createElement("I");
+            i.className = "dropdown icon";
+            div.appendChild(i);
+            key = document.createElement("DIV");
+            key.className = "default text";
+            key.appendChild(document.createTextNode("environment"));
+            div.appendChild(key);
+            values = document.createElement("DIV");
+            values.className = "menu";
+            g_known_envs.forEach(function (tag) {
+                key = document.createElement("DIV");
+                key.className = "item";
+                key.dataset.value = tag;
+                if (tag === "inherit") {
+                    key.appendChild(document.createTextNode(tag + " (" + info.envs.p_env + ")"));
+                } else {
+                    key.appendChild(document.createTextNode(tag));
+                }
+                values.appendChild(key);
+            });
+            div.appendChild(values);
+            tag_div.appendChild(div);
+
+            //Activate the selector
+            $(div).dropdown({
+                allowAdditions: true,
+                onChange: env_change_callback
+            });
+
+            target.appendChild(buildKeyValueRow("Environment", tag_div));
+        }
         if (info.hasOwnProperty("in")) {
             key = "Inbound connections";
-            values = [info.in.total + " total connections",
-                    info.in.u_ip + " unique source IPs",
+            values = [info.in.u_ip + " unique source IPs",
                     info.in.u_conn + " unique connections (source and port)",
+                    //info.in.total + " total connections",
                     parseFloat(info.in.total / info.in.seconds).toFixed(3) + " connections per second"];
             buildKeyMultiValueRows(key, values).forEach(function (row) {
                 target.appendChild(row);
@@ -331,9 +372,9 @@ function present_quick_info(info) {
         }
         if (info.hasOwnProperty("out")) {
             key = "Outbound connections";
-            values = [info.out.total + " total connections",
-                    info.out.u_ip + " unique destination IPs",
+            values = [info.out.u_ip + " unique destination IPs",
                     info.out.u_conn + " unique connections (destination and port)",
+                    //info.out.total + " total connections",
                     parseFloat(info.out.total / info.out.seconds).toFixed(3) + " connections per second"];
             buildKeyMultiValueRows(key, values).forEach(function (row) {
                 target.appendChild(row);
@@ -471,7 +512,25 @@ function tag_change_callback(new_tags) {
             }
         }
     });
+}
 
+function env_change_callback(new_env) {
+    var ip = getIP_Subnet().normal;
+    if (new_env === "") {
+        new_env = "inherit";
+    }
+    var request = {"node": ip, "env": new_env};
+    $.ajax({
+        url: "/nodeinfo",
+        type: "POST",
+        data: request,
+        error: ajax_error,
+        success: function (r) {
+            if (r.hasOwnProperty("result")) {
+                console.log("Result: " + r.result);
+            }
+        }
+    });
 }
 
 function POST_tags(ip, tags, callback) {

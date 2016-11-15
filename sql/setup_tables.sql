@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS Nodes
 ,ipend             INT UNSIGNED NOT NULL
 ,subnet            INT NOT NULL
 ,alias             VARCHAR(96)
+,env               VARCHAR(64)
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
@@ -57,7 +58,7 @@ CREATE TABLE IF NOT EXISTS LinksOut
 CREATE TABLE IF NOT EXISTS Tags
 (ipstart           INT UNSIGNED NOT NULL
 ,ipend             INT UNSIGNED NOT NULL
-,tag               VARCHAR(16)
+,tag               VARCHAR(32)
 ,CONSTRAINT PKTags PRIMARY KEY (ipstart, ipend, tag)
 ,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES Nodes (ipstart, ipend)
 );

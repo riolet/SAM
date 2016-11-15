@@ -1,5 +1,5 @@
 /*global
-    ports, window, filters, cookie_data, $, known_tags
+    ports, window, filters, cookie_data, $, g_known_tags
 */
 
 /**
@@ -292,7 +292,7 @@
         ], has));
         parts.push(filters.private.markupSpan(" tags: "));
         parts.push(filters.private.markupTags("tags", "Choose tag(s)",
-                known_tags.map(function (tag) { return [tag, tag];}), tags));
+                g_known_tags.map(function (tag) { return [tag, tag];}), tags));
         return parts;
     };
     filters.private.createTargetFilter = function (target_to, enabled) {

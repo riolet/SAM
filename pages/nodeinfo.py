@@ -48,4 +48,10 @@ class Nodeinfo:
             tags = [i for i in tags if i]
             dbaccess.set_tags(get_data.node, tags)
 
+        if 'env' in get_data:
+            env = get_data.env
+            if env == "":
+                env = None
+            dbaccess.set_env(get_data.node, env)
+
         return json.dumps({"code": 0, "message": ""})

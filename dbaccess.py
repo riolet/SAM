@@ -347,8 +347,74 @@ def get_tags(address):
             parent_tags.append(row.tag)
     return {"p_tags": parent_tags, "tags": tags}
 
+
 def get_tag_list():
-    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag")]
+    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag") if row.tag]
+
+
+def set_tags(address, new_tags):
+    table = 'Tags'
+    what = "ipstart, ipend, tag"
+    r = common.determine_range_string(address)
+    row = {"ipstart": r[0], "ipend": r[1]}
+    where = "ipstart = $ipstart AND ipend = $ipend"
+
+    existing = list(common.db.select(table, vars=row, what=what, where=where))
+    old_tags = [x.tag for x in existing]
+    removals = [x for x in old_tags if x not in new_tags]
+    additions = [x for x in new_tags if x not in old_tags]
+
+    # print("-"*70, '\n', '-'*70)
+    # print("TAG FACTORY")
+    # print("old_tags: " + repr(old_tags))
+    # print("new_tags: " + repr(new_tags))
+    # print("additions: " + repr(additions))
+    # print("removals: " + repr(removals))
+    # print("-"*70, '\n', '-'*70)
+
+    for tag in additions:
+        row['tag'] = tag
+        common.db.insert("Tags", **row)
+
+    for tag in removals:
+        row['tag'] = tag
+        where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
+        common.db.delete("Tags", where=where, vars=row)
+
+
+def get_env(address):
+    ipstart, ipend = common.determine_range_string(address)
+    WHERE = 'ipstart <= $start AND ipend >= $end'
+    qvars = {'start': ipstart, 'end': ipend}
+    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
+    parent_env = "production"
+    env = "inherit"
+    nearest_distance = -1
+    for row in data:
+        if row.ipend == ipend and row.ipstart == ipstart:
+            if row.env:
+                env = row.env
+        else:
+            dist = row.ipend - ipend + ipstart - row.ipstart
+            if nearest_distance == -1 or dist < nearest_distance:
+                if row.env and row.env != "inherit":
+                    parent_env = row.env
+    return {"env": env, "p_env": parent_env}
+
+
+def get_env_list():
+    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
+    envs.add("production")
+    envs.add("inherit")
+    envs.add("dev")
+    return envs
+
+
+def set_env(address, env):
+    r = common.determine_range_string(address)
+    where = {"ipstart": r[0], "ipend": r[1]}
+    common.db.update('Nodes', where, env=env)
+
 
 def get_node_info(address):
     ipstart, ipend = common.determine_range_string(address)
@@ -424,37 +490,6 @@ def set_node_info(address, data):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
     common.db.update('Nodes', where, **data)
-
-
-def set_tags(address, new_tags):
-    table = 'Tags'
-    what = "ipstart, ipend, tag"
-    r = common.determine_range_string(address)
-    row = {"ipstart": r[0], "ipend": r[1]}
-    where = "ipstart = $ipstart AND ipend = $ipend"
-
-    existing = list(common.db.select(table, vars=row, what=what, where=where))
-    old_tags = [x.tag for x in existing]
-    removals = [x for x in old_tags if x not in new_tags]
-    additions = [x for x in new_tags if x not in old_tags]
-    print("-"*70)
-    print("-"*70)
-    print("TAG FACTORY")
-    print("old_tags: " + repr(old_tags))
-    print("new_tags: " + repr(new_tags))
-    print("additions: " + repr(additions))
-    print("removals: " + repr(removals))
-    print("-"*70)
-    print("-"*70)
-
-    for tag in additions:
-        row['tag'] = tag
-        common.db.insert("Tags", **row)
-
-    for tag in removals:
-        row['tag'] = tag
-        where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
-        common.db.delete("Tags", where=where, vars=row)
 
 
 def get_port_info(port):
@@ -537,41 +572,10 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     # note: group concat max length is default at 1024.
     # if info is lost, try:
     # SET group_concat_max_len = 2048
-
-    query = """
-SELECT CONCAT(decodeIP(nodes.ipstart), CONCAT('/', subnet)) AS 'address'
-    , COALESCE(nodes.alias, '') AS 'alias'
-    , COALESCE((SELECT SUM(links)
-        FROM LinksOut AS l_out
-        WHERE l_out.src_start = nodes.ipstart
-          AND l_out.src_end = nodes.ipend
-     ),0) AS 'conn_out'
-    , COALESCE((SELECT SUM(links)
-        FROM LinksIn AS l_in
-        WHERE l_in.dst_start = nodes.ipstart
-          AND l_in.dst_end = nodes.ipend
-     ),0) AS 'conn_in'
-     , GROUP_CONCAT(t.tag SEPARATOR ", ") AS "tags"
-     , GROUP_CONCAT(pt.tag SEPARATOR ", ") AS "parent_tags"
-FROM Nodes AS nodes
-JOIN Tags AS t
-    ON t.ipstart = nodes.ipstart AND t.ipend = nodes.ipend
-JOIN Tags AS pt
-    ON pt.ipstart < nodes.ipstart AND pt.ipend > nodes.ipend
-{WHERE}
-GROUP BY nodes.ipstart, nodes.subnet, nodes.alias, conn_out, conn_in
-{HAVING}
-{ORDER}
-LIMIT {START},{RANGE};""".format(
-        WHERE=WHERE,
-        HAVING=HAVING,
-        ORDER=ORDERBY,
-        START=page * page_size,
-        RANGE=page_size + 1)
-
     query = """
 SELECT CONCAT(decodeIP(old.ipstart), CONCAT('/', old.subnet)) AS 'address'
     , old.alias
+    , old.env
     , old.conn_out
     , old.conn_in
     , t.tags
@@ -580,6 +584,7 @@ FROM (
     SELECT nodes.ipstart
         , nodes.ipend
         , nodes.subnet
+        , COALESCE(nodes.env, "production") AS "env"
         , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((SELECT SUM(links)
             FROM LinksOut AS l_out
@@ -604,8 +609,8 @@ LEFT JOIN (
 ) AS t
     ON t.ipstart = old.ipstart AND t.ipend = old.ipend
 LEFT JOIN Tags AS pt
-    ON pt.ipstart < old.ipstart AND pt.ipend > old.ipend
-GROUP BY old.ipstart, old.subnet, old.alias, old.conn_out, old.conn_in, t.tags;
+    ON (pt.ipstart <= old.ipstart AND pt.ipend > old.ipend) OR (pt.ipstart < old.ipstart AND pt.ipend >= old.ipend)
+GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in, t.tags;
     """.format(
         WHERE=WHERE,
         HAVING=HAVING,

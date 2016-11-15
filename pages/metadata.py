@@ -20,5 +20,5 @@ class Metadata(object):
                                                 "/static/js/map_data.js",
                                                 "/static/js/tablesort.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.metadata(ip, dbaccess.get_tag_list())) \
+               + str(common.render.metadata(ip, dbaccess.get_tag_list(), dbaccess.get_env_list())) \
                + str(common.render._tail())
