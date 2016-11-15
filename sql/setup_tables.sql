@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS Nodes
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
 ,CONSTRAINT PKNodes PRIMARY KEY (ipstart, ipend)
+,INDEX nenv (env)
 );
 
 -- Create the Links table
