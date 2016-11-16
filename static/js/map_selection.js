@@ -111,21 +111,47 @@ function sel_build_table_connections(dataset) {
   dataset.forEach(function (connection) {
     tr = document.createElement("tr");
     td = document.createElement("td");
-    td.rowSpan = connection[1].length;
-    td.appendChild(document.createTextNode(connection[0]));
+    //td.rowSpan = connection[1].length;
+    td.appendChild(document.createTextNode(connection.ip));
     tr.appendChild(td);
-    connection[1].forEach(function (port) {
-      td = document.createElement("td");
-      td.appendChild(ports.get_presentation(port.port))
-      tr.appendChild(td);
-      td = document.createElement("td");
-      td.appendChild(document.createTextNode(port.links.toString()));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-      tr = document.createElement("tr");
-    });
+    td = document.createElement("td");
+    td.appendChild(ports.get_presentation(connection.port))
+    tr.appendChild(td);
+    td = document.createElement("td");
+    td.appendChild(document.createTextNode(connection.links.toString()));
+    tr.appendChild(td);
+    tbody.appendChild(tr);
   });
   return tbody;
+}
+
+function sel_build_table_headers(headers, order, callback) {
+    var tr = document.createElement("tr");
+    var th;
+    var sort_dir;
+    var sort_by;
+    if (order) {
+        sort_dir = order.charAt(0);
+        sort_by = order.substr(1)
+    }
+    headers.forEach(function (header) {
+        th = document.createElement("th");
+        th.dataset.value = header[0];
+        if (typeof(callback) == "function") {
+            th.onclick = callback;
+        }
+        th.appendChild(document.createTextNode(header[1]));
+        if (header[0] === sort_by) {
+            th.classList.add("sorted")
+            if (sort_dir === "-") {
+                th.classList.add("descending");
+            } else {
+                th.classList.add("ascending");
+            }
+        }
+        tr.appendChild(th);
+    });
+    return tr;
 }
 
 function sel_build_table_ports(dataset) {
@@ -205,6 +231,28 @@ function sel_create_link(node) {
     return a;
 }
 
+function sel_details_sort_callback(event) {
+    var sort_dir = '-';
+    if (event.target.classList.contains("descending")) {
+        sort_dir = '+';
+    }
+    var new_sort = sort_dir + event.target.dataset.value;
+    var pid = event.target.parentElement.id;
+    var component;
+    if (pid === "conn_in_h") {
+        component = "inputs";
+    } else if (pid === "conn_out_h") {
+        component = "outputs";
+    } else if (pid === "ports_in_h") {
+        component = "ports";
+    } else {
+        console.error("Unknown component to sort");
+        return;
+    }
+    console.log("requesting an update: GET_details_sorted(node=" + m_selection.selection.address + ", component=" + component + ", order=" + new_sort);
+    GET_details_sorted(m_selection.selection, component, new_sort, sel_update_display);
+}
+
 function sel_update_display(node) {
     "use strict";
     if (node === undefined) {
@@ -214,7 +262,8 @@ function sel_update_display(node) {
         return;
     }
     var tbody;
-    var row;
+    var old_row;
+    var new_row;
     var overflow;
     var overflow_amount;
 
@@ -229,53 +278,65 @@ function sel_update_display(node) {
 
     //fill in the tables
     //Input Connections table
-    tbody = sel_build_table_connections(node.details['conn_in'].rows);
+    old_row = document.getElementById("conn_in_h");
+    new_row = sel_build_table_headers(node.details.inputs.headers, node.details.inputs.order, sel_details_sort_callback);
+    old_row.parentElement.replaceChild(new_row, old_row);
+    new_row.id = "conn_in_h";
+    tbody = sel_build_table_connections(node.details.inputs.rows);
     m_selection['conn_in'].parentElement.replaceChild(tbody, m_selection['conn_in']);
     m_selection['conn_in'] = tbody;
 
     //Output Connections table
-    tbody = sel_build_table_connections(node.details['conn_out'].rows);
+    old_row = document.getElementById("conn_out_h");
+    new_row = sel_build_table_headers(node.details.outputs.headers, node.details.outputs.order, sel_details_sort_callback);
+    old_row.parentElement.replaceChild(new_row, old_row);
+    new_row.id = "conn_out_h";
+    tbody = sel_build_table_connections(node.details.outputs.rows);
     m_selection['conn_out'].parentElement.replaceChild(tbody, m_selection['conn_out']);
     m_selection['conn_out'] = tbody;
 
     //Ports Accessed table
-    tbody = sel_build_table_ports(node.details['ports_in'].rows);
+    old_row = document.getElementById("ports_in_h");
+    new_row = sel_build_table_headers(node.details.ports.headers, node.details.ports.order, sel_details_sort_callback);
+    old_row.parentElement.replaceChild(new_row, old_row);
+    new_row.id = "ports_in_h";
+    tbody = sel_build_table_ports(node.details.ports.rows);
     m_selection['ports_in'].parentElement.replaceChild(tbody, m_selection['ports_in']);
     m_selection['ports_in'] = tbody;
 
     //fill in the overflow table footer
     //Input Connections
     overflow = m_selection["conn_in"].nextElementSibling;
-    overflow_amount = node.details["unique_in"] - node.details["conn_in"].length;
+    overflow_amount = node.details["unique_in"] - node.details.inputs.rows.length;
     overflow.innerHTML = "";
-    row = sel_build_overflow(overflow_amount, 3);
-    if (row) {
-      overflow.appendChild(row);
+    new_row = sel_build_overflow(overflow_amount, 3);
+    if (new_row) {
+      overflow.appendChild(new_row);
     }
 
     //Output Connections
     overflow = m_selection["conn_out"].nextElementSibling;
-    overflow_amount = node.details["unique_out"] - node.details["conn_out"].length;
+    overflow_amount = node.details["unique_out"] - node.details.outputs.rows.length;
     overflow.innerHTML = "";
-    row = sel_build_overflow(overflow_amount, 3);
-    if (row) {
-      overflow.appendChild(row);
+    new_row = sel_build_overflow(overflow_amount, 3);
+    if (new_row) {
+      overflow.appendChild(new_row);
     }
 
     //Ports Accessed
     overflow = m_selection["ports_in"].nextElementSibling;
-    overflow_amount = node.details["unique_ports"] - node.details["ports_in"].length;
+    overflow_amount = node.details["unique_ports"] - node.details.ports.rows.length;
     overflow.innerHTML = "";
-    row = sel_build_overflow(overflow_amount, 2);
-    if (row) {
-      overflow.appendChild(row);
+    new_row = sel_build_overflow(overflow_amount, 2);
+    if (new_row) {
+      overflow.appendChild(new_row);
     }
 
     //Link to metadata
-    row = document.getElementById("sel_link");
-    row.innerHTML = "";
-    row.style.display = "block";
-    row.appendChild(sel_create_link(node));
+    new_row = document.getElementById("sel_link");
+    new_row.innerHTML = "";
+    new_row.style.display = "block";
+    new_row.appendChild(sel_create_link(node));
 
 
     //activate new popups (tooltips)

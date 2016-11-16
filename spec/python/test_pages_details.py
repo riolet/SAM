@@ -27,13 +27,13 @@ def test_simple_request8():
     assert req.status == "200 OK"
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'conn_in', u'conn_out', u'ports_in', u'unique_in', u'unique_out', u'unique_ports']
+    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
     assert data['unique_in'] == 9311
     assert data['unique_out'] == 468
     assert data['unique_ports'] == 94
-    assert len(data['conn_in']['rows']) == 32
-    assert len(data['conn_out']['rows']) == 38
-    assert len(data['ports_in']['rows']) == 50
+    assert len(data['inputs']['rows']) == 50
+    assert len(data['outputs']['rows']) == 50
+    assert len(data['ports']['rows']) == 50
 
 
 def test_simple_request16():
@@ -45,13 +45,13 @@ def test_simple_request16():
     assert req.status == "200 OK"
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'conn_in', u'conn_out', u'ports_in', u'unique_in', u'unique_out', u'unique_ports']
+    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
     assert data['unique_in'] == 9311
     assert data['unique_out'] == 468
     assert data['unique_ports'] == 94
-    assert len(data['conn_in']['rows']) == 32
-    assert len(data['conn_out']['rows']) == 38
-    assert len(data['ports_in']['rows']) == 50
+    assert len(data['inputs']['rows']) == 50
+    assert len(data['outputs']['rows']) == 50
+    assert len(data['ports']['rows']) == 50
 
 
 def test_simple_request24():
@@ -63,13 +63,13 @@ def test_simple_request24():
     assert req.status == "200 OK"
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'conn_in', u'conn_out', u'ports_in', u'unique_in', u'unique_out', u'unique_ports']
+    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
     assert data['unique_in'] == 2503
     assert data['unique_out'] == 1
     assert data['unique_ports'] == 38
-    assert len(data['conn_in']['rows']) == 38
-    assert len(data['conn_out']['rows']) == 1
-    assert len(data['ports_in']['rows']) == 38
+    assert len(data['inputs']['rows']) == 50
+    assert len(data['outputs']['rows']) == 1
+    assert len(data['ports']['rows']) == 38
 
 
 def test_simple_request32():
@@ -81,13 +81,13 @@ def test_simple_request32():
     assert req.status == "200 OK"
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'conn_in', u'conn_out', u'ports_in', u'unique_in', u'unique_out', u'unique_ports']
+    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
     assert data['unique_in'] == 16
     assert data['unique_out'] == 0
     assert data['unique_ports'] == 13
-    assert len(data['conn_in']['rows']) == 16
-    assert len(data['conn_out']['rows']) == 0
-    assert len(data['ports_in']['rows']) == 13
+    assert len(data['inputs']['rows']) == 31
+    assert len(data['outputs']['rows']) == 0
+    assert len(data['ports']['rows']) == 13
 
 
 def test_request_filter():
@@ -99,13 +99,13 @@ def test_request_filter():
     assert req.status == "200 OK"
     assert req.headers['Content-Type'] == "application/json"
     data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'conn_in', u'conn_out', u'ports_in', u'unique_in', u'unique_out', u'unique_ports']
+    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
     assert data['unique_in'] == 16
     assert data['unique_out'] == 0
     assert data['unique_ports'] == 13
-    assert len(data['conn_in']['rows']) == 16
-    assert len(data['conn_out']['rows']) == 0
-    assert len(data['ports_in']['rows']) == 13
+    assert len(data['inputs']['rows']) == 31
+    assert len(data['outputs']['rows']) == 0
+    assert len(data['ports']['rows']) == 13
 
 
 def make_timestamp(ts):
@@ -130,9 +130,9 @@ def test_request_timerange():
     assert data['unique_in'] == 7
     assert data['unique_out'] == 4
     assert data['unique_ports'] == 1
-    assert len(data['conn_in']['rows']) == 7
-    assert len(data['conn_out']['rows']) == 4
-    assert len(data['ports_in']['rows']) == 1
+    assert len(data['inputs']['rows']) == 7
+    assert len(data['outputs']['rows']) == 9
+    assert len(data['ports']['rows']) == 1
 
     input_data = {"address": test_ip, 'tstart': time_crop[0], 'tend': time_crop[1]}
     GET_data = urllib.urlencode(input_data)
@@ -143,9 +143,9 @@ def test_request_timerange():
     assert data['unique_in'] == 7
     assert data['unique_out'] == 4
     assert data['unique_ports'] == 1
-    assert len(data['conn_in']['rows']) == 7
-    assert len(data['conn_out']['rows']) == 4
-    assert len(data['ports_in']['rows']) == 1
+    assert len(data['inputs']['rows']) == 7
+    assert len(data['outputs']['rows']) == 9
+    assert len(data['ports']['rows']) == 1
 
     input_data = {"address": test_ip, 'tstart': time_tiny[0], 'tend': time_tiny[1]}
     GET_data = urllib.urlencode(input_data)
@@ -156,6 +156,6 @@ def test_request_timerange():
     assert data['unique_in'] == 3
     assert data['unique_out'] == 3
     assert data['unique_ports'] == 1
-    assert len(data['conn_in']['rows']) == 3
-    assert len(data['conn_out']['rows']) == 3
-    assert len(data['ports_in']['rows']) == 1
+    assert len(data['inputs']['rows']) == 3
+    assert len(data['outputs']['rows']) == 7
+    assert len(data['ports']['rows']) == 1

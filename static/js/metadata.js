@@ -401,6 +401,11 @@ function present_detailed_info(info) {
     var old_body;
     var new_body;
     if (info.hasOwnProperty("inputs") && info.inputs !== null) {
+        // fill headers
+        old_body = document.getElementById("conn_in_h");
+        new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, header_sort_callback);
+        old_body.parentElement.replaceChild(new_body, old_body);
+        new_body.id = "conn_in_h";
         // fill table
         old_body = document.getElementById("conn_in");
         new_body = sel_build_table_connections(info.inputs.rows);
@@ -414,6 +419,11 @@ function present_detailed_info(info) {
     }
 
     if (info.hasOwnProperty("outputs") && info.outputs !== null) {
+        // fill headers
+        old_body = document.getElementById("conn_out_h");
+        new_body = sel_build_table_headers(info.outputs.headers, info.outputs.order, header_sort_callback);
+        old_body.parentElement.replaceChild(new_body, old_body);
+        new_body.id = "conn_out_h";
         // fill table
         old_body = document.getElementById("conn_out");
         new_body = sel_build_table_connections(info.outputs.rows);
@@ -427,6 +437,11 @@ function present_detailed_info(info) {
     }
 
     if (info.hasOwnProperty("ports") && info.ports !== null) {
+        // fill headers
+        old_body = document.getElementById("ports_in_h");
+        new_body = sel_build_table_headers(info.ports.headers, info.ports.order, header_sort_callback);
+        old_body.parentElement.replaceChild(new_body, old_body);
+        new_body.id = "ports_in_h";
         // fill table
         old_body = document.getElementById("ports_in");
         new_body = sel_build_table_ports(info.ports.rows);
@@ -440,6 +455,11 @@ function present_detailed_info(info) {
     }
 
     if (info.hasOwnProperty("children") && info.children !== null) {
+        // fill headers
+        old_body = document.getElementById("child_nodes_h");
+        new_body = sel_build_table_headers(info.children.headers, info.children.order, header_sort_callback);
+        old_body.parentElement.replaceChild(new_body, old_body);
+        new_body.id = "child_nodes_h";
         // fill table
         old_body = document.getElementById("child_nodes");
         new_body = build_table_children(info.children.rows);
@@ -468,6 +488,31 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
 function ajax_error(x, s, e) {
     console.error("Server error: " + e);
     console.log("\tText Status: " + s);
+}
+
+function header_sort_callback(event) {
+    "use strict";
+    var sortDir = '-';
+    if (event.target.classList.contains("descending")) {
+        sortDir = '+';
+    }
+    var newSort = sortDir + event.target.dataset.value;
+    var pid = event.target.parentElement.id;
+    var component;
+    if (pid === "conn_in_h") {
+        component = "inputs";
+    } else if (pid === "conn_out_h") {
+        component = "outputs";
+    } else if (pid === "ports_in_h") {
+        component = "ports";
+    } else if (pid === "child_nodes_h") {
+        component = "children";
+    } else {
+        return;
+    }
+    var ip = getIP_Subnet().normal;
+    console.log("requesting an update: GET_page(ip=" + ip + ", part=" + component + ", page=" + g_data[component].page + ", order=" + newSort);
+    GET_page(ip, component, g_data[component].page, newSort);
 }
 
 function hostname_edit_callback(event) {
@@ -547,10 +592,13 @@ function POST_tags(ip, tags, callback) {
     });
 }
 
-function GET_data(ip, part, callback) {
+function GET_data(ip, part, order, callback) {
     "use strict";
 
-    var request = {"address": minimizeIP(ip)};
+    var request = {
+        "address": minimizeIP(ip),
+        "order": order
+    };
     $.ajax({
         url: "/details/" + part,
         type: "GET",
@@ -572,11 +620,12 @@ function GET_page_callback(response) {
     scanForPorts(response);
 }
 
-function GET_page(ip, part, page) {
+function GET_page(ip, part, page, order) {
     "use strict";
 
     var request = {"address": minimizeIP(ip),
-            "page": page};
+            "page": page,
+            "order": order};
     $.ajax({
         url: "/details/" + part,
         type: "GET",
@@ -640,16 +689,12 @@ function scanForPorts(response) {
     "use strict";
     if (response.hasOwnProperty("inputs")) {
         response.inputs.rows.forEach(function (element) {
-            element[1].forEach(function (port) {
-                ports.request_add(port.port);
-            });
+            ports.request_add(element.port);
         });
     }
     if (response.hasOwnProperty("outputs")) {
         response.outputs.rows.forEach(function (element) {
-            element[1].forEach(function (port) {
-                ports.request_add(port.port);
-            });
+            ports.request_add(element.port);
         });
     }
     if (response.hasOwnProperty("ports")) {
@@ -674,7 +719,7 @@ function requestMoreDetails(event) {
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting More Details");
 
-        GET_data(input.value, "inputs,outputs,ports,children", function (response) {
+        GET_data(input.value, "inputs,outputs,ports,children", "-links", function (response) {
             // More details arrived
             // Render into browser
             g_data.inputs = response.inputs;
@@ -718,7 +763,7 @@ function requestQuickInfo(event) {
         searchbar.classList.add("loading");
         present_quick_info({"__order": ["Loading"], Loading: "..."});
         var normalizedIP = normalizeIP(input.value);
-        GET_data(normalizedIP, "quick_info", function (response) {
+        GET_data(normalizedIP, "quick_info", "", function (response) {
             // Quick info arrived
             searchbar.classList.remove("loading");
             // Render into browser
@@ -764,12 +809,10 @@ function init() {
     // Enable the port data popup window
     $(".input.icon").popup();
     // Make the ports table sortable
-    $("table.sortable").tablesort();
+    //$("table.sortable").tablesort();
 
     //configure ports
-    ports.display_callback = function () {
-        present_detailed_info();
-    };
+    ports.display_callback = present_detailed_info;
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 
