@@ -219,9 +219,9 @@ class Details:
         details['unique_out'] = summary.unique_out
         details['unique_in'] = summary.unique_in
         details['unique_ports'] = summary.unique_ports
-        details['conn_in'] = self.inputs()
-        details['conn_out'] = self.outputs()
-        details['ports_in'] = self.ports()
+        details['inputs'] = self.inputs()
+        details['outputs'] = self.outputs()
+        details['ports'] = self.ports()
         return details
 
     def GET(self, component=None):

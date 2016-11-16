@@ -80,7 +80,6 @@ function init() {
         action: updateConfig
     });
     $(".input.icon").popup();
-    $("table.sortable").tablesort();
 
     //configure ports
     ports.display_callback = function() {

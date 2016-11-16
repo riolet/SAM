@@ -393,31 +393,6 @@ function present_quick_info(info) {
     }
 }
 
-function hclick(event) {
-    "use strict";
-    var sortDir = '-';
-    if (event.target.classList.contains("descending")) {
-        sortDir = '+';
-    }
-    var newSort = sortDir + event.target.dataset.value;
-    var pid = event.target.parentElement.id;
-    var component;
-    if (pid === "conn_in_h") {
-        component = "inputs";
-    } else if (pid === "conn_out_h") {
-        component = "outputs";
-    } else if (pid === "ports_in_h") {
-        component = "ports";
-    } else if (pid === "child_nodes_h") {
-        component = "children";
-    } else {
-        return;
-    }
-    var ip = getIP_Subnet().normal;
-    console.log("requesting an update: GET_page(ip=" + ip + ", part=" + component + ", page=" + g_data[component].page + ", order=" + newSort);
-    GET_page(ip, component, g_data[component].page, newSort);
-}
-
 function present_detailed_info(info) {
     "use strict";
     if (info === undefined) {
@@ -428,7 +403,7 @@ function present_detailed_info(info) {
     if (info.hasOwnProperty("inputs") && info.inputs !== null) {
         // fill headers
         old_body = document.getElementById("conn_in_h");
-        new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, hclick);
+        new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, header_sort_callback);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "conn_in_h";
         // fill table
@@ -446,7 +421,7 @@ function present_detailed_info(info) {
     if (info.hasOwnProperty("outputs") && info.outputs !== null) {
         // fill headers
         old_body = document.getElementById("conn_out_h");
-        new_body = sel_build_table_headers(info.outputs.headers, info.outputs.order, hclick);
+        new_body = sel_build_table_headers(info.outputs.headers, info.outputs.order, header_sort_callback);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "conn_out_h";
         // fill table
@@ -464,7 +439,7 @@ function present_detailed_info(info) {
     if (info.hasOwnProperty("ports") && info.ports !== null) {
         // fill headers
         old_body = document.getElementById("ports_in_h");
-        new_body = sel_build_table_headers(info.ports.headers, info.ports.order, hclick);
+        new_body = sel_build_table_headers(info.ports.headers, info.ports.order, header_sort_callback);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "ports_in_h";
         // fill table
@@ -482,7 +457,7 @@ function present_detailed_info(info) {
     if (info.hasOwnProperty("children") && info.children !== null) {
         // fill headers
         old_body = document.getElementById("child_nodes_h");
-        new_body = sel_build_table_headers(info.children.headers, info.children.order, hclick);
+        new_body = sel_build_table_headers(info.children.headers, info.children.order, header_sort_callback);
         old_body.parentElement.replaceChild(new_body, old_body);
         new_body.id = "child_nodes_h";
         // fill table
@@ -513,6 +488,31 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
 function ajax_error(x, s, e) {
     console.error("Server error: " + e);
     console.log("\tText Status: " + s);
+}
+
+function header_sort_callback(event) {
+    "use strict";
+    var sortDir = '-';
+    if (event.target.classList.contains("descending")) {
+        sortDir = '+';
+    }
+    var newSort = sortDir + event.target.dataset.value;
+    var pid = event.target.parentElement.id;
+    var component;
+    if (pid === "conn_in_h") {
+        component = "inputs";
+    } else if (pid === "conn_out_h") {
+        component = "outputs";
+    } else if (pid === "ports_in_h") {
+        component = "ports";
+    } else if (pid === "child_nodes_h") {
+        component = "children";
+    } else {
+        return;
+    }
+    var ip = getIP_Subnet().normal;
+    console.log("requesting an update: GET_page(ip=" + ip + ", part=" + component + ", page=" + g_data[component].page + ", order=" + newSort);
+    GET_page(ip, component, g_data[component].page, newSort);
 }
 
 function hostname_edit_callback(event) {
