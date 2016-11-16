@@ -49,9 +49,9 @@ $def with (ip, tags, envs)
       <span>showing 0-0 of 0</span>
       <button class="ui button disabled">next</button>
     </div>
-    <table class="ui very compact celled structured table">
+    <table class="ui very compact sortable celled structured table">
         <thead>
-          <tr>
+          <tr id="conn_in_h">
             <th>Source IP</th>
             <th>Dest. Port</th>
             <th>Count</th>
@@ -70,9 +70,9 @@ $def with (ip, tags, envs)
       <span>showing 0-0 of 0</span>
       <button class="ui button disabled">next</button>
     </div>
-    <table class="ui very compact celled structured table">
+    <table class="ui very compact sortable celled structured table">
         <thead>
-          <tr>
+          <tr id="conn_out_h">
             <th>Dest. IP</th>
             <th>Dest. Port</th>
             <th>Count</th>
@@ -93,9 +93,9 @@ $def with (ip, tags, envs)
     </div>
     <table class="ui very compact sortable celled table">
         <thead>
-          <tr>
+          <tr id="ports_in_h">
             <th>Port Accessed</th>
-            <th class="sorted descending">Occurrences</th>
+            <th>Occurrences</th>
           </tr>
         </thead>
         <tbody id="ports_in"></tbody>
@@ -113,7 +113,7 @@ $def with (ip, tags, envs)
     </div>
     <table class="ui very compact celled structured table">
         <thead>
-          <tr>
+          <tr id="child_nodes_h">
             <th>Address</th>
             <th>Name</th>
             <th>Active Endpoints</th>

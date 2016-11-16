@@ -231,6 +231,7 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
 
 
 def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
+    sort_options = ['links', 'ip', 'port']
     qvars = {
         'start': ip_range[0],
         'end': ip_range[1],
@@ -245,12 +246,18 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
         qvars['filtered'] = "src"
         qvars['collected'] = "dst"
 
-    sort_dir = "DESC" if order[0] == "-" else "ASC"
-    sort_by = order[1:] if order[1:] in ['ip', 'port', 'links'] else "links"
+    if order and order[0] == '-':
+        sort_dir = "DESC"
+    else:
+        sort_dir = "ASC"
+    if order and order[1:] in sort_options:
+        sort_by = order[1:]
+    else:
+        sort_by = sort_options[0]
     qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
     query = """
-        SELECT {collected} AS 'ip', port AS 'port', sum(links) AS 'links'
+        SELECT decodeIP({collected}) AS 'ip', port AS 'port', sum(links) AS 'links'
         FROM Links
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
@@ -261,25 +268,36 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_size=50):
-    WHERE = build_where_clause(timestamp_range, port)
+def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
+    sort_options = ['links', 'port']
     first_result = (page - 1) * page_size
     qvars = {
         'start': ip_range[0],
         'end': ip_range[1],
         'first': first_result,
-        'size': page_size
+        'size': page_size,
+        'WHERE': build_where_clause(timestamp_range, port)
     }
+
+    if order and order[0] == '-':
+        sort_dir = "DESC"
+    else:
+        sort_dir = "ASC"
+    if order and order[1:] in sort_options:
+        sort_by = order[1:]
+    else:
+        sort_by = sort_options[0]
+    qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
         FROM Links
         WHERE dst BETWEEN $start AND $end
-         {0}
+         {WHERE}
         GROUP BY port
-        ORDER BY links DESC
+        ORDER BY {order}
         LIMIT $first, $size;
-    """.format(WHERE)
+    """.format(**qvars)
     return list(common.db.query(query, vars=qvars))
 
 

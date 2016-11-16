@@ -111,21 +111,46 @@ function sel_build_table_connections(dataset) {
   dataset.forEach(function (connection) {
     tr = document.createElement("tr");
     td = document.createElement("td");
-    td.rowSpan = connection[1].length;
-    td.appendChild(document.createTextNode(connection[0]));
+    //td.rowSpan = connection[1].length;
+    td.appendChild(document.createTextNode(connection.ip));
     tr.appendChild(td);
-    connection[1].forEach(function (port) {
-      td = document.createElement("td");
-      td.appendChild(ports.get_presentation(port.port))
-      tr.appendChild(td);
-      td = document.createElement("td");
-      td.appendChild(document.createTextNode(port.links.toString()));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-      tr = document.createElement("tr");
-    });
+    td = document.createElement("td");
+    td.appendChild(ports.get_presentation(connection.port))
+    tr.appendChild(td);
+    td = document.createElement("td");
+    td.appendChild(document.createTextNode(connection.links.toString()));
+    tr.appendChild(td);
+    tbody.appendChild(tr);
   });
   return tbody;
+}
+
+function sel_build_table_headers(headers, order) {
+    var tr = document.createElement("tr");
+    var th;
+    var sort_dir;
+    var sort_by;
+    if (order) {
+        sort_dir = order.charAt(0);
+        sort_by = order.substr(1)
+    }
+    console.log("sort_dir = " + sort_dir)
+    console.log("sort_by = " + sort_by)
+    headers.forEach(function (header) {
+        th = document.createElement("th");
+        th.dataset.value = header[0];
+        th.appendChild(document.createTextNode(header[1]));
+        if (header[0] === sort_by) {
+            th.classList.add("sorted")
+            if (sort_dir === "-") {
+                th.classList.add("ascending");
+            } else {
+                th.classList.add("descending");
+            }
+        }
+        tr.appendChild(th);
+    });
+    return tr;
 }
 
 function sel_build_table_ports(dataset) {

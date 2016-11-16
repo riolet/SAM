@@ -22,6 +22,7 @@ class Details:
         self.port = None
         self.page = 1
         self.page_size=50
+        self.order = None
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
@@ -60,6 +61,8 @@ class Details:
                 self.page_size = max(0, page_size)
             except ValueError:
                 print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
+        if 'order' in GET_data:
+            self.order = GET_data['order']
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))
@@ -119,23 +122,19 @@ class Details:
             port=self.port,
             page=self.page,
             page_size=self.page_size,
-            order="-links")
-        conn_in = {}
-        for connection in inputs:
-            ip = common.IPtoString(connection.pop("ip"))
-            if ip in conn_in:
-                # add a port
-                conn_in[ip] += [connection]
-            else:
-                # add a new entry
-                conn_in[ip] = [connection]
-        # convert to list of tuples to make it sortable
-        conn_in = conn_in.items()
-        conn_in.sort(key=key_by_link_sum, reverse=True)
+            order=self.order)
+        conn_in = list(inputs)
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
+            "direction": "desc",
             "component": "inputs",
+            "headers": [
+                ['ip', "Source IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ],
             "rows": conn_in
         }
         return response
@@ -148,23 +147,19 @@ class Details:
             port=self.port,
             page=self.page,
             page_size=self.page_size,
-            order="-links")
-        conn_out = {}
-        for connection in outputs:
-            ip = common.IPtoString(connection.pop("ip"))
-            if ip in conn_out:
-                # add a port
-                conn_out[ip] += [connection]
-            else:
-                # add a new entry
-                conn_out[ip] = [connection]
-        # convert to list of tuples to make it sortable
-        conn_out = conn_out.items()
-        conn_out.sort(key=key_by_link_sum, reverse=True)
+            order=self.order)
+        conn_out = list(outputs)
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
+            "direction": "desc",
             "component": "outputs",
+            "headers": [
+                ['ip', "Dest. IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ],
             "rows": conn_out
         }
         return response
@@ -175,12 +170,18 @@ class Details:
             timestamp_range=self.time_range,
             port=self.port,
             page=self.page,
-            page_size=self.page_size)
+            page_size=self.page_size,
+            order=self.order)
 
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
             "component": "ports",
+            "headers": [
+                ['port', "Port Accessed"],
+                ['links', 'Occurrences']
+            ],
             "rows": ports
         }
         return response
