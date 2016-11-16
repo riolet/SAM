@@ -1,9 +1,5 @@
-import SocketServer
-import socket
 import sys
 import os
-import threading
-import signal
 sys.path.append(os.path.dirname(__file__))
 import web
 

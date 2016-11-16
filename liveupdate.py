@@ -1,3 +1,11 @@
+import SocketServer
+import socket
+import sys
+import os
+import threading
+import signal
+import time
+
 class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         data = self.request[0].strip()
@@ -47,4 +55,6 @@ if __name__ == "__main__":
     # Exit the server thread when the main thread terminates
     server_thread.daemon = True
     server_thread.start()
-    server.shutdown()
+    while (True):
+        time.sleep(24*60*60);
+    #server.shutdown()
