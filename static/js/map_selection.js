@@ -125,7 +125,7 @@ function sel_build_table_connections(dataset) {
   return tbody;
 }
 
-function sel_build_table_headers(headers, order) {
+function sel_build_table_headers(headers, order, callback) {
     var tr = document.createElement("tr");
     var th;
     var sort_dir;
@@ -134,18 +134,19 @@ function sel_build_table_headers(headers, order) {
         sort_dir = order.charAt(0);
         sort_by = order.substr(1)
     }
-    console.log("sort_dir = " + sort_dir)
-    console.log("sort_by = " + sort_by)
     headers.forEach(function (header) {
         th = document.createElement("th");
         th.dataset.value = header[0];
+        if (typeof(callback) == "function") {
+            th.onclick = callback;
+        }
         th.appendChild(document.createTextNode(header[1]));
         if (header[0] === sort_by) {
             th.classList.add("sorted")
             if (sort_dir === "-") {
-                th.classList.add("ascending");
-            } else {
                 th.classList.add("descending");
+            } else {
+                th.classList.add("ascending");
             }
         }
         tr.appendChild(th);

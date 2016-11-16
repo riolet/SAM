@@ -231,7 +231,7 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
 
 
 def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
-    sort_options = ['links', 'ip', 'port']
+    sort_options = ['links', 'src', 'dst', 'port']
     qvars = {
         'start': ip_range[0],
         'end': ip_range[1],
@@ -301,18 +301,33 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_si
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_children(ip_range, subnet):
+def get_details_children(ip_range, subnet, page, page_size, order):
+    sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
     start = ip_range[0]
     end = ip_range[1]
     quotient = ip_range[2]
     child_subnet_start = subnet + 1
     child_subnet_end = subnet + 8
+    first_result = (page - 1) * page_size
     qvars = {'ip_start': start,
              'ip_end': end,
              's_start': child_subnet_start,
              's_end': child_subnet_end,
+             'first': first_result,
+             'size': page_size,
              'quot': quotient,
              'quot_1': quotient - 1}
+
+    if order and order[0] == '-':
+        sort_dir = "DESC"
+    else:
+        sort_dir = "ASC"
+    if order and order[1:] in sort_options:
+        sort_by = order[1:]
+    else:
+        sort_by = sort_options[0]
+    qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
+
     query = """
         SELECT decodeIP(`n`.ipstart) AS 'address'
           , COALESCE(`n`.alias, '') AS 'hostname'
@@ -346,8 +361,10 @@ def get_details_children(ip_range, subnet):
             ) AS `sn`
         ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
         WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
-            AND `n`.subnet BETWEEN $s_start AND $s_end;
-        """
+            AND `n`.subnet BETWEEN $s_start AND $s_end
+        ORDER BY {order}
+        LIMIT $first, $size;
+        """.format(order=qvars['order'])
     return list(common.db.query(query, vars=qvars))
 
 

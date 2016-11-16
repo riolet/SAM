@@ -131,7 +131,7 @@ class Details:
             "direction": "desc",
             "component": "inputs",
             "headers": [
-                ['ip', "Source IP"],
+                ['src', "Source IP"],
                 ['port', "Dest. Port"],
                 ['links', 'Count']
             ],
@@ -156,7 +156,7 @@ class Details:
             "direction": "desc",
             "component": "outputs",
             "headers": [
-                ['ip', "Dest. IP"],
+                ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
                 ['links', 'Count']
             ],
@@ -189,14 +189,23 @@ class Details:
     def children(self):
         children = dbaccess.get_details_children(
             ip_range=self.ip_range,
-            subnet=self.subnet)
-        first = self.page_size * (self.page - 1)
+            subnet=self.subnet,
+            page=self.page,
+            page_size=self.page_size,
+            order=self.order)
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
             "count": len(children),
             "component": "children",
-            "rows": children[first:first + self.page_size]
+            "headers": [
+                ['ipstart', "Address"],
+                ['hostname', 'Name'],
+                ['endpoints', 'Active Endpoints'],
+                ['ratio', 'Role (0=client, 1=server)']
+            ],
+            "rows": children
         }
         return response
 
