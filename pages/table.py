@@ -68,7 +68,7 @@ class Columns(object):
 
 class Table(object):
     def __init__(self):
-        self.pageTitle = "Host List"
+        self.pageTitle = "Table View"
         self.columns = Columns(address=1, alias=1, role=1, environment=1, tags=1)
 
     def filters(self, GET_data):
