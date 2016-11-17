@@ -404,80 +404,124 @@ function present_detailed_info(info) {
     }
     var old_body;
     var new_body;
-    if (info.hasOwnProperty("inputs") && info.inputs !== null) {
-        // fill headers
-        old_body = document.getElementById("conn_in_h");
-        new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, header_sort_callback);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "conn_in_h";
-        // fill table
-        old_body = document.getElementById("conn_in");
-        new_body = sel_build_table_connections(info.inputs.rows);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "conn_in";
-        // add paginator
-        old_body = document.getElementById("in_pagination");
-        new_body = build_pagination(info.inputs.page, info.inputs.page_size, "inputs", g_data.quick.in.u_conn);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "in_pagination";
+    if (info.hasOwnProperty("inputs")) {
+        if (info.inputs !== null) {
+            // fill headers
+            old_body = document.getElementById("conn_in_h");
+            new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, header_sort_callback);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "conn_in_h";
+            // fill table
+            old_body = document.getElementById("conn_in");
+            new_body = sel_build_table_connections(info.inputs.rows);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "conn_in";
+            // add paginator
+            old_body = document.getElementById("in_pagination");
+            new_body = build_pagination(info.inputs.page, info.inputs.page_size, "inputs", g_data.quick.in.u_conn);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "in_pagination";
+        } else {
+            old_body = document.getElementById("conn_in");
+            old_body.innerHTML = "";
+            old_body = document.getElementById("in_pagination");
+            new_body = build_pagination(1, 1, "inputs", 0);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "in_pagination";
+        }
     }
 
-    if (info.hasOwnProperty("outputs") && info.outputs !== null) {
-        // fill headers
-        old_body = document.getElementById("conn_out_h");
-        new_body = sel_build_table_headers(info.outputs.headers, info.outputs.order, header_sort_callback);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "conn_out_h";
-        // fill table
-        old_body = document.getElementById("conn_out");
-        new_body = sel_build_table_connections(info.outputs.rows);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "conn_out";
-        // add paginator
-        old_body = document.getElementById("out_pagination");
-        new_body = build_pagination(info.outputs.page, info.outputs.page_size, "outputs", g_data.quick.out.u_conn);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "out_pagination";
+    if (info.hasOwnProperty("outputs")) {
+        if (info.outputs !== null) {
+            // fill headers
+            old_body = document.getElementById("conn_out_h");
+            new_body = sel_build_table_headers(info.outputs.headers, info.outputs.order, header_sort_callback);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "conn_out_h";
+            // fill table
+            old_body = document.getElementById("conn_out");
+            new_body = sel_build_table_connections(info.outputs.rows);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "conn_out";
+            // add paginator
+            old_body = document.getElementById("out_pagination");
+            new_body = build_pagination(info.outputs.page, info.outputs.page_size, "outputs", g_data.quick.out.u_conn);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "out_pagination";
+        } else {
+            old_body = document.getElementById("conn_out");
+            old_body.innerHTML = "";
+            old_body = document.getElementById("out_pagination");
+            new_body = build_pagination(1, 1, "outputs", 0);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "out_pagination";
+        }
     }
 
-    if (info.hasOwnProperty("ports") && info.ports !== null) {
-        // fill headers
-        old_body = document.getElementById("ports_in_h");
-        new_body = sel_build_table_headers(info.ports.headers, info.ports.order, header_sort_callback);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "ports_in_h";
-        // fill table
-        old_body = document.getElementById("ports_in");
-        new_body = sel_build_table_ports(info.ports.rows);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "ports_in";
-        // add paginator
-        old_body = document.getElementById("port_pagination");
-        new_body = build_pagination(info.ports.page, info.ports.page_size, "ports", g_data.quick.ports);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "port_pagination";
+    if (info.hasOwnProperty("ports")) {
+        if (info.ports !== null) {
+            // fill headers
+            old_body = document.getElementById("ports_in_h");
+            new_body = sel_build_table_headers(info.ports.headers, info.ports.order, header_sort_callback);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "ports_in_h";
+            // fill table
+            old_body = document.getElementById("ports_in");
+            new_body = sel_build_table_ports(info.ports.rows);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "ports_in";
+            // add paginator
+            old_body = document.getElementById("port_pagination");
+            new_body = build_pagination(info.ports.page, info.ports.page_size, "ports", g_data.quick.ports);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "port_pagination";
+        } else {
+            old_body = document.getElementById("ports_in");
+            old_body.innerHTML = "";
+            old_body = document.getElementById("port_pagination");
+            new_body = build_pagination(1, 1, "ports", 0);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "port_pagination";
+        }
     }
 
-    if (info.hasOwnProperty("children") && info.children !== null) {
-        // fill headers
-        old_body = document.getElementById("child_nodes_h");
-        new_body = sel_build_table_headers(info.children.headers, info.children.order, header_sort_callback);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "child_nodes_h";
-        // fill table
-        old_body = document.getElementById("child_nodes");
-        new_body = build_table_children(info.children.rows);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "child_nodes";
-        // add paginator
-        old_body = document.getElementById("child_pagination");
-        new_body = build_pagination(info.children.page, info.children.page_size, "children", info.children.count);
-        old_body.parentElement.replaceChild(new_body, old_body);
-        new_body.id = "child_pagination";
+    if (info.hasOwnProperty("children")) {
+        if (info.children !== null) {
+            // fill headers
+            old_body = document.getElementById("child_nodes_h");
+            new_body = sel_build_table_headers(info.children.headers, info.children.order, header_sort_callback);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "child_nodes_h";
+            // fill table
+            old_body = document.getElementById("child_nodes");
+            new_body = build_table_children(info.children.rows);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "child_nodes";
+            // add paginator
+            old_body = document.getElementById("child_pagination");
+            new_body = build_pagination(info.children.page, info.children.page_size, "children", info.children.count);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "child_pagination";
+        } else {
+            old_body = document.getElementById("child_nodes");
+            old_body.innerHTML = "";
+            old_body = document.getElementById("child_pagination");
+            new_body = build_pagination(1, 1, "children", 0);
+            old_body.parentElement.replaceChild(new_body, old_body);
+            new_body.id = "child_pagination";
+        }
     }
 
     //enable the tooltips on ports
     $(".popup").popup();
+}
+
+function clear_detailed_info() {
+    g_data.inputs = null;
+    g_data.outputs = null;
+    g_data.ports = null;
+    g_data.children = null;
+    present_detailed_info();
 }
 
 /*******************
@@ -684,6 +728,9 @@ function restartTypingTimer(event) {
             //Timer expired. Run the quick-info request!
             console.log("Proceeding to Request Quick Info");
 
+            //Show that loading new info
+            present_quick_info({"message": "Loading"});
+            clear_detailed_info()
             dispatcher(new StateChangeEvent(requestQuickInfo));
         }, 700);
     }
@@ -744,7 +791,7 @@ function requestMoreDetails(event) {
         console.log("Aborting Requests");
         abortRequests(g_running_requests);
         //Clear details pane
-        //TODO: actually clear details pane
+        clear_detailed_info();
         //Continue to typing timer
         dispatcher(new StateChangeEvent(restartTypingTimer));
         dispatcher(event);
@@ -765,7 +812,7 @@ function requestQuickInfo(event) {
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting Quick Info");
         searchbar.classList.add("loading");
-        present_quick_info({"__order": ["Loading"], Loading: "..."});
+        present_quick_info({"message": "Loading"});
         var normalizedIP = normalizeIP(input.value);
         GET_data(normalizedIP, "quick_info", "", function (response) {
             // Quick info arrived
@@ -789,7 +836,7 @@ function requestQuickInfo(event) {
         abortRequests(g_running_requests);
         searchbar.classList.remove("loading");
         //Clear quickinfo
-        present_quick_info({"__order": ["Waiting"], Waiting: "..."});
+        present_quick_info({"message": "Waiting"});
         //Continue to typing timer
         dispatcher(new StateChangeEvent(restartTypingTimer));
         dispatcher(event);
