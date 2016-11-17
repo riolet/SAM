@@ -1,3 +1,53 @@
+2016-11-17
+
+2106-11-16
+sorting tables on metadata page
+    (sorting is done in the DB. tablesort.js removed from repository)
+fixed several Chrome browser issues
+clarified metadata search hint
+tableview filters accordian opens automatically if no filters are present
+
+2016-11-15
+env filter in tableview drastically faster after adding index to table
+updated tests
+dynamically generating table headers for details (map selection info and metadata)
+
+2016-11-14
+jslinting,
+tag displayed in selection list
+tags addable, removable
+environments added to tableview and metadata
+    Can have 1 environment only, but is inherited from higher subnets
+added environment filter to tableview
+
+2016-11-10
+Added tags table to database
+fixed bug with new filters not being added on pressing "apply filters"
+added "endpoints" key to metadat quickinfo
+reorganized metadata code structure
+added hostname editing to metadata page
+fixed table formation for "name" row
+
+2016-11-09
+Added hostname edit ability to tableview
+added role filter to tableview
+added tag display support to tableview
+
+2016-11-08
+added pagination to metadata
+renamed tableview columns for clarity
+
+2016-11-07
+completed second-pass quick info for metadata page
+added childNodes tab to metadata
+
+2016-11-04
+WIP metadata page. Summary information
+
+2016-11-03
+added links from the map to the metadata page
+added target and mask filters to tableview
+
 2016-11-02
 converted to new schema:
     map links
