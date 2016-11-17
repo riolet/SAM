@@ -712,7 +712,6 @@
             // split by |
             var filterArgs = filterString.split(";");
             var typeIndex = filterArgs.shift();
-            console.log("  type: " + typeIndex);
             var enabled = filterArgs.shift();
             enabled = (enabled === "1");
             var type = Object.keys(filters.private.types).sort()[typeIndex];
