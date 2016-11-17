@@ -158,7 +158,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "subnet";
         filter.subnet = subnet;
         filter.html = filterdiv;
@@ -184,7 +184,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "mask";
         filter.mask = mask;
         filter.html = filterdiv;
@@ -211,7 +211,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "role";
         filter.comparator = comparator;
         filter.ratio = ratio;
@@ -238,7 +238,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "env";
         filter.env = env;
         filter.html = filterdiv;
@@ -265,7 +265,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "port";
         filter.connection = connection;
         filter.port = port;
@@ -307,7 +307,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "tags";
         filter.has = has;
         filter.tags = tags;
@@ -340,7 +340,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "target";
         filter.to = to;
         filter.target = target;
@@ -376,7 +376,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "connections";
         filter.comparator = comparator;
         filter.direction = direction;
@@ -556,7 +556,6 @@
             newValue = input.checked;
         }
         var row = input;
-        console.log(row);
         //ascend the heirarchy until you hit null OR an element that is both a DIV and contains "filter" class
         while (row !== null && !(row.tagName === "DIV" && row.classList.contains("filter"))) {
             row = row.parentNode;
@@ -604,64 +603,77 @@
     };
 
     filters.private.updateSummary = function () {
-        //build summary
-        var summary = "Filter: ";
-        if (filters.filters.length > 0) {
-            filters.filters.forEach(function (filter) {
-                if (filter.type === "subnet") {
-                    summary += "subnet /" + filter.subnet;
-                } else if (filter.type === "mask") {
-                    summary += "within " + filter.mask;
-                } else if (filter.type === "port") {
-                    if (filter.connection === "0") {
-                        summary += "conn to (" + filter.port + ")";
-                    } else if (filter.connection === "1") {
-                        summary += "X conn to (" + filter.port + ")";
-                    } else if (filter.connection === "2") {
-                        summary += "conn from (" + filter.port + ")";
-                    } else if (filter.connection === "3") {
-                        summary += "X conn from (" + filter.port + ")";
-                    }
-                } else if (filter.type === "connections") {
-                    if (filter.comparator === "=") {
-                        summary += filter.limit + " conns";
-                    } else {
-                        summary += filter.comparator + filter.limit + " conns";
-                    }
-                } else if (filter.type === "target") {
-                    if (filter.to === "0") {
-                        summary += "to " + filter.target;
-                    } else if (filter.to === "1") {
-                        summary += "not to " + filter.target;
-                    } else if (filter.to === "2") {
-                        summary += "from " + filter.target;
-                    } else if (filter.to === "3") {
-                        summary += "not from " + filter.target;
-                    }
-                } else if (filter.type === "tags") {
-                    if (filter.has === "1") {
-                        summary += "tagged (" + filter.tags + ")";
-                    } else {
-                        summary += "no tag (" + filter.tags + ")";
-                    }
-                } else if (filter.type === "env") {
-                    summary += "env: " + filter.env;
-                } else if (filter.type === "role") {
-                    summary += filter.comparator + Math.round(filter.ratio * 100) + "% server";
-                }
-                summary += ", ";
-            });
-            summary = summary.slice(0, -2);
-        } else {
-            summary += "none";
-        }
-
-        //display summary
         var header = filters.displayDiv.previousElementSibling;
         var icon = header.getElementsByTagName("i")[0];
         header.innerHTML = "";
         header.appendChild(icon);
-        header.appendChild(document.createTextNode(summary));
+        var span;
+
+        //span = filters.private.markupSpan("Filter: ");
+        header.appendChild(document.createTextNode("Filter: "));
+
+        //span.style = "color: grey;";
+        if (filters.filters.length > 0) {
+            filters.filters.forEach(function (filter) {
+                if (filter.type === "subnet") {
+                    span = filters.private.markupSpan("subnet /" + filter.subnet);
+
+                } else if (filter.type === "mask") {
+                    span = filters.private.markupSpan("within " + filter.mask);
+
+                } else if (filter.type === "port") {
+                    if (filter.connection === "0") {
+                        span = filters.private.markupSpan("conn to (" + filter.port + ")");
+                    } else if (filter.connection === "1") {
+                        span = filters.private.markupSpan("X conn to (" + filter.port + ")");
+                    } else if (filter.connection === "2") {
+                        span = filters.private.markupSpan("conn from (" + filter.port + ")");
+                    } else if (filter.connection === "3") {
+                        span = filters.private.markupSpan("X conn from (" + filter.port + ")");
+                    }
+
+                } else if (filter.type === "connections") {
+                    if (filter.comparator === "=") {
+                        span = filters.private.markupSpan(filter.limit + " conns");
+                    } else {
+                        span = filters.private.markupSpan(filter.comparator + filter.limit + " conns");
+                    }
+
+                } else if (filter.type === "target") {
+                    if (filter.to === "0") {
+                        span = filters.private.markupSpan("to " + filter.target);
+                    } else if (filter.to === "1") {
+                        span = filters.private.markupSpan("not to " + filter.target);
+                    } else if (filter.to === "2") {
+                        span = filters.private.markupSpan("from " + filter.target);
+                    } else if (filter.to === "3") {
+                        span = filters.private.markupSpan("not from " + filter.target);
+                    }
+
+                } else if (filter.type === "tags") {
+                    if (filter.has === "1") {
+                        span = filters.private.markupSpan("tagged (" + filter.tags + ")");
+                    } else {
+                        span = filters.private.markupSpan("no tag (" + filter.tags + ")");
+                    }
+
+                } else if (filter.type === "env") {
+                    span = filters.private.markupSpan("env: " + filter.env);
+
+                } else if (filter.type === "role") {
+                    span = filters.private.markupSpan(filter.comparator + Math.round(filter.ratio * 100) + "% server");
+                }
+                if (!filter.enabled) {
+                    span.style = "color: LightGray;";
+                }
+                header.appendChild(span);
+                header.appendChild(document.createTextNode(", "));
+            });
+            //remove last comma
+            header.lastChild.remove();
+        } else {
+            header.appendChild(document.createTextNode("none"));
+        }
     };
     filters.private.encodeFilters = function (filterArray) {
         var filterString = "";
