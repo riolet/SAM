@@ -22,6 +22,7 @@ class Details:
         self.port = None
         self.page = 1
         self.page_size=50
+        self.order = None
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
@@ -60,6 +61,8 @@ class Details:
                 self.page_size = max(0, page_size)
             except ValueError:
                 print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
+        if 'order' in GET_data:
+            self.order = GET_data['order']
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))
@@ -78,6 +81,8 @@ class Details:
         info['address'] = self.nice_ip_address()
         
         if node_info:
+            tags = dbaccess.get_tags(self.ip_string)
+            envs = dbaccess.get_env(self.ip_string)
             #node_info has:
             # hostname
             # unique_out_ip
@@ -87,8 +92,11 @@ class Details:
             # unique_in_conn
             # total_in
             # ports_used
+            # endpoints
             # seconds
             info['name'] = node_info.hostname
+            info['tags'] = tags
+            info['envs'] = envs
             info['in'] = {}
             info['in']['total'] = node_info.total_in
             info['in']['u_ip'] = node_info.unique_in_ip
@@ -101,6 +109,7 @@ class Details:
             info['out']['seconds'] = node_info.seconds
             info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
             info['ports'] = node_info.ports_used
+            info['endpoints'] = int(node_info.endpoints)
         else:
             info['error'] = 'No host found this address'
         return info
@@ -113,23 +122,19 @@ class Details:
             port=self.port,
             page=self.page,
             page_size=self.page_size,
-            order="-links")
-        conn_in = {}
-        for connection in inputs:
-            ip = common.IPtoString(connection.pop("ip"))
-            if ip in conn_in:
-                # add a port
-                conn_in[ip] += [connection]
-            else:
-                # add a new entry
-                conn_in[ip] = [connection]
-        # convert to list of tuples to make it sortable
-        conn_in = conn_in.items()
-        conn_in.sort(key=key_by_link_sum, reverse=True)
+            order=self.order)
+        conn_in = list(inputs)
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
+            "direction": "desc",
             "component": "inputs",
+            "headers": [
+                ['src', "Source IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ],
             "rows": conn_in
         }
         return response
@@ -142,23 +147,19 @@ class Details:
             port=self.port,
             page=self.page,
             page_size=self.page_size,
-            order="-links")
-        conn_out = {}
-        for connection in outputs:
-            ip = common.IPtoString(connection.pop("ip"))
-            if ip in conn_out:
-                # add a port
-                conn_out[ip] += [connection]
-            else:
-                # add a new entry
-                conn_out[ip] = [connection]
-        # convert to list of tuples to make it sortable
-        conn_out = conn_out.items()
-        conn_out.sort(key=key_by_link_sum, reverse=True)
+            order=self.order)
+        conn_out = list(outputs)
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
+            "direction": "desc",
             "component": "outputs",
+            "headers": [
+                ['dst', "Dest. IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ],
             "rows": conn_out
         }
         return response
@@ -169,12 +170,18 @@ class Details:
             timestamp_range=self.time_range,
             port=self.port,
             page=self.page,
-            page_size=self.page_size)
+            page_size=self.page_size,
+            order=self.order)
 
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
             "component": "ports",
+            "headers": [
+                ['port', "Port Accessed"],
+                ['links', 'Occurrences']
+            ],
             "rows": ports
         }
         return response
@@ -182,14 +189,23 @@ class Details:
     def children(self):
         children = dbaccess.get_details_children(
             ip_range=self.ip_range,
-            subnet=self.subnet)
-        first = self.page_size * (self.page - 1)
+            subnet=self.subnet,
+            page=self.page,
+            page_size=self.page_size,
+            order=self.order)
         response = {
             "page": self.page,
             "page_size": self.page_size,
+            "order": self.order,
             "count": len(children),
             "component": "children",
-            "rows": children[first:first + self.page_size]
+            "headers": [
+                ['ipstart', "Address"],
+                ['hostname', 'Name'],
+                ['endpoints', 'Active Endpoints'],
+                ['ratio', 'Role (0=client, 1=server)']
+            ],
+            "rows": children
         }
         return response
 
@@ -203,9 +219,9 @@ class Details:
         details['unique_out'] = summary.unique_out
         details['unique_in'] = summary.unique_in
         details['unique_ports'] = summary.unique_ports
-        details['conn_in'] = self.inputs()
-        details['conn_out'] = self.outputs()
-        details['ports_in'] = self.ports()
+        details['inputs'] = self.inputs()
+        details['outputs'] = self.outputs()
+        details['ports'] = self.ports()
         return details
 
     def GET(self, component=None):

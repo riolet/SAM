@@ -1,4 +1,4 @@
-$def with (columns, sorting, rows, tags, spread, prev, next)
+$def with (columns, sorting, rows, tags, envs, spread, prev, next)
 <div class="ui">
 <!--
 ----------------- Filters -----------------
@@ -58,8 +58,10 @@ $def with (columns, sorting, rows, tags, spread, prev, next)
             $elif item[0] == "alias":
               <div class="ui transparent left icon input"><input data-content="$item[1]" placeholder="-" type="text" value="$item[1]"><i class="write icon"></i></div>
             $elif item[0] == "tags":
-              $for tag in item[1]:
+              $for tag in item[1][0]:
                 <span class="ui teal small label">$tag</span>
+              $for tag in item[1][1]:
+                <span class="ui teal small label disabled">$tag</span>
             $else:
               $item[1]
             </td>
@@ -99,7 +101,10 @@ $def with (columns, sorting, rows, tags, spread, prev, next)
 ----------------- Javascript transcription -----------------
 -->
 <script>
-  var known_tags = [];
+  var g_known_tags = [];
   $for tag in tags:
-    known_tags.push("$tag");
+    g_known_tags.push("$tag");
+  var g_known_envs = [];
+  $for env in envs:
+    g_known_envs.push("$env");
 </script>

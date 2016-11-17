@@ -1,11 +1,17 @@
-$def with (ip)
+$def with (ip, tags, envs)
 <script>
   g_initial_ip = "$ip";
+  var g_known_tags = [];
+  $for tag in tags:
+    g_known_tags.push("$tag");
+  var g_known_envs = [];
+  $for env in envs:
+    g_known_envs.push("$env");
 </script>
 <div class="ui container">
   <h3 class="ui center aligned header">
     <div id="hostSearch" class="ui icon input">
-      <input placeholder="Search..." type="text">
+      <input placeholder="Search IP (1.2.3.4/5)" type="text">
       <i class="circular search link icon"></i>
     </div>
   </h3>
@@ -43,9 +49,9 @@ $def with (ip)
       <span>showing 0-0 of 0</span>
       <button class="ui button disabled">next</button>
     </div>
-    <table class="ui very compact celled structured table">
+    <table class="ui very compact sortable celled structured table">
         <thead>
-          <tr>
+          <tr id="conn_in_h">
             <th>Source IP</th>
             <th>Dest. Port</th>
             <th>Count</th>
@@ -64,9 +70,9 @@ $def with (ip)
       <span>showing 0-0 of 0</span>
       <button class="ui button disabled">next</button>
     </div>
-    <table class="ui very compact celled structured table">
+    <table class="ui very compact sortable celled structured table">
         <thead>
-          <tr>
+          <tr id="conn_out_h">
             <th>Dest. IP</th>
             <th>Dest. Port</th>
             <th>Count</th>
@@ -85,11 +91,11 @@ $def with (ip)
       <span>showing 0-0 of 0</span>
       <button class="ui button disabled">next</button>
     </div>
-    <table class="ui very compact sortable celled table">
+    <table class="ui very compact sortable celled structured table">
         <thead>
-          <tr>
+          <tr id="ports_in_h">
             <th>Port Accessed</th>
-            <th class="sorted descending">Occurrences</th>
+            <th>Occurrences</th>
           </tr>
         </thead>
         <tbody id="ports_in"></tbody>
@@ -105,9 +111,9 @@ $def with (ip)
       <span>showing 0-0 of 0</span>
       <button class="ui button disabled">next</button>
     </div>
-    <table class="ui very compact celled structured table">
+    <table class="ui very compact sortable celled structured table">
         <thead>
-          <tr>
+          <tr id="child_nodes_h">
             <th>Address</th>
             <th>Name</th>
             <th>Active Endpoints</th>

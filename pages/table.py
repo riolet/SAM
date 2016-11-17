@@ -46,12 +46,13 @@ class Columns(object):
             'environment': {
                 'nice_name': "Environment",
                 'active': 'environment' in kwargs,
-                'get': lambda x: '-'},
+                'get': lambda x: x.env},
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
-                'get': lambda x: []},
+                'get': lambda x: [x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
         }
+
 
     def translate_row(self, data):
         row = []
@@ -67,7 +68,7 @@ class Columns(object):
 
 class Table(object):
     def __init__(self):
-        self.pageTitle = "Host List"
+        self.pageTitle = "Table View"
         self.columns = Columns(address=1, alias=1, role=1, environment=1, tags=1)
 
     def filters(self, GET_data):
@@ -105,7 +106,10 @@ class Table(object):
         return rows
 
     def tags(self):
-        return ['tag 1', 'tag 2', 'tag 3']
+        return dbaccess.get_tag_list()
+
+    def envs(self):
+        return dbaccess.get_env_list()
 
     def next_page(self, rows, page, page_size):
         if len(rows) > page_size:
@@ -168,6 +172,7 @@ class Table(object):
         order = self.order(GET_data)
         rows = self.rows(filters, page, page_size, order)
         tags = self.tags()
+        envs = self.envs()
 
         nextPage = self.next_page(rows, page, page_size)
         prevPage = self.prev_page(page)
@@ -178,5 +183,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, spread, prevPage, nextPage)) \
+               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, envs, spread, prevPage, nextPage)) \
                + str(common.render._tail())

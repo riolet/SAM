@@ -81,9 +81,9 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             </div>
             <div class="content">
                 <div class="transition hidden">
-                    <table class="ui very compact celled structured table">
+                    <table class="ui very compact sortable celled structured table">
                         <thead>
-                          <tr>
+                          <tr id="conn_in_h">
                             <th>Source IP</th>
                             <th>Dest. Port</th>
                             <th>Count</th>
@@ -100,9 +100,9 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             </div>
             <div class="content">
                 <div class="transition hidden">
-                    <table class="ui very compact celled structured table">
+                    <table class="ui very compact sortable celled structured table">
                         <thead>
-                          <tr>
+                          <tr id="conn_out_h">
                             <th>Dest. IP</th>
                             <th>Dest. Port</th>
                             <th>Count</th>
@@ -121,7 +121,7 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 <div class="transition hidden">
                     <table class="ui very compact sortable celled table">
                         <thead>
-                          <tr>
+                          <tr id="ports_in_h">
                             <th>Port Accessed</th>
                             <th class="sorted descending">Occurrences</th>
                           </tr>
