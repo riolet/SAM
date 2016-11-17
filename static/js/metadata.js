@@ -306,18 +306,18 @@ function present_quick_info(info) {
             div.appendChild(values);
             tag_div.appendChild(div);
 
-            //Activate the selector
-            $(div).dropdown({
-                allowAdditions: true,
-                onChange: tag_change_callback
-            });
-
             //display a span of inherited tags inline
             info.tags.p_tags.forEach(function (tag) {
                 tag_div.appendChild(build_label(tag, "teal", true));
             });
             //attach the row to the table
             target.appendChild(buildKeyValueRow("Tags", tag_div));
+
+            //Activate the selector
+            $(div).dropdown({
+                allowAdditions: true,
+                onChange: tag_change_callback
+            });
         }
         if (info.hasOwnProperty("envs")) {
             tag_div = document.createElement("TD");
@@ -352,13 +352,13 @@ function present_quick_info(info) {
             div.appendChild(values);
             tag_div.appendChild(div);
 
+            target.appendChild(buildKeyValueRow("Environment", tag_div));
+
             //Activate the selector
             $(div).dropdown({
                 allowAdditions: true,
                 onChange: env_change_callback
             });
-
-            target.appendChild(buildKeyValueRow("Environment", tag_div));
         }
         if (info.hasOwnProperty("in")) {
             key = "Inbound connections";
@@ -767,8 +767,9 @@ function requestQuickInfo(event) {
             // Quick info arrived
             searchbar.classList.remove("loading");
             // Render into browser
+            console.log("BEFORE");
             present_quick_info(response.quick_info);
-            console.log(response);
+            console.log("AFTER");
             g_data.quick = response.quick_info;
             if (response.quick_info.hasOwnProperty("error")) {
                 console.log("Quick info Arrived. No host found. Back to waiting.");
