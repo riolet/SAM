@@ -197,7 +197,11 @@ function build_pagination(page, page_size, component, total) {
 
     // descriptive text
     span = document.createElement("SPAN");
-    span.appendChild(document.createTextNode("showing " + page_first + "-" + page_last + " of " + total));
+    if (total > 0) {
+        span.appendChild(document.createTextNode("Showing " + page_first + "-" + page_last + " of " + total));
+    } else {
+        span.appendChild(document.createTextNode("No records to show"));
+    }
     div.appendChild(span);
 
     // NEXT button
