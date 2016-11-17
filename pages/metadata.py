@@ -5,7 +5,7 @@ import dbaccess
 
 class Metadata(object):
     def __init__(self):
-        self.pageTitle = "Metadata Test"
+        self.pageTitle = "Host Details"
 
     def GET(self):
         get_data = web.input()
