@@ -11,7 +11,6 @@ var maxSlideRange 	= 2147483647;
 
 function runUpdate() {
 	if (config.update == true && updateTimer === 0) {
-		updateCall();
 		updateTimer = window.setInterval(updateCall,Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
 		//slideTimer  = window.setInterval(updateSliderRange,Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
 	} else if (config.update == false){
@@ -21,19 +20,13 @@ function runUpdate() {
 }
 
 function updateCall() {
-/*	if (subnetLabel != "") {
-		GET_Nodes([subnetLabel]);
+	if (subnetLabel != "") {
+		GET_nodes(renderCollection);
 	} else {
 		GET_nodes(null);
 	}
 
-*/
-        //sel_remove_all(m_nodes);
-        //sel_set_selection(m_selection.selection)
-        //links_reset();
-        updateRenderRoot();
-        render_all();
-/*
+/*       
    $.ajax({
         url: "/stats",
         type: "GET",

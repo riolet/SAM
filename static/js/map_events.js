@@ -228,6 +228,7 @@ function updateConfig() {
     config.show_out = document.getElementById("show_out").checked;
 	config.update = document.getElementById("update").checked;
     updateRenderRoot();
+	runUpdate();
     render_all();
 }
 
