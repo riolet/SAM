@@ -591,11 +591,11 @@ def set_port_info(data):
 
 
 def get_table_info(clauses, page, page_size, order_by, order_dir):
-    WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
+    WHERE = " && ".join(clause.where() for clause in clauses if clause.where() and clause.enabled)
     if WHERE:
         WHERE = "WHERE " + WHERE
 
-    HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
+    HAVING = " && ".join(clause.having() for clause in clauses if clause.having() and clause.enabled)
     if HAVING:
         HAVING = "HAVING " + HAVING
 
