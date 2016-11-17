@@ -1,0 +1,8 @@
+#filters label.inline {
+  display: inline;
+}
+
+.hspacer {
+  display: inline-block;
+  width: 5em;
+}

@@ -67,7 +67,7 @@ def filter_lines(rows):
         try:
             number = int(i[key_portnumber])
             filtered_rows.append([name, number, tcp, udp, desc])
-        except ValueError as e:
+        except ValueError:
             # expand the number range
             try:
                 number = expand(i[key_portnumber])
@@ -87,14 +87,14 @@ def combine_duplicates(rows):
     key_tcp = 2
     key_udp = 3
 
-    rows.sort(key=lambda p : p[key_portnumber])
+    rows.sort(key=lambda p: p[key_portnumber])
 
     ports = []
-    currentPortNumber = -1
+    current_port_number = -1
     last_index = -1
     for i in rows:
-        if i[key_portnumber] != currentPortNumber:
-            currentPortNumber = i[key_portnumber]
+        if i[key_portnumber] != current_port_number:
+            current_port_number = i[key_portnumber]
             ports.append(i)
             last_index += 1
         else:
@@ -126,16 +126,15 @@ def write_default_port_data(ports):
   }},
  """.format(port[key_portnumber], port[key_tcp], port[key_udp], port[key_name], port[key_description])
             f.write(text)
-        text = \
-            """    \"{0}\": {{
+        text = """    \"{0}\": {{
     \"port\": {0},
     \"tcp\": {1},
     \"udp\": {2},
     \"name\": \"{3}\",
     \"description\": \"{4}\"
   }}
-""".format(ports[-1][key_portnumber], ports[-1][key_tcp], ports[-1][key_udp], ports[-1][key_name],
-                       ports[-1][key_description])
+""".format(ports[-1][key_portnumber], ports[-1][key_tcp], ports[-1][key_udp],
+           ports[-1][key_name], ports[-1][key_description])
         f.write(text)
         f.write("""  }
 }""")
@@ -151,6 +150,7 @@ def rebuild_lut():
 
     # 2.  rebuild database with new port information
     dbaccess.reset_port_names()
+
 
 if __name__ == '__main__':
     rebuild_lut()

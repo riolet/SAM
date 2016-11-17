@@ -1,9 +1,12 @@
 $def with ()
 $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/template.py for details
 <script src="/static/js/map.js"></script>
-<h3 class="ui center aligned header">Map</h3>
+<h3 class="ui center aligned header">Loading...</h3>
 <div id="output">
     <canvas id="canvas"></canvas>
+<!--
+--------------- Search Panel ---------------
+-->
     <div id="searchbar">
         <div class="ui icon menu">
             <div class="ui left dropdown item">
@@ -57,10 +60,13 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             </div>
         </div>
     </div>
+<!--
+--------------- Selection Details Panel ---------------
+-->
     <div id="sel_bar">
         <div id="sel_titles">
             <h4>No selection</h4>
-            <h5></h5>
+            <h5>&nbsp;</h5>
         </div>
         <div id="selectionInfo" class="ui styled fluid accordion">
             <div class="title">
@@ -69,11 +75,13 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             </div>
             <div class="content">
                 <div class="transition hidden">
-                    <table class="ui very compact celled structured table">
+                    <table class="ui very compact sortable celled structured table">
                         <thead>
+                          <tr id="conn_in_h">
                             <th>Source IP</th>
                             <th>Dest. Port</th>
                             <th>Count</th>
+                          </tr>
                         </thead>
                         <tbody id="conn_in"></tbody>
                         <tfoot class="full-width" id="conn_in_overflow"></tfoot>
@@ -86,11 +94,13 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             </div>
             <div class="content">
                 <div class="transition hidden">
-                    <table class="ui very compact celled structured table">
+                    <table class="ui very compact sortable celled structured table">
                         <thead>
+                          <tr id="conn_out_h">
                             <th>Dest. IP</th>
                             <th>Dest. Port</th>
                             <th>Count</th>
+                          </tr>
                         </thead>
                         <tbody id="conn_out"></tbody>
                         <tfoot class="full-width" id="conn_out_overflow"></tfoot>
@@ -105,8 +115,10 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 <div class="transition hidden">
                     <table class="ui very compact sortable celled table">
                         <thead>
+                          <tr id="ports_in_h">
                             <th>Port Accessed</th>
                             <th class="sorted descending">Occurrences</th>
+                          </tr>
                         </thead>
                         <tbody id="ports_in"></tbody>
                         <tfoot class="full-width" id="ports_in_overflow"></tfoot>
@@ -114,8 +126,12 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                 </div>
             </div>
         </div>
+        <div id="sel_link" class="bottom attached ui segment" style="display: none"></div>
     </div>
 </div>
+<!--
+--------------- Port Edit Panel ---------------
+-->
 <div class="ui modal ports">
     <div class="header">Port <span id="port_number"></span></div>
     <div class="content">
@@ -152,6 +168,9 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
         </div>
     </div>
 </div>
+<!--
+--------------- Node Edit Panel (unused) ---------------
+-->
 <div class="ui modal nodeinfo">
     <div class="header">Port <span id="host_number"></span></div>
     <div class="content">

@@ -46,21 +46,27 @@ function GET_nodes(parents, callback) {
                 callback(response);
             } else {
                 updateRenderRoot();
-                render(tx, ty, scale);
+                render_all();
             }
         }
     });
 }
 
 function reportErrors(response) {
-    if (response.code !== 0) {
-        console.log("Error: " + response.message);
+    if (response.hasOwnProperty("result")) {
+        console.log("Result: " + response.result);
     }
 }
 
-function POST_node_alias(node, name) {
+/**
+ * Update a node alias on the server.
+ *
+ * @param address  node address, "192.168"
+ * @param name  the new name to use for that address
+ */
+function POST_node_alias(address, name) {
     "use strict";
-    var request = {"node": node.address, "alias": name}
+    var request = {"node": address, "alias": name}
     $.ajax({
         url: "/nodeinfo",
         type: "POST",
@@ -97,7 +103,7 @@ function POST_portinfo(request) {
     });
 }
 
-function GET_portinfo(port) {
+function GET_portinfo(port, callback) {
     "use strict";
     var requestData = {"port": port.join(",")};
     $.ajax({
@@ -106,7 +112,13 @@ function GET_portinfo(port) {
         data: requestData,
         dataType: "json",
         error: onNotLoadData,
-        success: GET_portinfo_callback
+        success: function (response) {
+            ports.private.GET_response(response);
+
+            if (typeof callback === "function") {
+                callback();
+            }
+        }
     });
 }
 
@@ -115,13 +127,13 @@ function checkLoD() {
 
     var nodesToLoad = []
     renderCollection.forEach(function (node) {
-        if (node.subnet < currentSubnet()) {
+        if (node.subnet < currentSubnet(g_scale)) {
             nodesToLoad.push(node);
         }
     });
     GET_nodes(nodesToLoad);
     updateRenderRoot();
-    render(tx, ty, scale);
+    render_all();
 }
 
 function GET_details(node, callback) {
@@ -144,25 +156,54 @@ function GET_details(node, callback) {
             node.details["unique_in"] = result.unique_in;
             node.details["unique_out"] = result.unique_out;
             node.details["unique_ports"] = result.unique_ports;
-            node.details["conn_in"] = result.conn_in;
-            node.details["conn_out"] = result.conn_out;
-            node.details["ports_in"] = result.ports_in;
+            node.details["inputs"] = result.inputs;
+            node.details["outputs"] = result.outputs;
+            node.details["ports"] = result.ports;
             node.details["loaded"] = true;
 
-            result.conn_in.forEach(function (element) {
-                element[1].forEach(function (port) {
-                    port_request_add(port.port);
+            result.inputs.rows.forEach(function (element) {
+                ports.request_add(element.port);
+            });
+            result.outputs.rows.forEach(function (element) {
+                ports.request_add(element.port);
+            });
+            result.ports.rows.forEach(function (element) {
+                ports.request_add(element.port);
+            });
+            ports.request_submit();
+
+            if (typeof callback === "function") {
+                callback();
+            }
+        }
+    });
+}
+
+function GET_details_sorted(node, component, order, callback) {
+    "use strict";
+
+    var requestData = {
+        "address": node.address,
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend,
+        "order": order
+        };
+
+    $.ajax({
+        url: "/details/" + component,
+        //dataType: "json",
+        type: "GET",
+        data: requestData,
+        error: onNotLoadData,
+        success: function (result) {
+            Object.keys(result).forEach(function (part) {
+                node.details[part] = result[part]
+                result[part].rows.forEach(function (element) {
+                    ports.request_add(element.port);
                 });
             });
-            result.conn_out.forEach(function (element) {
-                element[1].forEach(function (port) {
-                    port_request_add(port.port);
-                });
-            });
-            result.ports_in.forEach(function (element) {
-                port_request_add(element.port);
-            });
-            port_request_submit();
+            ports.request_submit();
 
             if (typeof callback === "function") {
                 callback();

@@ -1,0 +1,110 @@
+$def with (columns, sorting, rows, tags, envs, spread, prev, next)
+<div class="ui">
+<!--
+----------------- Filters -----------------
+-->
+  <div class="ui styled fluid accordion">
+    <div class="title"><i class="dropdown icon"></i>Filters: none</div>
+    <div class="content" id="filters">
+    </div>
+  </div>
+<!--
+----------------- Pagination -----------------
+-->
+  <div class="ui two column grid">
+    <div class="row">
+      <div class="left floated left aligned column">
+        $if prev:
+          <a href="$prev"><button class="ui button">prev</button></a>
+        $else:
+          <button class="ui button disabled">prev</button>
+        $spread
+        $if next:
+          <a href="$next"><button class="ui button">next</button></a>
+        $else:
+          <button class="ui button disabled">next</button>
+      </div>
+      <div class="right floated right aligned column">
+        Results per page:
+        <div class="ui floated right buttons pagesize">
+          <button class="ui button">10</button>
+          <button class="ui button">20</button>
+          <button class="ui button">50</button>
+          <button class="ui button">100</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<!--
+----------------- Table -----------------
+-->
+  <table class="ui selectable striped sortable small table" id="resultsTable">
+    <thead>
+      <tr>
+        $for i, name in enumerate(columns):
+          $if i == sorting[0]:
+            <th id="header$i" class="sorted $('ascending' if sorting[1] == 'asc' else 'descending')">$name[1]</th>
+          $else:
+            <th id="header$i">$name[1]</th>
+      </tr>
+    </thead>
+    <tbody>
+      $for row in rows:
+        <tr data-content="$row[0][1]">
+          $for item in row:
+            <td class="td_$item[0]">
+            $if item[0] == "address":
+              <a href="/metadata?ip=$item[1]"><i class="tasks icon"></i>$item[1]</a>
+            $elif item[0] == "alias":
+              <div class="ui transparent left icon input"><input data-content="$item[1]" placeholder="-" type="text" value="$item[1]"><i class="write icon"></i></div>
+            $elif item[0] == "tags":
+              $for tag in item[1][0]:
+                <span class="ui teal small label">$tag</span>
+              $for tag in item[1][1]:
+                <span class="ui teal small label disabled">$tag</span>
+            $else:
+              $item[1]
+            </td>
+        </tr>
+    </tbody>
+    <tfoot></tfoot>
+  </table>
+<!--
+----------------- Pagination -----------------
+-->
+  <div class="ui two column grid">
+    <div class="row">
+      <div class="left floated left aligned column">
+        $if prev:
+          <a href="$prev"><button class="ui button">prev</button></a>
+        $else:
+          <button class="ui button disabled">prev</button>
+        $spread
+        $if next:
+          <a href="$next"><button class="ui button">next</button></a>
+        $else:
+          <button class="ui button disabled">next</button>
+      </div>
+      <div class="right floated right aligned column">
+        Results per page:
+        <div class="ui floated right buttons pagesize">
+          <button class="ui button">10</button>
+          <button class="ui button">20</button>
+          <button class="ui button">50</button>
+          <button class="ui button">100</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!--
+----------------- Javascript transcription -----------------
+-->
+<script>
+  var g_known_tags = [];
+  $for tag in tags:
+    g_known_tags.push("$tag");
+  var g_known_envs = [];
+  $for env in envs:
+    g_known_envs.push("$env");
+</script>

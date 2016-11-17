@@ -3,8 +3,6 @@
 import random
 import math
 import sys
-import os
-import json
 import common
 import dbaccess
 import traceback
@@ -16,12 +14,14 @@ from time import time
 class Node:
     def __init__(self, parent, ip, alias=""):
         self.alias = alias
-        if parent != None:
+        if parent is not None:
             self.address = "{0}.{1:d}".format(parent.address, ip)
         else:
             self.address = "{0:d}".format(ip)
         self.number = ip
         self.parent = parent
+        self.client = False
+        self.server = False
         self.children = {}
         self.ports = []
         self.init_ports()
@@ -49,7 +49,7 @@ class Node:
         return random.choice(self.ports)
 
     def get_as_int(self):
-        if self.parent != None:
+        if self.parent is not None:
             return (self.parent.get_as_int() << 8) + self.number
         return self.number
 
@@ -111,13 +111,13 @@ def generate_nodes():
 
     # clients
     clients8 = Node(None, c_cluster, "clients")
-    gen16 = gen_ips(random.randint(2, 5)) # 12.xx
+    gen16 = gen_ips(random.randint(2, 5))  # 12.xx
     for ip16 in gen16:
         node16 = Node(clients8, ip16)
-        gen24 = gen_ips(random.randint(1, 8)) # 12.34.xx
+        gen24 = gen_ips(random.randint(1, 8))  # 12.34.xx
         for ip24 in gen24:
             node24 = Node(node16, ip24)
-            gen32 = gen_ips(random.randint(1, 2)) # 12.34.56.xx
+            gen32 = gen_ips(random.randint(1, 2))  # 12.34.56.xx
             for ip32 in gen32:
                 node32 = Node(node24, ip32)
                 node24.add_child(node32)
@@ -126,13 +126,13 @@ def generate_nodes():
 
     # clients and servers
     clients_and_servers8 = Node(None, cs_cluster, "clients and servers")
-    gen16 = gen_ips(random.randint(2, 4)) # 12.xx
+    gen16 = gen_ips(random.randint(2, 4))  # 12.xx
     for ip16 in gen16:
         node16 = Node(clients_and_servers8, ip16)
-        gen24 = gen_ips(random.randint(1, 5)) # 12.34.xx
+        gen24 = gen_ips(random.randint(1, 5))  # 12.34.xx
         for ip24 in gen24:
             node24 = Node(node16, ip24)
-            gen32 = gen_ips(random.randint(1, 8)) # 12.34.56.xx
+            gen32 = gen_ips(random.randint(1, 8))  # 12.34.56.xx
             for ip32 in gen32:
                 node32 = Node(node24, ip32)
                 node24.add_child(node32)
@@ -141,20 +141,20 @@ def generate_nodes():
 
     # servers
     servers8 = Node(None, s_cluster, "servers")
-    gen16 = gen_ips(random.randint(1, 2)) # 12.xx
+    gen16 = gen_ips(random.randint(1, 2))  # 12.xx
     for ip16 in gen16:
         node16 = Node(servers8, ip16)
-        gen24 = gen_ips(random.randint(8, 16)) # 12.34.xx
+        gen24 = gen_ips(random.randint(8, 16))  # 12.34.xx
         for ip24 in gen24:
             node24 = Node(node16, ip24)
-            gen32 = gen_ips(random.randint(1, 2)) # 12.34.56.xx
+            gen32 = gen_ips(random.randint(1, 2))  # 12.34.56.xx
             for ip32 in gen32:
                 node32 = Node(node24, ip32)
                 node24.add_child(node32)
             node16.add_child(node24)
         servers8.add_child(node16)
 
-    return (clients8, clients_and_servers8, servers8)
+    return clients8, clients_and_servers8, servers8
 
 
 def print_node(node):
@@ -170,7 +170,7 @@ def print_node(node):
 def count_leaves(node):
     if len(node.children) == 0:
         return 1
-    count = 0;
+    count = 0
     for n in node.children.values():
         count += count_leaves(n)
     return count
@@ -212,6 +212,7 @@ def gen_links(c, cs, s):
             destPort = dest.random_port()
             for i in range(occurences):
                 yield (source.get_as_int(), random.randint(16384, 65535), dest.get_as_int(), destPort)
+
 
 def generate_time():
     one_week_in_seconds = 60 * 60 * 24 * 7
@@ -278,20 +279,21 @@ def insert_data(rows, count):
         common.db.multiple_insert('Syslog', values=truncated_rows)
     except Exception as e:
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
-        if e[0] == 1049: # Unknown database 'samapper'
+        if e[0] == 1049:  # Unknown database 'samapper'
             dbaccess.create_database()
             insert_data(rows, count)
-        elif e[0] == 1045: # Access Denied for '%s'@'%s' (using password: (YES|NO))
+        elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print(e[1])
             print("Check your username / password? (dbconfig_local.py)")
             sys.exit(1)
         else:
             print("Critical failure.")
             print(e.message)
-            print '-'*60
+            print '-' * 60
             traceback.print_exc(file=sys.stdout)
-            print '-'*60
+            print '-' * 60
             sys.exit(2)
+
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":

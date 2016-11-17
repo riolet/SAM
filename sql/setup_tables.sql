@@ -1,116 +1,65 @@
-CREATE TABLE Nodes8
-(ip8               INT NOT NULL
-,connections       INT NOT NULL
-,children          INT DEFAULT 0
+-- Translates an IP from 1234567890 to "73.150.2.210"
+DROP FUNCTION IF EXISTS decodeIP;
+CREATE FUNCTION decodeIP (ip INT UNSIGNED)
+RETURNS CHAR(15) DETERMINISTIC
+RETURN CONCAT(ip DIV 16777216, CONCAT(".", CONCAT(ip DIV 65536 MOD 256, CONCAT(".", CONCAT(ip DIV 256 MOD 256, CONCAT(".", ip MOD 256))))));
+SELECT decodeIP(356712447);
+
+-- Create the Nodes table
+CREATE TABLE IF NOT EXISTS Nodes
+(ipstart           INT UNSIGNED NOT NULL
+,ipend             INT UNSIGNED NOT NULL
+,subnet            INT NOT NULL
+,alias             VARCHAR(96)
+,env               VARCHAR(64)
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
-,alias             VARCHAR(96)
-,CONSTRAINT PKNodes8 PRIMARY KEY (ip8)
+,CONSTRAINT PKNodes PRIMARY KEY (ipstart, ipend)
+,INDEX nenv (env)
 );
 
-CREATE TABLE Nodes16
-(ip8               INT NOT NULL
-,ip16              INT NOT NULL
-,connections       INT NOT NULL
-,children          INT DEFAULT 0
-,x                 FLOAT(12,3) DEFAULT 0
-,y                 FLOAT(12,3) DEFAULT 0
-,radius            FLOAT(12,3) DEFAULT 200
-,alias             VARCHAR(96)
-,CONSTRAINT PKNodes16 PRIMARY KEY (ip8, ip16)
-,CONSTRAINT FKParent16 FOREIGN KEY (ip8) REFERENCES Nodes8 (ip8)
-);
-
-CREATE TABLE Nodes24
-(ip8               INT NOT NULL
-,ip16              INT NOT NULL
-,ip24              INT NOT NULL
-,connections       INT NOT NULL
-,children          INT DEFAULT 0
-,x                 FLOAT(12,3) DEFAULT 0
-,y                 FLOAT(12,3) DEFAULT 0
-,radius            FLOAT(12,3) DEFAULT 20
-,alias             VARCHAR(96)
-,CONSTRAINT PKNodes24 PRIMARY KEY (ip8, ip16, ip24)
-,CONSTRAINT FKParent24 FOREIGN KEY (ip8, ip16) REFERENCES Nodes16 (ip8, ip16)
-);
-
-CREATE TABLE Nodes32
-(ip8               INT NOT NULL
-,ip16              INT NOT NULL
-,ip24              INT NOT NULL
-,ip32              INT NOT NULL
-,connections       INT NOT NULL
-,children          INT DEFAULT 0
-,x                 FLOAT(12,3) DEFAULT 0
-,y                 FLOAT(12,3) DEFAULT 0
-,radius            FLOAT(12,3) DEFAULT 2
-,alias             VARCHAR(96)
-,CONSTRAINT PKNodes32 PRIMARY KEY (ip8, ip16, ip24, ip32)
-,CONSTRAINT FKParent32 FOREIGN KEY (ip8, ip16, ip24) REFERENCES Nodes24 (ip8, ip16, ip24)
-);
-
-CREATE TABLE Links8
-(source8           INT NOT NULL
-,dest8             INT NOT NULL
+-- Create the Links table
+CREATE TABLE IF NOT EXISTS Links
+(src               INT UNSIGNED NOT NULL
+,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
-,links             INT DEFAULT 1
-,x1                FLOAT(12,3) DEFAULT 0
-,y1                FLOAT(12,3) DEFAULT 0
-,x2                FLOAT(12,3) DEFAULT 0
-,y2                FLOAT(12,3) DEFAULT 0
 ,timestamp         TIMESTAMP NOT NULL
-,CONSTRAINT PKLinks8 PRIMARY KEY (source8, dest8, port, timestamp)
+,links             INT DEFAULT 1
+,CONSTRAINT PKLinks PRIMARY KEY (src, dst, port, timestamp)
 );
 
-CREATE TABLE Links16
-(source8           INT NOT NULL
-,source16          INT NOT NULL
-,dest8             INT NOT NULL
-,dest16            INT NOT NULL
+CREATE TABLE IF NOT EXISTS LinksIn
+(src_start         INT UNSIGNED NOT NULL
+,src_end           INT UNSIGNED NOT NULL
+,dst_start         INT UNSIGNED NOT NULL
+,dst_end           INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
-,links             INT DEFAULT 1
-,x1                FLOAT(12,3) DEFAULT 0
-,y1                FLOAT(12,3) DEFAULT 0
-,x2                FLOAT(12,3) DEFAULT 0
-,y2                FLOAT(12,3) DEFAULT 0
 ,timestamp         TIMESTAMP NOT NULL
-,CONSTRAINT PKLinks16 PRIMARY KEY (source8, source16, dest8, dest16, port, timestamp)
+,links             INT DEFAULT 1
+,CONSTRAINT PKLinksIn PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
+,CONSTRAINT FKLinksInSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
+,CONSTRAINT FKLinksInDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
 );
 
-CREATE TABLE Links24
-(source8           INT NOT NULL
-,source16          INT NOT NULL
-,source24          INT NOT NULL
-,dest8             INT NOT NULL
-,dest16            INT NOT NULL
-,dest24            INT NOT NULL
+CREATE TABLE IF NOT EXISTS LinksOut
+(src_start         INT UNSIGNED NOT NULL
+,src_end           INT UNSIGNED NOT NULL
+,dst_start         INT UNSIGNED NOT NULL
+,dst_end           INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
-,links             INT DEFAULT 1
-,x1                FLOAT(12,3) DEFAULT 0
-,y1                FLOAT(12,3) DEFAULT 0
-,x2                FLOAT(12,3) DEFAULT 0
-,y2                FLOAT(12,3) DEFAULT 0
 ,timestamp         TIMESTAMP NOT NULL
-,CONSTRAINT PKLinks24 PRIMARY KEY (source8, source16, source24, dest8, dest16, dest24, port, timestamp)
+,links             INT DEFAULT 1
+,CONSTRAINT PKLinksOut PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
+,CONSTRAINT FKLinksOutSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
+,CONSTRAINT FKLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
 );
 
-CREATE TABLE Links32
-(source8           INT NOT NULL
-,source16          INT NOT NULL
-,source24          INT NOT NULL
-,source32          INT NOT NULL
-,dest8             INT NOT NULL
-,dest16            INT NOT NULL
-,dest24            INT NOT NULL
-,dest32            INT NOT NULL
-,port              INT NOT NULL
-,links             INT DEFAULT 1
-,x1                FLOAT(12,3) DEFAULT 0
-,y1                FLOAT(12,3) DEFAULT 0
-,x2                FLOAT(12,3) DEFAULT 0
-,y2                FLOAT(12,3) DEFAULT 0
-,timestamp         TIMESTAMP NOT NULL
-,CONSTRAINT PKLinks32 PRIMARY KEY (source8, source16, source24, source32, dest8, dest16, dest24, dest32, port, timestamp)
+-- Create the table of tags
+CREATE TABLE IF NOT EXISTS Tags
+(ipstart           INT UNSIGNED NOT NULL
+,ipend             INT UNSIGNED NOT NULL
+,tag               VARCHAR(32)
+,CONSTRAINT PKTags PRIMARY KEY (ipstart, ipend, tag)
+,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES Nodes (ipstart, ipend)
 );

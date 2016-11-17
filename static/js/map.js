@@ -5,7 +5,7 @@ var rect; //render region on screen
 //global transform coordinates, with initial values
 var tx = 0;
 var ty = 0;
-var scale = 0.0007;
+var g_scale = 0.0007;
 
 //mouse interaction variables
 var ismdown = false;
@@ -18,12 +18,16 @@ var my;
 var renderCollection = [];
 var subnetLabel = "";
 
+// Timing variables
+var MILLIS_PER_MIN = 60000;
+var MINS_PER_UPDATE   = 5;
+
 //settings/options data
 var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
-    "show_out": false,
+    "show_out": true,
     "filter": "",
     "tstart": 1,
     "tend": 2147483647
@@ -36,7 +40,8 @@ var zNodes24 = 0.0555;
 var zLinks24 = 0.267;
 var zNodes32 = 1.333;
 var zLinks32 = 6.667;
-var chunkSize = 40;
+//max number of link requests to make at once, in link_request_submit()
+var g_chunkSize = 40;
 
 //for filtering and searching
 var g_timer = null;
@@ -44,24 +49,16 @@ var g_timer = null;
 function init() {
     "use strict";
     canvas = document.getElementById("canvas");
-    var navBarHeight = $("#navbar").height();
-    $("#output").css("top", navBarHeight);
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - navBarHeight;
+    ctx = canvas.getContext("2d");
+    init_canvas(canvas, ctx);
+
     rect = canvas.getBoundingClientRect();
     tx = rect.width / 2;
     ty = rect.height / 2;
-    ctx = canvas.getContext("2d");
-    ctx.lineJoin = "bevel";
-    sel_init();
 
-    //Event listeners for detecting clicks and zooms
-    canvas.addEventListener("mousedown", mousedown);
-    canvas.addEventListener("mousemove", mousemove);
-    canvas.addEventListener("mouseup", mouseup);
-    canvas.addEventListener("mouseout", mouseup);
-    canvas.addEventListener("wheel", wheel);
     window.addEventListener("keydown", keydown, false);
+
+    sel_init();
 
     var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
@@ -71,7 +68,7 @@ function init() {
     searchElement.value = "";
     searchElement.oninput = onsearch;
 
-    updateFloatingPanel();
+    sel_panel_height();
 
     document.getElementById("show_clients").checked = config.show_clients;
     document.getElementById("show_servers").checked = config.show_servers;
@@ -83,13 +80,36 @@ function init() {
         action: updateConfig
     });
     $(".input.icon").popup();
-    $("table.sortable").tablesort();
+
+    //configure ports
+    ports.display_callback = function() {
+        render_all();
+        sel_update_display();
+    };
 
     //loadData();
     GET_nodes(null);
+
+	window.setInterval(function(){GET_nodes(null);},Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
+	
 }
 
-function currentSubnet() {
+function init_canvas(c, cx) {
+    var navBarHeight = $("#navbar").height();
+    $("#output").css("top", navBarHeight);
+    c.width = window.innerWidth;
+    c.height = window.innerHeight - navBarHeight;
+    cx.lineJoin = "bevel";
+
+    //Event listeners for detecting clicks and zooms
+    c.addEventListener("mousedown", mousedown);
+    c.addEventListener("mousemove", mousemove);
+    c.addEventListener("mouseup", mouseup);
+    c.addEventListener("mouseout", mouseup);
+    c.addEventListener("wheel", wheel);
+}
+
+function currentSubnet(scale) {
     "use strict";
     if (scale < zNodes16) {
         return 8;
@@ -101,6 +121,45 @@ function currentSubnet() {
         return 24;
     }
     return 32;
+}
+
+function find_by_range(ipstart, ipend) {
+    var segments;
+    var range = ipend - ipstart;
+    if (range === 16777215) {
+        segments = 1;
+    } else if (range === 65535) {
+        segments = 2;
+    } else if (range === 255) {
+        segments = 3;
+    } else if (range === 0) {
+        segments = 4;
+    } else {
+        console.error("invalid ip range? (ipstart=" + ipstart + ", ipend=" + ipend + ")");
+    }
+
+    ips = [(ipstart & 0xff000000) >> 24];
+    if (ips[0] < 0) {
+        ips[0] = 256 + ips[0];
+    }
+
+    if (segments > 1) {
+        ips[1] = (ipstart & 0xff0000) >> 16;
+    } else {
+        ips[1] = undefined;
+    }
+    if (segments > 2) {
+        ips[2] = (ipstart & 0xff00) >> 8;
+    } else {
+        ips[2] = undefined;
+    }
+    if (segments > 3) {
+        ips[3] = (ipstart & 0xff);
+    } else {
+        ips[3] = undefined;
+    }
+
+    return findNode(ips[0], ips[1], ips[2], ips[3]);
 }
 
 function findNode(ip8, ip16, ip24, ip32) {

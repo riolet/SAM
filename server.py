@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 sys.path.append(os.path.dirname(__file__))
 import web
 
@@ -14,15 +15,17 @@ urls = (
     '/nodes', 'pages.nodes.Nodes',
     '/links', 'pages.links.Links',
     '/details', 'pages.details.Details',
+    '/details/(.+)', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
+    '/metadata', 'pages.metadata.Metadata',
+    '/table', 'pages.table.Table',
 )
 
 # For development testing, uncomment these 3 lines
 if __name__ == "__main__":
     app = web.application(urls, globals())
     app.run()
-
 # For apache2 mod_wsgi deployment, uncomment these two lines
 # app = web.application(urls, globals(), autoreload=False)
 # application = app.wsgifunc()

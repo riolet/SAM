@@ -1,6 +1,163 @@
+2016-11-17
+
+2106-11-16
+sorting tables on metadata page
+    (sorting is done in the DB. tablesort.js removed from repository)
+fixed several Chrome browser issues
+clarified metadata search hint
+tableview filters accordian opens automatically if no filters are present
+
+2016-11-15
+env filter in tableview drastically faster after adding index to table
+updated tests
+dynamically generating table headers for details (map selection info and metadata)
+
+2016-11-14
+jslinting,
+tag displayed in selection list
+tags addable, removable
+environments added to tableview and metadata
+    Can have 1 environment only, but is inherited from higher subnets
+added environment filter to tableview
+
+2016-11-10
+Added tags table to database
+fixed bug with new filters not being added on pressing "apply filters"
+added "endpoints" key to metadat quickinfo
+reorganized metadata code structure
+added hostname editing to metadata page
+fixed table formation for "name" row
+
+2016-11-09
+Added hostname edit ability to tableview
+added role filter to tableview
+added tag display support to tableview
+
+2016-11-08
+added pagination to metadata
+renamed tableview columns for clarity
+
+2016-11-07
+completed second-pass quick info for metadata page
+added childNodes tab to metadata
+
+2016-11-04
+WIP metadata page. Summary information
+
+2016-11-03
+added links from the map to the metadata page
+added target and mask filters to tableview
+
+2016-11-02
+converted to new schema:
+    map links
+    stats page
+    preprocessor
+    test cases
+Deleted old tables. Syslog no longer gets used by the site after preprocessing.
+
+2016-11-01
+Added column sorting on table view
+converted details requests to new schema
+converted map nodes to new schema
+partly converted map links to new schema
+
+2016-10-31
+Celebrate Halloween with a new DB schema!
+    New tables are Nodes, Links, LinksIn, LinksOut
+    Nodes:    ((ipstart, ipend)[PK], subnet, alias, x, y, radius)
+    Links:    ((src, dst, port, timestamp)[PK], links)
+    LinksIn:  (((src_start, src_end)[FK], (dst_start, dst_end)[FK], port, timestamp)[PK], links)
+    LinksOut: (((src_start, src_end)[FK], (dst_start, dst_end)[FK], port, timestamp)[PK], links)
+    NOTE: Links no longer include position information--this is calculated in the JS based on Node position
+    NOTE: Nodes no longer carry children/connections information. Wasn't being used, wasn't being updated.
+    NOTE: LinksIn/Out are basically views, in that they are created from the contents of Links.
+        LinksIn/Out are precalculations/preaggregations for mapping purposes.
+Added page_size attribute to tables page UI, querystring, python model, and DB query parameters
+Added default node display of all nodes when no filter is specified.
+
+2016-10-24 .. 2016-10-28
+Frontend:
+    Rebuilt the port system
+        organized into a class now
+        can be used by both map and metadata and future table views.
+    Added table view page template
+    Added temp filters to UI
+    Filters modeled as JS objects
+        filter markup is now js-generated
+        filters can be created, deleted, summarized
+    added "tags" filter
+    saved filters in the query string
+    encode/decode filters for backend requests
+Backend:
+    Backend model of filters
+    decoded filters from AJAX requests
+    developed queries to support filters
+    host links from tables page to metadata page
+    added pagination of searches
+Decided to store all search information in a query string
+    This allows the forwards/backwards buttons to work.
+    (good) This allows the python backend to build the webpage for the client
+    (bad) This causes a refresh/flicker of the page when loading a new search result.
+
+2016-10-19 .. 2016-10-21
+created metadata page
+    designed, coded layout
+    designed, coded state machine for loading node information
+Metadata page now loads/displays information on hosts. Does not edit.
+    uses details pane info for now
+        subdivided the get_details function for versatility
+Bugs in port module (js).
+
+2016-10-18
+Extracted render config color options to top of file
+Render issue with font transparency solved:
+  see https://jsfiddle.net/n7ndx20f/6/
+  Firefox accepts:
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; and
+    ctx.fillStyle = "#0000007F";
+  Chrome accepts:
+    ctx.globalAlpha = 0.5; and
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+split update_display function in map_selection into multiple sections
+added tests for map_selection
+
+2016-10-17
+fixed bug in timerange for get_details in dbaccess
+reduced usage of global "scale" variable in progression to removing the global.
+upgraded test generator to not overwrite existing data
+added tests for map_ports.js
+added tests for map_node.js
+started tests for map_selection.js
+
+2016-10-14
+Started testing the JS
+installed Jasmine testing framework
+added tests for map.js
+wrote python script to create skeleton test files for all functions in js files.
+added partial tests for map_ports.js
+
+2016-10-13
+Should the details pane respect the timerange and port filter?
+  Timerange is respected.
+  Filter is ignored.
+added tests for pages/details.py
+ammended tests for dbaccess.py get_details to cover ports and timeranges
+
+2016-10-12
+fixed several bugs while writing test cases.
+finished writing test cases for dbaccess.py
+added tests for common.py
+added tests for server.py
+added tests for pages/map.py
+added tests for pages/nodes.py
+added tests for pages/links.py
+
 2016-10-11
 updated README for asa and aws importers
 split server.py into server and wsgiserver.py for deployment
+started test cases covering dbaccess.py;
+  rewrote get_links_* functions
 
 2016-09-01
 Tried a new schema:
