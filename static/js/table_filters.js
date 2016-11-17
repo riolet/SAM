@@ -7,6 +7,7 @@
  *  public:
  *    filters = [];
  *    displayDiv = null;
+ *    applyCallback = null;
  *  private:
  *    types = {};
  *
@@ -15,19 +16,26 @@
  *    deleteFilter(index)  // Remove a filter from the state
  *    updateDisplay()  //updates the HTML display from the state
  *    getFilters()  //returns an object encapsulating the filter state (for use in ajax requests)
+ *    setFilters(filterstring) //imports a filter set based on an encoded string
  *
  *  private methods:
  *      //create filter list HTML items, and filter objects
  *      createSubnetFilter(subnet)
+ *      createSubnetFilterRow(subnet)
+ *      createMaskFilter(subnet)
+ *      createMaskFilterRow(subnet)
+ *      createEnvFilter(subnet)
+ *      createEnvFilterRow(subnet)
  *      createPortFilter(comparator_port)
+ *      createPortFilterRow(comparator, port)
  *      createTagFilter(has_tags)
+ *      createTagFilterRow(has, tags)
+ *      createTargetFilter(has_tags)
+ *      createTargetFilterRow(has, tags)
  *      createConnectionsFilter(comparator_limit)
+ *      createConnectionsFilterRow(comparator, limit)
  *
  *      //create HTML for each filter type
- *      createSubnetFilterRow(subnet)
- *      createPortFilterRow(comparator, port)
- *      createTagFilterRow(has, tags)
- *      createConnectionsFilterRow(comparator, limit)
  *
  *      //create form component markup
  *      markupBoilerplate(enabled)
@@ -44,6 +52,8 @@
  *      extractRowValues(head)  //reads the HTML for a filter row to get the input values provided by the user.
  *
  *      updateSummary()  //the short filter text when the filter panel isn't expanded.
+ *      encodeFilters(filterArray) //encode the filter set as a string
+ *      decodeFilters(filterString) //decode a filter string into a set of filters
  *      createFilterCreator()  //the "new filter" row with the "+" button.
  *
  */
@@ -513,7 +523,11 @@
 
     filters.private.addCallback = function (event) {
         //extract: filter type
-        var typeSelector = event.target.nextElementSibling;
+        var button = event.target;
+        while (button.tagName !== "BUTTON") {
+            button = button.parentElement;
+        }
+        var typeSelector = button.nextElementSibling;
         var type = typeSelector.getElementsByTagName("input")[0].value;
         if (!filters.private.types.hasOwnProperty(type)) {
             return;
@@ -524,7 +538,11 @@
         filters.updateDisplay();
     };
     filters.private.deleteCallback = function (event) {
-        var row = event.target.parentElement;
+        var button = event.target;
+        while (button.tagName !== "BUTTON") {
+            button = button.parentElement;
+        }
+        var row = button.parentElement;
         var i = filters.private.getRowIndex(row);
         if (i !== -1) {
             filters.deleteFilter(i);
@@ -538,8 +556,10 @@
             newValue = input.checked;
         }
         var row = input;
+        console.log(row);
+        //ascend the heirarchy until you hit null OR an element that is both a DIV and contains "filter" class
         while (row !== null && !(row.tagName === "DIV" && row.classList.contains("filter"))) {
-            row = row.parentElement;
+            row = row.parentNode;
         }
         var i = filters.private.getRowIndex(row);
         if (i !== -1) {
