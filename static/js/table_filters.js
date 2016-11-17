@@ -158,7 +158,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "subnet";
         filter.subnet = subnet;
         filter.html = filterdiv;
@@ -184,7 +184,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "mask";
         filter.mask = mask;
         filter.html = filterdiv;
@@ -211,7 +211,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "role";
         filter.comparator = comparator;
         filter.ratio = ratio;
@@ -238,7 +238,7 @@
         });
 
         filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "env";
         filter.env = env;
         filter.html = filterdiv;
@@ -265,7 +265,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "port";
         filter.connection = connection;
         filter.port = port;
@@ -307,7 +307,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "tags";
         filter.has = has;
         filter.tags = tags;
@@ -340,7 +340,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "target";
         filter.to = to;
         filter.target = target;
@@ -376,7 +376,7 @@
         });
 
         var filter = {};
-        filter.enabled = true;
+        filter.enabled = enabled;
         filter.type = "connections";
         filter.comparator = comparator;
         filter.direction = direction;
@@ -712,6 +712,7 @@
             // split by |
             var filterArgs = filterString.split(";");
             var typeIndex = filterArgs.shift();
+            console.log("  type: " + typeIndex);
             var enabled = filterArgs.shift();
             enabled = (enabled === "1");
             var type = Object.keys(filters.private.types).sort()[typeIndex];
