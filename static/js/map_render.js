@@ -531,4 +531,5 @@ function render(x, y, scale) {
 function render_all() {
     "use strict";
     render(tx, ty, g_scale);
+	runUpdate();
 }

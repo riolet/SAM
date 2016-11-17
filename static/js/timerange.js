@@ -43,9 +43,9 @@ function slider_init() {
         dataType: "json",
         error: onNotLoadData,
         success: function (response) {
-            create_slider(Math.floor(response.min), Math.floor(response.max));
-            config.tstart = response.min;
+           	config.tstart = response.max - (5*60);
             config.tend = response.max;
+            create_slider(Math.floor(response.min), Math.floor(response.max));
         }
     });
 }
@@ -53,7 +53,9 @@ function slider_init() {
 function create_slider(dtmin, dtmax) {
     "use strict";
     var dateSlider = document.getElementById('slider-date');
-
+	
+	minSlideRange = dtmin;
+	maxSlideRange = dtmax;
     noUiSlider.create(dateSlider, {
         // Create two timestamps to define a range.
         range: {
@@ -68,7 +70,7 @@ function create_slider(dtmin, dtmax) {
         margin: 5 * 60,
 
         // Two more timestamps indicate the handle starting positions.
-        start: [ dtmin, dtmax ],
+        start: [ dtmax, dtmax ],
 
 
         // Shade the selection

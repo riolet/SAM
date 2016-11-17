@@ -18,9 +18,6 @@ var my;
 var renderCollection = [];
 var subnetLabel = "";
 
-// Timing variables
-var MILLIS_PER_MIN = 60000;
-var MINS_PER_UPDATE   = 5;
 
 //settings/options data
 var config = {
@@ -28,6 +25,7 @@ var config = {
     "show_servers": true,
     "show_in": true,
     "show_out": true,
+	"update": true,
     "filter": "",
     "tstart": 1,
     "tend": 2147483647
@@ -74,6 +72,7 @@ function init() {
     document.getElementById("show_servers").checked = config.show_servers;
     document.getElementById("show_in").checked = config.show_in;
     document.getElementById("show_out").checked = config.show_out;
+	document.getElementById("update").checked = config.update;
 
     $(".ui.accordion").accordion();
     $(".ui.dropdown").dropdown({
@@ -88,10 +87,10 @@ function init() {
         sel_update_display();
     };
 
-    //loadData();
+    //loadData();	
     GET_nodes(null);
-
-	window.setInterval(function(){GET_nodes(null);},Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
+	
+	//runUpdate();
 	
 }
 

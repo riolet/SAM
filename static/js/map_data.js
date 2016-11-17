@@ -18,7 +18,6 @@ ajax response: should be an object, where keys are address strings ("12.34.56.78
 function GET_nodes(parents, callback) {
     "use strict";
     var request = {}
-
     if (parents !== null) {
         //filter out parents with children already loaded
         parents = parents.filter(function (parent) {

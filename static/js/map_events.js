@@ -226,6 +226,7 @@ function updateConfig() {
     config.show_servers = document.getElementById("show_servers").checked;
     config.show_in = document.getElementById("show_in").checked;
     config.show_out = document.getElementById("show_out").checked;
+	config.update = document.getElementById("update").checked;
     updateRenderRoot();
     render_all();
 }
