@@ -771,9 +771,7 @@ function requestQuickInfo(event) {
             // Quick info arrived
             searchbar.classList.remove("loading");
             // Render into browser
-            console.log("BEFORE");
             present_quick_info(response.quick_info);
-            console.log("AFTER");
             g_data.quick = response.quick_info;
             if (response.quick_info.hasOwnProperty("error")) {
                 console.log("Quick info Arrived. No host found. Back to waiting.");
@@ -784,7 +782,6 @@ function requestQuickInfo(event) {
                 //Continue to more details
                 dispatcher(new StateChangeEvent(requestMoreDetails));
             }
-
         });
     } else if (event.type === "input") {
         //Aborting requests
