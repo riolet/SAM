@@ -20,13 +20,8 @@ function runUpdate() {
 }
 
 function updateCall() {
-	if (subnetLabel != "") {
-		GET_nodes(renderCollection);
-	} else {
-		GET_nodes(null);
-	}
-
-/*       
+	GET_nodes(null);
+      
    $.ajax({
         url: "/stats",
         type: "GET",
@@ -37,7 +32,6 @@ function updateCall() {
             updateSliderRange(Math.floor(response.min), Math.floor(response.max));
         }
     });
-*/
 }
 
 function updateSliderRange (min, max) {

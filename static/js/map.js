@@ -89,7 +89,7 @@ function init() {
     //loadData();	
 	//This esentially delays the initial display of data until after the slider handles are updated, I am uncertain how viable
 	//this will remain as the number of nodes in the system increase.
-    window.setTimeout(updateCall,50); 
+    window.setTimeout(updateCall,500); 
 
 	//does the initial call to determine if updates.
 	runUpdate();
