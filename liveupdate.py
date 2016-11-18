@@ -24,8 +24,9 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
         textFile = open("syslog_file.txt", "wr")
         textFile.write(data)
         textFile.close()
-        os.system("python2 import_paloalto.py syslog_file.txt")
-        os.system("python2 preprocess.py")
+        os.system("python import_paloalto.py syslog_file.txt")
+        os.system("python preprocess.py")
+
 
 def signal_handler(signal, frame):
     sys.exit(0)

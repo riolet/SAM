@@ -9,6 +9,7 @@ var minSlideRange 	= 1;
 var maxSlideRange 	= 2147483647;
 
 
+//Main fnction of the live update functionality
 function runUpdate() {
 	if (config.update == true && updateTimer === 0) {
 		updateTimer = window.setInterval(updateCall,Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));

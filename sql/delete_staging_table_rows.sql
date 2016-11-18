@@ -1,0 +1,9 @@
+DELETE FROM LinksIn;
+
+DELETE FROM LinksOut;
+
+DELETE FROM Links;
+
+DELETE FROM Tags;
+
+DELETE FROM Nodes;

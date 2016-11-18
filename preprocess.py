@@ -13,7 +13,16 @@ def clean_tables():
     common.db.query("DROP TABLE IF EXISTS Tags;")
     common.db.query("DROP TABLE IF EXISTS Nodes;")
 
+    common.db.query("DROP TABLE IF EXISTS MasterLinksIn;")
+    common.db.query("DROP TABLE IF EXISTS MasterLinksOut;")
+    common.db.query("DROP TABLE IF EXISTS MasterLinks;")
+    common.db.query("DROP TABLE IF EXISTS MasterTags;")
+    common.db.query("DROP TABLE IF EXISTS MasterNodes;")
+
     dbaccess.exec_sql("./sql/setup_tables.sql")
+
+    # create master tables
+    dbaccess.exec_sql("./sql/setup_master_tables.sql")
 
 
 def import_nodes():
@@ -396,11 +405,27 @@ def deduce_LinksOut():
     """
     common.db.query(query)
 
+#--------------------------
+def copy_data_to_master_tables():
+    dbaccess.exec_sql("./sql/copy_to_master_tables.sql")
+#--------------------------
+
+#--------------------------
+def delete_staging_table_rows():
+    dbaccess.exec_sql("./sql/delete_staging_table_rows.sql")    
+#--------------------------
 
 def preprocess_log():
     clean_tables()
     import_nodes()
     import_links()
+
+    # copy data from staging to master
+    copy_data_to_master_tables()
+    
+    # delete all data from staging tables
+    delete_staging_table_rows()
+    
     print("Pre-processing completed successfully.")
 
 
