@@ -72,16 +72,16 @@ def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
         # rows = common.db.select("Nodes8")
-        rows = common.db.select("Nodes", where="subnet=8")
+        rows = common.db.select("MasterNodes", where="subnet=8")
     elif ip16 < 0 or ip16 > 255:
         # check Nodes16
-        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("MasterNodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     elif ip24 < 0 or ip24 > 255:
         # check Nodes24
-        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("MasterNodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     elif ip32 < 0 or ip32 > 255:
         # check Nodes32
-        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("MasterNodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     else:
         rows = []
     return rows
@@ -124,7 +124,7 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
 
     query = """
     SELECT {select}
-    FROM LinksIn
+    FROM MasterLinksIn
     WHERE dst_start = $start && dst_end = $end
      {where}
     {group_by}
@@ -171,7 +171,7 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=No
 
     query = """
     SELECT {select}
-    FROM LinksOut
+    FROM MasterLinksOut
     WHERE src_start = $start && src_end = $end
      {where}
     {group_by}
