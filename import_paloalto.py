@@ -62,10 +62,10 @@ class PaloAltoImporter(BaseImporter):
             return 2
 
 
-        #if split_data[PaloAltoImporter.Protocol] != 'tcp':
-            # # printing this is very noisy and slow
-            # # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
-            # return 3
+        if split_data[PaloAltoImporter.Protocol] != 'tcp':
+            # printing this is very noisy and slow
+            # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
+            return 3
 
         # srcIP, srcPort, dstIP, dstPort
         dictionary['src'] = common.IPtoInt(*(split_data[PaloAltoImporter.SourceIP].split(".")))

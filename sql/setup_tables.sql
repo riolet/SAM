@@ -24,9 +24,15 @@ CREATE TABLE IF NOT EXISTS Links
 (src               INT UNSIGNED NOT NULL
 ,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
+,protocol          CHAR(8) NOT NULL
 ,timestamp         TIMESTAMP NOT NULL
-,links             INT DEFAULT 1
-,CONSTRAINT PKLinks PRIMARY KEY (src, dst, port, timestamp)
+,links             INT DEFAULT 1 NOT NULL
+,bytes_sent        INT NOT NULL
+,bytes_received    INT
+,packets_sent      INT NOT NULL
+,packets_received  INT
+,duration          INT NOT NULL
+,CONSTRAINT PKLinks PRIMARY KEY (src, dst, port, protocol, timestamp)
 );
 
 CREATE TABLE IF NOT EXISTS LinksIn

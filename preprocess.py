@@ -42,10 +42,10 @@ def import_nodes():
             , (331776 * (log.ip DIV 16) / 7.5 - 331776) AS 'y'
             , 20736 AS 'radius'
         FROM(
-            SELECT SourceIP DIV 16777216 AS 'ip'
+            SELECT src DIV 16777216 AS 'ip'
             FROM Syslog
             UNION
-            SELECT DestinationIP DIV 16777216 AS 'ip'
+            SELECT dst DIV 16777216 AS 'ip'
             FROM Syslog
         ) AS log;
     """
@@ -62,10 +62,10 @@ def import_nodes():
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT SourceIP DIV 65536 AS 'ip'
+            SELECT src DIV 65536 AS 'ip'
             FROM Syslog
             UNION
-            SELECT DestinationIP DIV 65536 AS 'ip'
+            SELECT dst DIV 65536 AS 'ip'
             FROM Syslog
         ) AS log
         JOIN Nodes AS parent
@@ -83,10 +83,10 @@ def import_nodes():
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT SourceIP DIV 256 AS 'ip'
+            SELECT src DIV 256 AS 'ip'
             FROM Syslog
             UNION
-            SELECT DestinationIP DIV 256 AS 'ip'
+            SELECT dst DIV 256 AS 'ip'
             FROM Syslog
         ) AS log
         JOIN Nodes AS parent
@@ -104,10 +104,10 @@ def import_nodes():
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT SourceIP AS 'ip'
+            SELECT src AS 'ip'
             FROM Syslog
             UNION
-            SELECT DestinationIP AS 'ip'
+            SELECT dst AS 'ip'
             FROM Syslog
         ) AS log
         JOIN Nodes AS parent
@@ -128,12 +128,21 @@ def import_links():
 
 def build_Links():
     query = """
-        INSERT INTO Links (src, dst, port, timestamp, links)
-        SELECT SourceIP, DestinationIP, DestinationPort
+        INSERT INTO Links (src, dst, port, protocol, timestamp,
+            links, bytes_sent, bytes_received, packets_sent, packets_received, duration)
+        SELECT src
+            , dst
+            , dstport
+            , protocol
             , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
             , COUNT(1) AS links
+            , SUM(bytes_sent) AS 'bytes_sent'
+            , SUM(bytes_received) AS 'bytes_received'
+            , SUM(packets_sent) AS 'packets_sent'
+            , SUM(packets_received) AS 'packets_received'
+            , AVG(duration) AS 'duration'
         FROM Syslog
-        GROUP BY SourceIP, DestinationIP, DestinationPort, ts;
+        GROUP BY src, dst, dstport, protocol, ts;
     """
     common.db.query(query)
 
