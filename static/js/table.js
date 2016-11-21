@@ -83,7 +83,8 @@ function applyFilter() {
     searchs.forEach(function (term) {
         searchString += "&" + term.join("=");
     });
-    window.location.search = "?" + searchString.substr(1);
+    //window.location.search = "?" + searchString.substr(1);
+    window.location.assign("/table?" + searchString.substr(1));
 }
 
 function btn_pagesize_callback(e) {
