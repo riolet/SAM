@@ -5,7 +5,35 @@ from import_base import BaseImporter
 from datetime import datetime
 
 
+def print_dict(d, indent=0, skip=list()):
+    print "{0}{1}".format((' '*indent), "\n{0}".format(' '*indent).join(
+        [u"{0:15s}: {1}".format(k, repr(v)) for k, v in d.iteritems() if k not in skip]
+    ))
+
+
 class PaloAltoImporter(BaseImporter):
+    # Message pieces are as follows.
+    # header_title = "FUTURE_USE, Receive Time, Serial Number, Type, Subtype, FUTURE_USE, Generated Time, Source IP, Destination IP, NAT Source IP, NAT Destination IP, Rule Name, Source User, Destination User, Application, Virtual System, Source Zone, Destination Zone, Ingress Interface, Egress Interface, Log Forwarding Profile, FUTURE_USE, Session ID, Repeat Count, Source Port, Destination Port, NAT Source Port, NAT Destination Port, Flags, Protocol, Action, Bytes, Bytes Sent, Bytes Received, Packets, Start Time, Elapsed Time, Category, FUTURE_USE, Sequence Number, Action Flags, Source Location, Destination Location, FUTURE_USE, Packets Sent, Packets Received, Session End Reason"
+    # header_string = "FUTURE_USE, receive_time, serial, type, subtype, FUTURE_USE, time_generated, src, dst, natsrc, natdst, rule, srcuser, dstuser, app, vsys, from, to, inbound_if, outbound_if, logset, FUTURE_USE, sessionid, repeatcnt, sport, dport, natsport, natdport, flags, proto, action, bytes, bytes_sent, bytes_received, packets, start, elapsed, category, FUTURE_USE, seqno, actionflags, srcloc, dstloc, FUTURE_USE, pkts_sent, pkts_received, session_end_reason"
+    # indexes derived from above:
+    Timestamp = 1
+    Type = 3
+    SourceIP = 7
+    DestIP = 8
+    SourcePort = 24
+    DestPort = 25
+    Protocol = 29
+    BytesTotal = 31
+    BytesSent = 32  # *
+    BytesReceived = 33  # *
+    TotalPackets = 34
+    TimeElapsed = 36
+    PacketsSent = 44  # *
+    PacketsReceived = 45  # *
+    #
+    # *bytes/packets sent/received not always supported.
+    #     In that case store total in received and None in sent
+
     def translate(self, line, line_num, dictionary):
         """
         Converts a given syslog line into a dictionary of (ip, port, ip, port, timestamp)
@@ -20,30 +48,58 @@ class PaloAltoImporter(BaseImporter):
             2 => error in parsing the line. It was too short for some reason
             3 => The protocol wasn't TCP and was ignored.
         """
+
         data = json.loads(line)['message']
-        # TODO: this assumes the data will not have any commas embedded in strings
+        # TODO: this assumes the data will not have any commas embedded in strings.
+        #       Faster than csv parsing. Has been safe so far!
         split_data = data.split(',')
 
-        if split_data[3] != "TRAFFIC":
+        if split_data[PaloAltoImporter.Type] != "TRAFFIC":
             print("Line {0}: Ignoring non-TRAFFIC entry (was {1})".format(line_num, split_data[3]))
             return 1
-        if len(split_data) < 29:
+        if len(split_data) < PaloAltoImporter.Protocol:
             print("error parsing line {0}: {1}".format(line_num, line))
             return 2
-        # 29 is protocol: tcp, udp, ...
-        # TODO: don't ignore everything but TCP
-        if split_data[29] != 'tcp':
-            # printing this is very noisy and slow
-            # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
-            return 3
+
+
+        #if split_data[PaloAltoImporter.Protocol] != 'tcp':
+            # # printing this is very noisy and slow
+            # # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
+            # return 3
 
         # srcIP, srcPort, dstIP, dstPort
-        dictionary['SourceIP'] = common.IPtoInt(*(split_data[7].split(".")))
-        dictionary['SourcePort'] = split_data[24]
-        dictionary['DestinationIP'] = common.IPtoInt(*(split_data[8].split(".")))
-        dictionary['DestinationPort'] = split_data[25]
-        dictionary['Timestamp'] = datetime.strptime(split_data[1], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+        dictionary['src'] = common.IPtoInt(*(split_data[PaloAltoImporter.SourceIP].split(".")))
+        dictionary['srcport'] = split_data[PaloAltoImporter.SourcePort]
+        dictionary['dst'] = common.IPtoInt(*(split_data[PaloAltoImporter.DestIP].split(".")))
+        dictionary['dstport'] = split_data[PaloAltoImporter.DestPort]
+        dictionary['timestamp'] = datetime.strptime(split_data[PaloAltoImporter.Timestamp], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+        dictionary['protocol'] = split_data[PaloAltoImporter.Protocol]
+        if split_data[PaloAltoImporter.BytesSent] and split_data[PaloAltoImporter.BytesReceived] and int(
+                split_data[PaloAltoImporter.BytesSent]) + int(split_data[PaloAltoImporter.BytesReceived]) == int(
+                split_data[PaloAltoImporter.BytesTotal]):
+            dictionary['bytes_sent'] = split_data[PaloAltoImporter.BytesSent]
+            dictionary['bytes_received'] = split_data[PaloAltoImporter.BytesReceived]
+        else:
+            dictionary['bytes_sent'] = None
+            dictionary['bytes_received'] = split_data[PaloAltoImporter.BytesTotal]
+
+        if split_data[PaloAltoImporter.PacketsSent] and split_data[PaloAltoImporter.PacketsReceived] and int(
+                split_data[PaloAltoImporter.PacketsSent]) + int(split_data[PaloAltoImporter.PacketsReceived]) == int(
+                split_data[PaloAltoImporter.TotalPackets]):
+            dictionary['packets_sent'] = split_data[PaloAltoImporter.PacketsSent]
+            dictionary['packets_received'] = split_data[PaloAltoImporter.PacketsReceived]
+        else:
+            dictionary['packets_sent'] = None
+            dictionary['packets_received'] = split_data[PaloAltoImporter.TotalPackets]
+        dictionary['duration'] = split_data[PaloAltoImporter.TimeElapsed]
         return 0
+
+    def insert_datar(self, rows, count):
+        print("====\nInserting\n====")
+        for i in range(count):
+            print_dict(rows[i])
+            print(" ")
+
 
 
 # If running as a script, begin by executing main.
