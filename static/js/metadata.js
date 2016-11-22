@@ -446,7 +446,6 @@ function present_quick_info(info) {
 
 function present_detailed_info(info) {
     "use strict";
-    console.log("present_detailed_info");
     if (info === undefined) {
         info = g_data;
     }
@@ -456,9 +455,6 @@ function present_detailed_info(info) {
         if (info.inputs !== null) {
             // fill headers
             old_body = document.getElementById("conn_in_h");
-            console.log("headers, order");
-            console.log(info.inputs.headers);
-            console.log(info.inputs.order);
             new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, header_sort_callback);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "conn_in_h";
