@@ -150,14 +150,17 @@ def build_Links():
 def deduce_LinksIn():
     # /8 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
             , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """
@@ -165,14 +168,17 @@ def deduce_LinksIn():
 
     # /16 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
             , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -181,9 +187,12 @@ def deduce_LinksIn():
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
             , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
@@ -192,14 +201,17 @@ def deduce_LinksIn():
 
     # /24 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
             , dst DIV 256 * 256 + 255 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 65536) = (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -208,9 +220,12 @@ def deduce_LinksIn():
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
             , dst DIV 256 * 256 + 255 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
@@ -220,9 +235,12 @@ def deduce_LinksIn():
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
             , dst DIV 256 * 256 + 255 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
@@ -231,14 +249,17 @@ def deduce_LinksIn():
 
     # /32 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
             , dst AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 256) = (dst DIV 256)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -247,9 +268,12 @@ def deduce_LinksIn():
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst AS 'dst_start'
             , dst AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 65536) = (dst DIV 65536)
           AND (src DIV 256) != (dst DIV 256)
@@ -259,9 +283,12 @@ def deduce_LinksIn():
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst AS 'dst_start'
             , dst AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
@@ -271,9 +298,12 @@ def deduce_LinksIn():
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst AS 'dst_start'
             , dst AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
@@ -284,14 +314,17 @@ def deduce_LinksIn():
 def deduce_LinksOut():
     # /8 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
             , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """
@@ -299,14 +332,17 @@ def deduce_LinksOut():
 
     # /16 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
             , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -315,9 +351,12 @@ def deduce_LinksOut():
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
             , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
@@ -326,14 +365,17 @@ def deduce_LinksOut():
 
     # /24 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
             , dst DIV 256 * 256 + 255 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 65536) = (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -342,9 +384,12 @@ def deduce_LinksOut():
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
             , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
@@ -354,9 +399,12 @@ def deduce_LinksOut():
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
             , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
@@ -365,14 +413,17 @@ def deduce_LinksOut():
 
     # /32 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
             , dst AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 256) = (dst DIV 256)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -381,9 +432,12 @@ def deduce_LinksOut():
             , src AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
             , dst DIV 256 * 256 + 255 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 65536) = (dst DIV 65536)
           AND (src DIV 256) != (dst DIV 256)
@@ -393,9 +447,12 @@ def deduce_LinksOut():
             , src AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
             , dst DIV 65536 * 65536 + 65535 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
@@ -405,9 +462,12 @@ def deduce_LinksOut():
             , src AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
             , dst DIV 16777216 * 16777216 + 16777215 AS 'dst_end'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
             , port
             , timestamp
             , SUM(links)
+            , SUM(bytes_sent + COALESCE(bytes_received, 0))
+            , SUM(packets_sent + COALESCE(packets_received, 0))
         FROM Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;

@@ -40,9 +40,12 @@ CREATE TABLE IF NOT EXISTS LinksIn
 ,src_end           INT UNSIGNED NOT NULL
 ,dst_start         INT UNSIGNED NOT NULL
 ,dst_end           INT UNSIGNED NOT NULL
+,protocols         VARCHAR(1024)
 ,port              INT NOT NULL
 ,timestamp         TIMESTAMP NOT NULL
 ,links             INT DEFAULT 1
+,bytes             INT NOT NULL
+,packets           INT NOT NULL
 ,CONSTRAINT PKLinksIn PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
 ,CONSTRAINT FKLinksInSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
 ,CONSTRAINT FKLinksInDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
@@ -53,9 +56,12 @@ CREATE TABLE IF NOT EXISTS LinksOut
 ,src_end           INT UNSIGNED NOT NULL
 ,dst_start         INT UNSIGNED NOT NULL
 ,dst_end           INT UNSIGNED NOT NULL
+,protocols         VARCHAR(1024)
 ,port              INT NOT NULL
 ,timestamp         TIMESTAMP NOT NULL
 ,links             INT DEFAULT 1
+,bytes             INT NOT NULL
+,packets           INT NOT NULL
 ,CONSTRAINT PKLinksOut PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
 ,CONSTRAINT FKLinksOutSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
 ,CONSTRAINT FKLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
