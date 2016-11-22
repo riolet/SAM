@@ -259,6 +259,24 @@ function build_label_bytes(bytes) {
     return Math.round(bytes) + " TB";
 }
 
+function build_label_datarate(bps) {
+    if (bps < 1024) {
+        return bps.toFixed(2) + " B/s";
+    }
+    bps /= 1024;
+    if (bps < 1024) {
+        return bps.toFixed(2) + " KiB/s";
+    }
+    bps /= 1024;
+    if (bps < 1024) {
+        return bps.toFixed(2) + " MiB/s";
+    }
+    bps /= 1024;
+    if (bps < 1024) {
+        return bps.toFixed(2) + " GiB/s";
+    }
+}
+
 function build_label_duration(elapsed) {
     "use strict";
     if (elapsed < 120) {
@@ -447,6 +465,9 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.in.total / info.in.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.in.bytes_sent)));
             table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.in.bytes_received)));
+            table.appendChild(buildKeyValueRow("Max bps", build_label_datarate(info.in.max_bps)));
+            table.appendChild(buildKeyValueRow("Min bps", build_label_datarate(info.in.min_bps)));
+            table.appendChild(buildKeyValueRow("Avg bps", build_label_datarate(info.in.avg_bps)));
             table.appendChild(buildKeyValueRow("Packets Sent", info.in.packets_sent));
             table.appendChild(buildKeyValueRow("Packets Received", info.in.packets_received));
             table.appendChild(buildKeyValueRow("Avg Duration", build_label_duration(info.in.duration)));
@@ -470,6 +491,9 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.out.bytes_sent)));
             table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.out.bytes_received)));
+            table.appendChild(buildKeyValueRow("Max bps", build_label_datarate(info.out.max_bps)));
+            table.appendChild(buildKeyValueRow("Min bps", build_label_datarate(info.out.min_bps)));
+            table.appendChild(buildKeyValueRow("Avg bps", build_label_datarate(info.out.avg_bps)));
             table.appendChild(buildKeyValueRow("Packets Sent", info.out.packets_sent));
             table.appendChild(buildKeyValueRow("Packets Received", info.out.packets_received));
             table.appendChild(buildKeyValueRow("Avg Duration", build_label_duration(info.out.duration)));
