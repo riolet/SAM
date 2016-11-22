@@ -6,9 +6,14 @@ from datetime import datetime
 
 
 def print_dict(d, indent=0, skip=list()):
-    print "{0}{1}".format((' '*indent), "\n{0}".format(' '*indent).join(
-        [u"{0:15s}: {1}".format(k, repr(v)) for k, v in d.iteritems() if k not in skip]
-    ))
+    for k, v in d.iteritems():
+        if k in skip:
+            continue
+        if type(v) == dict:
+            print("{0}{1:15s}:".format(' ' * indent, k))
+            print_dict(v, indent + 4, skip)
+        else:
+            print("{0}{1:15s}: {2}".format(' '*indent,k, v))
 
 
 class PaloAltoImporter(BaseImporter):

@@ -88,9 +88,17 @@ class Details:
             # unique_out_ip
             # unique_out_conn
             # total_out
+            # out_bytes_sent
+            # out_bytes_received
+            # out_packets_sent
+            # out_packets_received
             # unique_in_ip
             # unique_in_conn
             # total_in
+            # in_bytes_sent
+            # in_bytes_received
+            # in_packets_sent
+            # in_packets_received
             # ports_used
             # endpoints
             # seconds
@@ -102,11 +110,19 @@ class Details:
             info['in']['u_ip'] = node_info.unique_in_ip
             info['in']['u_conn'] = node_info.unique_in_conn
             info['in']['seconds'] = node_info.seconds
+            info['in']['bytes_sent'] = node_info.in_bytes_sent
+            info['in']['bytes_received'] = node_info.in_bytes_received
+            info['in']['packets_sent'] = node_info.in_packets_sent
+            info['in']['packets_received'] = node_info.in_packets_received
             info['out'] = {}
             info['out']['total'] = node_info.total_out
             info['out']['u_ip'] = node_info.unique_out_ip
             info['out']['u_conn'] = node_info.unique_out_conn
             info['out']['seconds'] = node_info.seconds
+            info['out']['bytes_sent'] = node_info.out_bytes_sent
+            info['out']['bytes_received'] = node_info.out_bytes_received
+            info['out']['packets_sent'] = node_info.out_packets_sent
+            info['out']['packets_received'] = node_info.out_packets_received
             info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
             info['ports'] = node_info.ports_used
             info['endpoints'] = int(node_info.endpoints)
@@ -255,10 +271,3 @@ class Details:
         else:
             details = {"result": "ERROR: Malformed request. The 'address' key was missing"}
         return json.dumps(details, default=decimal_default)
-
-
-def key_by_link_sum(connection):
-    tally = 0
-    for con in connection[1]:
-        tally += con.links
-    return tally
