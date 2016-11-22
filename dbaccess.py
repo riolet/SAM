@@ -1,12 +1,13 @@
 import web
 import common
 import json
+import time
 
 
 def test_database():
     result = 0
     try:
-        common.db.query("SELECT 1 FROM Syslog LIMIT 1;")
+        common.db.query("SELECT 1 FROM MasterNodes LIMIT 1;")
     except Exception as e:
         result = e[0]
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
@@ -65,6 +66,12 @@ def reset_port_names():
             port['description'] = port['description'][:255]
 
     common.db.multiple_insert('portLUT', values=ports)
+
+
+def get_timerange():
+    rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM MasterLinks;")
+    row = rows[0]
+    return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
 
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
@@ -213,15 +220,15 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
     query2 = """
         SELECT (
             SELECT COUNT(DISTINCT src)
-                FROM Links
+                FROM MasterLinks
                 WHERE dst BETWEEN $start AND $end
                  {0}) AS 'unique_in'
             , (SELECT COUNT(DISTINCT dst)
-                FROM Links
+                FROM MasterLinks
                 WHERE src BETWEEN $start AND $end
                  {0}) AS 'unique_out'
             , (SELECT COUNT(DISTINCT port)
-                FROM Links
+                FROM MasterLinks
                 WHERE dst BETWEEN $start AND $end
                  {0}) AS 'unique_ports';""".format(WHERE)
     qvars = {'start': ip_range[0], 'end': ip_range[1]}
@@ -258,7 +265,7 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
 
     query = """
         SELECT decodeIP({collected}) AS 'ip', port AS 'port', sum(links) AS 'links'
-        FROM Links
+        FROM MasterLinks
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
         GROUP BY {collected}, port
@@ -291,7 +298,7 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_si
 
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
-        FROM Links
+        FROM MasterLinks
         WHERE dst BETWEEN $start AND $end
          {WHERE}
         GROUP BY port
@@ -334,12 +341,12 @@ def get_details_children(ip_range, subnet, page, page_size, order):
           , `n`.subnet AS 'subnet'
           , `sn`.kids AS 'endpoints'
           , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
-        FROM Nodes AS `n`
+        FROM MasterNodes AS `n`
         LEFT JOIN (
             SELECT dst_start DIV $quot * $quot AS 'low'
                 , dst_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM LinksIn
+            FROM MasterLinksIn
             GROUP BY low, high
             ) AS `l_in`
         ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
@@ -347,7 +354,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             SELECT src_start DIV $quot * $quot AS 'low'
                 , src_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM LinksOut
+            FROM MasterLinksOut
             GROUP BY low, high
             ) AS `l_out`
         ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
@@ -355,7 +362,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             SELECT ipstart DIV $quot * $quot AS 'low'
                 , ipend DIV $quot * $quot + $quot_1 AS 'high'
                 , COUNT(ipstart) AS 'kids'
-            FROM Nodes
+            FROM MasterNodes
             WHERE ipstart = ipend
             GROUP BY low, high
             ) AS `sn`
@@ -467,7 +474,7 @@ def get_node_info(address):
             , t.seconds
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
-            FROM Nodes
+            FROM MasterNodes
             WHERE ipstart = $start AND ipend = $end
         ) AS n
         LEFT JOIN (
@@ -475,7 +482,7 @@ def get_node_info(address):
             , COUNT(DISTINCT dst) AS 'unique_out_ip'
             , COUNT(DISTINCT dst, port) AS 'unique_out_conn'
             , SUM(links) AS 'total_out'
-            FROM Links
+            FROM MasterLinks
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_out
@@ -486,7 +493,7 @@ def get_node_info(address):
             , COUNT(DISTINCT src, port) AS 'unique_in_conn'
             , SUM(links) AS 'total_in'
             , COUNT(DISTINCT port) AS 'ports_used'
-            FROM Links
+            FROM MasterLinks
             WHERE dst BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_in
@@ -494,14 +501,14 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
             , COUNT(ipstart) AS 'endpoints'
-            FROM Nodes
+            FROM MasterNodes
             WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
         ) AS children
             ON n.ipstart = children.s1
         LEFT JOIN (
             SELECT $start AS 's1'
                 , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
-            FROM Links
+            FROM MasterLinks
             GROUP BY 's1'
         ) AS t
             ON n.ipstart = t.s1
@@ -621,23 +628,23 @@ FROM (
         , nodes.subnet
         , COALESCE((
             SELECT env
-            FROM Nodes nz
+            FROM MasterNodes nz
             WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
             ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
             LIMIT 1
         ), 'production') AS "env"
         , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((SELECT SUM(links)
-            FROM LinksOut AS l_out
+            FROM MasterLinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
               AND l_out.src_end = nodes.ipend
          ),0) AS 'conn_out'
         , COALESCE((SELECT SUM(links)
-            FROM LinksIn AS l_in
+            FROM MasterLinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
-    FROM Nodes AS nodes
+    FROM MasterNodes AS nodes
     {WHERE}
     {HAVING}
     {ORDER}

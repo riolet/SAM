@@ -76,14 +76,14 @@ class PortFilter(Filter):
 
     def where(self):
         if self.params['connection'] == '0':
-            return "EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM MasterLinksOut as `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '1':
-            return "NOT EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM MasterLinksOut as `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']))
 
         elif self.params['connection'] == '2':
-            return "EXISTS (SELECT port FROM LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM MasterLinksIn as `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '3':
-            return "NOT EXISTS (SELECT port FROM LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM MasterLinksIn as `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']))
         else:
             print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
@@ -128,14 +128,14 @@ class TargetFilter(Filter):
         # target = common.IPtoInt(*ip_segments)
         r = common.determine_range_string(self.params['target'])
         if self.params['to'] == '0':
-            return "EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
         elif self.params['to'] == '1':
-            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
         
         if self.params['to'] == '2':
-            return "EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
         elif self.params['to'] == '3':
-            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
 
         else:
             print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "

@@ -9,11 +9,6 @@ class Stats:
     pageTitle = "Stats"
     stats = []
 
-    def get_timerange(self):
-        rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM Links;")
-        row = rows[0]
-        return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
-
     def collect_stats(self):
         self.stats = []
         dbworks = dbaccess.test_database()
@@ -67,7 +62,7 @@ class Stats:
         get_data = web.input()
         if "q" in get_data:
             web.header("Content-Type", "application/json")
-            return json.dumps(self.get_timerange())
+            return json.dumps(dbaccess.get_timerange())
         else:
             self.collect_stats()
             return str(common.render._head(self.pageTitle)) \
