@@ -460,7 +460,7 @@ function present_quick_info(info) {
             table = document.createElement("TABLE");
             table.className = "ui celled striped structured table";
             table.appendChild(buildKeyValueRow("Unique source IPs", info.in.u_ip));
-            table.appendChild(buildKeyValueRow("Unique connections (src, port)", info.in.u_conn));
+            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port)", info.in.u_conn));
             table.appendChild(buildKeyValueRow("Total Connections recorded", info.in.total));
             table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.in.total / info.in.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.in.bytes_sent)));
@@ -486,7 +486,7 @@ function present_quick_info(info) {
             table = document.createElement("TABLE");
             table.className = "ui celled striped structured table";
             table.appendChild(buildKeyValueRow("Unique destination IPs", info.out.u_ip));
-            table.appendChild(buildKeyValueRow("Unique connections (dest, port)", info.out.u_conn));
+            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port)", info.out.u_conn));
             table.appendChild(buildKeyValueRow("Total Connections recorded", info.out.total));
             table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.out.bytes_sent)));
@@ -572,7 +572,7 @@ function present_detailed_info(info) {
             new_body.id = "ports_in_h";
             // fill table
             old_body = document.getElementById("ports_in");
-            new_body = sel_build_table_ports(info.ports.rows);
+            new_body = sel_build_table_connections(info.ports.headers, info.ports.rows);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "ports_in";
             // add paginator
@@ -886,9 +886,12 @@ function scanForPorts(response) {
         }
     }
     if (response.hasOwnProperty("ports")) {
-        response.ports.rows.forEach(function (port) {
-            ports.request_add(port.port);
-        });
+        for (index = response.ports.headers.length - 1; index >= 0 && response.ports.headers[index][0] !== "port"; index -= 1) {};
+        if (index >= 0) {
+            response.ports.rows.forEach(function (element) {
+                ports.request_add(element[index]);
+            });
+        }
     }
     ports.request_submit(present_detailed_info);
 }

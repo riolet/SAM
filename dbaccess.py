@@ -499,7 +499,7 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
             , COUNT(DISTINCT dst) AS 'unique_out_ip'
-            , COUNT(DISTINCT dst, port) AS 'unique_out_conn'
+            , COUNT(DISTINCT src, dst, port) AS 'unique_out_conn'
             , SUM(links) AS 'total_out'
             , SUM(bytes_sent) AS 'b_s'
             , SUM(bytes_received) AS 'b_r'
@@ -517,7 +517,7 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
             , COUNT(DISTINCT src) AS 'unique_in_ip'
-            , COUNT(DISTINCT src, port) AS 'unique_in_conn'
+            , COUNT(DISTINCT src, dst, port) AS 'unique_in_conn'
             , SUM(links) AS 'total_in'
             , SUM(bytes_sent) AS 'b_s'
             , SUM(bytes_received) AS 'b_r'

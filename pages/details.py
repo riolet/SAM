@@ -23,6 +23,7 @@ class Details:
         self.page = 1
         self.page_size=50
         self.order = None
+        self.simple = False
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
@@ -63,6 +64,8 @@ class Details:
                 print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
         if 'order' in GET_data:
             self.order = GET_data['order']
+        if 'simple' in GET_data:
+            self.simple = GET_data['simple'] == "true"
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))
@@ -154,7 +157,7 @@ class Details:
             info['error'] = 'No host found this address'
         return info
 
-    def inputs(self, light=False):
+    def inputs(self):
         inputs = dbaccess.get_details_connections(
             ip_range=self.ip_range,
             inbound=True,
@@ -163,7 +166,7 @@ class Details:
             page=self.page,
             page_size=self.page_size,
             order=self.order)
-        if light:
+        if self.simple:
             headers = [
                 ['src', "Source IP"],
                 ['port', "Dest. Port"],
@@ -189,7 +192,7 @@ class Details:
         }
         return response
 
-    def outputs(self, light=False):
+    def outputs(self):
         outputs = dbaccess.get_details_connections(
             ip_range=self.ip_range,
             inbound=False,
@@ -198,7 +201,7 @@ class Details:
             page=self.page,
             page_size=self.page_size,
             order=self.order)
-        if light:
+        if self.simple:
             headers = [
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
@@ -245,7 +248,7 @@ class Details:
         }
         return response
 
-    def children(self):
+    def children(self, simple=False):
         children = dbaccess.get_details_children(
             ip_range=self.ip_range,
             subnet=self.subnet,
@@ -279,8 +282,9 @@ class Details:
         details['unique_out'] = summary.unique_out
         details['unique_in'] = summary.unique_in
         details['unique_ports'] = summary.unique_ports
-        details['inputs'] = self.inputs(light=True)
-        details['outputs'] = self.outputs(light=True)
+
+        details['inputs'] = self.inputs()
+        details['outputs'] = self.outputs()
         details['ports'] = self.ports()
         return details
 

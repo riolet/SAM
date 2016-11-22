@@ -143,7 +143,8 @@ function GET_details(node, callback) {
         "address": node.address,
         "filter": config.filter,
         "tstart": config.tstart,
-        "tend": config.tend
+        "tend": config.tend,
+        "simple": true
         };
 
     $.ajax({
@@ -198,7 +199,8 @@ function GET_details_sorted(node, component, order, callback) {
         "filter": config.filter,
         "tstart": config.tstart,
         "tend": config.tend,
-        "order": order
+        "order": order,
+        "simple": true
         };
 
     $.ajax({
