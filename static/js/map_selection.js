@@ -127,6 +127,7 @@ function sel_build_table_connections(headers, dataset) {
 }
 
 function sel_build_table_headers(headers, order, callback) {
+    "use strict";
     var tr = document.createElement("tr");
     var th;
     var sort_dir;
@@ -153,26 +154,6 @@ function sel_build_table_headers(headers, order, callback) {
         tr.appendChild(th);
     });
     return tr;
-}
-
-function sel_build_table_ports(dataset) {
-  "use strict";
-  var tbody = document.createElement("tbody");
-  var tr;
-  var td;
-  dataset.forEach(function (port) {
-    tr = document.createElement("tr");
-    td = document.createElement("td");
-    td.appendChild(ports.get_presentation(port.port));
-    tr.appendChild(td);
-
-    td = document.createElement("td");
-    td.appendChild(document.createTextNode(port.links.toString()));
-    tr.appendChild(td);
-
-    tbody.appendChild(tr);
-  });
-  return tbody;
 }
 
 function sel_build_overflow(amount, columns) {
@@ -301,7 +282,8 @@ function sel_update_display(node) {
     new_row = sel_build_table_headers(node.details.ports.headers, node.details.ports.order, sel_details_sort_callback);
     old_row.parentElement.replaceChild(new_row, old_row);
     new_row.id = "ports_in_h";
-    tbody = sel_build_table_ports(node.details.ports.rows);
+    //tbody = sel_build_table_ports(node.details.ports.rows);
+    tbody = sel_build_table_connections(node.details.ports.headers, node.details.ports.rows);
     m_selection['ports_in'].parentElement.replaceChild(tbody, m_selection['ports_in']);
     m_selection['ports_in'] = tbody;
 

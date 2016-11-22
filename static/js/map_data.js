@@ -174,9 +174,13 @@ function GET_details(node, callback) {
                     ports.request_add(element[index]);
                 });
             }
-            result.ports.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
+
+            for (index = result.ports.headers.length - 1; index >= 0 && result.ports.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.ports.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
             ports.request_submit();
 
             if (typeof callback === "function") {
@@ -204,11 +208,15 @@ function GET_details_sorted(node, component, order, callback) {
         data: requestData,
         error: onNotLoadData,
         success: function (result) {
+            var index;
             Object.keys(result).forEach(function (part) {
                 node.details[part] = result[part]
-                result[part].rows.forEach(function (element) {
-                    ports.request_add(element.port);
-                });
+                for (index = result[part].headers.length - 1; index >= 0 && result[part].headers[index][0] !== "port"; index -= 1) {};
+                if (index >= 0) {
+                    result[part].rows.forEach(function (element) {
+                        ports.request_add(element[index]);
+                    });
+                }
             });
             ports.request_submit();
 

@@ -267,11 +267,11 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
     qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
     query = """
-        SELECT decodeIP({collected}) AS '{collected}', port AS 'port', sum(links) AS 'links'
+        SELECT decodeIP(src) AS 'src', decodeIP(dst) AS 'dst', port AS 'port', sum(links) AS 'links'
         FROM MasterLinks
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
-        GROUP BY `MasterLinks`.{collected}, `MasterLinks`.port
+        GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
         ORDER BY {order}
         LIMIT {page}, {page_size};
     """.format(**qvars)

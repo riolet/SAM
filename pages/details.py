@@ -154,7 +154,7 @@ class Details:
             info['error'] = 'No host found this address'
         return info
 
-    def inputs(self, light=True):
+    def inputs(self, light=False):
         inputs = dbaccess.get_details_connections(
             ip_range=self.ip_range,
             inbound=True,
@@ -189,7 +189,7 @@ class Details:
         }
         return response
 
-    def outputs(self, light=True):
+    def outputs(self, light=False):
         outputs = dbaccess.get_details_connections(
             ip_range=self.ip_range,
             inbound=False,
@@ -231,17 +231,17 @@ class Details:
             page=self.page,
             page_size=self.page_size,
             order=self.order)
-
+        headers = [
+            ['port', "Port Accessed"],
+            ['links', 'Occurrences']
+        ]
         response = {
             "page": self.page,
             "page_size": self.page_size,
             "order": self.order,
             "component": "ports",
-            "headers": [
-                ['port', "Port Accessed"],
-                ['links', 'Occurrences']
-            ],
-            "rows": ports
+            "headers": headers,
+            "rows": [[row[h[0]] for h in headers] for row in ports]
         }
         return response
 
