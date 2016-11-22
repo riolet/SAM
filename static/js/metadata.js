@@ -196,7 +196,8 @@ function build_pagination(page, page_size, component, total) {
     if (has_prev) {
         button.className = "ui button";
         button.onclick = function () {
-            GET_page(normalizedIP, component, page - 1);
+            var order = g_data[component].order;
+            GET_page(normalizedIP, component, page - 1, order);
         };
     } else {
         button.className = "ui button disabled";
@@ -218,7 +219,8 @@ function build_pagination(page, page_size, component, total) {
     if (has_next) {
         button.className = "ui button";
         button.onclick = function () {
-            GET_page(normalizedIP, component, page + 1);
+            var order = g_data[component].order;
+            GET_page(normalizedIP, component, page + 1, order);
         };
     } else {
         button.className = "ui button disabled";
@@ -444,6 +446,7 @@ function present_quick_info(info) {
 
 function present_detailed_info(info) {
     "use strict";
+    console.log("present_detailed_info");
     if (info === undefined) {
         info = g_data;
     }
@@ -453,6 +456,9 @@ function present_detailed_info(info) {
         if (info.inputs !== null) {
             // fill headers
             old_body = document.getElementById("conn_in_h");
+            console.log("headers, order");
+            console.log(info.inputs.headers);
+            console.log(info.inputs.order);
             new_body = sel_build_table_headers(info.inputs.headers, info.inputs.order, header_sort_callback);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "conn_in_h";
@@ -728,6 +734,7 @@ function GET_data(ip, part, order, callback) {
 
 function GET_page_callback(response) {
     "use strict";
+    console.log("GET_page_callback");
     Object.keys(response).forEach(function (key) {
         if (response[key].hasOwnProperty("component")) {
             console.log("component is " + response[key].component);
@@ -736,11 +743,12 @@ function GET_page_callback(response) {
         }
     });
     scanForPorts(response);
+
 }
 
 function GET_page(ip, part, page, order) {
     "use strict";
-
+    console.log("GET_page");
     var request = {"address": minimizeIP(ip),
             "page": page,
             "order": order};
