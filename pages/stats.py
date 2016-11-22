@@ -21,14 +21,14 @@ class Stats:
         # rows = common.db.query("SELECT COUNT(*) AS 'count' FROM Syslog;")
         # self.stats.append(("Number of rows imported from the Syslog:", str(rows[0]['count'])))
 
-        rows = common.db.query("SELECT dst AS 'Address' FROM Links GROUP BY Address;")
+        rows = common.db.query("SELECT dst AS 'Address' FROM MasterLinks GROUP BY Address;")
         destIPs = len(rows)
         self.stats.append(("Unique destination IP addresses:", str(destIPs)))
 
-        rows = common.db.query("SELECT src AS 'Address' FROM Links GROUP BY Address;")
+        rows = common.db.query("SELECT src AS 'Address' FROM MasterLinks GROUP BY Address;")
         self.stats.append(("Unique source IP addresses:", str(len(rows))))
 
-        rows = common.db.query("SELECT DISTINCT port AS 'Port' FROM Links;")
+        rows = common.db.query("SELECT DISTINCT port AS 'Port' FROM MasterLinks;")
         lrows = rows.list()
         self.stats.append(("Unique destination ports:", str(len(lrows))))
         sys_lrows = [i for i in lrows if i['Port'] < 1024]
@@ -41,7 +41,7 @@ class Stats:
         rows = common.db.query(
             "SELECT dst AS 'Address', \
             COUNT(DISTINCT port) AS 'Ports', COUNT(links) AS 'Connections' \
-            FROM Links GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;")
+            FROM MasterLinks GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;")
         if len(rows) > 0:
             lrows = rows.list()
             self.stats.append(("Max ports for one destination: ", str(lrows[0]['Ports'])))
@@ -52,9 +52,9 @@ class Stats:
                 self.stats.append(("Percent of destinations with fewer than 10 ports: ", "{0:0.3f}%"
                                    .format((destIPs - count) * 100 / float(destIPs))))
 
-        rows = common.db.query("SELECT 1 FROM Links GROUP BY src, dst, port;")
+        rows = common.db.query("SELECT 1 FROM MasterLinks GROUP BY src, dst, port;")
         self.stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(rows))))
-        rows = common.db.query("SELECT SUM(links) AS 'links' FROM Links GROUP BY src, dst, port HAVING links > 100;")
+        rows = common.db.query("SELECT SUM(links) AS 'links' FROM MasterLinks GROUP BY src, dst, port HAVING links > 100;")
         self.stats.append(("Number of distinct connections occurring more than 100 times:", str(len(rows))))
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
