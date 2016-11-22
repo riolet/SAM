@@ -12,6 +12,7 @@ def decimal_default(obj):
         return float(obj)
     raise TypeError
 
+
 class Details:
     def __init__(self):
         self.ip_range = (0, 4294967295)
@@ -177,7 +178,13 @@ class Details:
                 ['src', "Source IP"],
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count']
+                ['links', 'Count'],
+                #['protocols', 'Protocols'],
+                ['sum_bytes', 'Sum Bytes'],
+                #['avg_bytes', 'Avg Bytes'],
+                ['sum_packets', 'Sum Packets'],
+                #['avg_packets', 'Avg Packets'],
+                ['avg_duration', 'Avg Duration'],
             ]
         # convert list of dicts to ordered list of values
         conn_in = [[row[h[0]] for h in headers] for row in inputs]
@@ -212,7 +219,13 @@ class Details:
                 ['src', "Source IP"],
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count']
+                ['links', 'Count'],
+                #['protocols', 'Protocols'],
+                ['sum_bytes', 'Sum Bytes'],
+                #['avg_bytes', 'Avg Bytes'],
+                ['sum_packets', 'Sum Packets'],
+                #['avg_packets', 'Avg Packets'],
+                ['avg_duration', 'Avg Duration'],
             ]
         conn_out = [[row[h[0]] for h in headers] for row in outputs]
         response = {
