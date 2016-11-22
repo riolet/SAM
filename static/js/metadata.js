@@ -81,7 +81,15 @@ function buildKeyValueRow(key, value) {
     var td = document.createElement("TD");
     td.appendChild(document.createTextNode(key));
     tr.appendChild(td);
-    if (typeof(value) === "object") {
+    if (typeof(value) === "undefined") {
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode("undefined"));
+        tr.appendChild(td);
+    } else if (value === null) {
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode("null"));
+        tr.appendChild(td);
+    } else if (typeof(value) === "object") {
         tr.appendChild(value);
     } else {
         td = document.createElement("TD");
@@ -230,6 +238,48 @@ function build_label(text, color, disabled) {
     return label;
 }
 
+function build_label_bytes(bytes) {
+    "use strict";
+    if (bytes < 10000) {
+        return bytes + " B";
+    }
+    bytes /= 1024;
+    if (bytes < 10000) {
+        return Math.round(bytes) + " KB";
+    }
+    bytes /= 1024;
+    if (bytes < 10000) {
+        return Math.round(bytes) + " MB";
+    }
+    bytes /= 1024;
+    if (bytes < 10000) {
+        return Math.round(bytes) + " GB";
+    }
+    bytes /= 1024;
+    return Math.round(bytes) + " TB";
+}
+
+function build_label_duration(elapsed) {
+    "use strict";
+    if (elapsed < 120) {
+        return Math.round(elapsed) + " seconds";
+    }
+    elapsed /= 60;
+    if (elapsed < 120) {
+        return Math.round(elapsed) + " minutes";
+    }
+    elapsed /= 60;
+    if (elapsed < 48) {
+        return Math.round(elapsed) + " hours";
+    }
+    elapsed /= 24;
+    if (elapsed < 14) {
+        return Math.round(elapsed) + " days";
+    }
+    elapsed /= 7;
+    return Math.round(elapsed) + " weeks";
+}
+
 function present_quick_info(info) {
     "use strict";
     var target = document.getElementById("quickinfo");
@@ -240,7 +290,7 @@ function present_quick_info(info) {
     var div;
     var td;
     var tag_div;
-    target.innerHTML = "";
+    clear_quick_info();
     if (info.hasOwnProperty("address")) {
         target.appendChild(buildKeyValueRow("IPv4 address / subnet", info.address));
     }
@@ -364,26 +414,6 @@ function present_quick_info(info) {
                 onChange: env_change_callback
             });
         }
-        if (info.hasOwnProperty("in")) {
-            key = "Inbound connections";
-            values = [info.in.u_ip + " unique source IPs",
-                    info.in.u_conn + " unique connections (source and port)",
-                    //info.in.total + " total connections",
-                    parseFloat(info.in.total / info.in.seconds).toFixed(3) + " connections per second"];
-            buildKeyMultiValueRows(key, values).forEach(function (row) {
-                target.appendChild(row);
-            });
-        }
-        if (info.hasOwnProperty("out")) {
-            key = "Outbound connections";
-            values = [info.out.u_ip + " unique destination IPs",
-                    info.out.u_conn + " unique connections (destination and port)",
-                    //info.out.total + " total connections",
-                    parseFloat(info.out.total / info.out.seconds).toFixed(3) + " connections per second"];
-            buildKeyMultiValueRows(key, values).forEach(function (row) {
-                target.appendChild(row);
-            });
-        }
         if (info.hasOwnProperty("role")) {
             target.appendChild(buildKeyValueRow("Role (0 = client, 1 = server)", build_role_text(info.role)));
         }
@@ -393,6 +423,57 @@ function present_quick_info(info) {
         if (info.hasOwnProperty("endpoints")) {
             var possible = Math.pow(2, 32 - getIP_Subnet().subnet);
             target.appendChild(buildKeyValueRow("Endpoints represented", info.endpoints + " (of " + possible + " possible)"));
+        }
+
+        // in/out data is placed seperately
+        var segment;
+        var table;
+        var tr;
+        if (info.hasOwnProperty("in")) {
+            segment = document.getElementById("in_col");
+            segment.innerHTML = "";
+
+            //Add Header
+            td = document.createElement("H3");
+            td.className = "ui centered header";
+            td.appendChild(document.createTextNode("Inbound Connections"));
+            segment.appendChild(td);
+            //Add datapoints
+            table = document.createElement("TABLE");
+            table.className = "ui celled striped structured table";
+            table.appendChild(buildKeyValueRow("Unique source IPs", info.in.u_ip));
+            table.appendChild(buildKeyValueRow("Unique connections (src, port)", info.in.u_conn));
+            table.appendChild(buildKeyValueRow("Total Connections recorded", info.in.total));
+            table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.in.total / info.in.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.in.bytes_sent)));
+            table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.in.bytes_received)));
+            table.appendChild(buildKeyValueRow("Packets Sent", info.in.packets_sent));
+            table.appendChild(buildKeyValueRow("Packets Received", info.in.packets_received));
+            table.appendChild(buildKeyValueRow("Avg Duration", build_label_duration(info.in.duration)));
+            segment.appendChild(table);
+        }
+        if (info.hasOwnProperty("out")) {
+            segment = document.getElementById("out_col");
+            segment.innerHTML = "";
+
+            //Add Header
+            td = document.createElement("H3");
+            td.className = "ui centered header";
+            td.appendChild(document.createTextNode("Outbound Connections"));
+            segment.appendChild(td);
+            //Add datapoints
+            table = document.createElement("TABLE");
+            table.className = "ui celled striped structured table";
+            table.appendChild(buildKeyValueRow("Unique destination IPs", info.out.u_ip));
+            table.appendChild(buildKeyValueRow("Unique connections (dest, port)", info.out.u_conn));
+            table.appendChild(buildKeyValueRow("Total Connections recorded", info.out.total));
+            table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.out.bytes_sent)));
+            table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.out.bytes_received)));
+            table.appendChild(buildKeyValueRow("Packets Sent", info.out.packets_sent));
+            table.appendChild(buildKeyValueRow("Packets Received", info.out.packets_received));
+            table.appendChild(buildKeyValueRow("Avg Duration", build_label_duration(info.out.duration)));
+            segment.appendChild(table);
         }
     }
 }
@@ -522,6 +603,31 @@ function clear_detailed_info() {
     g_data.ports = null;
     g_data.children = null;
     present_detailed_info();
+}
+
+function clear_quick_info() {
+    "use strict";
+    var segment;
+    var h3;
+    var target = document.getElementById("quickinfo");
+
+    target.innerHTML = "";
+
+    //clear inputs
+    segment = document.getElementById("in_col");
+    segment.innerHTML = "";
+    h3 = document.createElement("H3");
+    h3.className = "ui centered header";
+    h3.appendChild(document.createTextNode("Inbound Connections"));
+    segment.appendChild(h3);
+
+    //clear outputs
+    segment = document.getElementById("out_col");
+    segment.innerHTML = "";
+    h3 = document.createElement("H3");
+    h3.className = "ui centered header";
+    h3.appendChild(document.createTextNode("Outbound Connections"));
+    segment.appendChild(h3);
 }
 
 /*******************

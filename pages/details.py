@@ -110,19 +110,39 @@ class Details:
             info['in']['u_ip'] = node_info.unique_in_ip
             info['in']['u_conn'] = node_info.unique_in_conn
             info['in']['seconds'] = node_info.seconds
-            info['in']['bytes_sent'] = node_info.in_bytes_sent
-            info['in']['bytes_received'] = node_info.in_bytes_received
-            info['in']['packets_sent'] = node_info.in_packets_sent
-            info['in']['packets_received'] = node_info.in_packets_received
+            if not node_info.in_bytes_sent and not node_info.in_bytes_received:
+                info['in']['bytes_sent'] = 0
+                info['in']['bytes_received'] = 0
+            else:
+                info['in']['bytes_sent'] = node_info.in_bytes_sent
+                info['in']['bytes_received'] = node_info.in_bytes_received
+            info['in']['bps'] = node_info.in_bps
+            if not node_info.in_packets_sent and not node_info.in_packets_received:
+                info['in']['packets_sent'] = 0
+                info['in']['packets_received'] = 0
+            else:
+                info['in']['packets_sent'] = node_info.in_packets_sent
+                info['in']['packets_received'] = node_info.in_packets_received
+            info['in']['duration'] = node_info.in_duration
             info['out'] = {}
             info['out']['total'] = node_info.total_out
             info['out']['u_ip'] = node_info.unique_out_ip
             info['out']['u_conn'] = node_info.unique_out_conn
             info['out']['seconds'] = node_info.seconds
-            info['out']['bytes_sent'] = node_info.out_bytes_sent
-            info['out']['bytes_received'] = node_info.out_bytes_received
-            info['out']['packets_sent'] = node_info.out_packets_sent
-            info['out']['packets_received'] = node_info.out_packets_received
+            if not node_info.out_bytes_sent and not node_info.out_bytes_received:
+                info['out']['bytes_sent'] = 0
+                info['out']['bytes_received'] = 0
+            else:
+                info['out']['bytes_sent'] = node_info.out_bytes_sent
+                info['out']['bytes_received'] = node_info.out_bytes_received
+            info['out']['bps'] = node_info.out_bps
+            if not node_info.out_packets_sent and not node_info.out_packets_received:
+                info['out']['packets_sent'] = 0
+                info['out']['packets_received'] = 0
+            else:
+                info['out']['packets_sent'] = node_info.out_packets_sent
+                info['out']['packets_received'] = node_info.out_packets_received
+            info['out']['duration'] = node_info.out_duration
             info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
             info['ports'] = node_info.ports_used
             info['endpoints'] = int(node_info.endpoints)

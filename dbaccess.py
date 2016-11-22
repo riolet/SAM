@@ -468,15 +468,19 @@ def get_node_info(address):
             , COALESCE(l_out.total_out, 0) AS 'total_out'
             , l_out.b_s AS 'out_bytes_sent'
             , l_out.b_r AS 'out_bytes_received'
+            , (l_out.ab_sr / l_out.duration) AS 'out_bps'
             , l_out.p_s AS 'out_packets_sent'
             , l_out.p_r AS 'out_packets_received'
+            , l_out.duration AS 'out_duration'
             , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
             , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
             , COALESCE(l_in.total_in, 0) AS 'total_in'
             , l_in.b_s AS 'in_bytes_sent'
             , l_in.b_r AS 'in_bytes_received'
+            , (l_in.ab_sr / l_in.duration) AS 'in_bps'
             , l_in.p_s AS 'in_packets_sent'
             , l_in.p_r AS 'in_packets_received'
+            , l_in.duration AS 'in_duration'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
             , children.endpoints AS 'endpoints'
             , t.seconds
@@ -492,8 +496,10 @@ def get_node_info(address):
             , SUM(links) AS 'total_out'
             , SUM(bytes_sent) AS 'b_s'
             , SUM(bytes_received) AS 'b_r'
+            , AVG(bytes_sent + bytes_received) AS 'ab_sr'
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
+            , AVG(duration) AS 'duration'
             FROM MasterLinks
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
@@ -506,8 +512,10 @@ def get_node_info(address):
             , SUM(links) AS 'total_in'
             , SUM(bytes_sent) AS 'b_s'
             , SUM(bytes_received) AS 'b_r'
+            , AVG(bytes_sent + bytes_received) AS 'ab_sr'
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
+            , AVG(duration) AS 'duration'
             , COUNT(DISTINCT port) AS 'ports_used'
             FROM MasterLinks
             WHERE dst BETWEEN $start AND $end
