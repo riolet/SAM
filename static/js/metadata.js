@@ -238,66 +238,6 @@ function build_label(text, color, disabled) {
     return label;
 }
 
-function build_label_bytes(bytes) {
-    "use strict";
-    if (bytes < 10000) {
-        return bytes + " B";
-    }
-    bytes /= 1024;
-    if (bytes < 10000) {
-        return Math.round(bytes) + " KB";
-    }
-    bytes /= 1024;
-    if (bytes < 10000) {
-        return Math.round(bytes) + " MB";
-    }
-    bytes /= 1024;
-    if (bytes < 10000) {
-        return Math.round(bytes) + " GB";
-    }
-    bytes /= 1024;
-    return Math.round(bytes) + " TB";
-}
-
-function build_label_datarate(bps) {
-    if (bps < 1024) {
-        return bps.toFixed(2) + " B/s";
-    }
-    bps /= 1024;
-    if (bps < 1024) {
-        return bps.toFixed(2) + " KiB/s";
-    }
-    bps /= 1024;
-    if (bps < 1024) {
-        return bps.toFixed(2) + " MiB/s";
-    }
-    bps /= 1024;
-    if (bps < 1024) {
-        return bps.toFixed(2) + " GiB/s";
-    }
-}
-
-function build_label_duration(elapsed) {
-    "use strict";
-    if (elapsed < 120) {
-        return Math.round(elapsed) + " seconds";
-    }
-    elapsed /= 60;
-    if (elapsed < 120) {
-        return Math.round(elapsed) + " minutes";
-    }
-    elapsed /= 60;
-    if (elapsed < 48) {
-        return Math.round(elapsed) + " hours";
-    }
-    elapsed /= 24;
-    if (elapsed < 14) {
-        return Math.round(elapsed) + " days";
-    }
-    elapsed /= 7;
-    return Math.round(elapsed) + " weeks";
-}
-
 function present_quick_info(info) {
     "use strict";
     var target = document.getElementById("quickinfo");
@@ -518,7 +458,7 @@ function present_detailed_info(info) {
             new_body.id = "conn_in_h";
             // fill table
             old_body = document.getElementById("conn_in");
-            new_body = sel_build_table_connections(info.inputs.headers, info.inputs.rows);
+            new_body = sel_build_table(info.inputs.headers, info.inputs.rows);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "conn_in";
             // add paginator
@@ -545,7 +485,7 @@ function present_detailed_info(info) {
             new_body.id = "conn_out_h";
             // fill table
             old_body = document.getElementById("conn_out");
-            new_body = sel_build_table_connections(info.outputs.headers, info.outputs.rows);
+            new_body = sel_build_table(info.outputs.headers, info.outputs.rows);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "conn_out";
             // add paginator
@@ -572,7 +512,7 @@ function present_detailed_info(info) {
             new_body.id = "ports_in_h";
             // fill table
             old_body = document.getElementById("ports_in");
-            new_body = sel_build_table_connections(info.ports.headers, info.ports.rows);
+            new_body = sel_build_table(info.ports.headers, info.ports.rows);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "ports_in";
             // add paginator
