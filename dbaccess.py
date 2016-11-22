@@ -217,7 +217,7 @@ def build_where_clause(timestamp_range=None, port=None, rounding=True):
 def get_details_summary(ip_range, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
 
-    query2 = """
+    query = """
         SELECT (
             SELECT COUNT(DISTINCT src)
                 FROM MasterLinks
@@ -232,7 +232,7 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
                 WHERE dst BETWEEN $start AND $end
                  {0}) AS 'unique_ports';""".format(WHERE)
     qvars = {'start': ip_range[0], 'end': ip_range[1]}
-    rows = common.db.query(query2, vars=qvars)
+    rows = common.db.query(query, vars=qvars)
     row = rows[0]
     return row
 
@@ -261,14 +261,17 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
         sort_by = order[1:]
     else:
         sort_by = sort_options[0]
+    if sort_by != "links":
+        sort_by = "`MasterLinks`." + sort_by
+
     qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
     query = """
-        SELECT decodeIP({collected}) AS 'ip', port AS 'port', sum(links) AS 'links'
+        SELECT decodeIP({collected}) AS '{collected}', port AS 'port', sum(links) AS 'links'
         FROM MasterLinks
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
-        GROUP BY {collected}, port
+        GROUP BY `MasterLinks`.{collected}, `MasterLinks`.port
         ORDER BY {order}
         LIMIT {page}, {page_size};
     """.format(**qvars)

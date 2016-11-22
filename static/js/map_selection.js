@@ -103,25 +103,26 @@ function sel_build_title(node) {
   return titles;
 }
 
-function sel_build_table_connections(dataset) {
+function sel_build_table_connections(headers, dataset) {
   "use strict";
   var tr;
   var td;
   var tbody = document.createElement("tbody");
-  dataset.forEach(function (connection) {
+  var row;
+  var header;
+  for (row = 0; row < dataset.length; row += 1) {
     tr = document.createElement("tr");
-    td = document.createElement("td");
-    //td.rowSpan = connection[1].length;
-    td.appendChild(document.createTextNode(connection.ip));
-    tr.appendChild(td);
-    td = document.createElement("td");
-    td.appendChild(ports.get_presentation(connection.port))
-    tr.appendChild(td);
-    td = document.createElement("td");
-    td.appendChild(document.createTextNode(connection.links.toString()));
-    tr.appendChild(td);
+    for (header = 0; header < headers.length; header += 1) {
+        td = document.createElement("td");
+        if (headers[header][0] === "port") {
+            td.appendChild(ports.get_presentation(dataset[row][header]));
+        } else {
+            td.appendChild(document.createTextNode(dataset[row][header]));
+        }
+        tr.appendChild(td);
+    }
     tbody.appendChild(tr);
-  });
+  }
   return tbody;
 }
 
@@ -282,7 +283,7 @@ function sel_update_display(node) {
     new_row = sel_build_table_headers(node.details.inputs.headers, node.details.inputs.order, sel_details_sort_callback);
     old_row.parentElement.replaceChild(new_row, old_row);
     new_row.id = "conn_in_h";
-    tbody = sel_build_table_connections(node.details.inputs.rows);
+    tbody = sel_build_table_connections(node.details.inputs.headers, node.details.inputs.rows);
     m_selection['conn_in'].parentElement.replaceChild(tbody, m_selection['conn_in']);
     m_selection['conn_in'] = tbody;
 
@@ -291,7 +292,7 @@ function sel_update_display(node) {
     new_row = sel_build_table_headers(node.details.outputs.headers, node.details.outputs.order, sel_details_sort_callback);
     old_row.parentElement.replaceChild(new_row, old_row);
     new_row.id = "conn_out_h";
-    tbody = sel_build_table_connections(node.details.outputs.rows);
+    tbody = sel_build_table_connections(node.details.outputs.headers, node.details.outputs.rows);
     m_selection['conn_out'].parentElement.replaceChild(tbody, m_selection['conn_out']);
     m_selection['conn_out'] = tbody;
 

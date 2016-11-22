@@ -518,7 +518,7 @@ function present_detailed_info(info) {
             new_body.id = "conn_in_h";
             // fill table
             old_body = document.getElementById("conn_in");
-            new_body = sel_build_table_connections(info.inputs.rows);
+            new_body = sel_build_table_connections(info.inputs.headers, info.inputs.rows);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "conn_in";
             // add paginator
@@ -545,7 +545,7 @@ function present_detailed_info(info) {
             new_body.id = "conn_out_h";
             // fill table
             old_body = document.getElementById("conn_out");
-            new_body = sel_build_table_connections(info.outputs.rows);
+            new_body = sel_build_table_connections(info.outputs.headers, info.outputs.rows);
             old_body.parentElement.replaceChild(new_body, old_body);
             new_body.id = "conn_out";
             // add paginator
@@ -868,15 +868,22 @@ function restartTypingTimer(event) {
 
 function scanForPorts(response) {
     "use strict";
+    var index;
     if (response.hasOwnProperty("inputs")) {
-        response.inputs.rows.forEach(function (element) {
-            ports.request_add(element.port);
-        });
+        for (index = response.inputs.headers.length - 1; index >= 0 && response.inputs.headers[index][0] !== "port"; index -= 1) {};
+        if (index >= 0) {
+            response.inputs.rows.forEach(function (element) {
+                ports.request_add(element[index]);
+            });
+        }
     }
     if (response.hasOwnProperty("outputs")) {
-        response.outputs.rows.forEach(function (element) {
-            ports.request_add(element.port);
-        });
+        for (index = response.outputs.headers.length - 1; index >= 0 && response.outputs.headers[index][0] !== "port"; index -= 1) {};
+        if (index >= 0) {
+            response.outputs.rows.forEach(function (element) {
+                ports.request_add(element[index]);
+            });
+        }
     }
     if (response.hasOwnProperty("ports")) {
         response.ports.rows.forEach(function (port) {

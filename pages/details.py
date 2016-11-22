@@ -154,7 +154,7 @@ class Details:
             info['error'] = 'No host found this address'
         return info
 
-    def inputs(self):
+    def inputs(self, light=True):
         inputs = dbaccess.get_details_connections(
             ip_range=self.ip_range,
             inbound=True,
@@ -163,23 +163,33 @@ class Details:
             page=self.page,
             page_size=self.page_size,
             order=self.order)
-        conn_in = list(inputs)
+        if light:
+            headers = [
+                ['src', "Source IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ]
+        else:
+            headers = [
+                ['src', "Source IP"],
+                ['dst', "Dest. IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ]
+        # convert list of dicts to ordered list of values
+        conn_in = [[row[h[0]] for h in headers] for row in inputs]
         response = {
             "page": self.page,
             "page_size": self.page_size,
             "order": self.order,
             "direction": "desc",
             "component": "inputs",
-            "headers": [
-                ['src', "Source IP"],
-                ['port', "Dest. Port"],
-                ['links', 'Count']
-            ],
+            "headers": headers,
             "rows": conn_in
         }
         return response
 
-    def outputs(self):
+    def outputs(self, light=True):
         outputs = dbaccess.get_details_connections(
             ip_range=self.ip_range,
             inbound=False,
@@ -188,18 +198,27 @@ class Details:
             page=self.page,
             page_size=self.page_size,
             order=self.order)
-        conn_out = list(outputs)
+        if light:
+            headers = [
+                ['dst', "Dest. IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ]
+        else:
+            headers = [
+                ['src', "Source IP"],
+                ['dst', "Dest. IP"],
+                ['port', "Dest. Port"],
+                ['links', 'Count']
+            ]
+        conn_out = [[row[h[0]] for h in headers] for row in outputs]
         response = {
             "page": self.page,
             "page_size": self.page_size,
             "order": self.order,
             "direction": "desc",
             "component": "outputs",
-            "headers": [
-                ['dst', "Dest. IP"],
-                ['port', "Dest. Port"],
-                ['links', 'Count']
-            ],
+            "headers": headers,
             "rows": conn_out
         }
         return response
@@ -254,13 +273,14 @@ class Details:
         return summary
 
     def selection_info(self):
+        # called for selections in the map pane
         summary = self.summary()
         details = {}
         details['unique_out'] = summary.unique_out
         details['unique_in'] = summary.unique_in
         details['unique_ports'] = summary.unique_ports
-        details['inputs'] = self.inputs()
-        details['outputs'] = self.outputs()
+        details['inputs'] = self.inputs(light=True)
+        details['outputs'] = self.outputs(light=True)
         details['ports'] = self.ports()
         return details
 

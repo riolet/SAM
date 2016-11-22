@@ -161,12 +161,19 @@ function GET_details(node, callback) {
             node.details["ports"] = result.ports;
             node.details["loaded"] = true;
 
-            result.inputs.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
-            result.outputs.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
+            var index;
+            for (index = result.inputs.headers.length - 1; index >= 0 && result.inputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.inputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+            for (index = result.outputs.headers.length - 1; index >= 0 && result.outputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.outputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
             result.ports.rows.forEach(function (element) {
                 ports.request_add(element.port);
             });
