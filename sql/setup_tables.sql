@@ -66,12 +66,3 @@ CREATE TABLE IF NOT EXISTS LinksOut
 ,CONSTRAINT FKLinksOutSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
 ,CONSTRAINT FKLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
 );
-
--- Create the table of tags
-CREATE TABLE IF NOT EXISTS Tags
-(ipstart           INT UNSIGNED NOT NULL
-,ipend             INT UNSIGNED NOT NULL
-,tag               VARCHAR(32)
-,CONSTRAINT PKTags PRIMARY KEY (ipstart, ipend, tag)
-,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES MasterNodes (ipstart, ipend)
-);
