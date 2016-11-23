@@ -67,7 +67,10 @@ class PaloAltoImporter(BaseImporter):
             return 2
 
 
-        if split_data[PaloAltoImporter.Protocol] != 'tcp':
+        protocol = split_data[PaloAltoImporter.Protocol].upper()
+        if protocol == 'UDP':
+            protocol = 'TCP'
+        if protocol != 'TCP':
             # printing this is very noisy and slow
             # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
             return 3
@@ -78,7 +81,7 @@ class PaloAltoImporter(BaseImporter):
         dictionary['dst'] = common.IPtoInt(*(split_data[PaloAltoImporter.DestIP].split(".")))
         dictionary['dstport'] = split_data[PaloAltoImporter.DestPort]
         dictionary['timestamp'] = datetime.strptime(split_data[PaloAltoImporter.Timestamp], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-        dictionary['protocol'] = split_data[PaloAltoImporter.Protocol]
+        dictionary['protocol'] = protocol
         if split_data[PaloAltoImporter.BytesSent] and split_data[PaloAltoImporter.BytesReceived] and int(
                 split_data[PaloAltoImporter.BytesSent]) + int(split_data[PaloAltoImporter.BytesReceived]) == int(
                 split_data[PaloAltoImporter.BytesTotal]):

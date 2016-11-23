@@ -41,7 +41,15 @@ class ASAImporter(BaseImporter):
                 dictionary['src'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
                 dictionary['srcport'] = m.group('asa_dst_port')
 
-            dictionary['protocol'] = m.group('asa_protocol').upper()
+            protocol = m.group('asa_protocol').upper()
+            if protocol == 'UDP':
+                protocol = 'TCP'
+            if protocol != 'TCP':
+                # printing this is very noisy and slow
+                # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
+                return 3
+
+            dictionary['protocol'] = protocol
 
             # placeholder values
             dictionary['duration'] = '1'

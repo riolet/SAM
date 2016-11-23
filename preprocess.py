@@ -10,13 +10,12 @@ def clean_tables():
     common.db.query("DROP TABLE IF EXISTS LinksIn;")
     common.db.query("DROP TABLE IF EXISTS LinksOut;")
     common.db.query("DROP TABLE IF EXISTS Links;")
-    common.db.query("DROP TABLE IF EXISTS Tags;")
     common.db.query("DROP TABLE IF EXISTS Nodes;")
 
     common.db.query("DROP TABLE IF EXISTS MasterLinksIn;")
     common.db.query("DROP TABLE IF EXISTS MasterLinksOut;")
     common.db.query("DROP TABLE IF EXISTS MasterLinks;")
-    common.db.query("DROP TABLE IF EXISTS MasterTags;")
+    common.db.query("DROP TABLE IF EXISTS Tags;")
     common.db.query("DROP TABLE IF EXISTS MasterNodes;")
 
     dbaccess.exec_sql("./sql/setup_tables.sql")
