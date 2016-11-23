@@ -19,9 +19,27 @@ def role_text(ratio):
     return "{0:.2f} ({1})".format(ratio, desc)
 
 
+def bytes_text(bytes):
+    if bytes < 10000:
+        return "{0} B".format(int(bytes))
+    bytes /= 1024
+    if bytes < 10000:
+        return "{0} KB".format(int(bytes))
+    bytes /= 1024
+    if bytes < 10000:
+        return "{0} MB".format(int(bytes))
+    bytes /= 1024
+    if bytes < 10000:
+        return "{0} GB".format(int(bytes))
+    bytes /= 1024
+    return "{0} TB".format(int(bytes))
+
+
 class Columns(object):
     def __init__(self, **kwargs):
-        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags']
+        # manually specified here to give them an order
+        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets']
+
         self.columns = {
             'address': {
                 'nice_name': "Address",
@@ -51,8 +69,15 @@ class Columns(object):
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
                 'get': lambda x: [x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
+            'bytes': {
+                'nice_name': "Bytes Handled",
+                'active': 'bytes' in kwargs,
+                'get': lambda x: bytes_text(x.bytes_in + x.bytes_out)},
+            'packets': {
+                'nice_name': "Packets Handled",
+                'active': 'packets' in kwargs,
+                'get': lambda x: x.packets_in + x.packets_out},
         }
-
 
     def translate_row(self, data):
         row = []
@@ -69,7 +94,7 @@ class Columns(object):
 class Table(object):
     def __init__(self):
         self.pageTitle = "Table View"
-        self.columns = Columns(address=1, alias=1, role=1, environment=1, tags=1)
+        self.columns = Columns(address=1, alias=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
     def filters(self, GET_data):
         fs = []
@@ -177,6 +202,11 @@ class Table(object):
         nextPage = self.next_page(rows, page, page_size)
         prevPage = self.prev_page(page)
         spread = self.spread(rows, page, page_size)
+
+        print("\t====="*10)
+        print("Headers: " + repr(self.columns.headers()))
+        print("Row[0]: " + repr(rows[0]))
+        print("\t====="*10)
 
         return str(common.render._head(self.pageTitle,
                                        stylesheets=["/static/css/table.css"],
