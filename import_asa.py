@@ -7,7 +7,6 @@ import time
 
 # This implementation is incomplete:
 # TODO: validate implementation with test data
-# TODO: verify protocol is TCP
 # TODO: parse timestamp into dictionary['Timestamp']
 
 class ASAImporter(BaseImporter):
@@ -32,19 +31,28 @@ class ASAImporter(BaseImporter):
             # srcIP, srcPort, dstIP, dstPort
             # The order of the source and destination depends on the direction, i.e., inbound or outbound
             if m.group('asa_in_out') == 'in':
-                dictionary['SourceIP'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
-                dictionary['SourcePort'] = m.group('asa_src_port')
-                dictionary['DestinationIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
-                dictionary['DestinationPort'] = m.group('asa_dst_port')
+                dictionary['src'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
+                dictionary['srcport'] = m.group('asa_src_port')
+                dictionary['dst'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
+                dictionary['dstport'] = m.group('asa_dst_port')
             else:
-                dictionary['DestinationIP'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
-                dictionary['DestinationPort'] = m.group('asa_src_port')
-                dictionary['SourceIP'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
-                dictionary['SourcePort'] = m.group('asa_dst_port')
+                dictionary['dst'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
+                dictionary['dstport'] = m.group('asa_src_port')
+                dictionary['src'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
+                dictionary['srcport'] = m.group('asa_dst_port')
+
+            dictionary['protocol'] = m.group('asa_protocol').upper()
+
+            # placeholder values
+            dictionary['duration'] = '1'
+            dictionary['bytes_received'] = '1'
+            dictionary['bytes_sent'] = '1'
+            dictionary['packets_received'] = '1'
+            dictionary['packets_sent'] = '1'
 
             # ASA logs don't always have a timestamp. If your logs do, you may want to edit the line below to parse it.
 
-            dictionary['Timestamp'] = time.strftime(self.mysql_time_format, time.localtime())
+            dictionary['timestamp'] = time.strftime(self.mysql_time_format, time.localtime())
             return 0
         else:
             print("error parsing line {0}: {1}".format(line_num, line))

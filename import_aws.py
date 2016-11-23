@@ -24,11 +24,17 @@ class AWSImporter(BaseImporter):
         """
         awsLog = line.split(" ")
 
-        dictionary['SourceIP'] = common.IPtoInt(*(awsLog[3].split(".")))
-        dictionary['SourcePort'] = awsLog[5]
-        dictionary['DestinationIP'] = common.IPtoInt(*(awsLog[4].split(".")))
-        dictionary['DestinationPort'] = awsLog[6]
-        dictionary['Timestamp'] = datetime.datetime.fromtimestamp((int(awsLog[10]))).strftime(self.mysql_time_format)
+        dictionary['src'] = common.IPtoInt(*(awsLog[3].split(".")))
+        dictionary['srcport'] = awsLog[5]
+        dictionary['dst'] = common.IPtoInt(*(awsLog[4].split(".")))
+        dictionary['dstport'] = awsLog[6]
+        dictionary['timestamp'] = datetime.datetime.fromtimestamp((int(awsLog[10]))).strftime(self.mysql_time_format)
+        dictionary['protocol'] = 'TCP'.upper()
+        dictionary['duration'] = '1'
+        dictionary['bytes_received'] = '1'
+        dictionary['bytes_sent'] = '1'
+        dictionary['packets_received'] = '1'
+        dictionary['packets_sent'] = '1'
         return 0
 
 
