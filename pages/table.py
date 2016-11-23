@@ -203,11 +203,6 @@ class Table(object):
         prevPage = self.prev_page(page)
         spread = self.spread(rows, page, page_size)
 
-        print("\t====="*10)
-        print("Headers: " + repr(self.columns.headers()))
-        print("Row[0]: " + repr(rows[0]))
-        print("\t====="*10)
-
         return str(common.render._head(self.pageTitle,
                                        stylesheets=["/static/css/table.css"],
                                        scripts=["/static/js/table.js",
