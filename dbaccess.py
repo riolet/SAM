@@ -665,17 +665,8 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     # if info is lost, try:
     # SET group_concat_max_len = 2048
     query = """
-SELECT CONCAT(decodeIP(old.ipstart), CONCAT('/', old.subnet)) AS 'address'
-    , old.alias
-    , old.env
-    , old.conn_out
-    , old.conn_in
-    , t.tags
-    , GROUP_CONCAT(pt.tag SEPARATOR ', ') AS 'parent_tags'
-FROM (
-    SELECT nodes.ipstart
-        , nodes.ipend
-        , nodes.subnet
+    SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+        , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((
             SELECT env
             FROM MasterNodes nz
@@ -683,7 +674,6 @@ FROM (
             ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
             LIMIT 1
         ), 'production') AS "env"
-        , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((SELECT SUM(links)
             FROM MasterLinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
@@ -694,21 +684,41 @@ FROM (
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
+        , COALESCE((SELECT SUM(bytes)
+            FROM MasterLinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart
+              AND l_out.src_end = nodes.ipend
+         ),0) AS 'bytes_out'
+        , COALESCE((SELECT SUM(bytes)
+            FROM MasterLinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart
+              AND l_in.dst_end = nodes.ipend
+         ),0) AS 'bytes_in'
+        , COALESCE((SELECT SUM(packets)
+            FROM MasterLinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart
+              AND l_out.src_end = nodes.ipend
+         ),0) AS 'packets_out'
+        , COALESCE((SELECT SUM(packets)
+            FROM MasterLinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart
+              AND l_in.dst_end = nodes.ipend
+         ),0) AS 'packets_in'
+        , COALESCE((SELECT GROUP_CONCAT(tag SEPARATOR ', ')
+            FROM Tags
+            WHERE Tags.ipstart = nodes.ipstart AND Tags.ipend = nodes.ipend
+            GROUP BY ipstart, ipend
+         ),"") AS 'tags'
+        , COALESCE((SELECT GROUP_CONCAT(tag SEPARATOR ', ')
+            FROM Tags
+            WHERE (Tags.ipstart <= nodes.ipstart AND Tags.ipend > nodes.ipend) OR (Tags.ipstart < nodes.ipstart AND Tags.ipend >= nodes.ipend)
+            GROUP BY nodes.ipstart, nodes.ipend
+         ),"") AS 'parent_tags'
     FROM MasterNodes AS nodes
     {WHERE}
     {HAVING}
     {ORDER}
-    LIMIT {START},{RANGE}
-) AS `old`
-LEFT JOIN (
-    SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
-    FROM Tags
-    GROUP BY ipstart, ipend
-) AS t
-    ON t.ipstart = old.ipstart AND t.ipend = old.ipend
-LEFT JOIN Tags AS pt
-    ON (pt.ipstart <= old.ipstart AND pt.ipend > old.ipend) OR (pt.ipstart < old.ipstart AND pt.ipend >= old.ipend)
-GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in, t.tags;
+    LIMIT {START},{RANGE};
     """.format(
         WHERE=WHERE,
         HAVING=HAVING,

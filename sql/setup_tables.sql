@@ -73,5 +73,5 @@ CREATE TABLE IF NOT EXISTS Tags
 ,ipend             INT UNSIGNED NOT NULL
 ,tag               VARCHAR(32)
 ,CONSTRAINT PKTags PRIMARY KEY (ipstart, ipend, tag)
-,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES Nodes (ipstart, ipend)
+,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES MasterNodes (ipstart, ipend)
 );
