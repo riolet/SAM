@@ -6,7 +6,7 @@ import json
 def test_database():
     result = 0
     try:
-        common.db.query("SELECT 1 FROM Syslog LIMIT 1;")
+        common.db.query("SELECT 1 FROM MasterSyslog LIMIT 1;")
     except Exception as e:
         result = e[0]
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
@@ -213,15 +213,15 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
     query2 = """
         SELECT (
             SELECT COUNT(DISTINCT src)
-                FROM Links
+                FROM MasterLinks
                 WHERE dst BETWEEN $start AND $end
                  {0}) AS 'unique_in'
             , (SELECT COUNT(DISTINCT dst)
-                FROM Links
+                FROM MasterLinks
                 WHERE src BETWEEN $start AND $end
                  {0}) AS 'unique_out'
             , (SELECT COUNT(DISTINCT port)
-                FROM Links
+                FROM MasterLinks
                 WHERE dst BETWEEN $start AND $end
                  {0}) AS 'unique_ports';""".format(WHERE)
     qvars = {'start': ip_range[0], 'end': ip_range[1]}
@@ -258,7 +258,7 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
 
     query = """
         SELECT decodeIP({collected}) AS 'ip', port AS 'port', sum(links) AS 'links'
-        FROM Links
+        FROM MasterLinks
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
         GROUP BY {collected}, port
@@ -291,7 +291,7 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_si
 
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
-        FROM Links
+        FROM MasterLinks
         WHERE dst BETWEEN $start AND $end
          {WHERE}
         GROUP BY port
@@ -334,12 +334,12 @@ def get_details_children(ip_range, subnet, page, page_size, order):
           , `n`.subnet AS 'subnet'
           , `sn`.kids AS 'endpoints'
           , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
-        FROM Nodes AS `n`
+        FROM MasterNodes AS `n`
         LEFT JOIN (
             SELECT dst_start DIV $quot * $quot AS 'low'
                 , dst_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM LinksIn
+            FROM MasterLinksIn
             GROUP BY low, high
             ) AS `l_in`
         ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
@@ -347,7 +347,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             SELECT src_start DIV $quot * $quot AS 'low'
                 , src_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM LinksOut
+            FROM MasterLinksOut
             GROUP BY low, high
             ) AS `l_out`
         ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
@@ -355,7 +355,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             SELECT ipstart DIV $quot * $quot AS 'low'
                 , ipend DIV $quot * $quot + $quot_1 AS 'high'
                 , COUNT(ipstart) AS 'kids'
-            FROM Nodes
+            FROM MasterNodes
             WHERE ipstart = ipend
             GROUP BY low, high
             ) AS `sn`
@@ -372,7 +372,7 @@ def get_tags(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("Tags", vars=qvars, where=WHERE)
+    data = common.db.select("MasterTags", vars=qvars, where=WHERE)
     parent_tags = []
     tags = []
     for row in data:
@@ -384,11 +384,11 @@ def get_tags(address):
 
 
 def get_tag_list():
-    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag") if row.tag]
+    return [row.tag for row in common.db.select("MasterTags", what="DISTINCT tag") if row.tag]
 
 
 def set_tags(address, new_tags):
-    table = 'Tags'
+    table = 'MasterTags'
     what = "ipstart, ipend, tag"
     r = common.determine_range_string(address)
     row = {"ipstart": r[0], "ipend": r[1]}
@@ -409,19 +409,19 @@ def set_tags(address, new_tags):
 
     for tag in additions:
         row['tag'] = tag
-        common.db.insert("Tags", **row)
+        common.db.insert("MasterTags", **row)
 
     for tag in removals:
         row['tag'] = tag
         where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
-        common.db.delete("Tags", where=where, vars=row)
+        common.db.delete("MasterTags", where=where, vars=row)
 
 
 def get_env(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
+    data = common.db.select("MasterNodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
     parent_env = "production"
     env = "inherit"
     nearest_distance = -1
@@ -438,7 +438,7 @@ def get_env(address):
 
 
 def get_env_list():
-    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
+    envs = set(row.env for row in common.db.select("MasterNodes", what="DISTINCT env") if row.env)
     envs.add("production")
     envs.add("inherit")
     envs.add("dev")
@@ -448,7 +448,7 @@ def get_env_list():
 def set_env(address, env):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('Nodes', where, env=env)
+    common.db.update('MasterNodes', where, env=env)
 
 
 def get_node_info(address):
@@ -467,7 +467,7 @@ def get_node_info(address):
             , t.seconds
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
-            FROM Nodes
+            FROM MasterNodes
             WHERE ipstart = $start AND ipend = $end
         ) AS n
         LEFT JOIN (
@@ -475,7 +475,7 @@ def get_node_info(address):
             , COUNT(DISTINCT dst) AS 'unique_out_ip'
             , COUNT(DISTINCT dst, port) AS 'unique_out_conn'
             , SUM(links) AS 'total_out'
-            FROM Links
+            FROM MasterLinks
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_out
@@ -486,7 +486,7 @@ def get_node_info(address):
             , COUNT(DISTINCT src, port) AS 'unique_in_conn'
             , SUM(links) AS 'total_in'
             , COUNT(DISTINCT port) AS 'ports_used'
-            FROM Links
+            FROM MasterLinks
             WHERE dst BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_in
@@ -494,14 +494,14 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
             , COUNT(ipstart) AS 'endpoints'
-            FROM Nodes
+            FROM MasterNodes
             WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
         ) AS children
             ON n.ipstart = children.s1
         LEFT JOIN (
             SELECT $start AS 's1'
                 , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
-            FROM Links
+            FROM MasterLinks
             GROUP BY 's1'
         ) AS t
             ON n.ipstart = t.s1
@@ -524,7 +524,7 @@ def set_node_info(address, data):
     print("-" * 50)
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('Nodes', where, **data)
+    common.db.update('MasterNodes', where, **data)
 
 
 def get_port_info(port):
@@ -591,11 +591,11 @@ def set_port_info(data):
 
 
 def get_table_info(clauses, page, page_size, order_by, order_dir):
-    WHERE = " && ".join(clause.where() for clause in clauses if clause.where() and clause.enabled)
+    WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
     if WHERE:
         WHERE = "WHERE " + WHERE
 
-    HAVING = " && ".join(clause.having() for clause in clauses if clause.having() and clause.enabled)
+    HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
         HAVING = "HAVING " + HAVING
 
@@ -621,23 +621,23 @@ FROM (
         , nodes.subnet
         , COALESCE((
             SELECT env
-            FROM Nodes nz
+            FROM MasterNodes nz
             WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
             ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
             LIMIT 1
         ), 'production') AS "env"
         , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((SELECT SUM(links)
-            FROM LinksOut AS l_out
+            FROM MasterLinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
               AND l_out.src_end = nodes.ipend
          ),0) AS 'conn_out'
         , COALESCE((SELECT SUM(links)
-            FROM LinksIn AS l_in
+            FROM MasterLinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
-    FROM Nodes AS nodes
+    FROM MasterNodes AS nodes
     {WHERE}
     {HAVING}
     {ORDER}
@@ -645,7 +645,7 @@ FROM (
 ) AS `old`
 LEFT JOIN (
     SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
-    FROM Tags
+    FROM MasterTags
     GROUP BY ipstart, ipend
 ) AS t
     ON t.ipstart = old.ipstart AND t.ipend = old.ipend
