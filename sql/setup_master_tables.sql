@@ -1,16 +1,20 @@
--- Create the MasterNodes table
+-- Create MasterNodes table
 CREATE TABLE IF NOT EXISTS MasterNodes LIKE Nodes;
 
--- Create the MasterLinks table
+-- Create MasterLinks table
 CREATE TABLE IF NOT EXISTS MasterLinks LIKE Links;
 
--- Create the MasterLinksIn table
+-- Create MasterLinksIn table
 CREATE TABLE IF NOT EXISTS MasterLinksIn LIKE LinksIn;
 
--- Create the MasterLinksOut table
+-- Create MasterLinksOut table
 CREATE TABLE IF NOT EXISTS MasterLinksOut LIKE LinksOut;
 
--- Create the MasterLinksOut table
---CREATE TABLE IF NOT EXISTS MasterTags LIKE Tags;
+-- Create MasterTags table
+CREATE TABLE IF NOT EXISTS MasterTags LIKE Tags;
+
+-- Create MasterSyslog table
+CREATE TABLE IF NOT EXISTS MasterSyslog LIKE Syslog;
+
 
 

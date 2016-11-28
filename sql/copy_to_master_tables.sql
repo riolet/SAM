@@ -1,11 +1,13 @@
--- append data from staging tables into master tables
+-- copy data from staging tables into master tables
 
-INSERT MasterNodes SELECT * FROM Nodes;
+INSERT IGNORE MasterNodes SELECT * FROM Nodes;
 
-INSERT MasterLinks SELECT * FROM Links;
+INSERT IGNORE MasterLinks SELECT * FROM Links;
 
-INSERT MasterLinksIn SELECT * FROM LinksIn;
+INSERT IGNORE MasterLinksIn SELECT * FROM LinksIn;
 
-INSERT MasterLinksOut SELECT * FROM LinksOut;
+INSERT IGNORE MasterLinksOut SELECT * FROM LinksOut;
 
---INSERT MasterTags SELECT * From Tags;
+INSERT IGNORE MasterTags SELECT * From Tags;
+
+INSERT IGNORE MasterSyslog SELECT * From Syslog;

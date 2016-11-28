@@ -4,6 +4,8 @@ DELETE FROM LinksOut;
 
 DELETE FROM Links;
 
---DELETE FROM Tags;
+DELETE FROM Tags;
 
 DELETE FROM Nodes;
+
+DELETE FROM Syslog;

@@ -6,7 +6,7 @@ import json
 def test_database():
     result = 0
     try:
-        common.db.query("SELECT 1 FROM Syslog LIMIT 1;")
+        common.db.query("SELECT 1 FROM MasterSyslog LIMIT 1;")
     except Exception as e:
         result = e[0]
         # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
@@ -372,7 +372,7 @@ def get_tags(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("Tags", vars=qvars, where=WHERE)
+    data = common.db.select("MasterTags", vars=qvars, where=WHERE)
     parent_tags = []
     tags = []
     for row in data:
@@ -384,11 +384,11 @@ def get_tags(address):
 
 
 def get_tag_list():
-    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag") if row.tag]
+    return [row.tag for row in common.db.select("MasterTags", what="DISTINCT tag") if row.tag]
 
 
 def set_tags(address, new_tags):
-    table = 'Tags'
+    table = 'MasterTags'
     what = "ipstart, ipend, tag"
     r = common.determine_range_string(address)
     row = {"ipstart": r[0], "ipend": r[1]}
@@ -409,12 +409,12 @@ def set_tags(address, new_tags):
 
     for tag in additions:
         row['tag'] = tag
-        common.db.insert("Tags", **row)
+        common.db.insert("MasterTags", **row)
 
     for tag in removals:
         row['tag'] = tag
         where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
-        common.db.delete("Tags", where=where, vars=row)
+        common.db.delete("MasterTags", where=where, vars=row)
 
 
 def get_env(address):
@@ -591,11 +591,11 @@ def set_port_info(data):
 
 
 def get_table_info(clauses, page, page_size, order_by, order_dir):
-    WHERE = " && ".join(clause.where() for clause in clauses if clause.where() and clause.enabled)
+    WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
     if WHERE:
         WHERE = "WHERE " + WHERE
 
-    HAVING = " && ".join(clause.having() for clause in clauses if clause.having() and clause.enabled)
+    HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
         HAVING = "HAVING " + HAVING
 
@@ -645,7 +645,7 @@ FROM (
 ) AS `old`
 LEFT JOIN (
     SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
-    FROM Tags
+    FROM MasterTags
     GROUP BY ipstart, ipend
 ) AS t
     ON t.ipstart = old.ipstart AND t.ipend = old.ipend

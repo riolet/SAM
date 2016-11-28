@@ -5,25 +5,10 @@ Preprocess the data in the database's upload table Syslog
 import common
 import dbaccess
 
-
-def clean_tables():
-    common.db.query("DROP TABLE IF EXISTS LinksIn;")
-    common.db.query("DROP TABLE IF EXISTS LinksOut;")
-    common.db.query("DROP TABLE IF EXISTS Links;")
-    common.db.query("DROP TABLE IF EXISTS Tags;")
-    common.db.query("DROP TABLE IF EXISTS Nodes;")
-
-    common.db.query("DROP TABLE IF EXISTS MasterLinksIn;")
-    common.db.query("DROP TABLE IF EXISTS MasterLinksOut;")
-    common.db.query("DROP TABLE IF EXISTS MasterLinks;")
-    common.db.query("DROP TABLE IF EXISTS MasterTags;")
-    common.db.query("DROP TABLE IF EXISTS MasterNodes;")
+def create_tables():
 
     dbaccess.exec_sql("./sql/setup_tables.sql")
-
-    # create master tables
     dbaccess.exec_sql("./sql/setup_master_tables.sql")
-
 
 def import_nodes():
     # count(children) / 127.5 + 0.5) gives a number between 0.5 and 2.5
@@ -405,27 +390,23 @@ def deduce_LinksOut():
     """
     common.db.query(query)
 
-#--------------------------
-def copy_data_to_master_tables():
-    dbaccess.exec_sql("./sql/copy_to_master_tables.sql")
-#--------------------------
 
-#--------------------------
-def delete_staging_table_rows():
-    dbaccess.exec_sql("./sql/delete_staging_table_rows.sql")    
-#--------------------------
+def copy_to_master():
+    dbaccess.exec_sql("./sql/copy_to_master_tables.sql")
+    
+
+def delete_staging_data():
+        dbaccess.exec_sql("./sql/delete_staging_data.sql")
+
 
 def preprocess_log():
-    clean_tables()
+
+    create_tables()
     import_nodes()
     import_links()
+    copy_to_master() # copy data from staging to master tables
+    delete_staging_data() # delete all data from staging tables
 
-    # copy data from staging to master
-    copy_data_to_master_tables()
-    
-    # delete all data from staging tables
-    delete_staging_table_rows()
-    
     print("Pre-processing completed successfully.")
 
 
