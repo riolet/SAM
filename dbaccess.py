@@ -74,27 +74,27 @@ def get_timerange():
     return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
 
-def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
-    r = common.determine_range(ip8, ip16, ip24, ip32)
-    if ip8 < 0 or ip8 > 255:
+def get_nodes(ip_start, ip_end):
+    diff = ip_end - ip_start
+    if diff > 16777215:
         # check Nodes8
         # rows = common.db.select("Nodes8")
         rows = common.db.select("MasterNodes", where="subnet=8")
-    elif ip16 < 0 or ip16 > 255:
+    elif diff > 65536:
         # check Nodes16
-        rows = common.db.select("MasterNodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
-    elif ip24 < 0 or ip24 > 255:
+        rows = common.db.select("MasterNodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
+    elif diff > 255:
         # check Nodes24
-        rows = common.db.select("MasterNodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
-    elif ip32 < 0 or ip32 > 255:
+        rows = common.db.select("MasterNodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
+    elif diff > 0:
         # check Nodes32
-        rows = common.db.select("MasterNodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("MasterNodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
     else:
         rows = []
     return rows
 
 
-def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
+def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
 
@@ -102,24 +102,24 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
         that means that connections to destination 1.2.3.4
         that come from source 1.9.*.* will be grouped together as a single connection.
 
-    * for /8, /16, and /24, `SourceIP` -> `DestIP` make a unique connection.
-    * for /32, `SourceIP` -> `DestIP` : `Port` make a unique connection.
+    * for /8, /16, and /24, `IP to IP` is a unique connection.
+    * for /32, `IP to IP on Port` make a unique connection.
 
     * If filter is provided, only connections over the given port are considered.
 
     * If timerange is provided, only connections that occur within the given time range are considered.
 
-    :param ip8:  The first  segment of the IPv4 address: __.xx.xx.xx
-    :param ip16: The second segment of the IPv4 address: xx.__.xx.xx
-    :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
-    :param ip32: The fourth segment of the IPv4 address: xx.xx.xx.__
+    :param ipstart:  integer indicating the low end of the IP address range constraint
+    :param ipend:  integer indicating the high end of the IP address range constraint
+    :param inbound:  boolean, the direction of links to consider:
+        If True, only consider links that terminate in the ip_range specified.
+        If False, only consider links that originate in the ip_range specified,
     :param port_filter:  Only consider connections using this destination port. Default is no filtering.
     :param timerange:  Tuple of (start, end) timestamps. Only connections happening
     during this time period are considered.
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
-    r = common.determine_range(ip8, ip16, ip24, ip32)
-    ports = 0 <= ip32 <= 255  # include ports in the results?
+    ports = (ip_start == ip_end)  # include ports in the results?
     where = build_where_clause(timerange, port_filter)
 
     if ports:
@@ -129,61 +129,23 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
         select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
 
-    query = """
-    SELECT {select}
-    FROM MasterLinksIn
-    WHERE dst_start = $start && dst_end = $end
-     {where}
-    {group_by}
-    """.format(where=where, select=select, group_by=group_by)
-    qvars = {"start": r[0], "end": r[1]}
-    rows = list(common.db.query(query, vars=qvars))
-    return rows
-
-
-def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
-    """
-    This function returns a list of the connections going out of a given node from the rest of the graph.
-
-    * The connections are aggregated into groups based on the first diverging ancestor.
-        that means that connections to destination 1.2.3.4
-        that come from source 1.9.*.* will be grouped together as a single connection.
-
-    * for /8, /16, and /24, `SourceIP` -> `DestIP` make a unique connection.
-    * for /32, `SourceIP` -> `DestIP` : `Port` make a unique connection.
-
-    * If filter is provided, only connections over the given port are considered.
-
-    * If timerange is provided, only connections that occur within the given time range are considered.
-
-    :param ip8:  The first  segment of the IPv4 address: __.xx.xx.xx
-    :param ip16: The second segment of the IPv4 address: xx.__.xx.xx
-    :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
-    :param ip32: The fourth segment of the IPv4 address: xx.xx.xx.__
-    :param port_filter:  Only consider connections using this destination port. Default is no filtering.
-    :param timerange:  Tuple of (start, end) timestamps. Only connections happening
-    during this time period are considered.
-    :return: A list of db results formated as web.storage objects (used like dictionaries)
-    """
-    r = common.determine_range(ip8, ip16, ip24, ip32)
-    ports = 0 <= ip32 <= 255  # include ports in the results?
-    where = build_where_clause(timerange, port_filter)
-
-    if ports:
-        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links'"
-        group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
+    if inbound:
+        query = """
+        SELECT {select}
+        FROM MasterLinksIn
+        WHERE dst_start = $start && dst_end = $end
+         {where}
+        {group_by}
+        """.format(where=where, select=select, group_by=group_by)
     else:
-        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
-        group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
-
-    query = """
-    SELECT {select}
-    FROM MasterLinksOut
-    WHERE src_start = $start && src_end = $end
-     {where}
-    {group_by}
-    """.format(where=where, select=select, group_by=group_by)
-    qvars = {"start": r[0], "end": r[1]}
+        query = """
+        SELECT {select}
+        FROM MasterLinksOut
+        WHERE src_start = $start && src_end = $end
+         {where}
+        {group_by}
+        """.format(where=where, select=select, group_by=group_by)
+    qvars = {"start": ip_start, "end": ip_end}
     rows = list(common.db.query(query, vars=qvars))
     return rows
 
@@ -214,7 +176,7 @@ def build_where_clause(timestamp_range=None, port=None, rounding=True):
     return WHERE
 
 
-def get_details_summary(ip_range, timestamp_range=None, port=None):
+def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
 
     query = """
@@ -231,17 +193,32 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
                 FROM MasterLinks
                 WHERE dst BETWEEN $start AND $end
                  {0}) AS 'unique_ports';""".format(WHERE)
-    qvars = {'start': ip_range[0], 'end': ip_range[1]}
+
+    query2 = """
+    SELECT `inputs`.ips AS 'unique_in'
+        , `outputs`.ips AS 'unique_out'
+        , `inputs`.ports AS 'unique_ports'
+    FROM
+      (SELECT COUNT(DISTINCT src) AS 'ips', COUNT(DISTINCT port) AS 'ports'
+        FROM MasterLinks
+        WHERE dst BETWEEN $start AND $end
+    ) AS `inputs`
+    JOIN (SELECT COUNT(DISTINCT dst) AS 'ips'
+        FROM MasterLinks
+        WHERE src BETWEEN $start AND $end
+    ) AS `outputs`;""".format(WHERE)
+
+    qvars = {'start': ip_start, 'end': ip_end}
     rows = common.db.query(query, vars=qvars)
     row = rows[0]
     return row
 
 
-def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
+def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
     sort_options = ['links', 'src', 'dst', 'port', 'sum_bytes', 'sum_packets', 'protocols', 'avg_duration']
     qvars = {
-        'start': ip_range[0],
-        'end': ip_range[1],
+        'start': ip_start,
+        'end': ip_end,
         'page': page_size * (page-1),
         'page_size': page_size,
         'WHERE': build_where_clause(timestamp_range, port)
@@ -293,12 +270,12 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
+def get_details_ports(ip_start, ip_end, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
     sort_options = ['links', 'port']
     first_result = (page - 1) * page_size
     qvars = {
-        'start': ip_range[0],
-        'end': ip_range[1],
+        'start': ip_start,
+        'end': ip_end,
         'first': first_result,
         'size': page_size,
         'WHERE': build_where_clause(timestamp_range, port)

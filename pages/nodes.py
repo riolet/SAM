@@ -2,6 +2,7 @@ import json
 import dbaccess
 import web
 import decimal
+import common
 
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
@@ -18,10 +19,11 @@ class Nodes:
         # result = dbaccess.connections()
         result = {}
         if not addresses:
-            result["_"] = list(dbaccess.get_nodes())
+            result["_"] = list(dbaccess.get_nodes(0x00000000, 0xFFFFFFFF))
         else:
             for address in addresses:
-                result[address] = list(dbaccess.get_nodes(*map(int, address.split("."))))
+                ip_start, ip_end = common.determine_range_string(address)
+                result[address] = list(dbaccess.get_nodes(ip_start, ip_end))
 
         return json.dumps(result, default=decimal_default)
 

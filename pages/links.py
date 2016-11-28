@@ -3,6 +3,7 @@ import dbaccess
 import web
 import decimal
 import datetime
+import common
 
 
 # This class is for getting the links or edges connecting nodes in the graph
@@ -18,14 +19,14 @@ class Links:
     def get_links(self, addresses, port_filter, timerange):
         result = {}
         for address in addresses:
-            ips = [int(i) for i in address.split(".")]
+            ipstart, ipend = common.determine_range_string(address)
             result[address] = {}
             if port_filter:
-                result[address]['inputs'] = dbaccess.get_links_in(*ips, port_filter=port_filter, timerange=timerange)
-                result[address]['outputs'] = dbaccess.get_links_out(*ips, port_filter=port_filter, timerange=timerange)
+                result[address]['inputs'] = dbaccess.get_links(ipstart, ipend, inbound=True, port_filter=port_filter, timerange=timerange)
+                result[address]['outputs'] = dbaccess.get_links(ipstart, ipend, inbound=False, port_filter=port_filter, timerange=timerange)
             else:
-                result[address]['inputs'] = dbaccess.get_links_in(*ips, timerange=timerange)
-                result[address]['outputs'] = dbaccess.get_links_out(*ips, timerange=timerange)
+                result[address]['inputs'] = dbaccess.get_links(ipstart, ipend, inbound=True, timerange=timerange)
+                result[address]['outputs'] = dbaccess.get_links(ipstart, ipend, inbound=False, timerange=timerange)
         return json.dumps(result, default=decimal_default)
 
     def GET(self):

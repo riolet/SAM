@@ -160,7 +160,8 @@ class Details:
 
     def inputs(self):
         inputs = dbaccess.get_details_connections(
-            ip_range=self.ip_range,
+            ip_start=self.ip_range[0],
+            ip_end=self.ip_range[1],
             inbound=True,
             timestamp_range=self.time_range,
             port=self.port,
@@ -201,7 +202,8 @@ class Details:
 
     def outputs(self):
         outputs = dbaccess.get_details_connections(
-            ip_range=self.ip_range,
+            ip_start=self.ip_range[0],
+            ip_end=self.ip_range[1],
             inbound=False,
             timestamp_range=self.time_range,
             port=self.port,
@@ -241,7 +243,8 @@ class Details:
 
     def ports(self):
         ports = dbaccess.get_details_ports(
-            ip_range=self.ip_range,
+            ip_start=self.ip_range[0],
+            ip_end=self.ip_range[1],
             timestamp_range=self.time_range,
             port=self.port,
             page=self.page,
@@ -285,7 +288,7 @@ class Details:
         return response
 
     def summary(self):
-        summary = dbaccess.get_details_summary(self.ip_range, self.time_range, self.port)
+        summary = dbaccess.get_details_summary(self.ip_range[0], self.ip_range[1], self.time_range, self.port)
         return summary
 
     def selection_info(self):
