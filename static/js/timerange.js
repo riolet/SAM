@@ -43,9 +43,15 @@ function slider_init() {
         dataType: "json",
         error: onNotLoadData,
         success: function (response) {
-           	config.tstart = response.max - (5*60);
-            config.tend = response.max;
-            create_slider(Math.floor(response.min), Math.floor(response.max));
+		if (sliderMade == false) {
+			   	config.tstart = response.max - (5*60);
+				config.tend = response.max;
+				console.log(response.min);
+				console.log(response.max);
+				create_slider(Math.floor(response.min), Math.floor(response.max));
+			} else {
+				updateSliderRange(Math.floor(response.min), Math.floor(response.max));
+			}
         }
     });
 }
@@ -90,6 +96,7 @@ function create_slider(dtmin, dtmax) {
     var inputA = document.getElementById('input-start');
     var inputB = document.getElementById('input-end');
     var converter = dateConverter();
+	sliderMade = true;
 
     dateSlider.noUiSlider.on('update', function( values, handle ) {
         var value = values[handle];
