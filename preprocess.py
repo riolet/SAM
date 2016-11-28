@@ -419,3 +419,4 @@ if __name__ == "__main__":
         print("Database access denied. Check you username / password? (dbconfig_local.py)")
     else:
         preprocess_log()
+

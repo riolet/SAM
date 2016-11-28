@@ -90,18 +90,13 @@ def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
 def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
-
     * The connections are aggregated into groups based on the first diverging ancestor.
         that means that connections to destination 1.2.3.4
         that come from source 1.9.*.* will be grouped together as a single connection.
-
     * for /8, /16, and /24, `SourceIP` -> `DestIP` make a unique connection.
     * for /32, `SourceIP` -> `DestIP` : `Port` make a unique connection.
-
     * If filter is provided, only connections over the given port are considered.
-
     * If timerange is provided, only connections that occur within the given time range are considered.
-
     :param ip8:  The first  segment of the IPv4 address: __.xx.xx.xx
     :param ip16: The second segment of the IPv4 address: xx.__.xx.xx
     :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
@@ -137,18 +132,13 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
 def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=None):
     """
     This function returns a list of the connections going out of a given node from the rest of the graph.
-
     * The connections are aggregated into groups based on the first diverging ancestor.
         that means that connections to destination 1.2.3.4
         that come from source 1.9.*.* will be grouped together as a single connection.
-
     * for /8, /16, and /24, `SourceIP` -> `DestIP` make a unique connection.
     * for /32, `SourceIP` -> `DestIP` : `Port` make a unique connection.
-
     * If filter is provided, only connections over the given port are considered.
-
     * If timerange is provided, only connections that occur within the given time range are considered.
-
     :param ip8:  The first  segment of the IPv4 address: __.xx.xx.xx
     :param ip16: The second segment of the IPv4 address: xx.__.xx.xx
     :param ip24: The third  segment of the IPv4 address: xx.xx.__.xx
@@ -660,4 +650,4 @@ GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in,
         RANGE=page_size + 1)
 
     info = list(common.db.query(query))
-    return info
+return info
