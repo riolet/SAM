@@ -269,10 +269,10 @@ class Details:
 
     def children(self, simple=False):
         children = dbaccess.get_details_children(
-            ip_range=self.ip_range,
-            subnet=self.subnet,
+            ip_start=self.ip_range[0],
+            ip_end=self.ip_range[1],
             page=self.page,
-            page_size=self.page_size,
+            page_size=256,
             order=self.order)
         response = {
             "page": self.page,

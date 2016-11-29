@@ -150,194 +150,135 @@ def test_get_links_out_timerange():
     assert len(rows) == 3
 
 
-def test_get_details_summary():
-    details = dbaccess.get_details_summary(*common.determine_range(21)[:2])
-    assert details['unique_in'] == 13322L
-    assert details['unique_out'] == 2398L
-    assert details['unique_ports'] == 20370L
+def test_tags():
+    ip1 = "21"
+    ip2 = "21.66"
+    ip3 = "21.66.116"
+    ip4 = "21.66.116.37"
+    tt1 = "test_tag_one"
+    tt2 = "test_tag_two"
+    tt3 = "test_tag_three"
+    tt4 = "test_tag_four"
+    # get the old tags
+    temp1 = dbaccess.get_tags(ip1)
+    assert sorted(temp1.keys()) == ['p_tags', 'tags']
+    temp4 = dbaccess.get_tags(ip4)
+    assert sorted(temp4.keys()) == ['p_tags', 'tags']
+    old_1 = temp1['tags']
+    old_2 = dbaccess.get_tags(ip2)['tags']
+    old_3 = dbaccess.get_tags(ip3)['tags']
+    old_4 = temp4['tags']
 
-    details = dbaccess.get_details_summary(*common.determine_range(21, 66)[:2])
-    assert details['unique_in'] == 13322L
-    assert details['unique_out'] == 2398L
-    assert details['unique_ports'] == 20370L
+    try:
+        # set some test tags
+        dbaccess.set_tags(ip1, old_1 + [tt1])
+        dbaccess.set_tags(ip2, old_2 + [tt2])
+        dbaccess.set_tags(ip3, old_3 + [tt3])
+        dbaccess.set_tags(ip4, old_4 + [tt4])
+        # read new tags
+        new_1 = dbaccess.get_tags(ip1)
+        new_2 = dbaccess.get_tags(ip2)
+        new_3 = dbaccess.get_tags(ip3)
+        new_4 = dbaccess.get_tags(ip4)
+        # test new tags
+        assert tt1     in new_1['tags'] and tt1 not in new_1['p_tags']
+        assert tt2 not in new_1['tags'] and tt2 not in new_1['p_tags']
+        assert tt3 not in new_1['tags'] and tt3 not in new_1['p_tags']
+        assert tt4 not in new_1['tags'] and tt4 not in new_1['p_tags']
 
-    details = dbaccess.get_details_summary(*common.determine_range(21, 66, 10)[:2])
-    assert details['unique_in'] == 2798L
-    assert details['unique_out'] == 1
-    assert details['unique_ports'] == 3463L
+        assert tt1 not in new_2['tags'] and tt1     in new_2['p_tags']
+        assert tt2     in new_2['tags'] and tt2 not in new_2['p_tags']
+        assert tt3 not in new_2['tags'] and tt3 not in new_2['p_tags']
+        assert tt4 not in new_2['tags'] and tt4 not in new_2['p_tags']
 
-    details = dbaccess.get_details_summary(*common.determine_range(21, 66, 10, 70)[:2])
-    assert details['unique_in'] == 28
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 29
+        assert tt1 not in new_3['tags'] and tt1     in new_3['p_tags']
+        assert tt2 not in new_3['tags'] and tt2     in new_3['p_tags']
+        assert tt3     in new_3['tags'] and tt3 not in new_3['p_tags']
+        assert tt4 not in new_3['tags'] and tt4 not in new_3['p_tags']
 
-    details = dbaccess.get_details_summary(*common.determine_range(21, 66, 40, 231)[:2])
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 30
-    assert details['unique_ports'] == 1
+        assert tt1 not in new_4['tags'] and tt1     in new_4['p_tags']
+        assert tt2 not in new_4['tags'] and tt2     in new_4['p_tags']
+        assert tt3 not in new_4['tags'] and tt3     in new_4['p_tags']
+        assert tt4     in new_4['tags'] and tt4 not in new_4['p_tags']
 
+        # check the full tag list
+        tags = dbaccess.get_tag_list()
+        assert tt1 in tags
+        assert tt2 in tags
+        assert tt3 in tags
+        assert tt4 in tags
 
-def test_get_details_summary_ports():
-    ip_start, ip_end, _ = common.determine_range(21, 66, 40, 231)
-    details = dbaccess.get_details_summary(ip_start, ip_end, port=445)
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 1
-
-    details = dbaccess.get_details_summary(ip_start, ip_end, port=80)
-    assert details['unique_in'] == 0
-    assert details['unique_out'] == 2
-    assert details['unique_ports'] == 0
-
-    details = dbaccess.get_details_summary(ip_start, ip_end, port=1)
-    assert details['unique_in'] == 0
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 0
-
-
-def test_get_details_summary_timerange():
-    time_all = (1, 2 ** 31 - 1)
-    time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
-    time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
-    ip_start, ip_end, _ = common.determine_range(21, 66, 40, 231)
-    ip_start2, ip_end2, _ = common.determine_range(79, 35, 103, 221)
-
-    details = dbaccess.get_details_summary(ip_start, ip_end, timestamp_range=time_all)
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 30
-    assert details['unique_ports'] == 1
-
-    details = dbaccess.get_details_summary(ip_start, ip_end, timestamp_range=time_crop)
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 30
-    assert details['unique_ports'] == 1
-
-    details = dbaccess.get_details_summary(ip_start2, ip_end2, timestamp_range=time_crop)
-    assert details['unique_in'] == 1
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 1
-
-    details = dbaccess.get_details_summary(ip_start, ip_end, timestamp_range=time_tiny)
-    assert details['unique_in'] == 3
-    assert details['unique_out'] == 15
-    assert details['unique_ports'] == 1
+    finally:
+        # remove test tags
+        dbaccess.set_tags(ip1, old_1)
+        dbaccess.set_tags(ip2, old_2)
+        dbaccess.set_tags(ip3, old_3)
+        dbaccess.set_tags(ip4, old_4)
 
 
-def test_get_details_conn():
-    ipstart, ipend, _ = common.determine_range(21)
-    details = dbaccess.get_details_connections(ipstart, ipend, True)
-    assert len(details) == 50
-    details = dbaccess.get_details_connections(ipstart, ipend, False)
-    assert len(details) == 50
+def test_env():
+    ip1 = "21"
+    ip2 = "21.66"
+    ip3 = "21.66.116"
+    ip4 = "21.66.116.37"
+    te1 = "test_env_one"
+    te2 = "test_env_two"
+    te3 = "test_env_three"
+    te4 = "test_env_four"
+    # get the old tags
+    temp1 = dbaccess.get_env(ip1)
+    assert sorted(temp1.keys()) == ['env', 'p_env']
+    temp4 = dbaccess.get_env(ip4)
+    assert sorted(temp4.keys()) == ['env', 'p_env']
+    old_1 = temp1['env']
+    old_2 = dbaccess.get_env(ip2)['env']
+    old_3 = dbaccess.get_env(ip3)['env']
+    old_4 = temp4['env']
 
-    ipstart, ipend, _ = common.determine_range(21, 66)
-    details = dbaccess.get_details_connections(ipstart, ipend, True)
-    assert len(details) == 50
-    details = dbaccess.get_details_connections(ipstart, ipend, False)
-    assert len(details) == 50
+    try:
+        # set some test tags
+        dbaccess.set_env(ip1, te1)
+        dbaccess.set_env(ip2, te2)
+        dbaccess.set_env(ip3, te3)
+        dbaccess.set_env(ip4, te4)
+        # read new tags
+        new_1 = dbaccess.get_env(ip1)
+        new_2 = dbaccess.get_env(ip2)
+        new_3 = dbaccess.get_env(ip3)
+        new_4 = dbaccess.get_env(ip4)
+        # test new tags
+        assert te1 == new_1['env'] and te1 != new_1['p_env']
+        assert te2 != new_1['env'] and te2 != new_1['p_env']
+        assert te3 != new_1['env'] and te3 != new_1['p_env']
+        assert te4 != new_1['env'] and te4 != new_1['p_env']
 
-    ipstart, ipend, _ = common.determine_range(21, 66, 10)
-    details = dbaccess.get_details_connections(ipstart, ipend, True)
-    assert len(details) == 50
-    details = dbaccess.get_details_connections(ipstart, ipend, False)
-    assert len(details) == 1
+        assert te1 != new_2['env'] and te1 == new_2['p_env']
+        assert te2 == new_2['env'] and te2 != new_2['p_env']
+        assert te3 != new_2['env'] and te3 != new_2['p_env']
+        assert te4 != new_2['env'] and te4 != new_2['p_env']
 
-    ipstart, ipend, _ = common.determine_range(21, 66, 10, 70)
-    details = dbaccess.get_details_connections(ipstart, ipend, True)
-    assert len(details) == 50
-    details = dbaccess.get_details_connections(ipstart, ipend, False)
-    assert len(details) == 0
+        assert te1 != new_3['env'] and te1 != new_3['p_env']
+        assert te2 != new_3['env'] and te2 == new_3['p_env']
+        assert te3 == new_3['env'] and te3 != new_3['p_env']
+        assert te4 != new_3['env'] and te4 != new_3['p_env']
 
-    ipstart, ipend, _ = common.determine_range(21, 66, 40, 231)
-    details = dbaccess.get_details_connections(ipstart, ipend, True)
-    assert len(details) == 7
-    details = dbaccess.get_details_connections(ipstart, ipend, False)
-    assert len(details) == 50
+        assert te1 != new_4['env'] and te1 != new_4['p_env']
+        assert te2 != new_4['env'] and te2 != new_4['p_env']
+        assert te3 != new_4['env'] and te3 == new_4['p_env']
+        assert te4 == new_4['env'] and te4 != new_4['p_env']
 
-
-def test_get_details_conn_ports():
-    ipstart, ipend, _ = common.determine_range(21, 66, 40, 231)
-    details = dbaccess.get_details_connections(ipstart, ipend, True, port=445)
-    assert len(details) == 7
-    details = dbaccess.get_details_connections(ipstart, ipend, False, port=445)
-    assert len(details) == 0
-
-    details = dbaccess.get_details_connections(ipstart, ipend, True, port=80)
-    assert len(details) == 0
-    details = dbaccess.get_details_connections(ipstart, ipend, False, port=80)
-    assert len(details) == 2
-
-    details = dbaccess.get_details_connections(ipstart, ipend, True, port=1)
-    assert len(details) == 0
-    details = dbaccess.get_details_connections(ipstart, ipend, False, port=1)
-    assert len(details) == 0
-
-
-def test_get_details_conn_timerange():
-    time_all = (1, 2 ** 31 - 1)
-    time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
-    time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
-    ipstart, ipend, _ = common.determine_range(21, 66, 40, 231)
-    ipstart2, ipend2, _ = common.determine_range(79, 35, 103, 221)
-
-    details = dbaccess.get_details_connections(ipstart, ipend, True, timestamp_range=time_all)
-    assert len(details) == 7
-    details = dbaccess.get_details_connections(ipstart, ipend, False, timestamp_range=time_all)
-    assert len(details) == 50
-
-    details = dbaccess.get_details_connections(ipstart, ipend, True, timestamp_range=time_crop)
-    assert len(details) == 7
-    details = dbaccess.get_details_connections(ipstart, ipend, False, timestamp_range=time_crop)
-    assert len(details) == 50
-
-    details = dbaccess.get_details_connections(ipstart, ipend, True, timestamp_range=time_tiny)
-    assert len(details) == 3
-    details = dbaccess.get_details_connections(ipstart, ipend, False, timestamp_range=time_tiny)
-    assert len(details) == 27
-
-    details = dbaccess.get_details_connections(ipstart2, ipend2, True, timestamp_range=time_crop)
-    assert len(details) == 1
-    details = dbaccess.get_details_connections(ipstart2, ipend2, False, timestamp_range=time_crop)
-    assert len(details) == 0
-
-
-def test_get_details_ports():
-    time_all = (1, 2 ** 31 - 1)
-    time_crop = (make_timestamp('2016-06-21 17:10'), make_timestamp('2016-06-21 18:05'))
-    time_tiny = (make_timestamp('2016-06-21 17:45'), make_timestamp('2016-06-21 17:50'))
-    ipstart1, ipend1, _ = common.determine_range(21, 66, 40, 231)
-    ipstart2, ipend2, _ = common.determine_range(79, 35, 103, 221)
-
-    ipstart, ipend, _ = common.determine_range(21)
-    details = dbaccess.get_details_ports(ipstart, ipend)
-    assert len(details) == 50
-    ipstart, ipend, _ = common.determine_range(21, 66)
-    details = dbaccess.get_details_ports(ipstart, ipend)
-    assert len(details) == 50
-    ipstart, ipend, _ = common.determine_range(21, 66, 10)
-    details = dbaccess.get_details_ports(ipstart, ipend)
-    assert len(details) == 50
-    ipstart, ipend, _ = common.determine_range(21, 66, 10, 70)
-    details = dbaccess.get_details_ports(ipstart, ipend)
-    assert len(details) == 29
-    details = dbaccess.get_details_ports(ipstart1, ipend1)
-    assert len(details) == 1
-
-    details = dbaccess.get_details_ports(ipstart1, ipend1, port=445)
-    assert len(details) == 1
-    details = dbaccess.get_details_ports(ipstart1, ipend1, port=80)
-    assert len(details) == 0
-    details = dbaccess.get_details_ports(ipstart1, ipend1, port=1)
-    assert len(details) == 0
-
-    details = dbaccess.get_details_ports(ipstart1, ipend1, timestamp_range=time_all)
-    assert len(details) == 1
-    details = dbaccess.get_details_ports(ipstart1, ipend1, timestamp_range=time_crop)
-    assert len(details) == 1
-    details = dbaccess.get_details_ports(ipstart1, ipend1, timestamp_range=time_tiny)
-    assert len(details) == 1
-    details = dbaccess.get_details_ports(ipstart2, ipend2, timestamp_range=time_crop)
-    assert len(details) == 1
+        # check the full env list
+        envs = dbaccess.get_env_list()
+        assert te1 in envs
+        assert te2 in envs
+        assert te3 in envs
+        assert te4 in envs
+    finally:
+        # remove test tags
+        dbaccess.set_env(ip1, old_1)
+        dbaccess.set_env(ip2, old_2)
+        dbaccess.set_env(ip3, old_3)
+        dbaccess.set_env(ip4, old_4)
 
 
 def test_get_node_info():

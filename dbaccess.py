@@ -303,16 +303,30 @@ def get_details_ports(ip_start, ip_end, timestamp_range=None, port=None, page=1,
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_children(ip_range, subnet, page, page_size, order):
+def get_details_children(ip_start, ip_end, page, page_size, order):
     sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
-    start = ip_range[0]
-    end = ip_range[1]
-    quotient = ip_range[2]
-    child_subnet_start = subnet + 1
-    child_subnet_end = subnet + 8
+    ip_diff = ip_end - ip_start
+    if ip_diff == 0:
+        return []
+    elif ip_diff == 255:
+        quotient = 1
+        child_subnet_start = 25
+        child_subnet_end = 32
+    elif ip_diff == 65535:
+        quotient = 256
+        child_subnet_start = 17
+        child_subnet_end = 24
+    elif ip_diff == 16777215:
+        quotient = 65536
+        child_subnet_start = 9
+        child_subnet_end = 16
+    else:
+        quotient = 16777216
+        child_subnet_start = 1
+        child_subnet_end = 8
     first_result = (page - 1) * page_size
-    qvars = {'ip_start': start,
-             'ip_end': end,
+    qvars = {'ip_start': ip_start,
+             'ip_end': ip_end,
              's_start': child_subnet_start,
              's_end': child_subnet_end,
              'first': first_result,
@@ -371,6 +385,12 @@ def get_details_children(ip_range, subnet, page, page_size, order):
 
 
 def get_tags(address):
+    """
+    Gets all directly assigned tags and inherited parent tags for a given addresss
+
+    :param address: A string dotted-decimal IP address such as "192.168.2.100" or "21.66" or "1.2.0.0/16"
+    :return: A dict of lists of strings, with keys 'tags' and 'p_tags' where p_tags are inherited tags from parent nodes
+    """
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
@@ -390,6 +410,13 @@ def get_tag_list():
 
 
 def set_tags(address, new_tags):
+    """
+    Assigns a new set of tags to an address overwriting any existing tag assignments.
+
+    :param address: A string dotted-decimal IP address such as "192.168.2.100" or "21.66" or "1.2.0.0/16"
+    :param new_tags: A list of tag strings. e.g. ['tag_one', 'tag_two', 'tag_three']
+    :return: None
+    """
     table = 'Tags'
     what = "ipstart, ipend, tag"
     r = common.determine_range_string(address)
@@ -423,7 +450,7 @@ def get_env(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
+    data = common.db.select("MasterNodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
     parent_env = "production"
     env = "inherit"
     nearest_distance = -1
@@ -440,7 +467,7 @@ def get_env(address):
 
 
 def get_env_list():
-    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
+    envs = set(row.env for row in common.db.select("MasterNodes", what="DISTINCT env") if row.env)
     envs.add("production")
     envs.add("inherit")
     envs.add("dev")
@@ -450,7 +477,7 @@ def get_env_list():
 def set_env(address, env):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('Nodes', where, env=env)
+    common.db.update('MasterNodes', where, env=env)
 
 
 def get_node_info(address):
