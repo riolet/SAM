@@ -721,7 +721,7 @@ function GET_data(ip, part, order, callback) {
         "component": part
     };
     $.ajax({
-        url: "/details,
+        url: "/details",
         type: "GET",
         data: request,
         error: onNotLoadData,
