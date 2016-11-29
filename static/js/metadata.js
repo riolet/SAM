@@ -717,10 +717,11 @@ function GET_data(ip, part, order, callback) {
 
     var request = {
         "address": minimizeIP(ip),
-        "order": order
+        "order": order,
+        "component": part
     };
     $.ajax({
-        url: "/details/" + part,
+        url: "/details,
         type: "GET",
         data: request,
         error: onNotLoadData,
@@ -747,9 +748,10 @@ function GET_page(ip, part, page, order) {
     console.log("GET_page");
     var request = {"address": minimizeIP(ip),
             "page": page,
-            "order": order};
+            "order": order,
+            "component": part};
     $.ajax({
-        url: "/details/" + part,
+        url: "/details",
         type: "GET",
         data: request,
         error: onNotLoadData,

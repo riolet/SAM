@@ -13,7 +13,6 @@ urls = (
     '/nodes', 'pages.nodes.Nodes',
     '/links', 'pages.links.Links',
     '/details', 'pages.details.Details',
-    '/details/(.+)', 'pages.details.Details',
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
     '/metadata', 'pages.metadata.Metadata',

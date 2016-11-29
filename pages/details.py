@@ -33,6 +33,7 @@ class Details:
             "children": self.children,
             "summary": self.summary,
         }
+        self.requested_components = []
 
     def process_input(self, GET_data):
         # ignore port, for now at least.
@@ -67,6 +68,8 @@ class Details:
             self.order = GET_data['order']
         if 'simple' in GET_data:
             self.simple = GET_data['simple'] == "true"
+        if 'component' in GET_data:
+            self.requested_components = GET_data['component'].split(",")
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))
@@ -323,9 +326,8 @@ class Details:
         details = {}
 
         if self.ips:
-            if component:
-                components = component.split(",")
-                for c_name in components:
+            if self.requested_components:
+                for c_name in self.requested_components:
                     if c_name in self.components:
                         details[c_name] = self.components[c_name]()
                     else:
