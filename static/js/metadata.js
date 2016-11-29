@@ -631,7 +631,6 @@ function header_sort_callback(event) {
         return;
     }
     var ip = getIP_Subnet().normal;
-    console.log("requesting an update: GET_page(ip=" + ip + ", part=" + component + ", page=" + g_data[component].page + ", order=" + newSort);
     GET_page(ip, component, g_data[component].page, newSort);
 }
 
@@ -734,7 +733,6 @@ function GET_page_callback(response) {
     console.log("GET_page_callback");
     Object.keys(response).forEach(function (key) {
         if (response[key].hasOwnProperty("component")) {
-            console.log("component is " + response[key].component);
             g_data[response[key].component] = response[key];
             present_detailed_info(g_data);
         }

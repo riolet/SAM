@@ -159,3 +159,24 @@ def test_request_timerange():
     assert len(data['inputs']['rows']) == 3
     assert len(data['outputs']['rows']) == 27
     assert len(data['ports']['rows']) == 1
+
+
+def test_request_component():
+    for component in ['quick_info', 'inputs', 'outputs', 'ports', 'children', 'summary']:
+        req = app.request('/details?address=21.66.40.231&component={0}'.format(component), 'GET')
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert data.keys() == [component]
+        assert type(data[component]) == dict
+
+
+def test_multiple_components():
+    req = app.request('/details?address=21.66.40.231&component=quick_info,ports,summary', 'GET')
+    assert req.status == "200 OK"
+    assert req.headers['Content-Type'] == "application/json"
+    data = json.loads(req.data)
+    keys = sorted(data.keys())
+    assert keys == ['ports', 'quick_info', 'summary']
+    for k in keys:
+        type(data[k]) == dict

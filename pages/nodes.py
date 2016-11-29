@@ -46,7 +46,5 @@ class Nodes:
         address_str = get_data.get('address', None)
         if address_str is not None:
             addresses = address_str.split(",")
-        print "address_str is ", address_str
-        print "addresses is ", addresses
 
         return self.get_children(addresses)
