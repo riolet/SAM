@@ -201,8 +201,9 @@ def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     return row
 
 
-def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
+def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links", simple=False):
     sort_options = ['links', 'src', 'dst', 'port', 'sum_bytes', 'sum_packets', 'protocols', 'avg_duration']
+    sort_options_simple = ['links', 'src', 'dst', 'port']
     qvars = {
         'start': ip_start,
         'end': ip_end,
@@ -217,43 +218,68 @@ def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, por
         qvars['filtered'] = "src"
         qvars['collected'] = "dst"
 
+    # determine the sort direction
     if order and order[0] == '-':
         sort_dir = "DESC"
     else:
         sort_dir = "ASC"
-    if order and order[1:] in sort_options:
-        sort_by = order[1:]
+    # determine the sort column
+    if simple:
+        if order and order[1:] in sort_options_simple:
+            sort_by = order[1:]
+        else:
+            sort_by = sort_options_simple[0]
     else:
-        sort_by = sort_options[0]
+        if order and order[1:] in sort_options:
+            sort_by = order[1:]
+        else:
+            sort_by = sort_options[0]
+    # add table prefix for some columns
     if sort_by in ['port', 'src', 'dst']:
         sort_by = "`MasterLinks`." + sort_by
 
     qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
-    query = """
-        SELECT src, dst, port, links, protocols
-            , sum_bytes
-            , (sum_bytes / links) AS 'avg_bytes'
-            , sum_packets
-            , (sum_packets / links) AS 'avg_packets'
-            , avg_duration
-        FROM(
-            SELECT decodeIP(src) AS 'src'
-                , decodeIP(dst) AS 'dst'
-                , port AS 'port'
-                , sum(links) AS 'links'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ", ") AS 'protocols'
-                , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
-                , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
-                , AVG(duration) AS 'avg_duration'
-            FROM MasterLinks
-            WHERE {filtered} BETWEEN $start AND $end
-             {WHERE}
-            GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
-            ORDER BY {order}
-            LIMIT {page}, {page_size}
-        ) AS precalc;
-    """.format(**qvars)
+    if simple:
+        query = """
+SELECT {collected}, port, links
+FROM(
+    SELECT decodeIP({collected}) AS '{collected}'
+        , port AS 'port'
+        , sum(links) AS 'links'
+    FROM MasterLinks
+    WHERE {filtered} BETWEEN $start AND $end
+     {WHERE}
+    GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
+    ORDER BY {order}
+    LIMIT {page}, {page_size}
+) AS precalc;
+        """.format(**qvars)
+    else:
+        query = """
+SELECT src, dst, port, links, protocols
+    , sum_bytes
+    , (sum_bytes / links) AS 'avg_bytes'
+    , sum_packets
+    , (sum_packets / links) AS 'avg_packets'
+    , avg_duration
+FROM(
+    SELECT decodeIP(src) AS 'src'
+        , decodeIP(dst) AS 'dst'
+        , port AS 'port'
+        , sum(links) AS 'links'
+        , GROUP_CONCAT(DISTINCT protocol SEPARATOR ", ") AS 'protocols'
+        , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
+        , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
+        , AVG(duration) AS 'avg_duration'
+    FROM MasterLinks
+    WHERE {filtered} BETWEEN $start AND $end
+     {WHERE}
+    GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
+    ORDER BY {order}
+    LIMIT {page}, {page_size}
+) AS precalc;
+        """.format(**qvars)
     return list(common.db.query(query, vars=qvars))
 
 

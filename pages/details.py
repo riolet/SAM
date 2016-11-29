@@ -170,7 +170,8 @@ class Details:
             port=self.port,
             page=self.page,
             page_size=self.page_size,
-            order=self.order)
+            order=self.order,
+            simple=self.simple)
         if self.simple:
             headers = [
                 ['src', "Source IP"],
@@ -212,7 +213,8 @@ class Details:
             port=self.port,
             page=self.page,
             page_size=self.page_size,
-            order=self.order)
+            order=self.order,
+            simple=self.simple)
         if self.simple:
             headers = [
                 ['dst', "Dest. IP"],
