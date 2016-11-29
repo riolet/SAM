@@ -282,18 +282,38 @@ def test_env():
 
 
 def test_get_node_info():
-    # dbaccess.get_node_info("21")
-    assert 1 == 1
+    info1 = dbaccess.get_node_info("21")
+    info2 = dbaccess.get_node_info("21.66")
+    info3 = dbaccess.get_node_info("21.66.116")
+    info4 = dbaccess.get_node_info("21.66.116.37")
+    assert type(info1) == dict
+    assert len(info1.keys()) > 20
+    assert type(info2) == dict
+    assert len(info2.keys()) > 20
+    assert type(info3) == dict
+    assert len(info3.keys()) > 20
+    assert type(info4) == dict
+    assert len(info4.keys()) > 20
 
 
 def test_set_node_info():
+    test_address = "21.66"
     # get old info
+    old_info = dbaccess.get_node_info(test_address)
+    old_alias = old_info['alias']
+    
     # set some new random
-    # assert info was recorded.
-    # reset old info
+    new_alias = "temp_alias_1"
+    if new_alias == old_alias:
+        new_alias = old_alias[::-1]
+    dbaccess.set_node_info(test_address, {'alias':new_alias})
 
-    # dbaccess.set_node_info("21", info)
-    assert 1 == 1
+    # assert info was recorded.
+    check_info = dbaccess.get_node_info(test_address)
+    assert check_info['alias'] == new_alias
+
+    # reset old info
+    dbaccess.set_node_info(test_address, {'alias':old_alias})
 
 
 def test_get_port_info_present():

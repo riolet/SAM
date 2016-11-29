@@ -578,11 +578,6 @@ def get_node_info(address):
 
 
 def set_node_info(address, data):
-    print("-" * 50)
-    print("Setting node info!")
-    print("type data: " + str(type(data)))
-    print(data)
-    print("-" * 50)
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
     common.db.update('Nodes', where, **data)
@@ -660,18 +655,12 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if HAVING:
         HAVING = "HAVING " + HAVING
 
-    print("\t=====" * 10)
-    print("Sort By!")
-    print("order_by = {0}".format(order_by))
-    print("order_dir = {0}".format(order_dir))
-
     #      ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets']
     cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)', '(bytes_in + bytes_out)', '(packets_in + packets_out)']
     ORDERBY = ""
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
-    print("ORDER BY {0}".format(ORDERBY))
-    print("\t=====" * 10)
+
     # note: group concat max length is default at 1024.
     # if info is lost, try:
     # SET group_concat_max_len = 2048
