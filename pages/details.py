@@ -307,7 +307,7 @@ class Details:
         details['ports'] = self.ports()
         return details
 
-    def GET(self, component=None):
+    def GET(self):
         """
         The expected GET data includes:
             'address': dotted-decimal IP addresses.

@@ -180,21 +180,6 @@ def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
 
     query = """
-        SELECT (
-            SELECT COUNT(DISTINCT src)
-                FROM MasterLinks
-                WHERE dst BETWEEN $start AND $end
-                 {0}) AS 'unique_in'
-            , (SELECT COUNT(DISTINCT dst)
-                FROM MasterLinks
-                WHERE src BETWEEN $start AND $end
-                 {0}) AS 'unique_out'
-            , (SELECT COUNT(DISTINCT port)
-                FROM MasterLinks
-                WHERE dst BETWEEN $start AND $end
-                 {0}) AS 'unique_ports';""".format(WHERE)
-
-    query2 = """
     SELECT `inputs`.ips AS 'unique_in'
         , `outputs`.ips AS 'unique_out'
         , `inputs`.ports AS 'unique_ports'
@@ -202,10 +187,12 @@ def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
       (SELECT COUNT(DISTINCT src) AS 'ips', COUNT(DISTINCT port) AS 'ports'
         FROM MasterLinks
         WHERE dst BETWEEN $start AND $end
+         {0}
     ) AS `inputs`
     JOIN (SELECT COUNT(DISTINCT dst) AS 'ips'
         FROM MasterLinks
         WHERE src BETWEEN $start AND $end
+         {0}
     ) AS `outputs`;""".format(WHERE)
 
     qvars = {'start': ip_start, 'end': ip_end}
