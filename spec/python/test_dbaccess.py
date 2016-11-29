@@ -2,6 +2,7 @@ import dbaccess
 from datetime import datetime
 import time
 import common
+import web
 
 
 # def test_test_database():
@@ -286,13 +287,13 @@ def test_get_node_info():
     info2 = dbaccess.get_node_info("21.66")
     info3 = dbaccess.get_node_info("21.66.116")
     info4 = dbaccess.get_node_info("21.66.116.37")
-    assert type(info1) == dict
+    assert type(info1) is web.utils.storage
     assert len(info1.keys()) > 20
-    assert type(info2) == dict
+    assert type(info2) is web.utils.storage
     assert len(info2.keys()) > 20
-    assert type(info3) == dict
+    assert type(info3) is web.utils.storage
     assert len(info3.keys()) > 20
-    assert type(info4) == dict
+    assert type(info4) is web.utils.storage
     assert len(info4.keys()) > 20
 
 
@@ -300,17 +301,17 @@ def test_set_node_info():
     test_address = "21.66"
     # get old info
     old_info = dbaccess.get_node_info(test_address)
-    old_alias = old_info['alias']
-    
+    old_alias = old_info['hostname']
+
     # set some new random
     new_alias = "temp_alias_1"
     if new_alias == old_alias:
-        new_alias = old_alias[::-1]
+        new_alias = new_alias[::-1]
     dbaccess.set_node_info(test_address, {'alias':new_alias})
 
     # assert info was recorded.
     check_info = dbaccess.get_node_info(test_address)
-    assert check_info['alias'] == new_alias
+    assert check_info['hostname'] == new_alias
 
     # reset old info
     dbaccess.set_node_info(test_address, {'alias':old_alias})

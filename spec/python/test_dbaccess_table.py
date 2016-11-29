@@ -35,11 +35,30 @@ def test_empty():
     assert len(table_data) == page_size + 1
     assert type(table_data[0]) == web.utils.storage # like a dict
 
+
 def test_one_filter():
-    pass
+    filters1 = filters.readEncoded("0;1;<;i;1000")
+    filters2 = filters.readEncoded("0;1;>;i;1000")
+    filters3 = filters.readEncoded("0;1;<;o;1000")
+
+    table_data = dbaccess.get_table_info(filters1, page, page_size, order_by, order_dir)
+    assert all([row['conn_in'] < 1000 for row in table_data])
+    table_data = dbaccess.get_table_info(filters2, page, page_size, order_by, order_dir)
+    assert all([row['conn_in'] > 1000 for row in table_data])
+    table_data = dbaccess.get_table_info(filters3, page, page_size, order_by, order_dir)
+    assert all([row['conn_out'] < 1000 for row in table_data])
+
 
 def test_many_filters():
-    pass
+    clauses = filters.readEncoded("0;1;<;i;1000|5;1;32|4;1;<;0.8|4;1;>;0.2")
+    table_data = dbaccess.get_table_info(clauses, page, page_size, order_by, order_dir)
+    assert all([row['conn_in'] < 1000 for row in table_data])
+    assert all([row['address'].endswith("/32") for row in table_data])
+    assert all([(float(row['conn_in']) / (float(row['conn_in']) + float(row['conn_out']))) > 0.2
+         for row in table_data])
+    assert all([(float(row['conn_in']) / (float(row['conn_in']) + float(row['conn_out']))) < 0.8
+         for row in table_data])
+
 
 def test_order():
     # ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets']
@@ -52,6 +71,7 @@ def test_order():
     table_data = dbaccess.get_table_info([], page, page_size, 5, 'asc')
     assert is_sorted(table_data, lambda x: x['bytes_in'] + x['bytes_out'], 'asc')
 
+
 def test_pagination():
     table_data_0 = dbaccess.get_table_info([], 0, page_size, 5, 'desc')
     table_data_1 = dbaccess.get_table_info([], 1, page_size, 5, 'desc')
@@ -61,6 +81,7 @@ def test_pagination():
     assert is_sorted(table_data_2, lambda x: x['bytes_in'] + x['bytes_out'], 'desc')
     assert is_sorted(table_data_0 + table_data_1 + table_data_2,
                      lambda x: x['bytes_in'] + x['bytes_out'], 'desc')
+
 
 def test_page_size():
     p_size = 10

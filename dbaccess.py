@@ -580,7 +580,7 @@ def get_node_info(address):
 def set_node_info(address, data):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('Nodes', where, **data)
+    common.db.update('MasterNodes', where, **data)
 
 
 def get_port_info(port):

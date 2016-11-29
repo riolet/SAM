@@ -122,10 +122,13 @@ class TargetFilter(Filter):
         Filter.__init__(self, "target", enabled)
         self.params['target'] = ""
         self.params['to'] = ""
+        # for variable `to`:
+        #   0: hosts connect to target
+        #   1: hosts do NOT connect to target
+        #   2: hosts receive connections from target
+        #   3: hosts do NOT receive connections from target
 
     def where(self):
-        # ip_segments = [int(x) for x in self.params['target'].split(".")]
-        # target = common.IPtoInt(*ip_segments)
         r = common.determine_range_string(self.params['target'])
         if self.params['to'] == '0':
             return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
@@ -179,8 +182,8 @@ class EnvFilter(Filter):
 class RoleFilter(Filter):
     def __init__(self, enabled):
         Filter.__init__(self, "role", enabled)
-        self.params['ratio'] = ""
         self.params['comparator'] = ""
+        self.params['ratio'] = ""
 
     def where(self):
         return ""
