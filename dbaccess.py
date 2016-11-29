@@ -242,18 +242,15 @@ def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, por
 
     if simple:
         query = """
-SELECT {collected}, port, links
-FROM(
-    SELECT decodeIP({collected}) AS '{collected}'
-        , port AS 'port'
-        , sum(links) AS 'links'
-    FROM MasterLinks
-    WHERE {filtered} BETWEEN $start AND $end
-     {WHERE}
-    GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
-    ORDER BY {order}
-    LIMIT {page}, {page_size}
-) AS precalc;
+SELECT decodeIP({collected}) AS '{collected}'
+    , port AS 'port'
+    , sum(links) AS 'links'
+FROM MasterLinks
+WHERE {filtered} BETWEEN $start AND $end
+ {WHERE}
+GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
+ORDER BY {order}
+LIMIT {page}, {page_size}
         """.format(**qvars)
     else:
         query = """
