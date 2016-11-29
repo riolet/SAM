@@ -144,6 +144,7 @@ function GET_details(node, callback) {
         "filter": config.filter,
         "tstart": config.tstart,
         "tend": config.tend,
+        "order": "-links",
         "simple": true
         };
 
@@ -200,11 +201,12 @@ function GET_details_sorted(node, component, order, callback) {
         "tstart": config.tstart,
         "tend": config.tend,
         "order": order,
-        "simple": true
+        "simple": true,
+        "component": component
         };
 
     $.ajax({
-        url: "/details/" + component,
+        url: "/details",
         //dataType: "json",
         type: "GET",
         data: requestData,

@@ -295,7 +295,6 @@ function sel_details_sort_callback(event) {
         console.error("Unknown component to sort");
         return;
     }
-    console.log("requesting an update: GET_details_sorted(node=" + m_selection.selection.address + ", component=" + component + ", order=" + new_sort);
     GET_details_sorted(m_selection.selection, component, new_sort, sel_update_display);
 }
 
