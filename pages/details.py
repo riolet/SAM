@@ -81,6 +81,22 @@ class Details:
             address += "/" + str(subnet)
         return address
 
+    def nice_protocol(self, p_in, p_out):
+        pin = p_in.split(",")
+        pout = p_out.split(",")
+        protocols = set(pin).union(set(pout))
+        if '' in protocols:
+            protocols.remove('')
+        directional_protocols = []
+        for p in protocols:
+            if p in pin and p in pout:
+                directional_protocols.append(p + " (i/o)")
+            elif p in pin:
+                directional_protocols.append(p + " (in)")
+            else:
+                directional_protocols.append(p + " (out)")
+        return u', '.join(directional_protocols)
+
     def quick_info(self):
         info = {}
         node_info = dbaccess.get_node_info(self.ip_string)
@@ -112,6 +128,7 @@ class Details:
             info['name'] = node_info.hostname
             info['tags'] = tags
             info['envs'] = envs
+            info['protocols'] = self.nice_protocol(node_info.in_protocols, node_info.out_protocols)
             info['in'] = {}
             info['in']['total'] = node_info.total_in
             info['in']['u_ip'] = node_info.unique_in_ip

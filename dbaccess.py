@@ -520,6 +520,8 @@ def get_node_info(address):
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
             , children.endpoints AS 'endpoints'
             , t.seconds
+            , COALESCE(l_in.protocol, "") AS 'in_protocols'
+            , COALESCE(l_out.protocol, "") AS 'out_protocols'
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
             FROM MasterNodes
@@ -538,6 +540,7 @@ def get_node_info(address):
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
             , SUM(duration * links) AS 'duration'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
             FROM MasterLinks
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
@@ -557,6 +560,7 @@ def get_node_info(address):
             , SUM(packets_received) AS 'p_r'
             , SUM(duration) AS 'duration'
             , COUNT(DISTINCT port) AS 'ports_used'
+            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
             FROM MasterLinks
             WHERE dst BETWEEN $start AND $end
             GROUP BY 's1'

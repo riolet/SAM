@@ -68,12 +68,12 @@ class PaloAltoImporter(BaseImporter):
 
 
         protocol = split_data[PaloAltoImporter.Protocol].upper()
-        if protocol == 'UDP':
-            protocol = 'TCP'
-        if protocol != 'TCP':
+        #if protocol == 'UDP':
+        #    protocol = 'TCP'
+        #if protocol != 'TCP':
             # printing this is very noisy and slow
             # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
-            return 3
+        #    return 3
 
         # srcIP, srcPort, dstIP, dstPort
         dictionary['src'] = common.IPtoInt(*(split_data[PaloAltoImporter.SourceIP].split(".")))
@@ -101,12 +101,6 @@ class PaloAltoImporter(BaseImporter):
             dictionary['packets_received'] = split_data[PaloAltoImporter.TotalPackets]
         dictionary['duration'] = split_data[PaloAltoImporter.TimeElapsed]
         return 0
-
-    def insert_datar(self, rows, count):
-        print("====\nInserting\n====")
-        for i in range(count):
-            print_dict(rows[i])
-            print(" ")
 
 
 

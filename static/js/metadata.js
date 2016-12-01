@@ -377,6 +377,9 @@ function present_quick_info(info) {
         if (info.hasOwnProperty("role")) {
             target.appendChild(buildKeyValueRow("Role (0 = client, 1 = server)", build_role_text(info.role)));
         }
+        if (info.hasOwnProperty("protocols")) {
+            target.appendChild(buildKeyValueRow("Protocols used", info.protocols));
+        }
         if (info.hasOwnProperty("ports")) {
             target.appendChild(buildKeyValueRow("Local ports accessed", info.ports));
         }
