@@ -69,7 +69,6 @@
     filters.private = {};
     filters.private.types = {};
 
-
     // ==================================
     // Public methods
     // ==================================
@@ -274,11 +273,6 @@
     };
     filters.private.createPortFilterRow = function (connection, port) {
         var parts = [];
-        //parts.push(filters.private.markupSpan("Host "));
-        //connects via port
-        //doesn't connect via port
-        //receives connections via port
-        //doesn't receive connections via port
 
         parts.push(filters.private.markupSelection("connection", "Filter type...", [
             ["0", "Connects to"],
@@ -289,6 +283,40 @@
         parts.push(filters.private.markupSpan("another host via port"));
         //parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
         parts.push(filters.private.markupInput("port", "443", port));
+        return parts;
+    };
+    filters.private.createProtocolFilter = function (handles_protocol, enabled) {
+        var handles;
+        var protocol;
+        if (handles_protocol) {
+            handles = handles_protocol[0];
+            protocol = handles_protocol[1];
+        }
+        var filterdiv = filters.private.markupBoilerplate(enabled);
+        var parts = filters.private.createProtocolFilterRow(handles, protocol);
+        parts.forEach(function (part) {
+            filterdiv.appendChild(part);
+        });
+
+        var filter = {};
+        filter.enabled = enabled;
+        filter.type = "protocol";
+        filter.handles = handles;
+        filter.protocol = protocol;
+        filter.html = filterdiv;
+        return filter;
+    };
+    filters.private.createProtocolFilterRow = function (handles, protocol) {
+        var parts = [];
+
+        parts.push(filters.private.markupSelection("handles", "handles in/outbound", [
+            ["0", "Handles inbound"],
+            ["1", "Doesn't handle inbound"],
+            ["2", "Initiates outbound"],
+            ["3", "Doesn't intiate outbound"]
+        ], handles));
+        parts.push(filters.private.markupSpan("connections using protocol"));
+        parts.push(filters.private.markupInput("protocol", "UDP", protocol));
         return parts;
     };
     filters.private.createTagFilter = function (has_tags, enabled) {
@@ -639,6 +667,17 @@
                         span = filters.private.markupSpan(filter.comparator + filter.limit + " conns");
                     }
 
+                } else if (filter.type === "protocol") {
+                    if (filter.handles === "0") {
+                        span = filters.private.markupSpan(filter.protocol+ " in");
+                    } else if (filter.handles === "1") {
+                        span = filters.private.markupSpan("no " + filter.protocol + " in");
+                    } else if (filter.handles === "2") {
+                        span = filters.private.markupSpan(filter.protocol + " out");
+                    } else if (filter.handles === "3") {
+                        span = filters.private.markupSpan("no " + filter.protocol + " out");
+                    }
+
                 } else if (filter.type === "target") {
                     if (filter.to === "0") {
                         span = filters.private.markupSpan("to " + filter.target);
@@ -726,6 +765,7 @@
     filters.private.types.env = [filters.private.createEnvFilter, filters.private.createEnvFilterRow, 1];
     filters.private.types.mask = [filters.private.createMaskFilter, filters.private.createMaskFilterRow, 1];
     filters.private.types.port = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
+    filters.private.types.protocol = [filters.private.createProtocolFilter, filters.private.createProtocolFilterRow, 2];
     filters.private.types.role = [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
     filters.private.types.tags = [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
     filters.private.types.target = [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];

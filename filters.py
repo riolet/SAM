@@ -129,16 +129,20 @@ class TargetFilter(Filter):
         #   3: hosts do NOT receive connections from target
 
     def where(self):
-        r = common.determine_range_string(self.params['target'])
+        ipstart, ipend = common.determine_range_string(self.params['target'])
         if self.params['to'] == '0':
-            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
+            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
+                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
         elif self.params['to'] == '1':
-            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
+            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
+                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
         
         if self.params['to'] == '2':
-            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
+            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
+                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
         elif self.params['to'] == '3':
-            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=r[0], upper=r[1])
+            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
+                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
 
         else:
             print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "
@@ -196,7 +200,34 @@ class RoleFilter(Filter):
         return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter, EnvFilter]
+class ProtocolFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "protocol", enabled)
+        self.params['handles'] = ""
+        self.params['protocol'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        handles = '0'
+        if self.params['handles'] in ['0', '1', '2', '3']:
+            handles = self.params['handles']
+        protocol = common.web.sqlquote("%" + self.params['protocol'] + "%")
+
+        if handles == '0':
+            return "proto_in LIKE {protocol}".format(protocol=protocol)
+        if handles == '1':
+            return "proto_in NOT LIKE {protocol}".format(protocol=protocol)
+        if handles == '2':
+            return "proto_out LIKE {protocol}".format(protocol=protocol)
+        if handles == '3':
+            return "proto_out NOT LIKE {protocol}".format(protocol=protocol)
+
+        return ""
+
+
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter,EnvFilter,ProtocolFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 
