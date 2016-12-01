@@ -99,7 +99,6 @@ function btn_pagesize_callback(e) {
 
 function btn_header_callback(e) {
     "use strict";
-    console.log(e);
     var oldSort = cookie_data.get("sort", DEFAULT_SORT);
     var newSort = e.target.id.substr(6) + ",asc";
     if (newSort !== oldSort) {

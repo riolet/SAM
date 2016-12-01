@@ -55,7 +55,8 @@ def nice_protocol(p_in, p_out):
 class Columns(object):
     def __init__(self, **kwargs):
         # manually specified here to give them an order
-        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols']
+        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets',
+                    'protocols']
 
         self.columns = {
             'address': {
@@ -85,7 +86,8 @@ class Columns(object):
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
-                'get': lambda x: [x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
+                'get': lambda x: [
+                    x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
             'bytes': {
                 'nice_name': "Bytes Handled",
                 'active': 'bytes' in kwargs,

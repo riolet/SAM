@@ -669,8 +669,8 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if HAVING:
         HAVING = "HAVING " + HAVING
 
-    #      ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets']
-    cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)', '(bytes_in + bytes_out)', '(packets_in + packets_out)']
+    #      ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols']
+    cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)', '(bytes_in + bytes_out)', '(packets_in + packets_out)', 'CONCAT(proto_in, proto_out)']
     ORDERBY = ""
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
