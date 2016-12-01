@@ -123,10 +123,10 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None):
     where = build_where_clause(timerange, port_filter)
 
     if ports:
-        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links'"
+        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links'"
+        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
 
     if inbound:

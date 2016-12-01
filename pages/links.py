@@ -27,6 +27,13 @@ class Links:
             else:
                 result[address]['inputs'] = dbaccess.get_links(ipstart, ipend, inbound=True, timerange=timerange)
                 result[address]['outputs'] = dbaccess.get_links(ipstart, ipend, inbound=False, timerange=timerange)
+
+            # remove duplicate protocol names
+            for row in result[address]['inputs']:
+                row['protocols'] = ",".join(set(row['protocols'].split(',')))
+            for row in result[address]['outputs']:
+                row['protocols'] = ",".join(set(row['protocols'].split(',')))
+
         return json.dumps(result, default=decimal_default)
 
     def GET(self):
