@@ -718,6 +718,14 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'packets_in'
+        , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
+            FROM MasterLinksIn AS l_in
+            WHERE l_in.dst_start = nodes.ipstart AND l_in.dst_end = nodes.ipend
+         ),"") AS 'proto_in'
+        , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
+            FROM MasterLinksOut AS l_out
+            WHERE l_out.src_start = nodes.ipstart AND l_out.src_end = nodes.ipend
+         ),"") AS 'proto_out'
         , COALESCE((SELECT GROUP_CONCAT(tag SEPARATOR ', ')
             FROM Tags
             WHERE Tags.ipstart = nodes.ipstart AND Tags.ipend = nodes.ipend

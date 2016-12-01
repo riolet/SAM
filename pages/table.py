@@ -35,10 +35,27 @@ def bytes_text(bytes):
     return "{0} TB".format(int(bytes))
 
 
+def nice_protocol(p_in, p_out):
+    pin = p_in.split(",")
+    pout = p_out.split(",")
+    protocols = set(pin).union(set(pout))
+    if '' in protocols:
+        protocols.remove('')
+    directional_protocols = []
+    for p in protocols:
+        if p in pin and p in pout:
+            directional_protocols.append(p + " (i/o)")
+        elif p in pin:
+            directional_protocols.append(p + " (in)")
+        else:
+            directional_protocols.append(p + " (out)")
+    return u', '.join(directional_protocols)
+
+
 class Columns(object):
     def __init__(self, **kwargs):
         # manually specified here to give them an order
-        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets']
+        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols']
 
         self.columns = {
             'address': {
@@ -77,6 +94,10 @@ class Columns(object):
                 'nice_name': "Packets Handled",
                 'active': 'packets' in kwargs,
                 'get': lambda x: x.packets_in + x.packets_out},
+            'protocols': {
+                'nice_name': "Protocols used",
+                'active': 'packets' in kwargs,
+                'get': lambda x: nice_protocol(x.proto_in, x.proto_out)},
         }
 
     def translate_row(self, data):
@@ -94,7 +115,7 @@ class Columns(object):
 class Table(object):
     def __init__(self):
         self.pageTitle = "Table View"
-        self.columns = Columns(address=1, alias=1, role=1, bytes=1, packets=1, environment=1, tags=1)
+        self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
     def filters(self, GET_data):
         fs = []
