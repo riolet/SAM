@@ -18,7 +18,6 @@ var my;
 var renderCollection = [];
 var subnetLabel = "";
 
-
 //settings/options data
 var config = {
     "show_clients": true,
@@ -86,7 +85,7 @@ function init() {
         sel_update_display();
     };
 
-    //loadData();	
+    //loadData();
 	//This esentially delays the initial display of data until after the slider handles are updated, I am uncertain how viable
 	//this will remain as the number of nodes in the system increase.
     window.setTimeout(updateCall,500); 

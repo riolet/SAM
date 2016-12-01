@@ -12,7 +12,7 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
             <div class="ui left dropdown item">
                 <i class="setting icon large"></i>
                 <div class="menu">
-                    <div class="ui item">
+                    <div class="ui item" id="time-box">
                         <p>Time Range</p>
                         <div class="slider-box">
                             <div id="slider-date"></div>
@@ -50,12 +50,12 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                             <label>Show Inbound Traffic</label>
                         </div>
                     </div>
-                    <div class="item">
-                        <div class="ui toggle checkbox">
-                            <input id="update" name="update" checked = "" type="checkbox">
-                            <label>Live Updates</label>
-                        </div>
-                    </div>
+					<div class="item">
+						<div class="ui toggle checkbox">
+							<input id="update" name="update" checked = ""  type="checkbox">
+                            <label>Update Map</label>
+						</div>
+					</div>
                 </div>
             </div>
             <div class="ui item">

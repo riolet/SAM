@@ -34,6 +34,9 @@ function dateConverter() {
     return cnv;
 }
 
+/*
+	Main function responsible for the time slider, It creates the slider if it hasn't been made, otherwise it updates the slider.
+*/
 function slider_init() {
     "use strict";
     $.ajax({
@@ -46,8 +49,6 @@ function slider_init() {
 		if (sliderMade == false) {
 			   	config.tstart = response.max - (5*60);
 				config.tend = response.max;
-				console.log(response.min);
-				console.log(response.max);
 				create_slider(Math.floor(response.min), Math.floor(response.max));
 			} else {
 				updateSliderRange(Math.floor(response.min), Math.floor(response.max));
@@ -59,9 +60,18 @@ function slider_init() {
 function create_slider(dtmin, dtmax) {
     "use strict";
     var dateSlider = document.getElementById('slider-date');
+	//get the box containing all timing data
+	var timebox = document.getElementById('time-box');
+	/*This can occur if not enough data is in the system yet to make a time range. */	
+	if (dtmin == dtmax) {
+		//hide the time frame box
+		$(timebox).hide()
+		return;
+	}
 	
-	minSlideRange = dtmin;
-	maxSlideRange = dtmax;
+	// allows us to set the default position of the lower handle to 5 minutes(1 step) before the latest timestamp
+	var lowPos = dtmax - (5 * 60);
+	
     noUiSlider.create(dateSlider, {
         // Create two timestamps to define a range.
         range: {
@@ -75,8 +85,8 @@ function create_slider(dtmin, dtmax) {
         // at least 5 minutes between handles
         margin: 5 * 60,
 
-        // Two more timestamps indicate the handle starting positions.
-        start: [ dtmax, dtmax ],
+        // Two more timestamps indicate the default handle starting positions.
+        start: [ lowPos, dtmax ],
 
 
         // Shade the selection
@@ -92,11 +102,12 @@ function create_slider(dtmin, dtmax) {
             format: {"to": function(v) { return ""; } } //no labels
         }
     });
+	//confirm that we have created the slider
+	sliderMade = true;
 
     var inputA = document.getElementById('input-start');
     var inputB = document.getElementById('input-end');
     var converter = dateConverter();
-	sliderMade = true;
 
     dateSlider.noUiSlider.on('update', function( values, handle ) {
         var value = values[handle];
@@ -123,6 +134,10 @@ function create_slider(dtmin, dtmax) {
     inputB.addEventListener('change', function(){
         dateSlider.noUiSlider.set([null, converter.from(this.value)]);
     });
+	
+	//make sure the time box is visible
+	$(timebox).show();
+	
 }
 
 $(slider_init);

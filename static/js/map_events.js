@@ -227,8 +227,8 @@ function updateConfig() {
     config.show_in = document.getElementById("show_in").checked;
     config.show_out = document.getElementById("show_out").checked;
 	config.update = document.getElementById("update").checked;
+	runUpdate();//required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
-	runUpdate();
     render_all();
 }
 
