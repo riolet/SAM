@@ -226,6 +226,7 @@ function drawLoopArrow(node, scale) {
     x4 += node.x;
     y4 += node.y;
 
+    // draw the curve.
     ctx.moveTo(x1, y1);
     ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
     // precalculated as math.cos(math.pi/8-0.2), math.sin(math.pi/8-0.2)
@@ -288,7 +289,7 @@ function renderLinks(node, scale, faded) {
             }
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
-                drawLoopArrow(node, link.links, scale);
+                drawLoopArrow(node, scale);
             } else {
                 drawArrow(link.x1, link.y1, link.x2, link.y2, scale);
             }
@@ -305,7 +306,7 @@ function renderLinks(node, scale, faded) {
             }
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
-                drawLoopArrow(node, link.links, scale);
+                drawLoopArrow(node, scale);
             } else {
                 drawArrow(link.x1, link.y1, link.x2, link.y2, scale, false);
             }
