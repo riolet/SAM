@@ -35,7 +35,7 @@ def test_get_nodes():
     ipstart, ipend, _ = common.determine_range(52)
     assert len(dbaccess.get_nodes(ipstart, ipend)) == 0
     ipstart, ipend, _ = common.determine_range(21, 66)
-    assert len(dbaccess.get_nodes(ipstart, ipend)) == 110
+    assert len(dbaccess.get_nodes(ipstart, ipend)) == 119
     ipstart, ipend, _ = common.determine_range(21, 66, 1)
     assert len(dbaccess.get_nodes(ipstart, ipend)) == 5
 
@@ -44,57 +44,57 @@ def test_get_links_in_plain():
     # connections into 79.0.0.0/8
     ip_start, ip_end, _ = common.determine_range(79)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=True)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.src_start), int(row.links)) for row in rows]
-    assert simple == [('21.0.0.0', 100484), ('53.0.0.0', 9), ('79.0.0.0', 1950), ('110.0.0.0', 4585), ('189.0.0.0', 10501)]
+    assert simple == [('21.0.0.0', 110836), ('53.0.0.0', 9), ('79.0.0.0', 2380), ('110.0.0.0', 4597), ('189.0.0.0', 10572)]
 
     # connections into 79.146.0.0/16
     ip_start, ip_end, _ = common.determine_range(79, 146)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=True)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.src_start), int(row.links)) for row in rows]
-    assert simple == [('21.0.0.0', 51686), ('79.229.0.0', 21), ('110.0.0.0', 166), ('189.0.0.0', 340)]
+    assert simple == [('21.0.0.0', 52923), ('79.229.0.0', 21), ('110.0.0.0', 168), ('189.0.0.0', 411)]
 
     # connections into 79.146.149.0/24
     ip_start, ip_end, _ = common.determine_range(79, 146, 149)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=True)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.src_start), int(row.links)) for row in rows]
-    assert simple == [('21.0.0.0', 714), ('189.0.0.0', 6)]
+    assert simple == [('21.0.0.0', 932), ('189.0.0.0', 6)]
 
     # connections into 79.146.149.40
     ip_start, ip_end, _ = common.determine_range(79, 146, 149, 40)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=True)
-    assert len(rows) == 21
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'port', 'src_end', 'src_start']
+    assert len(rows) == 22
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'port', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.src_start), int(row.port), int(row.links)) for row in rows]
-    assert simple == [('21.0.0.0', 80, 8), ('21.0.0.0', 161, 9), ('21.0.0.0', 280, 4), ('21.0.0.0', 411, 4),
-                      ('21.0.0.0', 427, 1), ('21.0.0.0', 443, 4), ('21.0.0.0', 1024, 4), ('21.0.0.0', 1311, 4),
-                      ('21.0.0.0', 2069, 4), ('21.0.0.0', 3202, 4), ('21.0.0.0', 3257, 4), ('21.0.0.0', 4095, 4),
-                      ('21.0.0.0', 4096, 4), ('21.0.0.0', 5989, 3), ('21.0.0.0', 8000, 4), ('21.0.0.0', 8008, 4),
-                      ('21.0.0.0', 8222, 4), ('21.0.0.0', 8443, 4), ('21.0.0.0', 9990, 4), ('21.0.0.0', 9991, 4),
-                      ('189.0.0.0', 2434, 6)]
+    assert simple == [('21.0.0.0', 0, 34), ('21.0.0.0', 80, 8), ('21.0.0.0', 161, 9), ('21.0.0.0', 280, 4),
+                      ('21.0.0.0', 411, 4), ('21.0.0.0', 427, 1), ('21.0.0.0', 443, 4), ('21.0.0.0', 1024, 4),
+                      ('21.0.0.0', 1311, 4), ('21.0.0.0', 2069, 4), ('21.0.0.0', 3202, 4), ('21.0.0.0', 3257, 4),
+                      ('21.0.0.0', 4095, 4), ('21.0.0.0', 4096, 4), ('21.0.0.0', 5989, 3), ('21.0.0.0', 8000, 4),
+                      ('21.0.0.0', 8008, 4), ('21.0.0.0', 8222, 4), ('21.0.0.0', 8443, 4), ('21.0.0.0', 9990, 4),
+                      ('21.0.0.0', 9991, 4), ('189.0.0.0', 2434, 6)]
 
 
 def test_get_links_out_plain():
     # connections into 21.0.0.0/8
     ip_start, ip_end, _ = common.determine_range(21)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=False)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.dst_start), int(row.links)) for row in rows]
-    assert simple == [('21.0.0.0', 55381), ('79.0.0.0', 100484), ('110.0.0.0', 2), ('189.0.0.0', 653)]
+    assert simple == [('21.0.0.0', 63164), ('79.0.0.0', 110836), ('110.0.0.0', 2), ('189.0.0.0', 994)]
 
     # connections into 21.66.0.0/16
     ip_start, ip_end, _ = common.determine_range(21, 66)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=False)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.dst_start), int(row.links)) for row in rows]
-    assert simple == [('21.66.0.0', 55381), ('79.0.0.0', 100484), ('110.0.0.0', 2), ('189.0.0.0', 653)]
+    assert simple == [('21.66.0.0', 63164), ('79.0.0.0', 110836), ('110.0.0.0', 2), ('189.0.0.0', 994)]
 
     # connections into 21.66.138.0/24
     ip_start, ip_end, _ = common.determine_range(21, 66, 138)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=False)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.dst_start), int(row.links)) for row in rows]
     assert simple == [('21.66.10.0', 111), ('21.66.81.0', 1), ('21.66.116.0', 3), ('21.66.121.0', 44),
                       ('21.66.141.0', 1), ('21.66.159.0', 2), ('21.66.237.0', 1), ('79.0.0.0', 1840)]
@@ -103,7 +103,7 @@ def test_get_links_out_plain():
     ip_start, ip_end, _ = common.determine_range(21, 66, 138, 188)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=False)
     assert len(rows) == 3
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'port', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'port', 'protocols', 'src_end', 'src_start']
     simple = [(common.IPtoString(row.dst_start), int(row.port), int(row.links)) for row in rows]
     assert simple == [('79.0.0.0', 22, 4), ('79.0.0.0', 5414, 3), ('79.0.0.0', 9519, 3)]
 
@@ -112,14 +112,14 @@ def test_get_links_out_filter():
     test_port = 12345
     ip_start, ip_end, _ = common.determine_range(21, 66, 42, 22)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=False, port_filter=test_port)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'port', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'port', 'protocols', 'src_end', 'src_start']
     ports = set([int(i.port) for i in rows])
     assert ports == {test_port}
     assert len(rows) == 5
 
     ip_start, ip_end, _ = common.determine_range(21, 66)
     rows = dbaccess.get_links(ip_start, ip_end, inbound=False, port_filter=test_port)
-    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'src_end', 'src_start']
+    assert sorted(rows[0].keys()) == ['dst_end', 'dst_start', 'links', 'protocols', 'src_end', 'src_start']
     assert len(rows) == 2
 
 

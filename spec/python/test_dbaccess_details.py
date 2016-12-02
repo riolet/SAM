@@ -10,49 +10,37 @@ def make_timestamp(ts):
     return int(ts)
 
 
+def values(d, *keys):
+    return tuple(map(lambda k: d[k], keys))
+
+
 def test_get_details_summary():
     details = dbaccess.get_details_summary(*common.determine_range(21)[:2])
-    assert details['unique_in'] == 13322L
-    assert details['unique_out'] == 2398L
-    assert details['unique_ports'] == 20370L
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (13418L, 3494L, 20371L)
 
     details = dbaccess.get_details_summary(*common.determine_range(21, 66)[:2])
-    assert details['unique_in'] == 13322L
-    assert details['unique_out'] == 2398L
-    assert details['unique_ports'] == 20370L
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (13418L, 3494L, 20371L)
 
     details = dbaccess.get_details_summary(*common.determine_range(21, 66, 10)[:2])
-    assert details['unique_in'] == 2798L
-    assert details['unique_out'] == 1
-    assert details['unique_ports'] == 3463L
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (2816L, 1L, 3464L)
 
     details = dbaccess.get_details_summary(*common.determine_range(21, 66, 10, 70)[:2])
-    assert details['unique_in'] == 28
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 29
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (30L, 0L, 30L)
 
     details = dbaccess.get_details_summary(*common.determine_range(21, 66, 40, 231)[:2])
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 30
-    assert details['unique_ports'] == 1
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (7L, 40L, 1L)
 
 
 def test_get_details_summary_ports():
     ip_start, ip_end, _ = common.determine_range(21, 66, 40, 231)
     details = dbaccess.get_details_summary(ip_start, ip_end, port=445)
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 1
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (7L, 0L, 1L)
 
     details = dbaccess.get_details_summary(ip_start, ip_end, port=80)
-    assert details['unique_in'] == 0
-    assert details['unique_out'] == 2
-    assert details['unique_ports'] == 0
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (0, 2, 0)
 
     details = dbaccess.get_details_summary(ip_start, ip_end, port=1)
-    assert details['unique_in'] == 0
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 0
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (0, 0, 0)
 
 
 def test_get_details_summary_timerange():
@@ -63,24 +51,16 @@ def test_get_details_summary_timerange():
     ip_start2, ip_end2, _ = common.determine_range(79, 35, 103, 221)
 
     details = dbaccess.get_details_summary(ip_start, ip_end, timestamp_range=time_all)
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 30
-    assert details['unique_ports'] == 1
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (7, 40, 1)
 
     details = dbaccess.get_details_summary(ip_start, ip_end, timestamp_range=time_crop)
-    assert details['unique_in'] == 7
-    assert details['unique_out'] == 30
-    assert details['unique_ports'] == 1
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (7, 40, 1)
 
     details = dbaccess.get_details_summary(ip_start2, ip_end2, timestamp_range=time_crop)
-    assert details['unique_in'] == 1
-    assert details['unique_out'] == 0
-    assert details['unique_ports'] == 1
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (1, 0, 1)
 
     details = dbaccess.get_details_summary(ip_start, ip_end, timestamp_range=time_tiny)
-    assert details['unique_in'] == 3
-    assert details['unique_out'] == 15
-    assert details['unique_ports'] == 1
+    assert values(details, 'unique_in', 'unique_out', 'unique_ports') == (3, 21, 1)
 
 
 def test_get_details_conn():
@@ -153,7 +133,7 @@ def test_get_details_conn_timerange():
     details = dbaccess.get_details_connections(ipstart, ipend, True, timestamp_range=time_tiny)
     assert len(details) == 3
     details = dbaccess.get_details_connections(ipstart, ipend, False, timestamp_range=time_tiny)
-    assert len(details) == 27
+    assert len(details) == 34
 
     details = dbaccess.get_details_connections(ipstart2, ipend2, True, timestamp_range=time_crop)
     assert len(details) == 1
@@ -179,7 +159,7 @@ def test_get_details_ports():
     assert len(details) == 50
     ipstart, ipend, _ = common.determine_range(21, 66, 10, 70)
     details = dbaccess.get_details_ports(ipstart, ipend)
-    assert len(details) == 29
+    assert len(details) == 30
     details = dbaccess.get_details_ports(ipstart1, ipend1)
     assert len(details) == 1
 
@@ -207,6 +187,6 @@ def test_get_details_children():
     details = dbaccess.get_details_children(ipstart1, ipend1, 1, 256, "ipstart")
     assert len(details) == 8
     details = dbaccess.get_details_children(ipstart2, ipend2, 1, 256, "ipstart")
-    assert len(details) == 45
+    assert len(details) == 59
     details = dbaccess.get_details_children(ipstart3, ipend3, 1, 256, "ipstart")
-    assert len(details) == 94
+    assert len(details) == 96
