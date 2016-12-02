@@ -122,7 +122,7 @@ Usage:
         dictionary['dst'] = common.IPtoInt(*(split_data[NFDumpImporter.DST].split(".")))
         dictionary['dstport'] = split_data[NFDumpImporter.DSTPORT]
         dictionary['timestamp'] = split_data[NFDumpImporter.TIMESTAMP]
-        dictionary['protocol'] = split_data[NFDumpImporter.PROTOCOL]
+        dictionary['protocol'] = split_data[NFDumpImporter.PROTOCOL].upper()
         dictionary['bytes_sent'] = safe_translate(split_data[NFDumpImporter.B_SENT])
         dictionary['bytes_received'] = safe_translate(split_data[NFDumpImporter.B_RECEIVED])
         dictionary['packets_sent'] = safe_translate(split_data[NFDumpImporter.P_SENT])

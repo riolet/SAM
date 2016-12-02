@@ -1,4 +1,5 @@
 import common
+import dbaccess
 
 
 class Map:
@@ -6,6 +7,8 @@ class Map:
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
+        protocols = dbaccess.get_protocol_list()
+
         return str(common.render._head(self.pageTitle,
                                        stylesheets=['/static/css/map.css',
                                                     '/static/css/timerange.css',
@@ -22,5 +25,5 @@ class Map:
                                                 '/static/js/timerange.js',
                                                 '/static/nouislider/nouislider.min.js'])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.map()) \
+               + str(common.render.map(protocols)) \
                + str(common.render._tail())

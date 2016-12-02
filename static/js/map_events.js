@@ -230,6 +230,24 @@ function updateConfig() {
     render_all();
 }
 
+function applyProtocolFilter() {
+    "use strict";
+    console.log("fired");
+    config.protocol = document.getElementById("proto_filter").value;
+    sel_set_selection(null);
+    links_reset();
+    updateRenderRoot();
+    render_all();
+}
+function onProtocolFilter() {
+    "use strict";
+    console.log("on");
+    if (g_timer !== null) {
+        clearTimeout(g_timer);
+    }
+    g_timer = setTimeout(applyProtocolFilter, 700);
+}
+
 (function () {
     "use strict";
     var throttle = function (type, name, obj) {

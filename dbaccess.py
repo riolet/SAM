@@ -94,7 +94,7 @@ def get_nodes(ip_start, ip_end):
     return rows
 
 
-def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None):
+def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
 
@@ -120,7 +120,7 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None):
     :return: A list of db results formated as web.storage objects (used like dictionaries)
     """
     ports = (ip_start == ip_end)  # include ports in the results?
-    where = build_where_clause(timerange, port_filter)
+    where = build_where_clause(timerange, port_filter, protocol)
 
     if ports:
         select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
@@ -150,7 +150,7 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None):
     return rows
 
 
-def build_where_clause(timestamp_range=None, port=None, rounding=True):
+def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
     clauses = []
     t_start = 0
     t_end = 0
@@ -169,7 +169,11 @@ def build_where_clause(timestamp_range=None, port=None, rounding=True):
     if port:
         clauses.append("port = $port")
 
-    qvars = {'tstart': t_start, 'tend': t_end, 'port': port}
+    if protocol:
+        clauses.append("protocols LIKE $protocol")
+        protocol = "%{0}%".format(protocol)
+
+    qvars = {'tstart': t_start, 'tend': t_end, 'port': port, 'protocol': protocol}
     WHERE = str(web.db.reparam("\n    && ".join(clauses), qvars))
     if WHERE:
         WHERE = "    && " + WHERE
@@ -488,6 +492,10 @@ def set_env(address, env):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
     common.db.update('MasterNodes', where, env=env)
+
+
+def get_protocol_list():
+    return [row.protocol for row in common.db.select("MasterLinks", what="DISTINCT protocol") if row.protocol]
 
 
 def get_node_info(address):

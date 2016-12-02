@@ -1,11 +1,10 @@
-$def with ()
-$# "$def with (arg1, ...)" MUST be the first line. See documentation on web/template.py for details
+$def with (protocols)
 <script src="/static/js/map.js"></script>
 <h3 class="ui center aligned header">Loading...</h3>
 <div id="output">
     <canvas id="canvas"></canvas>
 <!--
---------------- Search Panel ---------------
+--------------- Settings/Search Panel ---------------
 -->
     <div id="searchbar">
         <div class="ui icon menu">
@@ -48,6 +47,12 @@ $# "$def with (arg1, ...)" MUST be the first line. See documentation on web/temp
                         <div class="ui toggle checkbox">
                             <input id="show_in" name="show_in" checked = "" type="checkbox">
                             <label>Show Inbound Traffic</label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <div class="ui icon input" data-content="Filter by protocol. Try: UDP">
+                            <input placeholder="Protocol" id="proto_filter" name="protocol" type="text">
+                            <i class="exchange icon"></i>
                         </div>
                     </div>
                 </div>

@@ -81,6 +81,7 @@ function GET_links(addrs) {
     var requestData = {
         "address": addrs.join(","),
         "filter": config.filter,
+        "protocol": config.protocol,
         "tstart": config.tstart,
         "tend": config.tend};
     $.ajax({
