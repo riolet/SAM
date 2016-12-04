@@ -1,6 +1,16 @@
+/* 
+ * This file was created to hold the functionality related to live updates on the UI side.
+ * It consists of several variables for	tracking related stats and the following functions.
+ * 		runUpdate(): the main function call that enables this. It racks the current
+ *		status of the update button and handles the timer for the updates.
+ *		updateCall(): makes the required json calls to perform an update.
+ *		updateSliderRange(): The bulk of the file, this destroys the range slider
+ *		then recreates it to better reflect the current data. 
+ */
+
 // Timing variables
 var MILLIS_PER_MIN 	= 60000;
-var MINS_PER_UPDATE = 5;
+var MINS_PER_UPDATE = 5; //Change this value to configure your update time.
 var updateTimer 	= 0;
 
 //Vairables for Time Slider
@@ -31,12 +41,12 @@ function updateCall() {
 function updateSliderRange (min, max) {
 
 	if (min == minSlideRange && max == maxSlideRange) {
-		return; //no update in range, don't bother changeing anything.
+		return; //no update in range, don't bother changing anything.
 	}
 
 	//retreive the slider element
 	dateSlider = document.getElementById("slider-date");
-	//destroy the slider so we can re-create it with the new proporitons
+	//destroy the slider so we can re-create it with the new proportions
 	dateSlider.noUiSlider.destroy(); 
 	
 	//Get the range between the handles
