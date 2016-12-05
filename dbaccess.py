@@ -1,6 +1,7 @@
 import web
 import common
 import json
+import os
 
 
 def test_database():
@@ -25,7 +26,7 @@ def create_database():
 
     connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
 
-    exec_sql("./sql/setup_database.sql")
+    exec_sql(os.path.join(common.base_path, 'sql/setup_database.sql'))
 
     reset_port_names()
 
@@ -52,9 +53,9 @@ def exec_sql(path):
 
 def reset_port_names():
     # drop and recreate the table
-    exec_sql("./sql/setup_LUTs.sql")
+    exec_sql(os.path.join(common.base_path, 'sql/setup_LUTs.sql'))
 
-    with open("./sql/default_port_data.json", 'rb') as f:
+    with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'rb') as f:
         port_data = json.loads("".join(f.readlines()))
 
     ports = port_data["ports"].values()

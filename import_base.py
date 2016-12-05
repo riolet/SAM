@@ -5,6 +5,8 @@ import dbaccess
 
 
 class BaseImporter:
+    mysql_time_format = '%Y-%m-%d %H:%M:%S'
+
     def __init__(self):
         self.instructions = """
 This program imports a syslog dump into the database.
@@ -13,8 +15,6 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Usage:
     python {0} <input-file>
 """.format(sys.argv[0])
-
-    mysql_time_format = '%Y-%m-%d %H:%M:%S'
 
     def main(self, argv):
         if len(argv) != 2:
@@ -114,7 +114,10 @@ Usage:
                 print(e[1])
                 print("Check your username / password? (dbconfig_local.py)")
                 sys.exit(1)
+            elif e[0] == 1146:  # Syslog table doesn't exist
+                dbaccess.exec_sql(os.path.join(common.base_path, 'sql/setup_database.sql'))
+                self.insert_data(rows, count)
             else:
-                print("Critical failure.")
-                print(e.message)
+                print("Critical failure {0}.".format(e[0]))
+                print(e[1])
                 sys.exit(2)
