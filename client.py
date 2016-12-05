@@ -12,12 +12,13 @@ import signal
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+#define number of threads to use for stress testing
 if len(sys.argv) < 2:
     numThreads = 1
 else:
     numThreads = int(sys.argv[1])
 
-
+#Plays back the data based on the relative differences between the timestamps
 def playback_data(path, speed):
     # speed relative to realtime
     delay_multiplier = 1.0 / speed
