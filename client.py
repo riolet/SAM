@@ -34,7 +34,8 @@ def playback_data(path, speed):
             line_time = time.strptime(line_time_string, "%H:%M:%S")
             if line_time != last_time:
                 delay = (time.mktime(line_time) - time.mktime(last_time)) * delay_multiplier
-                time.sleep(delay)
+                #time.sleep(delay) # this lines causes are error to occur at the 45 min mark when running SAM
+                time.sleep(0.5) # this line does not cause error but we should be using delay instead of 0.5 
                 last_time = line_time
             yield line
     return

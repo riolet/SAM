@@ -5,6 +5,8 @@ import os
 import threading
 import signal
 import time
+import import_paloalto
+import preprocess
 
 #Request handler used to listen on the port
 #Uses synchronous message processing as threading was causing database issues
@@ -22,13 +24,34 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
         response = "%s"%(data)
         socket.sendto(data.upper(), self.client_address)
 
-        #creates a file based off of the data passed through
-        textFile = open("syslog_file.txt", "wr")
-        textFile.write(data)
-        textFile.close()
-        os.system("python import_paloalto.py syslog_file.txt")
-        os.system("python preprocess.py")
+        lines = data.splitlines()
+        # palo Alto log translation
+        importer = import_paloalto.PaloAltoImporter()
+        translated_lines = []
+        for line in lines:
+            result = {}
+            r = importer.translate(line, 1, result)
+            if r == 0:
+                translated_lines.append(result)
 
+                """ this code is not fully developed (supposed to process data after 1000 imports)
+        while (counter < 1000):
+            counter = counter + 1
+            lines = data.splitlines()
+            # palo Alto log translation
+            importer = import_paloalto.PaloAltoImporter()
+            translated_lines = []
+            for line in lines:
+                result = {}
+                r = importer.translate(line, 1, result)
+                if r == 0:
+                    translated_lines.append(result)
+"""
+
+        # this inserts into Syslog
+        importer.insert_data(translated_lines, len(translated_lines))
+        # Invoke the preprocessing to import data from Syslog into Noes and Links tables
+        preprocess.preprocess_log()
 
 def signal_handler(signal, frame):
     sys.exit(0)

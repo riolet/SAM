@@ -5,9 +5,11 @@ Preprocess the data in the database's upload table Syslog
 import common
 import dbaccess
 
+# method to create staging and master tables 
 def create_tables():
-
+    # calls the sql file to create staging tables
     dbaccess.exec_sql("./sql/setup_tables.sql")
+    # calls the sql file to create master tables
     dbaccess.exec_sql("./sql/setup_master_tables.sql")
 
 def import_nodes():
@@ -390,20 +392,20 @@ def deduce_LinksOut():
     """
     common.db.query(query)
 
-
+# method to copy all data from staging tables to master tables
 def copy_to_master():
     dbaccess.exec_sql("./sql/copy_to_master_tables.sql")
     
-
+# method to delete all data from staging tables
 def delete_staging_data():
-        dbaccess.exec_sql("./sql/delete_staging_data.sql")
+    dbaccess.exec_sql("./sql/delete_staging_data.sql")
 
 
 def preprocess_log():
 
-    create_tables()
-    import_nodes()
-    import_links()
+    create_tables() # create staging tables and master tables if they don't exist
+    import_nodes() # import all node info into staging tables
+    import_links() # import all link info into staging tables
     copy_to_master() # copy data from staging to master tables
     delete_staging_data() # delete all data from staging tables
 
