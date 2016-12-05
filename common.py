@@ -24,6 +24,11 @@ navbar = [
         "name": "Host Details",
         "icon": "tasks",
         "link": "/metadata"
+    },
+    {
+        "name": "Settings",
+        "icon": "settings",
+        "link": "/settings"
     }
 ]
 

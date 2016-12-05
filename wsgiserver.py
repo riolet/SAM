@@ -17,6 +17,7 @@ urls = (
     '/portinfo', 'pages.portinfo.Portinfo',
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
     '/metadata', 'pages.metadata.Metadata',
+    '/settings', 'pages.settings.Settings',
     '/table', 'pages.table.Table',
 )
 
