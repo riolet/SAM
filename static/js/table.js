@@ -274,11 +274,11 @@ function initiateDownload(event) {
     if (btn_text.toLocaleLowerCase().indexOf("all") == -1) {
         //download page
         console.log("Downloading this page of data at " + get_stamp());
-        data = table_to_csv(document.getElementById("resultsTable"));
+        var data = table_to_csv(document.getElementById("resultsTable"));
         csv.download(data, "table_" + get_stamp() + ".csv");
     } else {
         //download all
-        console.log("Downloading ALL the data")
+        console.log("Downloading ALL the data");
         var download_string = "/table?download=1&" + location.search.substr(1)
         download(download_string, "table_" + get_stamp() + ".csv")
     }
