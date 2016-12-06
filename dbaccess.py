@@ -663,3 +663,38 @@ GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in,
     info = list(common.db.query(query))
     return info
 
+
+def get_settings(all=False):
+    settings = {}
+    settings = dict(common.db.select("settings", limit=1)[0])
+    if all:
+        sources = map(dict, common.db.select("datasources"))
+        settings['datasources'] = sources
+        target = settings['datasource']
+        settings['datasource'] = None
+        for ds_index in range(len(sources)):
+            if sources[ds_index]['id'] == target:
+                settings['datasource'] = sources[ds_index]
+    else:
+        where = "id={0}".format(settings['datasource'])
+        ds = common.db.select("datasources", where=where, limit=1)
+        if len(ds) == 1:
+            settings['datasource'] = dict(ds[0])
+        else:
+            settings['datasource'] = None
+    return settings
+
+def set_settings(**kwargs):
+    if "datasource" in kwargs:
+        new_ds = kwargs.pop('datasource')
+        common.db.update("settings", "1", datasource=new_ds)
+    common.db.update("settings JOIN datasources ON settings.datasource = datasources.id", "1", **kwargs)
+
+
+def print_dict(d, indent = 0):
+    for k,v in d.iteritems():
+        if type(v) == dict:
+            print("{0}{1:>20s}: ".format(indent * 4 * " ", k))
+            print_dict(v, indent + 1)
+        else:
+            print("{0}{1:>20s}: {2}".format(indent*4*" ", k, repr(v)))
