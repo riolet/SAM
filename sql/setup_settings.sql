@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS datasources
 ,name           VARCHAR(255) NOT NULL DEFAULT "New Datasource"
 ,ar_active      TINYINT(1) NOT NULL DEFAULT 0
 ,ar_interval    INT NOT NULL DEFAULT 3000
-,CONSTRAINT `pk_ds` PRIMARY KEY (`id``)
+,CONSTRAINT `pk_ds` PRIMARY KEY (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS settings
