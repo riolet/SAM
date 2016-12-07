@@ -5,17 +5,6 @@ $def with (settings, datasources)
 
   <!-- Data Sources -->
   <h3 class="ui header">Data Sources</h3>
-  <span class="text">Push live data to: </span>
-  <div class="ui selection dropdown">
-    <input name="live_dest" type="hidden" value="ds_$settings['live_dest']">
-    <i class="dropdown icon"></i>
-    <div class="default text">data source</div>
-    <div class="menu">
-      <div class="item" data-value="ds_">discard</div>
-      $for ds in datasources:
-        <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
-    </div>
-  </div>
   <div class="ui datasources grid">
     <div class="four wide column">
       <div class="ui vertical fluid tabular menu" id="ds_choice">
@@ -73,6 +62,17 @@ $def with (settings, datasources)
     <a class="item" id="upload_log"><i class="blue write icon"></i>Upload log</a>
   </div>
 
+  <span class="text">Push live data to: </span>
+  <div class="ui selection dropdown">
+    <input name="live_dest" type="hidden" value="ds_$settings['live_dest']">
+    <i class="dropdown icon"></i>
+    <div class="default text">data source</div>
+    <div class="menu">
+      <div class="item" data-value="ds_">Discard live data</div>
+      $for ds in datasources:
+        <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
+    </div>
+  </div>
   <!-- Colors -->
   <!-- <h3 class="ui header">Colors</h3> -->
 
@@ -97,6 +97,38 @@ $def with (settings, datasources)
     </div>
     <div class="description">
       <p id="deleteMessage">Are you sure?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="two fluid ui inverted buttons">
+      <div class="ui cancel red basic inverted button">
+        <i class="remove icon"></i>
+        Cancel
+      </div>
+      <div class="ui ok green inverted button">
+        <i class="checkmark icon"></i>
+        Confirm
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Datasource modal -->
+<div id="newDSModal" class="ui small basic modal">
+  <i class="close icon"></i>
+  <div class="header">
+    New Data Source
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="cube icon"></i>
+    </div>
+    <div class="ui form">
+      <h4 class="ui dividing header">Please enter a name for your data source:</h4>
+      <div class="field">
+        <label>Name</label>
+        <input id="newDSName" type="text" placeholder="data source 1">
+      </div>
     </div>
   </div>
   <div class="actions">

@@ -1,4 +1,5 @@
 function disambiguateDeletion(what) {
+    "use strict";
     if (what.indexOf("tag") >= 0) return "tags";
     if (what.indexOf("env") >= 0) return "envs";
     if (what.indexOf("hostname") >= 0) return "aliases";
@@ -7,6 +8,7 @@ function disambiguateDeletion(what) {
 }
 
 function catDeleteMessage(what, extra) {
+    "use strict";
     var msg = "Are you sure you want to permanently delete ";
     if (what === "tags") {
         msg += "all host/subnet metadata tags? (Across all data sources)"
@@ -23,6 +25,7 @@ function catDeleteMessage(what, extra) {
 }
 
 function getConfirmation(msg, confirmCallback, denyCallback) {
+    "use strict";
     let modal = document.getElementById("deleteModal");
     let modalMsg = document.getElementById("deleteMessage")
     modalMsg.innerHTML = "";
@@ -35,6 +38,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
 }
 
 function deleteData(what) {
+    "use strict";
     let target = disambiguateDeletion(what)
     let deleteMessage = catDeleteMessage(target)
     getConfirmation(deleteMessage, function () {
@@ -43,6 +47,7 @@ function deleteData(what) {
 }
 
 function getSelectedDS() {
+    "use strict";
     let tabgroup = document.getElementById("ds_choice");
     let tabs = tabgroup.getElementsByTagName("A");
     let i = tabs.length - 1;
@@ -57,6 +62,7 @@ function getSelectedDS() {
 }
 
 function getDSName(ds) {
+    "use strict";
     let tabgroup = document.getElementById("ds_choice");
     let tabs = tabgroup.getElementsByTagName("A");
     let i = tabs.length - 1;
@@ -72,10 +78,43 @@ function getDSName(ds) {
 }
 
 function deleteDS() {
+    "use strict";
     let targetDS = getSelectedDS();
     getConfirmation(catDeleteMessage("datasource", targetDS), function () {
         console.log("Deleting " + targetDS + ".");
     });
+}
+
+function validateDSName(name) {
+    "use strict";
+    //must start with a letter (upper OR lower case) and then follow with either letters, numbers, underscore, or space.
+    return (typeof(name) === "string" && name.length > 0 && name.match(/^[a-z][a-z0-9_ ]*$/i));
+}
+
+function getNewDSName(confirmCallback, denyCallback) {
+    "use strict";
+    let modal = document.getElementById("newDSModal");
+    $(modal).modal({
+        onDeny: denyCallback,
+        onApprove: function () {
+            let name = document.getElementById("newDSName").value.trim();
+            if (validateDSName(name)) {
+                confirmCallback(name);
+            } else {
+                return false;
+            }
+        }
+    })
+    .modal("show");
+}
+
+function addDS() {
+    "use strict";
+    getNewDSName(function() {
+        console.log("Adding new blah");
+    }, function() {
+        console.log("Not adding anything");
+    })
 }
 
 function init() {
@@ -94,6 +133,7 @@ function init() {
     });
 
     document.getElementById("rm_ds").onclick = deleteDS;
+    document.getElementById("add_ds").onclick = addDS;
 }
 
 window.onload = init;
