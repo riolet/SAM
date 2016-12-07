@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS datasources
 
 CREATE TABLE IF NOT EXISTS settings
 (datasource     INT DEFAULT NULL
+,live_dest      INT DEFAULT NULL
 ,color_node     INT UNSIGNED NOT NULL DEFAULT 0x5555CC
 ,color_bg       INT UNSIGNED NOT NULL DEFAULT 0xAAFFDD
 ,color_tcp      INT UNSIGNED NOT NULL DEFAULT 0x5555CC
@@ -20,3 +21,5 @@ CREATE TABLE IF NOT EXISTS settings
 
 -- INSERT INTO datasources (name) VALUES ("default");
 -- INSERT INTO settings (datasource) VALUES (LAST_INSERT_ID());
+-- INSERT INTO datasources (name) VALUES ("live");
+-- INSERT INTO datasources (name) VALUES ("yesterday");

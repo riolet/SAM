@@ -1,0 +1,30 @@
+body {
+    background-color: #CCFFEB;
+    font-size: 100%;
+}
+
+.tab.segment {
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
+
+#ds_choice .item i.on{
+    display: none;
+}
+#ds_choice .item i.off{
+    display: inherit;
+}
+
+#ds_choice .active.item i.on{
+    display: inherit;
+}
+#ds_choice .active.item i.off{
+    display: none;
+}
+
+.datasources .four.wide.column {
+    padding-right: 0em;
+}
+.datasources .twelve.wide.column {
+    padding-left: 0em;
+}

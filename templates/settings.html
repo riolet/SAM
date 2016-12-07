@@ -1,24 +1,114 @@
-$def with ()
-<h3 class="ui center aligned header">Overview</h3>
+$def with (settings, datasources)
 <div class="ui container">
-    <div class="ui three column doubling grid">
-        <div class="column">
-            <div class="ui segment">Content</div>
-        </div>
-        <div class="column">
-            <div class="ui segment">Content</div>
-        </div>
-        <div class="column">
-            <div class="ui segment">Content</div>
-        </div>
-        <div class="column">
-            <div class="ui segment">Content</div>
-        </div>
-        <div class="column">
-            <div class="ui segment">Content</div>
-        </div>
-        <div class="column">
-            <div class="ui segment">Content</div>
+  <h1 class="ui center aligned header">Settings</h1>
+
+
+  <!-- Data Sources -->
+  <h3 class="ui header">Data Sources</h3>
+  <span class="text">Push live data to: </span>
+  <div class="ui selection dropdown">
+    <input name="live_dest" type="hidden" value="ds_$settings['live_dest']">
+    <i class="dropdown icon"></i>
+    <div class="default text">data source</div>
+    <div class="menu">
+      <div class="item" data-value="ds_">discard</div>
+      $for ds in datasources:
+        <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
+    </div>
+  </div>
+  <div class="ui datasources grid">
+    <div class="four wide column">
+      <div class="ui vertical fluid tabular menu" id="ds_choice">
+        $for ds in datasources:
+          <a class="$('active' if ds == settings['datasource'] else '') item" data-tab="ds_$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
+      </div>
+    </div>
+    <div class="twelve wide stretched column">
+      $for ds in datasources:
+        <div class="ui $('active' if ds == settings['datasource'] else '') tab segment" data-tab="ds_$ds['id']">
+          <table class="ui fixed definition table">
+            <tbody>
+            <tr>
+              <td class="right aligned">Name:</td>
+              <td>
+                <div class="ui transparent left icon input"><input data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
+              </td>
+            </tr>
+            <tr>
+              <td class="right aligned">Auto-refresh (map view):</td>
+              <td>
+                <div class="ui toggle checkbox">
+                  <input name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
+                  <label>&nbsp;</label>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="right aligned">Auto-refresh interval:</td>
+              <td>
+                <div class="ui transparent left icon input"><input data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
         </div>
     </div>
+  </div>
+
+  <div class="ui secondary menu">
+    <a class="item" id="add_ds"><i class="blue add icon"></i>New Data Source</a>
+    <div class="item">|</div>
+    <a class="item" id="rm_ds"><i class="red remove icon"></i>Remove Data Source</a>
+    <div class="item">|</div>
+    <div class="ui deletion dropdown item">
+      <span class="text">Delete ...</span>
+      <div class="menu">
+        <a class="item"><i class="red trash icon"></i>Delete hostname information</a>
+        <a class="item"><i class="red trash icon"></i>Delete tag information</a>
+        <a class="item"><i class="red trash icon"></i>Delete environment information</a>
+        <a class="item"><i class="red trash icon"></i>Delete connection information</a>
+      </div>
+    </div>
+    <div class="item">|</div>
+    <a class="item" id="upload_log"><i class="blue write icon"></i>Upload log</a>
+  </div>
+
+  <!-- Colors -->
+  <!-- <h3 class="ui header">Colors</h3> -->
+
+
+  <!-- Changes -->
+  <h3 class="ui header">Changes</h3>
+  <div class="ui buttons">
+    <button class="ui blue button">Save</button>
+    <button class="ui button">Discard</button>
+  </div>
+</div>
+
+<!-- Confirm Delete modal -->
+<div id="deleteModal" class="ui small basic modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Confirm Delete
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="trash outline icon"></i>
+    </div>
+    <div class="description">
+      <p id="deleteMessage">Are you sure?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="two fluid ui inverted buttons">
+      <div class="ui cancel red basic inverted button">
+        <i class="remove icon"></i>
+        Cancel
+      </div>
+      <div class="ui ok green inverted button">
+        <i class="checkmark icon"></i>
+        Confirm
+      </div>
+    </div>
+  </div>
 </div>
