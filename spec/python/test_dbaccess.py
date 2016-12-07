@@ -5,13 +5,16 @@ import common
 
 
 def test_parse_sql():
-    expected = ['DROP TABLE IF EXISTS blah',
-                '\n \n \n CREATE TABLE IF NOT EXISTS blah\n'
+    expected = ['DROP TABLE IF EXISTS myKey_blah',
+                '\n \n \n CREATE TABLE IF NOT EXISTS myKey_blah\n'
                 ' (port              INT UNSIGNED NOT NULL\n'
                 ' ,CONSTRAINT PKportAliasLUT PRIMARY KEY (port)\n'
                 ' )',
-                '\n \n SELECT * FROM blah\n ']
-    assert dbaccess.parse_sql_file("./spec/python/test_sql.sql") == expected
+                '\n \n SELECT * FROM myKey_blah\n ']
+    replacements = {'id': "myKey"}
+    actual = dbaccess.parse_sql_file("./spec/python/test_sql.sql", replacements)
+    print actual
+    assert actual == expected
 
 
 # def test_reset_port_names:

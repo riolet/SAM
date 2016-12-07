@@ -2,42 +2,19 @@ import web
 import common
 import json
 import os
+import re
 
 
-def test_database():
-    result = 0
-    try:
-        common.db.query("SELECT 1 FROM MasterSyslog LIMIT 1;")
-    except Exception as e:
-        result = e[0]
-        # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
-        # if e[0] == 1049:  # Unknown database 'samapper'
-        #     Common.create_database()
-        #     return self.GET(name)
-        # elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
-        #     rows = [e[1], "Check you username / password? (dbconfig_local.py)"]
-    return result
-
-
-def create_database():
-    params = common.dbconfig.params.copy()
-    params.pop('db')
-    connection = web.database(**params)
-
-    connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
-
-    exec_sql(os.path.join(common.base_path, 'sql/setup_database.sql'))
-
-    reset_port_names()
-
-
-def parse_sql_file(path):
+def parse_sql_file(path, replacements=None):
     with open(path, 'r') as f:
         lines = f.readlines()
     # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
     # join into one long string
     script = " ".join(lines)
+    # do any necessary string replacements
+    if replacements:
+        script = script.format(**replacements)
     # split string into a list of commands
     commands = script.split(";")
     # ignore empty statements (like trailing newlines)
@@ -45,27 +22,30 @@ def parse_sql_file(path):
     return commands
 
 
-def exec_sql(path):
-    commands = parse_sql_file(path)
+def exec_sql(path, replacements=None):
+    if not replacements:
+        commands = parse_sql_file(path, {})
+    else:
+        commands = parse_sql_file(path, replacements)
     for command in commands:
         common.db.query(command)
 
 
-def reset_port_names():
-    # drop and recreate the table
-    exec_sql(os.path.join(common.base_path, 'sql/setup_LUTs.sql'))
+def validate_ds_name(name):
+    return name == name.strip() and re.match(r'^[a-z][a-z0-9_ ]*$', name, re.I)
 
-    with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'rb') as f:
-        port_data = json.loads("".join(f.readlines()))
 
-    ports = port_data["ports"].values()
-    for port in ports:
-        if len(port['name']) > 10:
-            port['name'] = port['name'][:10]
-        if len(port['description']) > 255:
-            port['description'] = port['description'][:255]
+def create_ds_tables(id):
+    replacements = {"id": id}
+    exec_sql(os.path.join(common.base_path, 'sql/setup_datasource.sql'), replacements)
+    return 0
 
-    common.db.multiple_insert('portLUT', values=ports)
+def create_datasource(name):
+    if not validate_ds_name(name):
+        return -1
+    id = common.db.insert("Datasources", name=name)
+    r = create_ds_tables(id)
+    return r
 
 
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
