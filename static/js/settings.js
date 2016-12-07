@@ -110,11 +110,90 @@ function getNewDSName(confirmCallback, denyCallback) {
 
 function addDS() {
     "use strict";
-    getNewDSName(function() {
-        console.log("Adding new blah");
+    getNewDSName(function(name) {
+        console.log("Adding new ds named " + name);
     }, function() {
         console.log("Not adding anything");
     })
+}
+
+function getDSs() {
+    //getDSs() returns DSs as [[id, name], ...] with the index 0 being the selected DS.
+    "use strict";
+    let datasource_group = document.getElementById("ds_choice");
+    let datasources = datasource_group.getElementsByTagName("A");
+    let i = datasources.length - 1;
+    var DSs = [];
+    var currentDS;
+    var name;
+    var id;
+
+    for (; i >= 0; i -= 1) {
+        name = datasources[i].innerText;
+        id = datasources[i].dataset['tab'];
+        if (datasources[i].classList.contains("active")) {
+            currentDS = [id, name];
+        } else {
+            DSs.push([id,name]);
+        }
+    }
+    DSs.unshift(currentDS);
+    return DSs;
+}
+
+function populateUploadDSList(options) {
+    let log_ds = document.getElementById("log_ds");
+    let log_ds_list = document.getElementById("log_ds_list");
+    log_ds_list.innerHTML = "";
+
+    //set options
+    var div;
+    options.forEach(function (option) {
+        div = document.createElement("DIV");
+        div.className = "item"
+        div.dataset['value'] = option[0];
+        div.appendChild(document.createTextNode(option[1]));
+        log_ds_list.appendChild(div);
+    });
+
+    //set default value
+    if (options.length == 0) {
+        log_ds.value = "";
+    } else {
+        $(log_ds.parentElement).dropdown("set selected", options[0][0]);
+    }
+}
+
+function validateUpload() {
+    let log_path = document.getElementById("log_path").value;
+    let log_ds = document.getElementById("log_ds").value;
+    let log_format = document.getElementById("log_format").value;
+    console.log("validating...");
+    console.log("path: '" + log_path + "'");
+    console.log("dsrc: '" + log_ds + "'");
+    console.log("frmt: '" + log_format + "'");
+    return true;
+}
+
+function uploadLog() {
+    "use strict";
+    let DSs = getDSs();
+
+    populateUploadDSList(DSs);
+
+    let modal = document.getElementById("uploadModal");
+    $(modal).modal({
+        onApprove: function () {
+            if (validateUpload()) {
+                console.log("uploading");
+            } else {
+                console.log("invalid input");
+                return false;
+            }
+        },
+        onDeny: function () { console.log("upload cancelled.");}
+    })
+    .modal("show");
 }
 
 function init() {
@@ -134,6 +213,7 @@ function init() {
 
     document.getElementById("rm_ds").onclick = deleteDS;
     document.getElementById("add_ds").onclick = addDS;
+    document.getElementById("upload_log").onclick = uploadLog;
 }
 
 window.onload = init;

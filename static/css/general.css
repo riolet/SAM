@@ -28,3 +28,7 @@ body {
 .datasources .twelve.wide.column {
     padding-left: 0em;
 }
+
+.ui.modal .form {
+    margin-left: 1em;
+}

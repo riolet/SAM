@@ -1,4 +1,4 @@
-$def with (settings, datasources)
+$def with (settings, datasources, importers)
 <div class="ui container">
   <h1 class="ui center aligned header">Settings</h1>
 
@@ -124,10 +124,65 @@ $def with (settings, datasources)
       <i class="cube icon"></i>
     </div>
     <div class="ui form">
-      <h4 class="ui dividing header">Please enter a name for your data source:</h4>
+      <h4 class="ui inverted header">Please enter a name for your data source:</h4>
       <div class="field">
-        <label>Name</label>
-        <input id="newDSName" type="text" placeholder="data source 1">
+        <input id="newDSName" type="text" placeholder="Data source 1">
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="two fluid ui inverted buttons">
+      <div class="ui cancel red basic inverted button">
+        <i class="remove icon"></i>
+        Cancel
+      </div>
+      <div class="ui ok green inverted button">
+        <i class="checkmark icon"></i>
+        Confirm
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Log modal -->
+<div id="uploadModal" class="ui small basic modal">
+  <i class="close icon"></i>
+  <div class="header">
+    New Data Source
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="file text outline icon"></i>
+    </div>
+    <div class="ui inverted transparent form">
+      <div class="field">
+        <label>File path stuff</label>
+        <input id="log_path" type="file" placeholder="<log file>">
+      </div>
+      <div class="field">
+        <label>Log format</label>
+        <div class="ui selection dropdown">
+          <input name="log_format" id="log_format" type="hidden" value="Paloalto">
+          <i class="dropdown icon"></i>
+          <div class="default text">File Format</div>
+          <div class="menu">
+            $for imp in importers:
+              <div class="item" data-value="$imp">$imp</div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Data source</label>
+        <div class="ui selection dropdown">
+          <input name="log_ds" id="log_ds" type="hidden" value="ds_1">
+          <i class="dropdown icon"></i>
+          <div class="default text">data source</div>
+          <div class="menu" id="log_ds_list">
+            <div class="item" data-value="ds_1">default</div>
+            <div class="item" data-value="ds_2">live</div>
+            <div class="item" data-value="ds_3">yesterday</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
