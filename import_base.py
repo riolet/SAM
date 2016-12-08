@@ -15,17 +15,37 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Usage:
     python {0} <input-file>
 """.format(sys.argv[0])
+        self.datasource = 0
 
     def main(self, argv):
-        if len(argv) != 2:
+        if not (1 < len(argv) < 4):
             print(self.instructions)
             return
 
-        if self.validate_file(argv[1]):
+        self.datasource = self.determine_datasource(argv)
+
+        if self.validate_file(argv[1]) and self.datasource > 0:
             self.import_file(argv[1])
         else:
             print(self.instructions)
             return
+
+    def determine_datasource(self, argv):
+        settings = dbaccess.get_settings(all=True)
+        default_ds = settings['datasource']['id']
+        custom_ds = 0
+        if len(argv) >= 3:
+            requested_ds = argv[2]
+            for ds in settings['datasources']:
+                if ds['name'] == requested_ds:
+                    custom_ds = ds['id']
+                    break
+
+        if custom_ds > 0:
+            return custom_ds
+        else:
+            return default_ds
+
 
     def validate_file(self, path):
         """
@@ -100,6 +120,7 @@ Usage:
         Returns:
             None
         """
+        table_name = "ds_{ds}_Syslog".format(ds=self.datasource)
         try:
             truncated_rows = rows[:count]
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
