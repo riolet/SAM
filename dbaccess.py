@@ -611,12 +611,12 @@ FROM (
         ), 'production') AS "env"
         , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((SELECT SUM(links)
-            FROM MasterLinksOut AS l_out
+            FROM {prefix}LinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
               AND l_out.src_end = nodes.ipend
          ),0) AS 'conn_out'
         , COALESCE((SELECT SUM(links)
-            FROM MasterLinksIn AS l_in
+            FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
@@ -640,7 +640,8 @@ GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in,
         HAVING=HAVING,
         ORDER=ORDERBY,
         START=page * page_size,
-        RANGE=page_size + 1)
+        RANGE=page_size + 1,
+        prefix=get_settings_cached()['prefix'])
 
     info = list(common.db.query(query))
     return info

@@ -1,4 +1,5 @@
 import common
+import dbaccess
 
 
 class Filter (object):
@@ -75,15 +76,17 @@ class PortFilter(Filter):
         # 3: doesn't receive connection from port n
 
     def where(self):
+        prefix = dbaccess.get_settings_cached()['prefix']
+
         if self.params['connection'] == '0':
-            return "EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM {prefix}LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         elif self.params['connection'] == '1':
-            return "NOT EXISTS (SELECT port FROM LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM {prefix}LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
 
         elif self.params['connection'] == '2':
-            return "EXISTS (SELECT port FROM LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM {prefix}LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         elif self.params['connection'] == '3':
-            return "NOT EXISTS (SELECT port FROM LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM {prefix}LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         else:
             print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
@@ -127,15 +130,17 @@ class TargetFilter(Filter):
         # ip_segments = [int(x) for x in self.params['target'].split(".")]
         # target = common.IPtoInt(*ip_segments)
         r = common.determine_range_string(self.params['target'])
+        prefix = dbaccess.get_settings_cached()['prefix']
+
         if self.params['to'] == '0':
-            return "EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
         elif self.params['to'] == '1':
-            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "NOT EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
         
         if self.params['to'] == '2':
-            return "EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
         elif self.params['to'] == '3':
-            return "NOT EXISTS (SELECT 1 FROM Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1])
+            return "NOT EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
 
         else:
             print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "
