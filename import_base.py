@@ -11,9 +11,12 @@ class BaseImporter:
         self.instructions = """
 This program imports a syslog dump into the database.
 It extracts IP addresses and ports and discards other data. Only TCP traffic data is used.
+Optionally, include the name of the datasource to import in to. Default uses currently selected data source.
 
 Usage:
     python {0} <input-file>
+    python {0} <input-file> <data source>
+
 """.format(sys.argv[0])
         self.datasource = 0
 
@@ -45,7 +48,6 @@ Usage:
             return custom_ds
         else:
             return default_ds
-
 
     def validate_file(self, path):
         """
@@ -125,7 +127,7 @@ Usage:
             truncated_rows = rows[:count]
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
             # >>> db.multiple_insert('person', values=values, _test=True)
-            common.db.multiple_insert(table_name, values=truncated_rows)
+            common.db_quiet.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
             print("Error inserting into database:")
             import integrity

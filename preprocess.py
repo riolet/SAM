@@ -6,6 +6,8 @@ import common
 import dbaccess
 import integrity
 
+# DB connection to use. `common.db` echos every statement to stderr, `common.db_quiet` does not.
+db = common.db_quiet
 
 def import_nodes():
     prefix = dbaccess.get_settings_cached()['prefix']
@@ -28,7 +30,7 @@ def import_nodes():
         ) AS log;
     """.format(prefix=prefix)
     qvars = {"radius": 331776}
-    common.db.query(query, vars=qvars)
+    db.query(query, vars=qvars)
 
     # Get all the /16 nodes. Load these into Nodes16
     query = """
@@ -49,7 +51,7 @@ def import_nodes():
         JOIN Nodes AS parent
             ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216);
         """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # Get all the /24 nodes. Load these into Nodes24
     query = """
@@ -70,7 +72,7 @@ def import_nodes():
         JOIN Nodes AS parent
             ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536);
         """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # Get all the /32 nodes. Load these into Nodes32
     query = """
@@ -91,7 +93,7 @@ def import_nodes():
         JOIN Nodes AS parent
             ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256);
         """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
 
 def import_links():
@@ -114,7 +116,7 @@ def build_Links():
         FROM {prefix}Syslog
         GROUP BY SourceIP, DestinationIP, DestinationPort, ts;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
 
 def deduce_LinksIn():
@@ -132,7 +134,7 @@ def deduce_LinksIn():
         FROM {prefix}staging_Links
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # /16 links
     query = """
@@ -159,7 +161,7 @@ def deduce_LinksIn():
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # /24 links
     query = """
@@ -198,7 +200,7 @@ def deduce_LinksIn():
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # /32 links
     query = """
@@ -249,7 +251,7 @@ def deduce_LinksIn():
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
 
 def deduce_LinksOut():
@@ -267,7 +269,7 @@ def deduce_LinksOut():
         FROM {prefix}staging_Links
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # /16 links
     query = """
@@ -294,7 +296,7 @@ def deduce_LinksOut():
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # /24 links
     query = """
@@ -333,7 +335,7 @@ def deduce_LinksOut():
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
     # /32 links
     query = """
@@ -384,7 +386,7 @@ def deduce_LinksOut():
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    common.db.query(query)
+    db.query(query)
 
 
 # method to copy all data from staging tables to master tables

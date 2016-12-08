@@ -6,9 +6,10 @@ import json
 import re
 from MySQLdb import OperationalError
 
-
 shared_tables = ["Nodes", "Tags", "Datasources", "Ports", "PortAliases", "Settings"]
+tables_per_ds = ["staging_Links", "staging_LinksIn", "staging_LinksOut", "Links", "LinksIn", "LinksOut", "Syslog"]
 default_datasource_name = "default"
+db = common.db_quiet
 
 
 def check_db_access():
@@ -57,7 +58,7 @@ def check_and_fix_db_access():
 
 
 def fill_port_table():
-    common.db.delete("Ports", "1=1")
+    db.delete("Ports", "1=1")
     with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'rb') as f:
         port_data = json.loads("".join(f.readlines()))
 
@@ -67,12 +68,12 @@ def fill_port_table():
             port['name'] = port['name'][:10]
         if len(port['description']) > 255:
             port['description'] = port['description'][:255]
-    common.db.multiple_insert('Ports', values=ports)
+    db.multiple_insert('Ports', values=ports)
 
 
 def check_shared_tables():
     print("Checking shared tables...")
-    tables = [x.values()[0] for x in common.db.query("SHOW TABLES;")]
+    tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
     missing_shared_tables = []
     for table in shared_tables:
         if table not in tables:
@@ -99,18 +100,24 @@ def fix_shared_tables(missing_tables):
 
 def fix_data_sources(issues):
     print("Fixing data sources")
+    for table in issues.get('extra_tables', []):
+        print("\tRemoving extra table {0}".format(table))
+        db.query("DROP TABLE {0}".format(table))
     for ds in issues.get('known_missing', []):
-        print("\tAdding data sources known to be missing")
+        print("\tAdding data source (ds_{0}) known to be missing".format(ds))
         # add tables for data source
         dbaccess.create_ds_tables(ds)
     for ds in issues.get('real_unknown', []):
-        print("\tRecording existing data sources")
+        print("\tRecording existing data source ds_{0}".format(ds))
         # add ds to `Datasources`
-        common.db.insert("Datasources", id=ds, name="ds_{0}".format(ds))
+        db.insert("Datasources", id=ds, name="ds_{0}".format(ds))
     if "need_to_add" in issues:
         print("\tAdding default data source due to minimum requirement of 1.")
         dsname = issues['need_to_add']
         dbaccess.create_datasource(dsname)
+    for ds in issues.get('malformed', []):
+        print("\tRestoring tables for data source ds_{0}".format(ds))
+        dbaccess.create_ds_tables(ds)
 
     print("\tData sources fixed")
 
@@ -118,13 +125,30 @@ def fix_data_sources(issues):
 def check_data_sources():
     print("Checking data sources...")
     issues = {}
-    tables = [x.values()[0] for x in common.db.query("SHOW TABLES;")]
-    known_datasources = list(common.db.query("SELECT * FROM Datasources"))
-    known_ds_ids = set([ds['id'] for ds in known_datasources])
+    tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    known_datasources = list(db.query("SELECT * FROM Datasources"))
+    known_ds_ids = set([unicode(ds['id']) for ds in known_datasources])
     real_datasources = set(re.findall(r"\bds_(\d+)_\w+", " ".join(tables)))
-
     known_missing = known_ds_ids.difference(real_datasources)
     real_unknown = real_datasources.difference(known_ds_ids)
+
+    # check each data source to see if it is missing tables
+    all_ds_ids = known_ds_ids.union(real_datasources)
+    incomplete_datasources = set()
+    for id in all_ds_ids:
+        expected = ["ds_{0}_{1}".format(id, table) for table in tables_per_ds]
+        for table in expected:
+            if table not in tables:
+                incomplete_datasources.add(id)
+
+    # check for extra data source tables
+    extra_tables = []
+    for ds in real_datasources:
+        prefix = "ds_{0}_".format(ds)
+        ds_tables = [table[len(prefix):] for table in tables if table.startswith(prefix)]
+        for table in ds_tables:
+            if table not in tables_per_ds:
+                extra_tables.append("{0}{1}".format(prefix, table))
 
     if known_missing:
         missing_names = [ds['name'] for ds in known_datasources if ds['id'] in known_missing]
@@ -132,8 +156,13 @@ def check_data_sources():
         issues['known_missing'] = known_missing
     if real_unknown:
         print("\tUnknown data sources discovered: {0}".format(real_unknown))
-        # TODO: check that data sources have ALL required tables
         issues['real_unknown'] = real_unknown
+    if extra_tables:
+        print("\tUnexpected data source tables: {0}".format(repr(extra_tables)))
+        issues['extra_tables'] = extra_tables
+    if incomplete_datasources:
+        print("\tMalformed data source discovered: {0}".format(repr(incomplete_datasources)))
+        issues['malformed'] = incomplete_datasources
     if not known_datasources and not real_unknown:
         print("\tNo data sources found. At least 1 required.")
         issues['need_to_add'] = default_datasource_name
@@ -148,15 +177,15 @@ def fix_settings(condition):
         print("\tNo fix needed")
     else:
         print("\tCreating settings")
-        common.db.delete("Settings", "1=1")
-        id = common.db.select("Datasources", what="id", limit=1)[0]['id']
-        common.db.insert("Settings", datasource=id)
+        db.delete("Settings", "1=1")
+        id = db.select("Datasources", what="id", limit=1)[0]['id']
+        db.insert("Settings", datasource=id)
         print("\tSettings fixed")
 
 
 def check_settings():
     print("Checking settings...")
-    settings = common.db.select("Settings")
+    settings = db.select("Settings")
     copies = len(settings)
     errorCode = 0
     if copies == 0:
