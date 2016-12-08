@@ -177,6 +177,7 @@ def check_integrity():
     check_data_sources()
     check_settings()
 
+
 def check_and_fix_integrity():
     check_and_fix_db_access()
 

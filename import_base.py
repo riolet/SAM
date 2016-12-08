@@ -125,7 +125,7 @@ Usage:
             truncated_rows = rows[:count]
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
             # >>> db.multiple_insert('person', values=values, _test=True)
-            common.db.multiple_insert('Syslog', values=truncated_rows)
+            common.db.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
             print("Error inserting into database:")
             import integrity

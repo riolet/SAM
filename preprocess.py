@@ -7,14 +7,6 @@ import dbaccess
 import integrity
 
 
-# method to create staging and master tables 
-def create_tables():
-    # calls the sql file to create staging tables
-    dbaccess.exec_sql("./sql/setup_tables.sql")
-    # calls the sql file to create master tables
-    dbaccess.exec_sql("./sql/setup_master_tables.sql")
-
-
 def import_nodes():
     prefix = dbaccess.get_settings_cached()['prefix']
 
@@ -408,8 +400,7 @@ def delete_staging_data():
 
 
 def preprocess_log():
-    create_tables() # create staging tables and master tables if they don't exist
-    import_nodes() # import all node info into staging tables
+    import_nodes() # import all nodes into the shared Nodes table
     import_links() # import all link info into staging tables
     copy_to_master() # copy data from staging to master tables
     delete_staging_data() # delete all data from staging tables
