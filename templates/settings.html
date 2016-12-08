@@ -20,22 +20,22 @@ $def with (settings, datasources, importers)
             <tr>
               <td class="right aligned">Name:</td>
               <td>
-                <div class="ui transparent left icon input"><input data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
+                <div class="ui transparent left icon input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
               </td>
             </tr>
             <tr>
               <td class="right aligned">Auto-refresh (map view):</td>
               <td>
                 <div class="ui toggle checkbox">
-                  <input name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
+                  <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
                   <label>&nbsp;</label>
                 </div>
               </td>
             </tr>
             <tr>
-              <td class="right aligned">Auto-refresh interval:</td>
+              <td class="right aligned">Auto-refresh interval (seconds):</td>
               <td>
-                <div class="ui transparent left icon input"><input data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
+                <div class="ui transparent left icon input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
               </td>
             </tr>
             </tbody>

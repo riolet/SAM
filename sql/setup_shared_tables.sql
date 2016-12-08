@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS Datasources
 (id             INT NOT NULL AUTO_INCREMENT
 ,name           VARCHAR(255) NOT NULL DEFAULT "New Datasource"
 ,ar_active      TINYINT(1) NOT NULL DEFAULT 0
-,ar_interval    INT NOT NULL DEFAULT 3000
+,ar_interval    INT NOT NULL DEFAULT 300
 ,CONSTRAINT `pk_ds` PRIMARY KEY (`id`)
 );
 

@@ -91,6 +91,11 @@ function validateDSName(name) {
     return (typeof(name) === "string" && name.length > 0 && name.match(/^[a-z][a-z0-9_ ]*$/i));
 }
 
+function validateInterval(interval) {
+    var interval = parseInt(interval)
+    return !isNaN(interval) && interval >= 5 && interval <= 1800
+}
+
 function getNewDSName(confirmCallback, denyCallback) {
     "use strict";
     let modal = document.getElementById("newDSModal");
@@ -196,6 +201,82 @@ function uploadLog() {
     .modal("show");
 }
 
+function AjaxError(xhr, textStatus, errorThrown) {
+    "use strict";
+    console.error("AJAX Failed: " + errorThrown);
+    console.log("\tText Status: " + textStatus);
+}
+
+function AjaxSuccess(response) {
+    console.log("Success:");
+    console.log(response)
+}
+
+function POST_AJAX(command) {
+    request = command
+    $.ajax({
+        url: "/settings",
+        type: "POST",
+        data: request,
+        error: AjaxError,
+        success: AjaxSuccess
+    });
+}
+
+function POST_ds_namechange(e) {
+    "use strict";
+    var newName = e.target.value.trim();
+    if (!validateDSName(newName)) {
+        e.target.value = e.target.dataset['content'];
+        return;
+    }
+
+    if (newName !== e.target.dataset['content']) {
+        //in case trim() changed the name
+        e.target.value = newName;
+        var ds = getSelectedDS();
+        console.log("Changing the name of " + ds + " to " + newName);
+        POST_AJAX({name:"ds_name", param1:ds, param2:newName});
+    }
+}
+
+function POST_ds_livechange(e) {
+    "use strict";
+    var active = e.target.checked;
+    var ds = getSelectedDS();
+    console.log("Toggling autorefresh of " + ds + " to " + active);
+    POST_AJAX({name:"ds_live", param1:ds, param2:active});
+}
+
+function POST_ds_intervalchange(e) {
+    "use strict";
+    var newInterval = parseInt(e.target.value);
+    if (!validateInterval(newInterval)) {
+        e.target.value = e.target.dataset['content'];
+        return;
+    }
+
+    if (newInterval !== parseInt(e.target.dataset['content'])) {
+        //in case trim() changed the name
+        e.target.value = newInterval;
+        var ds = getSelectedDS();
+        console.log("Changing the refresh interval of " + ds + " to " + newInterval);
+        POST_AJAX({name:"ds_interval", param1:ds, param2:newInterval});
+    }
+}
+
+function foreach(entities, callback) {
+    "use strict";
+    if (typeof(callback) !== "function") {
+        console.error("foreach called with non-function");
+        return;
+    }
+    var i = entities.length - 1;
+    for (; i >= 0; i -= 1) {
+        callback(entities[i], i, entities);
+    }
+}
+
 function init() {
     "use strict";
 
@@ -214,6 +295,15 @@ function init() {
     document.getElementById("rm_ds").onclick = deleteDS;
     document.getElementById("add_ds").onclick = addDS;
     document.getElementById("upload_log").onclick = uploadLog;
+    foreach(document.getElementsByClassName("ds_name"), function(entity) {
+        entity.onchange = POST_ds_namechange
+    });
+    foreach(document.getElementsByClassName("ds_live"), function(entity) {
+        entity.onchange = POST_ds_livechange
+    });
+    foreach(document.getElementsByClassName("ds_interval"), function(entity) {
+        entity.onchange = POST_ds_intervalchange
+    });
 }
 
 window.onload = init;
