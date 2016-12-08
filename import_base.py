@@ -106,18 +106,11 @@ Usage:
             # >>> db.multiple_insert('person', values=values, _test=True)
             common.db.multiple_insert('Syslog', values=truncated_rows)
         except Exception as e:
-            # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
-            if e[0] == 1049:  # Unknown database 'samapper'
-                dbaccess.create_database()
-                self.insert_data(rows, count)
-            elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
-                print(e[1])
-                print("Check your username / password? (dbconfig_local.py)")
-                sys.exit(1)
-            elif e[0] == 1146:  # Syslog table doesn't exist
-                dbaccess.exec_sql(os.path.join(common.base_path, 'sql/setup_database.sql'))
+            print("Error inserting into database:")
+            import integrity
+            if integrity.check_and_fix_db_access() == 0:
+                print("Resuming...")
                 self.insert_data(rows, count)
             else:
-                print("Critical failure {0}.".format(e[0]))
-                print(e[1])
+                print("Critical failure. Aborting.")
                 sys.exit(2)

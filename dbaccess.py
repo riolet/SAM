@@ -1,6 +1,5 @@
 import web
 import common
-import json
 import os
 import re
 
@@ -40,6 +39,7 @@ def create_ds_tables(id):
     exec_sql(os.path.join(common.base_path, 'sql/setup_datasource.sql'), replacements)
     return 0
 
+
 def create_datasource(name):
     if not validate_ds_name(name):
         return -1
@@ -53,16 +53,16 @@ def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     if ip8 < 0 or ip8 > 255:
         # check Nodes8
         # rows = common.db.select("Nodes8")
-        rows = common.db.select("MasterNodes", where="subnet=8")
+        rows = common.db.select("Nodes", where="subnet=8")
     elif ip16 < 0 or ip16 > 255:
         # check Nodes16
-        rows = common.db.select("MasterNodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     elif ip24 < 0 or ip24 > 255:
         # check Nodes24
-        rows = common.db.select("MasterNodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     elif ip32 < 0 or ip32 > 255:
         # check Nodes32
-        rows = common.db.select("MasterNodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     else:
         rows = []
     return rows
@@ -105,11 +105,11 @@ def get_links_in(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=Non
 
     query = """
     SELECT {select}
-    FROM MasterLinksIn
+    FROM {prefix}LinksIn
     WHERE dst_start = $start && dst_end = $end
      {where}
     {group_by}
-    """.format(where=where, select=select, group_by=group_by)
+    """.format(where=where, select=select, group_by=group_by, prefix=get_settings_cached()['prefix'])
     qvars = {"start": r[0], "end": r[1]}
     rows = list(common.db.query(query, vars=qvars))
     return rows
@@ -152,11 +152,11 @@ def get_links_out(ip8, ip16=-1, ip24=-1, ip32=-1, port_filter=None, timerange=No
 
     query = """
     SELECT {select}
-    FROM MasterLinksOut
+    FROM {prefix}LinksOut
     WHERE src_start = $start && src_end = $end
      {where}
     {group_by}
-    """.format(where=where, select=select, group_by=group_by)
+    """.format(where=where, select=select, group_by=group_by, prefix=get_settings_cached()['prefix'])
     qvars = {"start": r[0], "end": r[1]}
     rows = list(common.db.query(query, vars=qvars))
     return rows
@@ -194,17 +194,17 @@ def get_details_summary(ip_range, timestamp_range=None, port=None):
     query2 = """
         SELECT (
             SELECT COUNT(DISTINCT src)
-                FROM MasterLinks
+                FROM {prefix}Links
                 WHERE dst BETWEEN $start AND $end
-                 {0}) AS 'unique_in'
+                 {where}) AS 'unique_in'
             , (SELECT COUNT(DISTINCT dst)
-                FROM MasterLinks
+                FROM {prefix}Links
                 WHERE src BETWEEN $start AND $end
-                 {0}) AS 'unique_out'
+                 {where}) AS 'unique_out'
             , (SELECT COUNT(DISTINCT port)
-                FROM MasterLinks
+                FROM {prefix}Links
                 WHERE dst BETWEEN $start AND $end
-                 {0}) AS 'unique_ports';""".format(WHERE)
+                 {where}) AS 'unique_ports';""".format(where=WHERE, prefix=get_settings_cached()['prefix'])
     qvars = {'start': ip_range[0], 'end': ip_range[1]}
     rows = common.db.query(query2, vars=qvars)
     row = rows[0]
@@ -218,7 +218,8 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
         'end': ip_range[1],
         'page': page_size * (page-1),
         'page_size': page_size,
-        'WHERE': build_where_clause(timestamp_range, port)
+        'WHERE': build_where_clause(timestamp_range, port),
+        'prefix': get_settings_cached()['prefix']
     }
     if inbound:
         qvars['collected'] = "src"
@@ -239,7 +240,7 @@ def get_details_connections(ip_range, inbound, timestamp_range=None, port=None, 
 
     query = """
         SELECT decodeIP({collected}) AS 'ip', port AS 'port', sum(links) AS 'links'
-        FROM MasterLinks
+        FROM {prefix}Links
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}
         GROUP BY {collected}, port
@@ -257,7 +258,8 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_si
         'end': ip_range[1],
         'first': first_result,
         'size': page_size,
-        'WHERE': build_where_clause(timestamp_range, port)
+        'WHERE': build_where_clause(timestamp_range, port),
+        'prefix': get_settings_cached()['prefix']
     }
 
     if order and order[0] == '-':
@@ -272,7 +274,7 @@ def get_details_ports(ip_range, timestamp_range=None, port=None, page=1, page_si
 
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
-        FROM MasterLinks
+        FROM {prefix}Links
         WHERE dst BETWEEN $start AND $end
          {WHERE}
         GROUP BY port
@@ -315,12 +317,12 @@ def get_details_children(ip_range, subnet, page, page_size, order):
           , `n`.subnet AS 'subnet'
           , `sn`.kids AS 'endpoints'
           , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
-        FROM MasterNodes AS `n`
+        FROM Nodes AS `n`
         LEFT JOIN (
             SELECT dst_start DIV $quot * $quot AS 'low'
                 , dst_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM MasterLinksIn
+            FROM {prefix}LinksIn
             GROUP BY low, high
             ) AS `l_in`
         ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
@@ -328,7 +330,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             SELECT src_start DIV $quot * $quot AS 'low'
                 , src_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM MasterLinksOut
+            FROM {prefix}LinksOut
             GROUP BY low, high
             ) AS `l_out`
         ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
@@ -336,7 +338,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             SELECT ipstart DIV $quot * $quot AS 'low'
                 , ipend DIV $quot * $quot + $quot_1 AS 'high'
                 , COUNT(ipstart) AS 'kids'
-            FROM MasterNodes
+            FROM Nodes
             WHERE ipstart = ipend
             GROUP BY low, high
             ) AS `sn`
@@ -345,7 +347,7 @@ def get_details_children(ip_range, subnet, page, page_size, order):
             AND `n`.subnet BETWEEN $s_start AND $s_end
         ORDER BY {order}
         LIMIT $first, $size;
-        """.format(order=qvars['order'])
+        """.format(order=qvars['order'], prefix=get_settings_cached()['prefix'])
     return list(common.db.query(query, vars=qvars))
 
 
@@ -353,7 +355,7 @@ def get_tags(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("MasterTags", vars=qvars, where=WHERE)
+    data = common.db.select("Tags", vars=qvars, where=WHERE)
     parent_tags = []
     tags = []
     for row in data:
@@ -365,11 +367,11 @@ def get_tags(address):
 
 
 def get_tag_list():
-    return [row.tag for row in common.db.select("MasterTags", what="DISTINCT tag") if row.tag]
+    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag") if row.tag]
 
 
 def set_tags(address, new_tags):
-    table = 'MasterTags'
+    table = 'Tags'
     what = "ipstart, ipend, tag"
     r = common.determine_range_string(address)
     row = {"ipstart": r[0], "ipend": r[1]}
@@ -390,19 +392,19 @@ def set_tags(address, new_tags):
 
     for tag in additions:
         row['tag'] = tag
-        common.db.insert("MasterTags", **row)
+        common.db.insert("Tags", **row)
 
     for tag in removals:
         row['tag'] = tag
         where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
-        common.db.delete("MasterTags", where=where, vars=row)
+        common.db.delete("Tags", where=where, vars=row)
 
 
 def get_env(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("MasterNodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
+    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
     parent_env = "production"
     env = "inherit"
     nearest_distance = -1
@@ -419,7 +421,7 @@ def get_env(address):
 
 
 def get_env_list():
-    envs = set(row.env for row in common.db.select("MasterNodes", what="DISTINCT env") if row.env)
+    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
     envs.add("production")
     envs.add("inherit")
     envs.add("dev")
@@ -429,7 +431,7 @@ def get_env_list():
 def set_env(address, env):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('MasterNodes', where, env=env)
+    common.db.update('Nodes', where, env=env)
 
 
 def get_node_info(address):
@@ -448,7 +450,7 @@ def get_node_info(address):
             , t.seconds
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
-            FROM MasterNodes
+            FROM Nodes
             WHERE ipstart = $start AND ipend = $end
         ) AS n
         LEFT JOIN (
@@ -456,7 +458,7 @@ def get_node_info(address):
             , COUNT(DISTINCT dst) AS 'unique_out_ip'
             , COUNT(DISTINCT dst, port) AS 'unique_out_conn'
             , SUM(links) AS 'total_out'
-            FROM MasterLinks
+            FROM {prefix}Links
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_out
@@ -467,7 +469,7 @@ def get_node_info(address):
             , COUNT(DISTINCT src, port) AS 'unique_in_conn'
             , SUM(links) AS 'total_in'
             , COUNT(DISTINCT port) AS 'ports_used'
-            FROM MasterLinks
+            FROM {prefix}Links
             WHERE dst BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_in
@@ -475,19 +477,19 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
             , COUNT(ipstart) AS 'endpoints'
-            FROM MasterNodes
+            FROM Nodes
             WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
         ) AS children
             ON n.ipstart = children.s1
         LEFT JOIN (
             SELECT $start AS 's1'
                 , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
-            FROM MasterLinks
+            FROM {prefix}Links
             GROUP BY 's1'
         ) AS t
             ON n.ipstart = t.s1
         LIMIT 1;
-    """
+    """.format(prefix=get_settings_cached()['prefix'])
     qvars = {"start": ipstart, "end": ipend}
     results = common.db.query(query, vars=qvars)
 
@@ -505,7 +507,7 @@ def set_node_info(address, data):
     print("-" * 50)
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('MasterNodes', where, **data)
+    common.db.update('Nodes', where, **data)
 
 
 def get_port_info(port):
@@ -517,13 +519,13 @@ def get_port_info(port):
     else:
         arg = "({0})".format(port)
     query = """
-        SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
-            portAliasLUT.name AS alias_name,
-            portAliasLUT.description AS alias_description
-        FROM portLUT
-        LEFT JOIN portAliasLUT
-            ON portLUT.port=portAliasLUT.port
-        WHERE portLUT.port IN {0}
+        SELECT Ports.port, Ports.active, Ports.name, Ports.description,
+            PortAliases.name AS alias_name,
+            PortAliases.description AS alias_description
+        FROM Ports
+        LEFT JOIN PortAliases
+            ON Ports.port=PortAliases.port
+        WHERE Ports.port IN {0}
     """.format(arg)
     info = list(common.db.query(query))
     return info
@@ -548,8 +550,8 @@ def set_port_info(data):
     if 'active' in data:
         active = 1 if data['active'] == '1' or data['active'] == 1 else 0
 
-    # update portAliasLUT database of names to include the new information
-    exists = common.db.select('portAliasLUT', what="1", where={"port": port})
+    # update PortAliases database of names to include the new information
+    exists = common.db.select('PortAliases', what="1", where={"port": port})
 
     if len(exists) == 1:
         kwargs = {}
@@ -558,17 +560,17 @@ def set_port_info(data):
         if 'alias_description' in data:
             kwargs['description'] = alias_description
         if kwargs:
-            common.db.update('portAliasLUT', {"port": port}, **kwargs)
+            common.db.update('PortAliases', {"port": port}, **kwargs)
     else:
-        common.db.insert('portAliasLUT', port=port, name=alias_name, description=alias_description)
+        common.db.insert('PortAliases', port=port, name=alias_name, description=alias_description)
 
-    # update portLUT database of default values to include the missing information
-    exists = common.db.select('portLUT', what="1", where={"port": port})
+    # update Ports database of default values to include the missing information
+    exists = common.db.select('Ports', what="1", where={"port": port})
     if len(exists) == 1:
         if 'active' in data:
-            common.db.update('portLUT', {"port": port}, active=active)
+            common.db.update('Ports', {"port": port}, active=active)
     else:
-        common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
+        common.db.insert('Ports', port=port, active=active, tcp=1, udp=1, name="", description="")
 
 
 def get_table_info(clauses, page, page_size, order_by, order_dir):
@@ -602,7 +604,7 @@ FROM (
         , nodes.subnet
         , COALESCE((
             SELECT env
-            FROM MasterNodes nz
+            FROM Nodes nz
             WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
             ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
             LIMIT 1
@@ -618,7 +620,7 @@ FROM (
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
-    FROM MasterNodes AS nodes
+    FROM Nodes AS nodes
     {WHERE}
     {HAVING}
     {ORDER}
@@ -626,7 +628,7 @@ FROM (
 ) AS `old`
 LEFT JOIN (
     SELECT GROUP_CONCAT(tag SEPARATOR ', ') AS 'tags', ipstart, ipend
-    FROM MasterTags
+    FROM Tags
     GROUP BY ipstart, ipend
 ) AS t
     ON t.ipstart = old.ipstart AND t.ipend = old.ipend
@@ -644,11 +646,20 @@ GROUP BY old.ipstart, old.subnet, old.alias, old.env, old.conn_out, old.conn_in,
     return info
 
 
+settingsCache = {}
+def get_settings_cached():
+    global settingsCache
+    if not settingsCache:
+        settingsCache = get_settings()
+    settingsCache['prefix'] = "ds_{0}_".format(str(settingsCache['datasource']['id']))
+    return settingsCache
+
+
 def get_settings(all=False):
     settings = {}
-    settings = dict(common.db.select("settings", limit=1)[0])
+    settings = dict(common.db.select("Settings", limit=1)[0])
     if all:
-        sources = map(dict, common.db.select("datasources"))
+        sources = map(dict, common.db.select("Datasources"))
         settings['datasources'] = sources
         target = settings['datasource']
         settings['datasource'] = None
@@ -657,18 +668,28 @@ def get_settings(all=False):
                 settings['datasource'] = sources[ds_index]
     else:
         where = "id={0}".format(settings['datasource'])
-        ds = common.db.select("datasources", where=where, limit=1)
+        ds = common.db.select("Datasources", where=where, limit=1)
         if len(ds) == 1:
             settings['datasource'] = dict(ds[0])
         else:
             settings['datasource'] = None
+
+    # keep the cache up to date
+    global settingsCache
+    settingsCache = settings
+
     return settings
+
 
 def set_settings(**kwargs):
     if "datasource" in kwargs:
         new_ds = kwargs.pop('datasource')
-        common.db.update("settings", "1", datasource=new_ds)
-    common.db.update("settings JOIN datasources ON settings.datasource = datasources.id", "1", **kwargs)
+        common.db.update("Settings", "1", datasource=new_ds)
+    common.db.update("Settings JOIN Datasources ON Settings.datasource = Datasources.id", "1", **kwargs)
+
+    # clear the cache
+    global settingsCache
+    settingsCache = {}
 
 
 def print_dict(d, indent = 0):
