@@ -7,12 +7,12 @@ $def with (settings, datasources, importers)
   <h3 class="ui header">Data Sources</h3>
   <div class="ui datasources grid">
     <div class="four wide column">
-      <div class="ui vertical fluid tabular menu" id="ds_choice">
+      <div class="ui vertical fluid tabular menu"  id="ds_tabs">
         $for ds in datasources:
           <a class="$('active' if ds == settings['datasource'] else '') item" data-tab="ds_$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
       </div>
     </div>
-    <div class="twelve wide stretched column">
+    <div id="ds_tab_contents" class="twelve wide stretched column">
       $for ds in datasources:
         <div class="ui $('active' if ds == settings['datasource'] else '') tab segment" data-tab="ds_$ds['id']">
           <table class="ui fixed definition table">

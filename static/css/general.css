@@ -8,17 +8,17 @@ body {
     margin-bottom: 0em;
 }
 
-#ds_choice .item i.on{
+#ds_tabs .item i.on{
     display: none;
 }
-#ds_choice .item i.off{
+#ds_tabs .item i.off{
     display: inherit;
 }
 
-#ds_choice .active.item i.on{
+#ds_tabs .active.item i.on{
     display: inherit;
 }
-#ds_choice .active.item i.off{
+#ds_tabs .active.item i.off{
     display: none;
 }
 

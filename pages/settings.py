@@ -52,6 +52,7 @@ class Settings:
         delete cn	"rm_conns"		(ds)
         upload lg	"upload"		(ds)
         """
+        response = {"code": 0, "message": "Success"}
         if command not in self.recognized_commands:
             return {"code": 3, "message": "Unrecognized command"}
 
@@ -63,17 +64,20 @@ class Settings:
                 return {"code": 4, "message": "DS not determinable"}
             ds = int(ds_match.group())
 
+
+        # process commands:
+        #rename data source
         if command == "ds_name":
             name = params[1]
             if self.validate_ds_name(name):
                 dbaccess.set_settings(ds=ds, name=name)
             else:
                 return {"code": 4, "message": "Invalid name provided"}
-
+        # toggle auto-refresh on data source
         elif command == "ds_live":
             active = params[1] == "true"
             dbaccess.set_settings(ds=ds, ar_active=active)
-
+        # adjust auto-refresh interval on data source
         elif command == "ds_interval":
             try:
                 interval = int(params[1])
@@ -83,9 +87,24 @@ class Settings:
                 dbaccess.set_settings(ds=ds, ar_interval=interval)
             else:
                 return {"code": 4, "message": "Invalid name provided"}
+        # create new data source
+        elif command == "ds_new":
+            name = params[0]
+            if self.validate_ds_name(name):
+
+                out_id = {'dsid': 0}
+                dbaccess.create_datasource(name, out_id)
+                ds = out_id['dsid']
+                data = dbaccess.get_datasource(ds)
+                if data:
+                    response['new_ds'] = dict(data)
+                else:
+                    return {"code": 5, "message": "Could not read what was written. Serious error. Try refreshing the pag."}
+            else:
+                return {"code": 4, "message": "Invalid name provided"}
 
 
-        return {"code": 0, "message": "Success"}
+        return response
 
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.

@@ -48,7 +48,7 @@ function deleteData(what) {
 
 function getSelectedDS() {
     "use strict";
-    let tabgroup = document.getElementById("ds_choice");
+    let tabgroup = document.getElementById("ds_tabs");
     let tabs = tabgroup.getElementsByTagName("A");
     let i = tabs.length - 1;
     var ds = undefined;
@@ -63,18 +63,54 @@ function getSelectedDS() {
 
 function getDSName(ds) {
     "use strict";
-    let tabgroup = document.getElementById("ds_choice");
+    let tabgroup = document.getElementById("ds_tabs");
     let tabs = tabgroup.getElementsByTagName("A");
     let i = tabs.length - 1;
     var name = "";
     for (; i >= 0; i -= 1) {
         if (tabs[i].dataset['tab'] === ds) {
-            //TODO: if the user renames the ds, will it be reflected here?
             name = tabs[i].innerText;
             break;
         }
     }
     return name;
+}
+
+function setDSTabName(ds, newName) {
+    "use strict";
+    let tabgroup = document.getElementById("ds_tabs");
+    let tabs = tabgroup.getElementsByTagName("A");
+    let i = tabs.length - 1;
+    var icon;
+    for (; i >= 0; i -= 1) {
+        if (tabs[i].dataset['tab'] == ds) {
+            tabs[i].innerHTML = "";
+            icon = document.createElement("I");
+            icon.className = "on square icon";
+            tabs[i].appendChild(icon);
+            icon = document.createElement("I");
+            icon.className = "off square outline icon";
+            tabs[i].appendChild(icon);
+            tabs[i].appendChild(document.createTextNode(newName));
+            break;
+        }
+    }
+    return name;
+}
+
+function getDSId(name) {
+    "use strict";
+    let tabgroup = document.getElementById("ds_tabs");
+    let tabs = tabgroup.getElementsByTagName("A");
+    let i = tabs.length - 1;
+    var id = "";
+    for (; i >= 0; i -= 1) {
+        if (tabs[i].innerText === name) {
+            id = tabs[i].dataset['tab'];
+            break;
+        }
+    }
+    return id;
 }
 
 function deleteDS() {
@@ -92,7 +128,8 @@ function validateDSName(name) {
 }
 
 function validateInterval(interval) {
-    var interval = parseInt(interval)
+    "use strict";
+    interval = parseInt(interval)
     return !isNaN(interval) && interval >= 5 && interval <= 1800
 }
 
@@ -117,15 +154,128 @@ function addDS() {
     "use strict";
     getNewDSName(function(name) {
         console.log("Adding new ds named " + name);
+        POST_ds_new(name)
     }, function() {
         console.log("Not adding anything");
     })
 }
 
+function markupWriteInput(classname, datacontent, placeholder, value) {
+    var input;
+    var icon;
+    var div;
+
+    div = document.createElement("DIV");
+    div.className = "ui transparent left icon input";
+
+    input = document.createElement("INPUT");
+    input.className = classname;
+    input.dataset['content'] = datacontent;
+    input.placeholder = placeholder;
+    input.type = "text";
+    input.value = value;
+
+    icon = document.createElement("I");
+    icon.className = "write icon";
+
+    div.appendChild(input);
+    div.appendChild(icon);
+    return div;
+}
+
+function markupCheckboxInput(classname, checked, labeltext) {
+    var div;
+    var input;
+    var label;
+
+    div = document.createElement("DIV");
+    div.className = "ui toggle checkbox";
+
+    input = document.createElement("INPUT");
+    input.className = classname;
+    input.name = classname;
+    input.type = "checkbox";
+    if (checked) {
+        input.checked = "";
+    }
+
+    label = document.createElement("LABEL");
+    if (typeof(labeltext) == "string" && labeltext.length > 0) {
+        label.appendChild(document.createTextNode(labeltext))
+    } else {
+        label.innerHTML = "&nbsp;";
+    }
+
+    div.appendChild(input);
+    div.appendChild(label);
+    return div;
+}
+
+function markupRow(td1_child, td2_child) {
+    let tr = document.createElement("TR");
+
+    let td1 = document.createElement("TD");
+    td1.className = "right aligned";
+    td1.appendChild(td1_child);
+
+    let td2 = document.createElement("TD");
+    td2.appendChild(td2_child);
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    return tr;
+}
+
+function addDSTab(ds) {
+    //ds.id, ds.name, ds.ar_active, ds.ar_interval
+
+    //add tab
+    let tabholder = document.getElementById("ds_tabs");
+    var a, icon;
+    a = document.createElement("A");
+    a.className = "item";
+    a.dataset["tab"] = "ds_" + ds.id;
+    icon = document.createElement("I");
+    icon.className = "on square icon";
+    a.appendChild(icon);
+    icon = document.createElement("I");
+    icon.className = "off square outline icon";
+    a.appendChild(icon);
+    a.appendChild(document.createTextNode(ds.name));
+    tabholder.appendChild(a);
+
+    //add tab_contents
+    let tabcontents = document.getElementById("ds_tab_contents");
+    var tr, table, tbody, div;
+
+    div = document.createElement("DIV");
+    div.className = "tab segment"
+    div.dataset["tab"] = "ds_" + ds.id;
+
+    table = document.createElement("TABLE");
+    table.className = "ui fixed definition table";
+
+    tbody = document.createElement("TBODY");
+    tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name));
+    tbody.appendChild(tr);
+
+    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active));
+    tbody.appendChild(tr);
+
+    tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval));
+    tbody.appendChild(tr);
+
+    table.appendChild(tbody);
+
+    div.appendChild(table);
+
+    tabcontents.appendChild(div);
+}
+
 function getDSs() {
-    //getDSs() returns DSs as [[id, name], ...] with the index 0 being the selected DS.
     "use strict";
-    let datasource_group = document.getElementById("ds_choice");
+    //getDSs() returns DSs as [[id, name], ...] with the index 0 being the selected DS.
+    let datasource_group = document.getElementById("ds_tabs");
     let datasources = datasource_group.getElementsByTagName("A");
     let i = datasources.length - 1;
     var DSs = [];
@@ -147,6 +297,7 @@ function getDSs() {
 }
 
 function populateUploadDSList(options) {
+    "use strict";
     let log_ds = document.getElementById("log_ds");
     let log_ds_list = document.getElementById("log_ds_list");
     log_ds_list.innerHTML = "";
@@ -170,6 +321,7 @@ function populateUploadDSList(options) {
 }
 
 function validateUpload() {
+    "use strict";
     let log_path = document.getElementById("log_path").value;
     let log_ds = document.getElementById("log_ds").value;
     let log_format = document.getElementById("log_format").value;
@@ -208,18 +360,38 @@ function AjaxError(xhr, textStatus, errorThrown) {
 }
 
 function AjaxSuccess(response) {
+    "use strict";
     console.log("Success:");
     console.log(response)
 }
 
-function POST_AJAX(command) {
-    request = command
+function POST_AJAX(command, successCallback) {
+    "use strict";
+    let request = command
     $.ajax({
         url: "/settings",
         type: "POST",
         data: request,
         error: AjaxError,
-        success: AjaxSuccess
+        success: function(response) {
+            AjaxSuccess(response);
+            if (typeof(successCallback) == "function") {
+                successCallback(response);
+            }
+        }
+    });
+}
+
+function POST_ds_new(name) {
+    "use strict";
+    POST_AJAX({name:"ds_new", param1:name}, function (response) {
+        if (response.code === 0) {
+            //successfully created new data source
+            var ds = response.new_ds;
+            addDSTab(ds);
+            //rebuild tabs
+            $(".tabular.menu .item").tab();
+        }
     });
 }
 
@@ -236,7 +408,14 @@ function POST_ds_namechange(e) {
         e.target.value = newName;
         var ds = getSelectedDS();
         console.log("Changing the name of " + ds + " to " + newName);
-        POST_AJAX({name:"ds_name", param1:ds, param2:newName});
+        POST_AJAX({name:"ds_name", param1:ds, param2:newName}, function(response) {
+            var id = getDSId(e.target.dataset['content']);
+            setDSTabName(id, newName);
+            if (response.code === 0) {
+                e.target.dataset['content'] = newName
+            }
+
+        });
     }
 }
 

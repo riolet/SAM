@@ -40,11 +40,13 @@ def create_ds_tables(id):
     return 0
 
 
-def create_datasource(name):
+def create_datasource(name, outID=None):
     if not validate_ds_name(name):
         return -1
     id = common.db.insert("Datasources", name=name)
     r = create_ds_tables(id)
+    if type(outID) == dict and 'dsid' in outID:
+        outID['dsid'] = id
     return r
 
 
@@ -680,6 +682,13 @@ def get_settings(all=False):
     settingsCache = settings
 
     return settings
+
+
+def get_datasource(id):
+    rows = common.db.select("Datasources", where="id={0}".format(int(id)), limit=1)
+    if len(rows) == 1:
+        return rows[0]
+    return None
 
 
 def set_settings(**kwargs):
