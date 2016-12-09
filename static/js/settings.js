@@ -118,6 +118,7 @@ function deleteDS() {
     let targetDS = getSelectedDS();
     getConfirmation(catDeleteMessage("datasource", targetDS), function () {
         console.log("Deleting " + targetDS + ".");
+        POST_ds_delete(targetDS)
     });
 }
 
@@ -160,7 +161,8 @@ function addDS() {
     })
 }
 
-function markupWriteInput(classname, datacontent, placeholder, value) {
+function markupWriteInput(classname, datacontent, placeholder, default_value, changeCallback) {
+    "use strict";
     var input;
     var icon;
     var div;
@@ -173,7 +175,8 @@ function markupWriteInput(classname, datacontent, placeholder, value) {
     input.dataset['content'] = datacontent;
     input.placeholder = placeholder;
     input.type = "text";
-    input.value = value;
+    input.value = default_value;
+    input.onchange = changeCallback;
 
     icon = document.createElement("I");
     icon.className = "write icon";
@@ -183,7 +186,7 @@ function markupWriteInput(classname, datacontent, placeholder, value) {
     return div;
 }
 
-function markupCheckboxInput(classname, checked, labeltext) {
+function markupCheckboxInput(classname, checked, labeltext, changeCallback) {
     var div;
     var input;
     var label;
@@ -195,9 +198,9 @@ function markupCheckboxInput(classname, checked, labeltext) {
     input.className = classname;
     input.name = classname;
     input.type = "checkbox";
-    if (checked) {
-        input.checked = "";
-    }
+    console.log("Checked is " + checked + " and of type " + typeof(checked));
+    input.checked = (checked === 1);
+    input.onchange = changeCallback
 
     label = document.createElement("LABEL");
     if (typeof(labeltext) == "string" && labeltext.length > 0) {
@@ -249,20 +252,20 @@ function addDSTab(ds) {
     var tr, table, tbody, div;
 
     div = document.createElement("DIV");
-    div.className = "tab segment"
+    div.className = "ui tab segment"
     div.dataset["tab"] = "ds_" + ds.id;
 
     table = document.createElement("TABLE");
     table.className = "ui fixed definition table";
 
     tbody = document.createElement("TBODY");
-    tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name));
+    tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active));
+    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, POST_ds_livechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval));
+    tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
     tbody.appendChild(tr);
 
     table.appendChild(tbody);
@@ -270,6 +273,26 @@ function addDSTab(ds) {
     div.appendChild(table);
 
     tabcontents.appendChild(div);
+}
+
+function rebuild_tabs(settings) {
+    "use strict";
+    //erase what's there.
+    let tabholder = document.getElementById("ds_tabs");
+    let tabcontents = document.getElementById("ds_tab_contents");
+    tabholder.innerHTML = "";
+    tabcontents.innerHTML = "";
+
+    //for each ds,
+    //   add the ds
+    settings.datasources.forEach(addDSTab);
+
+    //build tabs
+    $(".tabular.menu .item").tab();
+
+    //select active one
+    var active_ds = settings.datasource.id;
+    $(".tabular.menu .item").tab("change tab", "ds_" + active_ds);
 }
 
 function getDSs() {
@@ -387,10 +410,17 @@ function POST_ds_new(name) {
     POST_AJAX({name:"ds_new", param1:name}, function (response) {
         if (response.code === 0) {
             //successfully created new data source
-            var ds = response.new_ds;
-            addDSTab(ds);
-            //rebuild tabs
-            $(".tabular.menu .item").tab();
+            rebuild_tabs(response.settings);
+        }
+    });
+}
+
+function POST_ds_delete(id) {
+    "use strict";
+    POST_AJAX({name:"ds_rm", param1:id}, function (response) {
+        if (response.code === 0) {
+            //successfully deleted new data source
+            rebuild_tabs(response.settings);
         }
     });
 }

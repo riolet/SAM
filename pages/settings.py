@@ -91,18 +91,16 @@ class Settings:
         elif command == "ds_new":
             name = params[0]
             if self.validate_ds_name(name):
-
-                out_id = {'dsid': 0}
-                dbaccess.create_datasource(name, out_id)
-                ds = out_id['dsid']
-                data = dbaccess.get_datasource(ds)
-                if data:
-                    response['new_ds'] = dict(data)
-                else:
-                    return {"code": 5, "message": "Could not read what was written. Serious error. Try refreshing the pag."}
+                dbaccess.create_datasource(name)
+                data = dbaccess.get_settings(all=True)
+                response['settings'] = dict(data)
             else:
                 return {"code": 4, "message": "Invalid name provided"}
-
+        # remove a data source
+        elif command == "ds_rm":
+            dbaccess.remove_datasource(ds)
+            data = dbaccess.get_settings(all=True)
+            response['settings'] = dict(data)
 
         return response
 

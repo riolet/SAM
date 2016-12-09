@@ -40,14 +40,38 @@ def create_ds_tables(id):
     return 0
 
 
-def create_datasource(name, outID=None):
+def create_datasource(name):
     if not validate_ds_name(name):
         return -1
     id = common.db.insert("Datasources", name=name)
     r = create_ds_tables(id)
-    if type(outID) == dict and 'dsid' in outID:
-        outID['dsid'] = id
     return r
+
+
+def remove_datasource(id):
+    # check id is valid
+    rows = list(common.db.select("Datasources", where={'id': int(id)}))
+    print("|==>--")
+    print("before")
+    print(rows)
+    if len(rows) != 1:
+        print("Removal stopped: data source to remove not found")
+        return
+
+    print("after")
+
+    # select other data source in Settings
+    alternativeDS = common.db.select("Datasources", where="id != {0}".format(int(id)), limit=1)
+    if len(alternativeDS) != 1:
+        print("Removal stopped: No alternative data source available")
+        return
+    alt_id = alternativeDS[0].id
+    common.db.update("Settings", "1=1", datasource=alt_id)
+    # remove from Datasources
+    common.db.delete("Datasources", "id = {0}".format(int(id)))
+    # Drop relevant tables
+    replacements = {"id": int(id)}
+    exec_sql(os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
 
 
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
