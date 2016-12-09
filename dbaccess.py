@@ -720,11 +720,13 @@ def set_settings(**kwargs):
         new_ds = kwargs.pop('datasource')
         common.db.update("Settings", "1", datasource=new_ds)
 
+    ds = 0
     if "ds" in kwargs:
         ds = kwargs.pop('ds')
 
+    if ds and kwargs:
         common.db.update("Datasources", ds, **kwargs)
-    else:
+    elif kwargs:
         common.db.update("Settings JOIN Datasources ON Settings.datasource = Datasources.id", "1", **kwargs)
 
     # clear the cache

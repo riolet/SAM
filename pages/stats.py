@@ -3,6 +3,7 @@ import dbaccess
 import json
 import web
 import time
+from datetime import datetime
 
 
 class Stats:
@@ -17,6 +18,8 @@ class Stats:
         rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
                                "FROM {prefix}Links;".format(prefix=self.prefix))
         row = rows[0]
+        if row['min'] == None or row['max'] == None:
+            return {'min': time.mktime(datetime.now().timetuple()), 'max': time.mktime(datetime.now().timetuple())}
         return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
     def collect_stats(self):

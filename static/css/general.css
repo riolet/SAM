@@ -21,6 +21,13 @@ body {
 #ds_tabs .active.item i.off{
     display: none;
 }
+#ds_tabs .active.item i.off{
+    display: none;
+}
+#ds_tabs .active.item::after{
+    content: " (Mapped)";
+    display: inline;
+}
 
 .datasources .four.wide.column {
     padding-right: 0em;

@@ -16,7 +16,7 @@ def niceName(s):
 class Settings:
     pageTitle = "Settings"
     def __init__(self):
-        self.recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new", "ds_rm", "rm_hosts" ,"rm_tags", "rm_envs", "rm_conns", "upload"]
+        self.recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new", "ds_rm", "ds_select", "rm_hosts" ,"rm_tags", "rm_envs", "rm_conns", "upload"]
         self.two_param_cmds = ['ds_name', 'ds_live', 'ds_interval']
 
     def read_settings(self):
@@ -46,11 +46,14 @@ class Settings:
         ar interv	"ds_interval"	(ds, interval)
         new datas	"ds_new"		(name)
         remove ds	"ds_rm"			(ds)
+        select ds   "ds_select"     (ds)
         delete ho	"rm_hosts"		(ds)
         delete ta	"rm_tags"		(ds)
         delete en	"rm_envs"		(ds)
         delete cn	"rm_conns"		(ds)
         upload lg	"upload"		(ds)
+
+        see also: self.recognized_commands
         """
         response = {"code": 0, "message": "Success"}
         if command not in self.recognized_commands:
@@ -76,7 +79,11 @@ class Settings:
         # toggle auto-refresh on data source
         elif command == "ds_live":
             active = params[1] == "true"
-            dbaccess.set_settings(ds=ds, ar_active=active)
+            if active:
+                db_val = 1
+            else:
+                db_val = 0
+            dbaccess.set_settings(ds=ds, ar_active=db_val)
         # adjust auto-refresh interval on data source
         elif command == "ds_interval":
             try:
@@ -101,7 +108,9 @@ class Settings:
             dbaccess.remove_datasource(ds)
             data = dbaccess.get_settings(all=True)
             response['settings'] = dict(data)
-
+        # select a data source
+        elif command == "ds_select":
+            dbaccess.set_settings(datasource=ds)
         return response
 
 

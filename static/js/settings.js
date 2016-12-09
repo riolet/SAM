@@ -19,7 +19,7 @@ function catDeleteMessage(what, extra) {
     } else if (what === "connections") {
         msg += "connection information? (For the selected data source)"
     } else if (what === "datasource") {
-        msg += "the datasource '" + getDSName(extra) + "'?"
+        msg += "'" + getDSName(extra) + "'?"
     }
     return msg
 }
@@ -384,8 +384,8 @@ function AjaxError(xhr, textStatus, errorThrown) {
 
 function AjaxSuccess(response) {
     "use strict";
-    console.log("Success:");
-    console.log(response)
+    console.log("Server response:");
+    console.log("\tCode " + response.code + ": " + response.message);
 }
 
 function POST_AJAX(command, successCallback) {
@@ -474,6 +474,10 @@ function POST_ds_intervalchange(e) {
     }
 }
 
+function POST_ds_selection(ds) {
+    POST_AJAX({name:"ds_select", param1:ds});
+}
+
 function foreach(entities, callback) {
     "use strict";
     if (typeof(callback) !== "function") {
@@ -490,7 +494,9 @@ function init() {
     "use strict";
 
     //initialize datasource tabs
-    $(".tabular.menu .item").tab();
+    $(".tabular.menu .item").tab({
+        onVisible: POST_ds_selection
+    });
 
     $(".ui.selection.dropdown").dropdown({
         action: "activate"
