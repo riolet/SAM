@@ -715,6 +715,23 @@ def get_datasource(id):
     return None
 
 
+def delete_custom_tags():
+    common.db.delete("Tags", "1")
+
+def delete_custom_envs():
+    common.db.update("Nodes", "1", env=common.web.sqlliteral("NULL"))
+
+def delete_custom_hostnames():
+    common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
+
+def delete_connections(ds):
+    if len(common.db.select("Datasources", where={'id': ds})) == 1:
+        prefix = "ds_{0}_".format(ds)
+        common.db.delete("{0}Links".format(prefix), "1")
+        common.db.delete("{0}LinksIn".format(prefix), "1")
+        common.db.delete("{0}LinksOut".format(prefix), "1")
+
+
 def set_settings(**kwargs):
     if "datasource" in kwargs:
         new_ds = kwargs.pop('datasource')

@@ -47,9 +47,9 @@ class Settings:
         new datas	"ds_new"		(name)
         remove ds	"ds_rm"			(ds)
         select ds   "ds_select"     (ds)
-        delete ho	"rm_hosts"		(ds)
-        delete ta	"rm_tags"		(ds)
-        delete en	"rm_envs"		(ds)
+        delete hn	"rm_hosts"		()
+        delete tg	"rm_tags"		()
+        delete ev	"rm_envs"		()
         delete cn	"rm_conns"		(ds)
         upload lg	"upload"		(ds)
 
@@ -59,8 +59,9 @@ class Settings:
         if command not in self.recognized_commands:
             return {"code": 3, "message": "Unrecognized command"}
 
+        # translate ds argument
         ds = 0
-        if command != "ds_new":
+        if command not in ["ds_new", 'rm_hosts', 'rm_tags', 'rm_envs']:
             ds_s = params[0]
             ds_match = re.search("(\d+)", ds_s)
             if not ds_match:
@@ -110,9 +111,23 @@ class Settings:
             response['settings'] = dict(data)
         # select a data source
         elif command == "ds_select":
-            dbaccess.set_settings(datasource=ds)
+            try:
+                dbaccess.set_settings(datasource=ds)
+            except:
+                return {"code": 4, "message": "Invalid data source"}
+        # remove custom tags
+        elif command == "rm_tags":
+            dbaccess.delete_custom_tags()
+        # remove custom environments
+        elif command == "rm_envs":
+            dbaccess.delete_custom_envs()
+        # remove custom host names
+        elif command == "rm_hosts":
+            dbaccess.delete_custom_hostnames()
+        # remove all links/connections
+        elif command == "rm_conns":
+            dbaccess.delete_connections(ds)
         return response
-
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
@@ -132,15 +147,10 @@ class Settings:
         get_data = web.input()
         command = get_data.get('name', '')
         if command:
-            params = []
-            params.append(get_data.get('param1', None))
-            if command in self.two_param_cmds:
-                params.append(get_data.get('param2', None))
-            if all(params):
-                result = self.run_command(command, params)
-                return json.dumps(result)
-            else:
-                return json.dumps({"code": 2, "message": "Missing params for '{0}' command".format(command)})
+            paramKeys = filter(lambda x: x.startswith("param"), get_data.keys())
+            params = map(get_data.get, paramKeys)
+            result = self.run_command(command, params)
+            return json.dumps(result)
         else:
             return json.dumps({"code": 1, "message": "Command name missing"})
 

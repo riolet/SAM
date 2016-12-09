@@ -42,7 +42,16 @@ function deleteData(what) {
     let target = disambiguateDeletion(what)
     let deleteMessage = catDeleteMessage(target)
     getConfirmation(deleteMessage, function () {
-        console.log("Deleting the " + target + ".");
+        //target is one of 'tags', 'envs', 'aliases', 'connections'
+        if (target === "tags") {
+            POST_del_tags()
+        } else if (target === "envs") {
+            POST_del_envs()
+        } else if (target === "aliases") {
+            POST_del_aliases()
+        } else if (target === "connections") {
+            POST_del_connections()
+        }
     });
 }
 
@@ -475,7 +484,29 @@ function POST_ds_intervalchange(e) {
 }
 
 function POST_ds_selection(ds) {
+    "use strict";
     POST_AJAX({name:"ds_select", param1:ds});
+}
+
+function POST_del_tags() {
+    "use strict";
+    POST_AJAX({name:"rm_tags"});
+}
+
+function POST_del_envs() {
+    "use strict";
+    POST_AJAX({name:"rm_envs"});
+}
+
+function POST_del_aliases() {
+    "use strict";
+    POST_AJAX({name:"rm_hosts"});
+}
+
+function POST_del_connections() {
+    "use strict";
+    let ds = getSelectedDS();
+    POST_AJAX({name:"rm_conns", param1:ds});
 }
 
 function foreach(entities, callback) {
