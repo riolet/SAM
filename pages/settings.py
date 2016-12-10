@@ -15,9 +15,9 @@ def niceName(s):
 
 class Settings:
     pageTitle = "Settings"
+
     def __init__(self):
-        self.recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new", "ds_rm", "ds_select", "rm_hosts" ,"rm_tags", "rm_envs", "rm_conns", "upload"]
-        self.two_param_cmds = ['ds_name', 'ds_live', 'ds_interval']
+        self.recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new", "ds_rm", "ds_select", "rm_hosts" ,"rm_tags", "rm_envs", "rm_conns", "upload", "live_dest"]
 
     def read_settings(self):
         settings = dbaccess.get_settings(all=True)
@@ -52,6 +52,7 @@ class Settings:
         delete ev	"rm_envs"		()
         delete cn	"rm_conns"		(ds)
         upload lg	"upload"		(ds)
+        live dest   "livedest"      (ds)
 
         see also: self.recognized_commands
         """
@@ -127,6 +128,12 @@ class Settings:
         # remove all links/connections
         elif command == "rm_conns":
             dbaccess.delete_connections(ds)
+        # update live data destination
+        elif command == "live_dest":
+            try:
+                dbaccess.set_settings(live_dest=ds)
+            except:
+                return {"code": 4, "message": "Invalid data source"}
         return response
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.

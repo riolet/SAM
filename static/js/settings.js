@@ -385,6 +385,11 @@ function uploadLog() {
     .modal("show");
 }
 
+function updateLiveDest(e) {
+    var newDest = e.target.value;
+    POST_set_livedest(newDest);
+}
+
 function AjaxError(xhr, textStatus, errorThrown) {
     "use strict";
     console.error("AJAX Failed: " + errorThrown);
@@ -509,6 +514,11 @@ function POST_del_connections() {
     POST_AJAX({name:"rm_conns", param1:ds});
 }
 
+function POST_set_livedest(ds) {
+    "use strict";
+    POST_AJAX({name:"live_dest", param1:ds});
+}
+
 function foreach(entities, callback) {
     "use strict";
     if (typeof(callback) !== "function") {
@@ -541,6 +551,7 @@ function init() {
     document.getElementById("rm_ds").onclick = deleteDS;
     document.getElementById("add_ds").onclick = addDS;
     document.getElementById("upload_log").onclick = uploadLog;
+    document.getElementById("live_dest").onchange = updateLiveDest;
     foreach(document.getElementsByClassName("ds_name"), function(entity) {
         entity.onchange = POST_ds_namechange
     });

@@ -64,7 +64,7 @@ $def with (settings, datasources, importers)
 
   <span class="text">Push live data to: </span>
   <div class="ui selection dropdown">
-    <input name="live_dest" type="hidden" value="ds_$settings['live_dest']">
+    <input id="live_dest" name="live_dest" type="hidden" value="ds_$settings['live_dest']">
     <i class="dropdown icon"></i>
     <div class="default text">data source</div>
     <div class="menu">
@@ -73,21 +73,23 @@ $def with (settings, datasources, importers)
         <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
     </div>
   </div>
+  <!--
   <div class="field">
     <span class="text">** Some way to delete data that is older than X minutes. </span>
     <span class="text">Maybe note the time range represented within the data source? </span>
     <span class="text">Should this be part of the delete menu? (answer: yes)</span>
   </div>
+  -->
   <!-- Colors -->
   <!-- <h3 class="ui header">Colors</h3> -->
 
 
-  <!-- Changes -->
+  <!-- Changes
   <h3 class="ui header">Changes</h3>
   <div class="ui buttons">
     <button class="ui blue button">Save</button>
     <button class="ui button">Discard</button>
-  </div>
+  </div><!---->
 </div>
 
 <!-- Confirm Delete modal -->
@@ -161,7 +163,7 @@ $def with (settings, datasources, importers)
     </div>
     <div class="ui inverted transparent form">
       <div class="field">
-        <label>File path stuff</label>
+        <label>Choose a file to upload</label>
         <input id="log_path" type="file" placeholder="<log file>">
       </div>
       <div class="field">
@@ -197,7 +199,7 @@ $def with (settings, datasources, importers)
         <i class="remove icon"></i>
         Cancel
       </div>
-      <div class="ui ok green inverted button">
+      <div class="ui disabled ok green inverted button">
         <i class="checkmark icon"></i>
         Confirm
       </div>
