@@ -138,6 +138,10 @@ class Settings:
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
+        if "headless" in web.input():
+            web.header("Content-Type", "application/json")
+            return json.dumps(dbaccess.get_settings_cached())
+
         settings = self.read_settings()
         datasources = settings.pop('datasources')
         importers = self.get_available_importers()
