@@ -1,4 +1,4 @@
-CREATE TABLE If NOT EXISTS ds_{id}_Syslog
+CREATE TABLE If NOT EXISTS ds_{id}_SyslogA
 (entry             INT UNSIGNED NOT NULL AUTO_INCREMENT
 ,SourceIP          INT UNSIGNED NOT NULL
 ,SourcePort        INT NOT NULL
@@ -6,7 +6,18 @@ CREATE TABLE If NOT EXISTS ds_{id}_Syslog
 ,DestinationPort   INT NOT NULL
 ,Timestamp         TIMESTAMP NOT NULL
 ,Occurances        INT DEFAULT 1 NOT NULL
-,CONSTRAINT PK{id}Syslog PRIMARY KEY (entry)
+,CONSTRAINT PK{id}SyslogA PRIMARY KEY (entry)
+);
+
+CREATE TABLE If NOT EXISTS ds_{id}_SyslogB
+(entry             INT UNSIGNED NOT NULL AUTO_INCREMENT
+,SourceIP          INT UNSIGNED NOT NULL
+,SourcePort        INT NOT NULL
+,DestinationIP     INT UNSIGNED NOT NULL
+,DestinationPort   INT NOT NULL
+,Timestamp         TIMESTAMP NOT NULL
+,Occurances        INT DEFAULT 1 NOT NULL
+,CONSTRAINT PK{id}SyslogB PRIMARY KEY (entry)
 );
 
 -- -----------------------

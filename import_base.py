@@ -19,6 +19,7 @@ Usage:
 
 """.format(sys.argv[0])
         self.datasource = 0
+        self.buffer = 'A' # 'A' or 'B'
 
     def main(self, argv):
         if not (1 < len(argv) < 4):
@@ -122,7 +123,7 @@ Usage:
         Returns:
             None
         """
-        table_name = "ds_{ds}_Syslog".format(ds=self.datasource)
+        table_name = "ds_{ds}_Syslog{buffer}".format(ds=self.datasource, buffer=self.buffer)
         try:
             truncated_rows = rows[:count]
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]

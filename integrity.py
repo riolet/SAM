@@ -7,7 +7,7 @@ import re
 from MySQLdb import OperationalError
 
 shared_tables = ["Nodes", "Tags", "Datasources", "Ports", "PortAliases", "Settings"]
-tables_per_ds = ["staging_Links", "staging_LinksIn", "staging_LinksOut", "Links", "LinksIn", "LinksOut", "Syslog"]
+tables_per_ds = ["staging_Links", "staging_LinksIn", "staging_LinksOut", "Links", "LinksIn", "LinksOut", "SyslogA", "SyslogB"]
 default_datasource_name = "default"
 db = common.db_quiet
 
@@ -36,7 +36,7 @@ def check_and_fix_db_access():
     connection = web.database(**params)
     try:
         connection.query("USE {0}".format(db))
-        print("\tDatabase access error:")
+        print("\tDatabase access confirmed")
     except OperationalError as e:
         errorCode = e[0]
         if e[0] == 1049:

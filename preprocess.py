@@ -1,5 +1,5 @@
 """
-Preprocess the data in the database's upload table Syslog
+Preprocess the data in the database's upload table Syslog{suffix}
 """
 
 import common
@@ -9,7 +9,7 @@ import integrity
 # DB connection to use. `common.db` echos every statement to stderr, `common.db_quiet` does not.
 db = common.db_quiet
 
-def import_nodes():
+def import_nodes(suffix):
     prefix = dbaccess.get_settings_cached()['prefix']
 
     # Get all /8 nodes. Load them into Nodes8
@@ -23,12 +23,12 @@ def import_nodes():
             , 20736 AS 'radius'
         FROM(
             SELECT SourceIP DIV 16777216 AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
             UNION
             SELECT DestinationIP DIV 16777216 AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
         ) AS log;
-    """.format(prefix=prefix)
+    """.format(prefix=prefix, suffix=suffix)
     qvars = {"radius": 331776}
     db.query(query, vars=qvars)
 
@@ -43,14 +43,14 @@ def import_nodes():
             , (parent.radius / 24) AS 'radius'
         FROM(
             SELECT SourceIP DIV 65536 AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
             UNION
             SELECT DestinationIP DIV 65536 AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
             ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216);
-        """.format(prefix=prefix)
+        """.format(prefix=prefix, suffix=suffix)
     db.query(query)
 
     # Get all the /24 nodes. Load these into Nodes24
@@ -64,14 +64,14 @@ def import_nodes():
             , (parent.radius / 24) AS 'radius'
         FROM(
             SELECT SourceIP DIV 256 AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
             UNION
             SELECT DestinationIP DIV 256 AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
             ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536);
-        """.format(prefix=prefix)
+        """.format(prefix=prefix, suffix=suffix)
     db.query(query)
 
     # Get all the /32 nodes. Load these into Nodes32
@@ -85,19 +85,19 @@ def import_nodes():
             , (parent.radius / 24) AS 'radius'
         FROM(
             SELECT SourceIP AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
             UNION
             SELECT DestinationIP AS 'ip'
-            FROM {prefix}Syslog
+            FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
             ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256);
-        """.format(prefix=prefix)
+        """.format(prefix=prefix, suffix=suffix)
     db.query(query)
 
 
-def import_links():
-    build_Links()
+def import_links(suffix):
+    build_Links(suffix)
 
     # Populate Links8
     deduce_LinksIn()
@@ -106,16 +106,16 @@ def import_links():
     deduce_LinksOut()
 
 
-def build_Links():
+def build_Links(suffix):
     prefix = dbaccess.get_settings_cached()['prefix']
     query = """
         INSERT INTO {prefix}staging_Links (src, dst, port, timestamp, links)
         SELECT SourceIP, DestinationIP, DestinationPort
             , SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) MOD 5), Timestamp), 1, 16) AS ts
             , COUNT(1) AS links
-        FROM {prefix}Syslog
+        FROM {prefix}Syslog{suffix}
         GROUP BY SourceIP, DestinationIP, DestinationPort, ts;
-    """.format(prefix=prefix)
+    """.format(prefix=prefix, suffix=suffix)
     db.query(query)
 
 
@@ -396,16 +396,16 @@ def copy_to_master():
 
 
 # method to delete all data from staging tables
-def delete_staging_data():
+def delete_staging_data(suffix):
     prefix = dbaccess.get_settings_cached()['prefix']
-    dbaccess.exec_sql("./sql/delete_staging_data.sql", {'prefix': prefix})
+    dbaccess.exec_sql("./sql/delete_staging_data.sql", {'prefix': prefix, 'suffix': suffix})
 
 
-def preprocess_log():
-    import_nodes() # import all nodes into the shared Nodes table
-    import_links() # import all link info into staging tables
+def preprocess_log(suffix='A'):
+    import_nodes(suffix) # import all nodes into the shared Nodes table
+    import_links(suffix) # import all link info into staging tables
     copy_to_master() # copy data from staging to master tables
-    delete_staging_data() # delete all data from staging tables
+    delete_staging_data(suffix) # delete all data from staging tables
 
     print("Pre-processing completed successfully.")
 

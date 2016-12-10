@@ -74,6 +74,11 @@ def remove_datasource(id):
     exec_sql(os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
 
 
+def get_syslog_size():
+    return common.db.select("{0}Syslog".format(get_settings_cached()['prefix'])
+                            , what="COUNT(1) AS 'rows'")[0].rows
+
+
 def get_nodes(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     r = common.determine_range(ip8, ip16, ip24, ip32)
     if ip8 < 0 or ip8 > 255:
