@@ -380,8 +380,8 @@ def test_set_port_info():
         raise e
     finally:
         # clear data for test_port
-        common.db.update("portLUT", where="port={0}".format(test_port), active=1)
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.update("Ports", where="port={0}".format(test_port), active=1)
+        common.db.delete("PortAliases", where="port={0}".format(test_port))
 
     test_port = 4
     try:
@@ -403,5 +403,5 @@ def test_set_port_info():
         raise e
     finally:
         # clear data for test_port
-        common.db.delete("portLUT", where="port={0}".format(test_port))
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.delete("Ports", where="port={0}".format(test_port))
+        common.db.delete("PortAliases", where="port={0}".format(test_port))
