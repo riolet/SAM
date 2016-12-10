@@ -52,7 +52,7 @@ class Settings:
         delete ev	"rm_envs"		()
         delete cn	"rm_conns"		(ds)
         upload lg	"upload"		(ds)
-        live dest   "livedest"      (ds)
+        live dest   "live_dest"     (ds)
 
         see also: self.recognized_commands
         """
@@ -62,7 +62,7 @@ class Settings:
 
         # translate ds argument
         ds = 0
-        if command not in ["ds_new", 'rm_hosts', 'rm_tags', 'rm_envs']:
+        if command not in ["ds_new", 'rm_hosts', 'rm_tags', 'rm_envs', 'live_dest']:
             ds_s = params[0]
             ds_match = re.search("(\d+)", ds_s)
             if not ds_match:
@@ -130,6 +130,11 @@ class Settings:
             dbaccess.delete_connections(ds)
         # update live data destination
         elif command == "live_dest":
+            ds_match = re.search("(\d+)", params[0])
+            if ds_match:
+                ds = int(ds_match.group())
+            else:
+                ds = common.web.SQLLiteral("NULL")
             try:
                 dbaccess.set_settings(live_dest=ds)
             except:
