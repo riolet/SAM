@@ -5,9 +5,28 @@ Preprocess the data in the database's upload table Syslog{suffix}
 import common
 import dbaccess
 import integrity
+import sys
 
 # DB connection to use. `common.db` echos every statement to stderr, `common.db_quiet` does not.
 db = common.db_quiet
+
+
+def determine_datasource(argv):
+    settings = dbaccess.get_settings(all=True)
+    default_ds = settings['datasource']['id']
+    custom_ds = 0
+    if len(argv) >= 2:
+        requested_ds = argv[1]
+        for ds in settings['datasources']:
+            if ds['name'] == requested_ds:
+                custom_ds = ds['id']
+                break
+
+    if custom_ds > 0:
+        return custom_ds
+    else:
+        return default_ds
+
 
 def import_nodes(suffix):
     prefix = dbaccess.get_settings_cached()['prefix']
@@ -96,18 +115,17 @@ def import_nodes(suffix):
     db.query(query)
 
 
-def import_links(suffix):
-    build_Links(suffix)
+def import_links(prefix, suffix):
+    build_Links(prefix, suffix)
 
     # Populate Links8
-    deduce_LinksIn()
+    deduce_LinksIn(prefix)
 
     # Populate Links16
-    deduce_LinksOut()
+    deduce_LinksOut(prefix)
 
 
-def build_Links(suffix):
-    prefix = dbaccess.get_settings_cached()['prefix']
+def build_Links(prefix, suffix):
     query = """
         INSERT INTO {prefix}staging_Links (src, dst, port, timestamp, links)
         SELECT SourceIP, DestinationIP, DestinationPort
@@ -119,8 +137,7 @@ def build_Links(suffix):
     db.query(query)
 
 
-def deduce_LinksIn():
-    prefix = dbaccess.get_settings_cached()['prefix']
+def deduce_LinksIn(prefix):
     # /8 links
     query = """
         INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
@@ -254,8 +271,7 @@ def deduce_LinksIn():
     db.query(query)
 
 
-def deduce_LinksOut():
-    prefix = dbaccess.get_settings_cached()['prefix']
+def deduce_LinksOut(prefix):
     # /8 links
     query = """
         INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
@@ -390,22 +406,21 @@ def deduce_LinksOut():
 
 
 # method to copy all data from staging tables to master tables
-def copy_to_master():
-    prefix = dbaccess.get_settings_cached()['prefix']
+def copy_to_master(prefix):
     dbaccess.exec_sql("./sql/copy_to_master_tables.sql", {'prefix': prefix})
 
 
 # method to delete all data from staging tables
-def delete_staging_data(suffix):
-    prefix = dbaccess.get_settings_cached()['prefix']
+def delete_staging_data(prefix, suffix):
     dbaccess.exec_sql("./sql/delete_staging_data.sql", {'prefix': prefix, 'suffix': suffix})
 
 
-def preprocess_log(suffix='A'):
+def preprocess_log(suffix='A', ds=None):
+    prefix = "ds_{0}_".format(ds)
     import_nodes(suffix) # import all nodes into the shared Nodes table
-    import_links(suffix) # import all link info into staging tables
-    copy_to_master() # copy data from staging to master tables
-    delete_staging_data(suffix) # delete all data from staging tables
+    import_links(prefix, suffix) # import all link info into staging tables
+    copy_to_master(prefix) # copy data from staging to master tables
+    delete_staging_data(prefix, suffix) # delete all data from staging tables
 
     print("Pre-processing completed successfully.")
 
@@ -414,7 +429,8 @@ def preprocess_log(suffix='A'):
 if __name__ == "__main__":
     test = integrity.check_and_fix_db_access()
     if test == 0:
-        preprocess_log()
+        ds = determine_datasource(sys.argv)
+        preprocess_log(ds=ds)
     else:
         print("Preprocess aborted. Database check failed.")
 
