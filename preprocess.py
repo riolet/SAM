@@ -416,13 +416,19 @@ def delete_staging_data(prefix, suffix):
 
 
 def preprocess_log(suffix='A', ds=None):
-    prefix = "ds_{0}_".format(ds)
-    import_nodes(suffix) # import all nodes into the shared Nodes table
-    import_links(prefix, suffix) # import all link info into staging tables
-    copy_to_master(prefix) # copy data from staging to master tables
-    delete_staging_data(prefix, suffix) # delete all data from staging tables
-
-    print("Pre-processing completed successfully.")
+    t = db.transaction()
+    try:
+        prefix = "ds_{0}_".format(ds)
+        import_nodes(suffix) # import all nodes into the shared Nodes table
+        import_links(prefix, suffix) # import all link info into staging tables
+        copy_to_master(prefix) # copy data from staging to master tables
+        delete_staging_data(prefix, suffix) # delete all data from staging tables
+    except:
+        t.rollback()
+        raise
+    else:
+        t.commit()
+        print("Pre-processing completed successfully.")
 
 
 # If running as a script
