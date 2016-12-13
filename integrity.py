@@ -91,7 +91,7 @@ def fix_shared_tables(missing_tables):
         print("\tNo tables to fix")
     else:
         print("\tRestoring missing tables: {0}".format(repr(missing_tables)))
-        dbaccess.exec_sql(os.path.join(common.base_path, 'sql/setup_shared_tables.sql'))
+        dbaccess.exec_sql(db, os.path.join(common.base_path, 'sql/setup_shared_tables.sql'))
         if "Ports" in missing_tables:
             print("\tPopulating port reference table with latest data")
             fill_port_table()

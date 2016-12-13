@@ -21,13 +21,13 @@ def parse_sql_file(path, replacements=None):
     return commands
 
 
-def exec_sql(path, replacements=None):
+def exec_sql(connection, path, replacements=None):
     if not replacements:
         commands = parse_sql_file(path, {})
     else:
         commands = parse_sql_file(path, replacements)
     for command in commands:
-        common.db.query(command)
+        connection.query(command)
 
 
 def validate_ds_name(name):
@@ -36,7 +36,7 @@ def validate_ds_name(name):
 
 def create_ds_tables(id):
     replacements = {"id": id}
-    exec_sql(os.path.join(common.base_path, 'sql/setup_datasource.sql'), replacements)
+    exec_sql(common.db, os.path.join(common.base_path, 'sql/setup_datasource.sql'), replacements)
     return 0
 
 
@@ -71,7 +71,7 @@ def remove_datasource(id):
     common.db.delete("Datasources", "id = {0}".format(int(id)))
     # Drop relevant tables
     replacements = {"id": int(id)}
-    exec_sql(os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
+    exec_sql(common.db, os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
 
 
 def get_syslog_size():

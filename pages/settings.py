@@ -4,6 +4,8 @@ import dbaccess
 import re
 import web
 import json
+import base64
+import importlib
 
 
 def niceName(s):
@@ -13,7 +15,47 @@ def niceName(s):
     return s.title()
 
 
-class Settings:
+class Uploader(object):
+
+    def __init__(self, ds, log_format):
+        self.ds = ds
+        self.importer = None
+        self.log_format = log_format
+        self.get_importer()
+        self.preprocessor = None
+
+    def get_importer(self):
+        try:
+            m_importer = importlib.import_module(self.log_format)
+            classes = filter(lambda x: x.endswith("Importer") and x != "BaseImporter", dir(m_importer))
+            class_ = getattr(m_importer, classes[0])
+            self.importer = class_()
+            self.importer.datasource = self.ds
+            self.importer.buffer = 'A'
+        except:
+            self.importer = None
+
+    def run_import(self, data):
+        if self.importer == None:
+            return
+
+        self.importer.import_string(data)
+
+    def run_prepro(self):
+        import preprocess
+        print("Running preprocessor..")
+        print("ds: " + str(self.ds))
+
+
+        preprocess.preprocess_log('A', self.ds)
+
+    def import_log(self, data):
+        self.run_import(data)
+        self.run_prepro()
+
+
+
+class Settings(object):
     pageTitle = "Settings"
 
     def __init__(self):
@@ -27,8 +69,7 @@ class Settings:
         files = os.listdir(common.base_path)
         files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
         #remove .py extension
-        files = [x[7:-3] for x in files]
-        files = map(niceName, files)
+        files = [(x[:-3], niceName(x[7:-3])) for x in files]
         return files
 
     def validate_ds_name(self, name):
@@ -51,7 +92,7 @@ class Settings:
         delete tg	"rm_tags"		()
         delete ev	"rm_envs"		()
         delete cn	"rm_conns"		(ds)
-        upload lg	"upload"		(ds)
+        upload lg	"upload"		(ds, format, file)
         live dest   "live_dest"     (ds)
 
         see also: self.recognized_commands
@@ -139,6 +180,19 @@ class Settings:
                 dbaccess.set_settings(live_dest=ds)
             except:
                 return {"code": 4, "message": "Invalid data source"}
+        # upload a log to the database
+        elif command == "upload":
+            ds = ds
+            format = params[1]
+            data = params[2]
+            b64start = data.find(",")
+            if b64start == -1:
+                return {"code": 4, "message": "Unable to decode file"}
+            file = base64.b64decode(data[b64start + 1:])
+
+            uploader = Uploader(ds, format)
+            uploader.import_log(file)
+
         return response
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
@@ -164,6 +218,7 @@ class Settings:
         command = get_data.get('name', '')
         if command:
             paramKeys = filter(lambda x: x.startswith("param"), get_data.keys())
+            paramKeys.sort()  # ensure param1,2,3 are in order (dict was unordered)
             params = map(get_data.get, paramKeys)
             result = self.run_command(command, params)
             return json.dumps(result)

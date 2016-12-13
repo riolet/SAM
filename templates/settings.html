@@ -169,25 +169,24 @@ $def with (settings, datasources, importers)
       <div class="field">
         <label>Log format</label>
         <div class="ui selection dropdown">
-          <input name="log_format" id="log_format" type="hidden" value="Paloalto">
+          <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">
           <i class="dropdown icon"></i>
           <div class="default text">File Format</div>
           <div class="menu">
             $for imp in importers:
-              <div class="item" data-value="$imp">$imp</div>
+              <div class="item" data-value="$imp[0]">$imp[1]</div>
           </div>
         </div>
       </div>
       <div class="field">
         <label>Data source</label>
         <div class="ui selection dropdown">
-          <input name="log_ds" id="log_ds" type="hidden" value="ds_1">
+          <input name="log_ds" id="log_ds" type="hidden" value="ds_$datasources[0]['id']">
           <i class="dropdown icon"></i>
           <div class="default text">data source</div>
           <div class="menu" id="log_ds_list">
-            <div class="item" data-value="ds_1">default</div>
-            <div class="item" data-value="ds_2">live</div>
-            <div class="item" data-value="ds_3">yesterday</div>
+            $for ds in datasources:
+              <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
           </div>
         </div>
       </div>
@@ -199,7 +198,7 @@ $def with (settings, datasources, importers)
         <i class="remove icon"></i>
         Cancel
       </div>
-      <div class="ui disabled ok green inverted button">
+      <div class="ui ok green inverted button">
         <i class="checkmark icon"></i>
         Confirm
       </div>

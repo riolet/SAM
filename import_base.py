@@ -78,9 +78,42 @@ Usage:
         """
         return 1
 
+    def import_string(self, s):
+        """
+        Takes a string containing one or more lines and attempts to import it into the database staging table.
+        Args:
+            s: One or more syslog lines
+
+        Returns:
+            None
+        """
+        all_lines = s.splitlines()
+        line_num = -1
+        lines_inserted = 0
+        counter = 0
+        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
+        rows = [row.copy() for i in range(1000)]
+        for line in all_lines:
+            line_num += 1
+
+            if self.translate(line, line_num, rows[counter]) != 0:
+                continue
+
+            counter += 1
+
+            # Perform the actual insertion in batches of 1000
+            if counter == 1000:
+                self.insert_data(rows, counter)
+                lines_inserted += counter
+                counter = 0
+        if counter != 0:
+            self.insert_data(rows, counter)
+            lines_inserted += counter
+        print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+
     def import_file(self, path_in):
         """
-        Takes a file path and attempts to import it into the database. Specifically into the samapper.Syslog table
+        Takes a file path and attempts to import it into the database staging table.
         Args:
             path_in: The path to a log file to read/import
 

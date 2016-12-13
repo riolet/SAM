@@ -118,10 +118,12 @@ def import_nodes(suffix):
 def import_links(prefix, suffix):
     build_Links(prefix, suffix)
 
-    # Populate Links8
+    # precalc links in
+    print("precalculating inbound link aggregates")
     deduce_LinksIn(prefix)
 
-    # Populate Links16
+    # precalc links out
+    print("precalculating outbound link aggregates")
     deduce_LinksOut(prefix)
 
 
@@ -407,24 +409,30 @@ def deduce_LinksOut(prefix):
 
 # method to copy all data from staging tables to master tables
 def copy_to_master(prefix):
-    dbaccess.exec_sql("./sql/copy_to_master_tables.sql", {'prefix': prefix})
+    dbaccess.exec_sql(db, "./sql/copy_to_master_tables.sql", {'prefix': prefix})
 
 
 # method to delete all data from staging tables
 def delete_staging_data(prefix, suffix):
-    dbaccess.exec_sql("./sql/delete_staging_data.sql", {'prefix': prefix, 'suffix': suffix})
+    dbaccess.exec_sql(db, "./sql/delete_staging_data.sql", {'prefix': prefix, 'suffix': suffix})
 
 
 def preprocess_log(suffix='A', ds=None):
+    print("Beginning preprocessing...")
     t = db.transaction()
     try:
         prefix = "ds_{0}_".format(ds)
+        print("importing nodes...")
         import_nodes(suffix) # import all nodes into the shared Nodes table
+        print("importing links...")
         import_links(prefix, suffix) # import all link info into staging tables
+        print("copying from staging to master...")
         copy_to_master(prefix) # copy data from staging to master tables
+        print("deleting from staging...")
         delete_staging_data(prefix, suffix) # delete all data from staging tables
     except:
         t.rollback()
+        print("Pre-processing rolled back.")
         raise
     else:
         t.commit()

@@ -374,7 +374,17 @@ function uploadLog() {
     $(modal).modal({
         onApprove: function () {
             if (validateUpload()) {
-                console.log("uploading");
+                let log_file = document.getElementById("log_path").files[0];
+                let log_format = document.getElementById("log_format").value;
+                let log_ds = document.getElementById("log_ds").value;
+
+                let reader = new FileReader();
+                reader.onload = function(event){
+                    POST_upload_log(log_ds, log_format, reader.result);
+                };
+                reader.readAsDataURL(log_file);
+
+                //console.log("uploading " + log_path + " as " + log_format + " to " + log_ds);
             } else {
                 console.log("invalid input");
                 return false;
@@ -416,6 +426,15 @@ function POST_AJAX(command, successCallback) {
                 successCallback(response);
             }
         }
+    });
+}
+
+function POST_upload_log(ds, format, file) {
+    POST_AJAX({
+        name: "upload",
+        param1: ds,
+        param2: format,
+        param3: file
     });
 }
 
