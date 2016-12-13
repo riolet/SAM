@@ -1,9 +1,23 @@
-
 // Function(jqXHR jqXHR, String textStatus, String errorThrown)
 function onNotLoadData(xhr, textStatus, errorThrown) {
     "use strict";
     console.error("Failed to load data: " + errorThrown);
     console.log("\tText Status: " + textStatus);
+}
+
+
+function GET_settings(successCallback) {
+    if (typeof(successCallback) !== "function") {
+        return;
+    }
+    $.ajax({
+        url: "/settings",
+        type: "GET",
+        data: {"headless": 1},
+        dataType: "json",
+        error: onNotLoadData,
+        success: successCallback
+    });
 }
 
 /*

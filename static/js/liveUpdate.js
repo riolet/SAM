@@ -9,8 +9,7 @@
  */
 
 // Timing variables
-var MILLIS_PER_MIN 	= 60000;
-var MINS_PER_UPDATE = 5; //Change this value to configure your update time.
+var MILLIS_PER_SEC 	= 1000;
 var updateTimer 	= 0;
 
 //Vairables for Time Slider
@@ -22,7 +21,7 @@ var maxSlideRange 	= 2147483647;
 //Main live update functionality.
 function runUpdate() {
 	if (config.update == true && updateTimer === 0) { //timer is not running
-		updateTimer = window.setInterval(updateCall,Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
+		updateTimer = window.setInterval(updateCall,Math.abs(MILLIS_PER_SEC * config.update_interval));
 	} else if (config.update == false){ //timer has been turned off
 		window.clearInterval(updateTimer);
 		updateTimer = 0;

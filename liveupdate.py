@@ -7,11 +7,19 @@ import signal
 import time
 import import_paloalto
 import preprocess
+import dbaccess
+
+
+bufferMutex = threading.Lock()
+buffer = 'A'
+bufferSize = 0
 
 #Request handler used to listen on the port
 #Uses synchronous message processing as threading was causing database issues
 class UDPRequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
+        global bufferSize
+        global buffer
         data = self.request[0].strip()
         ### get port number
         port = self.client_address[1]
@@ -27,6 +35,13 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
         lines = data.splitlines()
         # palo Alto log translation
         importer = import_paloalto.PaloAltoImporter()
+        settings = dbaccess.get_settings_cached()
+        importer.datasource = settings['live_dest']
+        importer.buffer = buffer
+        if importer.datasource == None:
+            # live updates are configured to be discarded
+            return
+
         translated_lines = []
         for line in lines:
             result = {}
@@ -34,24 +49,28 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
             if r == 0:
                 translated_lines.append(result)
 
-                """ this code is not fully developed (supposed to process data after 1000 imports)
-        while (counter < 1000):
-            counter = counter + 1
-            lines = data.splitlines()
-            # palo Alto log translation
-            importer = import_paloalto.PaloAltoImporter()
-            translated_lines = []
-            for line in lines:
-                result = {}
-                r = importer.translate(line, 1, result)
-                if r == 0:
-                    translated_lines.append(result)
-"""
-
         # this inserts into Syslog
         importer.insert_data(translated_lines, len(translated_lines))
-        # Invoke the preprocessing to import data from Syslog into Noes and Links tables
-        preprocess.preprocess_log()
+
+        #update buffer stats
+        oldBuffer = buffer
+        processOldBuffer = False
+
+        bufferMutex.acquire()
+        try:
+            bufferSize += len(translated_lines)
+            if bufferSize > 1000:
+                bufferSize = 0
+                if buffer == "A":
+                    buffer = "B"
+                else:
+                    buffer = "A"
+                processOldBuffer = True
+        finally:
+            bufferMutex.release()
+
+        if processOldBuffer:
+            preprocess.preprocess_log(oldBuffer)
 
 def signal_handler(signal, frame):
     sys.exit(0)

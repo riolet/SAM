@@ -24,6 +24,11 @@ navbar = [
         "name": "Host Details",
         "icon": "tasks",
         "link": "/metadata"
+    },
+    {
+        "name": "Settings",
+        "icon": "settings",
+        "link": "/settings"
     }
 ]
 
@@ -40,7 +45,11 @@ finally:
     sys.dont_write_bytecode = False
 
 db = web.database(**dbconfig.params)
-
+old = web.config.debug
+web.config.debug = False
+db_quiet = web.database(**dbconfig.params)
+web.config.debug = old
+del old
 
 def IPtoString(ipNumber):
     # type: (int) -> str

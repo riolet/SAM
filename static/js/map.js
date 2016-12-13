@@ -25,6 +25,7 @@ var config = {
     "show_in": true,
     "show_out": true,
 	"update": true,
+	"update_interval": 60,
     "filter": "",
     "tstart": 1,
     "tend": 2147483647
@@ -67,16 +68,19 @@ function init() {
 
     sel_panel_height();
 
-    document.getElementById("show_clients").checked = config.show_clients;
-    document.getElementById("show_servers").checked = config.show_servers;
-    document.getElementById("show_in").checked = config.show_in;
-    document.getElementById("show_out").checked = config.show_out;
-	document.getElementById("update").checked = config.update;
+    //retrieve config settings
+    GET_settings(function (settings) {
+        config.update = (settings.datasource.ar_active === 1);
+        config.update_interval = settings.datasource.ar_interval;
+        init_configbuttons();
+	    runUpdate();
+    });
 
     $(".ui.accordion").accordion();
-    $(".ui.dropdown").dropdown({
+    $("#settings_menu").dropdown({
         action: updateConfig
     });
+
     $(".input.icon").popup();
 
     //configure ports
@@ -88,11 +92,35 @@ function init() {
     //loadData();
 	//This esentially delays the initial display of data until after the slider handles are updated, I am uncertain how viable
 	//this will remain as the number of nodes in the system increase.
-    window.setTimeout(updateCall,500); 
+    //window.setTimeout(updateCall,500);
 
 	//does the initial call to determine if updates.
-	runUpdate();
+	updateCall();
 	
+}
+
+function init_toggleButton(id, ontext, offtext, isOn) {
+    var toggleButton = document.getElementById(id);
+    if (isOn) {
+        toggleButton.appendChild(document.createTextNode(ontext));
+        toggleButton.classList.add("active");
+    } else {
+        toggleButton.appendChild(document.createTextNode(offtext));
+    }
+    $(toggleButton).state({
+        text: {
+            inactive: offtext,
+            active  : ontext
+        }
+    });
+}
+
+function init_configbuttons() {
+    init_toggleButton("show_clients", "Clients Shown", "Clients Hidden", config.show_clients);
+    init_toggleButton("show_servers", "Servers Shown", "Servers Hidden", config.show_servers);
+    init_toggleButton("show_in", "Inbound Shown", "Inbound Hidden", config.show_in);
+    init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
+    init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
 }
 
 function init_canvas(c, cx) {

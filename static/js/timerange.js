@@ -61,7 +61,7 @@ function create_slider(dtmin, dtmax) {
     "use strict";
     var dateSlider = document.getElementById('slider-date');
 	//get the box containing all timing data
-	var timebox = document.getElementById('time-box');
+	var timebox = document.getElementById('time_box');
 	/*This can occur if not enough data is in the system yet to make a time range. */	
 	if (dtmin == dtmax) {
 		//hide the time frame box

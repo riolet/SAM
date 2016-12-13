@@ -1,0 +1,207 @@
+$def with (settings, datasources, importers)
+<div class="ui container">
+  <h1 class="ui center aligned header">Settings</h1>
+
+
+  <!-- Data Sources -->
+  <h3 class="ui header">Data Sources</h3>
+  <div class="ui datasources grid">
+    <div class="four wide column">
+      <div class="ui vertical fluid tabular menu"  id="ds_tabs">
+        $for ds in datasources:
+          <a class="$('active' if ds == settings['datasource'] else '') item" data-tab="ds_$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
+      </div>
+    </div>
+    <div id="ds_tab_contents" class="twelve wide stretched column">
+      $for ds in datasources:
+        <div class="ui $('active' if ds == settings['datasource'] else '') tab segment" data-tab="ds_$ds['id']">
+          <table class="ui fixed definition table">
+            <tbody>
+            <tr>
+              <td class="right aligned">Name:</td>
+              <td>
+                <div class="ui transparent left icon input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
+              </td>
+            </tr>
+            <tr>
+              <td class="right aligned">Auto-refresh (map view):</td>
+              <td>
+                <div class="ui toggle checkbox">
+                  <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
+                  <label>&nbsp;</label>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="right aligned">Auto-refresh interval (seconds):</td>
+              <td>
+                <div class="ui transparent left icon input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+    </div>
+  </div>
+
+  <div class="ui secondary menu">
+    <a class="item" id="add_ds"><i class="blue add icon"></i>New Data Source</a>
+    <div class="item">|</div>
+    <a class="item" id="rm_ds"><i class="red remove icon"></i>Remove Data Source</a>
+    <div class="item">|</div>
+    <div class="ui deletion dropdown item">
+      <span class="text">Delete ...</span>
+      <div class="menu">
+        <a class="item"><i class="red trash icon"></i>Delete hostname information</a>
+        <a class="item"><i class="red trash icon"></i>Delete tag information</a>
+        <a class="item"><i class="red trash icon"></i>Delete environment information</a>
+        <a class="item"><i class="red trash icon"></i>Delete connection information</a>
+      </div>
+    </div>
+    <div class="item">|</div>
+    <a class="item" id="upload_log"><i class="blue write icon"></i>Upload log</a>
+  </div>
+
+  <span class="text">Push live data to: </span>
+  <div class="ui selection dropdown">
+    <input id="live_dest" name="live_dest" type="hidden" value="ds_$settings['live_dest']">
+    <i class="dropdown icon"></i>
+    <div class="default text">data source</div>
+    <div class="menu">
+      <div class="item" data-value="ds_">Discard live data</div>
+      $for ds in datasources:
+        <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
+    </div>
+  </div>
+  <!--
+  <div class="field">
+    <span class="text">** Some way to delete data that is older than X minutes. </span>
+    <span class="text">Maybe note the time range represented within the data source? </span>
+    <span class="text">Should this be part of the delete menu? (answer: yes)</span>
+  </div>
+  -->
+  <!-- Colors -->
+  <!-- <h3 class="ui header">Colors</h3> -->
+
+
+  <!-- Changes
+  <h3 class="ui header">Changes</h3>
+  <div class="ui buttons">
+    <button class="ui blue button">Save</button>
+    <button class="ui button">Discard</button>
+  </div><!---->
+</div>
+
+<!-- Confirm Delete modal -->
+<div id="deleteModal" class="ui small basic modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Confirm Delete
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="trash outline icon"></i>
+    </div>
+    <div class="description">
+      <p id="deleteMessage">Are you sure?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="two fluid ui inverted buttons">
+      <div class="ui cancel red basic inverted button">
+        <i class="remove icon"></i>
+        Cancel
+      </div>
+      <div class="ui ok green inverted button">
+        <i class="checkmark icon"></i>
+        Confirm
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Datasource modal -->
+<div id="newDSModal" class="ui small basic modal">
+  <i class="close icon"></i>
+  <div class="header">
+    New Data Source
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="cube icon"></i>
+    </div>
+    <div class="ui form">
+      <h4 class="ui inverted header">Please enter a name for your data source:</h4>
+      <div class="field">
+        <input id="newDSName" type="text" placeholder="Data source 1">
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="two fluid ui inverted buttons">
+      <div class="ui cancel red basic inverted button">
+        <i class="remove icon"></i>
+        Cancel
+      </div>
+      <div class="ui ok green inverted button">
+        <i class="checkmark icon"></i>
+        Confirm
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Log modal -->
+<div id="uploadModal" class="ui small basic modal">
+  <i class="close icon"></i>
+  <div class="header">
+    New Data Source
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="file text outline icon"></i>
+    </div>
+    <div class="ui inverted transparent form">
+      <div class="field">
+        <label>Choose a file to upload</label>
+        <input id="log_path" type="file" placeholder="<log file>">
+      </div>
+      <div class="field">
+        <label>Log format</label>
+        <div class="ui selection dropdown">
+          <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">
+          <i class="dropdown icon"></i>
+          <div class="default text">File Format</div>
+          <div class="menu">
+            $for imp in importers:
+              <div class="item" data-value="$imp[0]">$imp[1]</div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Data source</label>
+        <div class="ui selection dropdown">
+          <input name="log_ds" id="log_ds" type="hidden" value="ds_$datasources[0]['id']">
+          <i class="dropdown icon"></i>
+          <div class="default text">data source</div>
+          <div class="menu" id="log_ds_list">
+            $for ds in datasources:
+              <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="two fluid ui inverted buttons">
+      <div class="ui cancel red basic inverted button">
+        <i class="remove icon"></i>
+        Cancel
+      </div>
+      <div class="ui ok green inverted button">
+        <i class="checkmark icon"></i>
+        Confirm
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+body {
+    background-color: #CCFFEB;
+    font-size: 100%;
+}
+
+.tab.segment {
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
+
+#ds_tabs .item i.on{
+    display: none;
+}
+#ds_tabs .item i.off{
+    display: inherit;
+}
+
+#ds_tabs .active.item i.on{
+    display: inherit;
+}
+#ds_tabs .active.item i.off{
+    display: none;
+}
+#ds_tabs .active.item i.off{
+    display: none;
+}
+#ds_tabs .active.item::after{
+    content: " (Mapped)";
+    display: inline;
+}
+
+.datasources .four.wide.column {
+    padding-right: 0em;
+}
+.datasources .twelve.wide.column {
+    padding-left: 0em;
+}
+
+.ui.modal .form {
+    margin-left: 1em;
+}
