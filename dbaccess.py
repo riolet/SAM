@@ -105,7 +105,7 @@ def get_nodes(ip_start, ip_end):
         rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
     elif diff > 0:
         # check Nodes32
-        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
+        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
     else:
         rows = []
     return rows
