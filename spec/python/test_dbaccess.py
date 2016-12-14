@@ -5,19 +5,9 @@ import common
 import web
 
 
-<<<<<<< HEAD
-# def test_test_database():
-# def test_create_database():
-
-
 def test_parse_sql_file():
-    expected = ['DROP TABLE IF EXISTS blah',
-                '\n \n \n CREATE TABLE IF NOT EXISTS blah\n'
-=======
-def test_parse_sql():
     expected = ['DROP TABLE IF EXISTS myKey_blah',
                 '\n \n \n CREATE TABLE IF NOT EXISTS myKey_blah\n'
->>>>>>> 237446de65a3b4123f6020149cd6b875b00c1e8f
                 ' (port              INT UNSIGNED NOT NULL\n'
                 ' ,CONSTRAINT PKportAliasLUT PRIMARY KEY (port)\n'
                 ' )',
