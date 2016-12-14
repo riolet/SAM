@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 import common
 import web
+import integrity
 
 
 def test_parse_sql_file():
@@ -17,8 +18,58 @@ def test_parse_sql_file():
     print actual
     assert actual == expected
 
-# def test_exec_sql():
-# def test_reset_port_names():
+
+def test_validate_ds_name():
+    assert dbaccess.validate_ds_name("easy")
+    assert dbaccess.validate_ds_name("eaSY pEAsy")
+    assert dbaccess.validate_ds_name("easy peasy 12_54")
+    assert not dbaccess.validate_ds_name("easy peasy 12.54")
+    assert not dbaccess.validate_ds_name("21 easy")
+    assert not dbaccess.validate_ds_name(" smile ")
+    assert not dbaccess.validate_ds_name("smile'")
+    assert not dbaccess.validate_ds_name('smile"')
+
+
+def test_create_delete_datasource():
+    # improbably ds name
+    ds_name = "pytest1_562893"
+    db = common.dbconfig.params['db']
+    column_name = "Tables_in_{0}".format(db)
+
+    #remove any pre-existing data source
+    ds_rows = common.db.select("Datasources", where="name='{0}'".format(ds_name))
+    for row in ds_rows:
+        dbaccess.remove_datasource(row['id'])
+
+    # create data source
+    dbaccess.create_datasource(ds_name)
+
+    # test creation of ds row
+    ds_rows = common.db.select("Datasources", where="name='{0}'".format(ds_name))
+    assert len(ds_rows) == 1
+    row = ds_rows[0]
+    assert ds_rows
+    ds_id = row['id']
+
+    # test creation of tables
+    tables = common.db.query("SHOW TABLES");
+    table_names = [i[column_name] for i in tables]
+    prefix = "ds_{0}_".format(ds_id)
+    ds_tables = [name[len(prefix):] for name in table_names if name.startswith(prefix)]
+
+    assert sorted(integrity.tables_per_ds) == sorted(ds_tables)
+
+    # delete data source again
+    dbaccess.remove_datasource(ds_id)
+
+    # verify removal
+    ds_rows = common.db.select("Datasources", where="name='{0}'".format(ds_name))
+    assert len(ds_rows) == 0
+
+    tables = common.db.query("SHOW TABLES");
+    table_names = [i[column_name] for i in tables]
+    ds_tables = [name[len(prefix):] for name in table_names if name.startswith(prefix)]
+    assert len(ds_tables) == 0
 
 
 def test_get_timerange():
@@ -37,6 +88,34 @@ def test_get_nodes():
     assert len(dbaccess.get_nodes(ipstart, ipend)) == 119
     ipstart, ipend, _ = common.determine_range(21, 66, 1)
     assert len(dbaccess.get_nodes(ipstart, ipend)) == 5
+
+
+def test_build_where_clause():
+    where = dbaccess.build_where_clause()
+    assert where == ''
+
+    ts_start = make_timestamp("1988-05-17 15:30")
+    ts_end   = make_timestamp("2025-02-28 1:07")
+    where = dbaccess.build_where_clause(timestamp_range=(ts_start, ts_end))
+    assert where == '    && timestamp BETWEEN FROM_UNIXTIME(579911250) AND FROM_UNIXTIME(1740733769)'
+    where = dbaccess.build_where_clause(timestamp_range=(ts_start, ts_end), rounding=True)
+    assert where == '    && timestamp BETWEEN FROM_UNIXTIME(579911250) AND FROM_UNIXTIME(1740733769)'
+    where = dbaccess.build_where_clause(timestamp_range=(ts_start, ts_end), rounding=False)
+    assert where == '    && timestamp BETWEEN FROM_UNIXTIME(579911400) AND FROM_UNIXTIME(1740733620)'
+
+    where = dbaccess.build_where_clause(port=443)
+    assert where == '    && port = 443'
+
+    where = dbaccess.build_where_clause(protocol="ICMP")
+    assert where == "    && protocols LIKE '%ICMP%'"
+
+    where = dbaccess.build_where_clause(rounding=False,
+                                        protocol="UDP",
+                                        port=49,
+                                        timestamp_range=(ts_start, ts_end))
+    assert where == "    && timestamp BETWEEN FROM_UNIXTIME(579911400) AND FROM_UNIXTIME(1740733620)\n" \
+                    "    && port = 49\n" \
+                    "    && protocols LIKE '%UDP%'"
 
 
 def test_get_links_in_plain():
@@ -281,6 +360,14 @@ def test_env():
         dbaccess.set_env(ip4, old_4)
 
 
+def test_get_protocol_list():
+    expected = [u'UDP', u'ICMP', u'TCP', u'IPV6']
+    actual = dbaccess.get_protocol_list()
+    expected.sort()
+    actual.sort()
+    assert expected == actual
+
+
 def test_get_node_info():
     info1 = dbaccess.get_node_info("21")
     info2 = dbaccess.get_node_info("21.66")
@@ -388,3 +475,51 @@ def test_set_port_info():
         # clear data for test_port
         common.db.delete("Ports", where="port={0}".format(test_port))
         common.db.delete("PortAliases", where="port={0}".format(test_port))
+
+
+def test_get_settings():
+    dbaccess.settingsCache = {}
+    db_connection = common.db
+    try:
+        settings_expected = dbaccess.get_settings_cached()
+        common.db = None
+        settings_actual = dbaccess.get_settings_cached()
+        assert settings_expected == settings_actual
+        assert len(settings_expected.keys()) > 5
+    finally:
+        common.db = db_connection
+
+
+def test_get_settings_all():
+    settings = dbaccess.get_settings(all=True)
+    assert "datasources" in settings
+    assert type(settings['datasources']) == list
+
+
+def test_set_settings():
+    settings1 = dbaccess.get_settings()
+
+    dbaccess.set_settings(name="newName", live_dest=settings1['datasource']['id'])
+    settings2 = dbaccess.get_settings()
+    assert settings2['live_dest'] == settings1['datasource']['id']
+    assert settings2['datasource']['name'] == "newName"
+
+    dbaccess.set_settings(name="newName2", live_dest=None)
+    settings3 = dbaccess.get_settings()
+    assert settings3['live_dest'] == None
+    assert settings3['datasource']['name'] == "newName2"
+
+    dbaccess.set_settings(name=settings1['datasource']['name'], live_dest=settings1['live_dest'])
+    settings4 = dbaccess.get_settings()
+    assert settings4 == settings1
+
+def get_datasource(id):
+    settings = dbaccess.get_settings_cached()
+    id = settings['datasource']['id']
+
+    expected = settings['datasource']
+    actual = get_datasource(id)
+    assert expected == actual
+
+
+

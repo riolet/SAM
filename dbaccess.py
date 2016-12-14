@@ -6,7 +6,7 @@ import os
 import re
 
 
-def parse_sql_file(path, replacements=None):
+def parse_sql_file(path, replacements):
     with open(path, 'r') as f:
         lines = f.readlines()
     # remove comment lines
@@ -53,14 +53,9 @@ def create_datasource(name):
 def remove_datasource(id):
     # check id is valid
     rows = list(common.db.select("Datasources", where={'id': int(id)}))
-    print("|==>--")
-    print("before")
-    print(rows)
     if len(rows) != 1:
         print("Removal stopped: data source to remove not found")
         return
-
-    print("after")
 
     # select other data source in Settings
     alternativeDS = common.db.select("Datasources", where="id != {0}".format(int(id)), limit=1)
@@ -76,9 +71,9 @@ def remove_datasource(id):
     exec_sql(common.db, os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
 
 
-def get_syslog_size():
+def get_syslog_size(_test=False):
     return common.db.select("{0}Syslog".format(get_settings_cached()['prefix'])
-                            , what="COUNT(1) AS 'rows'")[0].rows
+                            , what="COUNT(1) AS 'rows'", _test=_test)[0].rows
 
 
 def get_timerange():
@@ -109,6 +104,36 @@ def get_nodes(ip_start, ip_end):
     else:
         rows = []
     return rows
+
+
+def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
+    clauses = []
+    t_start = 0
+    t_end = 0
+
+    if timestamp_range:
+        t_start = timestamp_range[0]
+        t_end = timestamp_range[1]
+        if rounding:
+            # rounding to 5 minutes, for use with the Syslog table
+            if t_start > 150:
+                t_start -= 150
+            if t_end <= 2 ** 31 - 150:
+                t_end += 149
+        clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
+
+    if port:
+        clauses.append("port = $port")
+
+    if protocol:
+        clauses.append("protocols LIKE $protocol")
+        protocol = "%{0}%".format(protocol)
+
+    qvars = {'tstart': t_start, 'tend': t_end, 'port': port, 'protocol': protocol}
+    WHERE = str(web.db.reparam("\n    && ".join(clauses), qvars))
+    if WHERE:
+        WHERE = "    && " + WHERE
+    return WHERE
 
 
 def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
@@ -167,36 +192,6 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
     qvars = {"start": ip_start, "end": ip_end}
     rows = list(common.db.query(query, vars=qvars))
     return rows
-
-
-def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
-    clauses = []
-    t_start = 0
-    t_end = 0
-
-    if timestamp_range:
-        t_start = timestamp_range[0]
-        t_end = timestamp_range[1]
-        if rounding:
-            # rounding to 5 minutes, for use with the Syslog table
-            if t_start > 150:
-                t_start -= 150
-            if t_end <= 2 ** 31 - 150:
-                t_end += 149
-        clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
-
-    if port:
-        clauses.append("port = $port")
-
-    if protocol:
-        clauses.append("protocols LIKE $protocol")
-        protocol = "%{0}%".format(protocol)
-
-    qvars = {'tstart': t_start, 'tend': t_end, 'port': port, 'protocol': protocol}
-    WHERE = str(web.db.reparam("\n    && ".join(clauses), qvars))
-    if WHERE:
-        WHERE = "    && " + WHERE
-    return WHERE
 
 
 def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
@@ -821,30 +816,6 @@ def get_settings(all=False):
     return settings
 
 
-def get_datasource(id):
-    rows = common.db.select("Datasources", where="id={0}".format(int(id)), limit=1)
-    if len(rows) == 1:
-        return rows[0]
-    return None
-
-
-def delete_custom_tags():
-    common.db.delete("Tags", "1")
-
-def delete_custom_envs():
-    common.db.update("Nodes", "1", env=common.web.sqlliteral("NULL"))
-
-def delete_custom_hostnames():
-    common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
-
-def delete_connections(ds):
-    if len(common.db.select("Datasources", where={'id': ds})) == 1:
-        prefix = "ds_{0}_".format(ds)
-        common.db.delete("{0}Links".format(prefix), "1")
-        common.db.delete("{0}LinksIn".format(prefix), "1")
-        common.db.delete("{0}LinksOut".format(prefix), "1")
-
-
 def set_settings(**kwargs):
     if "datasource" in kwargs:
         new_ds = kwargs.pop('datasource')
@@ -862,6 +833,33 @@ def set_settings(**kwargs):
     # clear the cache
     global settingsCache
     settingsCache = {}
+
+
+def get_datasource(id):
+    rows = common.db.select("Datasources", where="id={0}".format(int(id)), limit=1)
+    if len(rows) == 1:
+        return rows[0]
+    return None
+
+
+def delete_custom_tags():
+    common.db.delete("Tags", "1")
+
+
+def delete_custom_envs():
+    common.db.update("Nodes", "1", env=common.web.sqlliteral("NULL"))
+
+
+def delete_custom_hostnames():
+    common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
+
+
+def delete_connections(ds):
+    if len(common.db.select("Datasources", where={'id': ds})) == 1:
+        prefix = "ds_{0}_".format(ds)
+        common.db.delete("{0}Links".format(prefix), "1")
+        common.db.delete("{0}LinksIn".format(prefix), "1")
+        common.db.delete("{0}LinksOut".format(prefix), "1")
 
 
 def print_dict(d, indent = 0):
