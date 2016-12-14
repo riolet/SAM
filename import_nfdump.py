@@ -102,7 +102,7 @@ Usage:
         Returns:
             None
         """
-        args = shlex.split('nfdump -o "fmt:%pr,%sa,%sp,%da,%dp,%byt,%bps,%ts"')
+        args = shlex.split('nfdump -o {0}'.format(NFDumpImporter.FORMAT))
         proc = subprocess.Popen(args, bufsize=-1, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         stdout, stderr = proc.communicate(s)
         all_lines = stdout.splitlines()
@@ -110,8 +110,7 @@ Usage:
         line_num = -1
         lines_inserted = 0
         counter = 0
-        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
-        rows = [row.copy() for i in range(1000)]
+        rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
         for line in all_lines:
             line_num += 1
 

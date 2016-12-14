@@ -348,7 +348,7 @@ function populateUploadDSList(options) {
     if (options.length == 0) {
         log_ds.value = "";
     } else {
-        $(log_ds.parentElement).dropdown("set selected", options[0][0]);
+        $(log_ds.parentElement).dropdown("set selected", getSelectedDS());
     }
 }
 
