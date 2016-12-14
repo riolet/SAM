@@ -256,7 +256,7 @@ def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, por
             sort_by = sort_options[0]
     # add table prefix for some columns
     if sort_by in ['port', 'src', 'dst']:
-        sort_by = "`{prefix}Links`." + sort_by
+        sort_by = "`links`." + sort_by
 
     qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
