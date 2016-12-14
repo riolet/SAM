@@ -1,11 +1,11 @@
--- append data from staging tables into master tables
+-- this sql file is responsible for copying data from staging tables into master tables while ignoring
+-- the duplicate entries
 
-INSERT MasterNodes SELECT * FROM Nodes;
+-- copy all data from Links into MasterLinks;
+INSERT IGNORE {prefix}Links SELECT * FROM {prefix}staging_Links;
 
-INSERT MasterLinks SELECT * FROM Links;
+-- copy all data from LinksIn into MasterLinks
+INSERT IGNORE {prefix}LinksIn SELECT * FROM {prefix}staging_LinksIn;
 
-INSERT MasterLinksIn SELECT * FROM LinksIn;
-
-INSERT MasterLinksOut SELECT * FROM LinksOut;
-
---INSERT MasterTags SELECT * From Tags;
+-- copy all data from LinksPOut into MasterLinksOut
+INSERT IGNORE {prefix}LinksOut SELECT * FROM {prefix}staging_LinksOut;

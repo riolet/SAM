@@ -18,16 +18,14 @@ var my;
 var renderCollection = [];
 var subnetLabel = "";
 
-// Timing variables
-var MILLIS_PER_MIN = 60000;
-var MINS_PER_UPDATE   = 5;
-
 //settings/options data
 var config = {
     "show_clients": true,
     "show_servers": true,
     "show_in": true,
     "show_out": true,
+	"update": true,
+	"update_interval": 60,
     "filter": "",
     "tstart": 1,
     "tend": 2147483647,
@@ -75,15 +73,19 @@ function init() {
 
     sel_panel_height();
 
-    document.getElementById("show_clients").checked = config.show_clients;
-    document.getElementById("show_servers").checked = config.show_servers;
-    document.getElementById("show_in").checked = config.show_in;
-    document.getElementById("show_out").checked = config.show_out;
+    //retrieve config settings
+    GET_settings(function (settings) {
+        config.update = (settings.datasource.ar_active === 1);
+        config.update_interval = settings.datasource.ar_interval;
+        init_configbuttons();
+	    runUpdate();
+    });
 
     $(".ui.accordion").accordion();
-    $(".ui.dropdown").dropdown({
+    $("#settings_menu").dropdown({
         action: updateConfig
     });
+
     $(".input.icon").popup();
 
     //configure ports
@@ -93,10 +95,37 @@ function init() {
     };
 
     //loadData();
-    GET_nodes(null);
+	//This esentially delays the initial display of data until after the slider handles are updated, I am uncertain how viable
+	//this will remain as the number of nodes in the system increase.
+    //window.setTimeout(updateCall,500);
 
-	window.setInterval(function(){GET_nodes(null);},Math.abs(MILLIS_PER_MIN * MINS_PER_UPDATE));
+	//does the initial call to determine if updates.
+	updateCall();
 	
+}
+
+function init_toggleButton(id, ontext, offtext, isOn) {
+    var toggleButton = document.getElementById(id);
+    if (isOn) {
+        toggleButton.appendChild(document.createTextNode(ontext));
+        toggleButton.classList.add("active");
+    } else {
+        toggleButton.appendChild(document.createTextNode(offtext));
+    }
+    $(toggleButton).state({
+        text: {
+            inactive: offtext,
+            active  : ontext
+        }
+    });
+}
+
+function init_configbuttons() {
+    init_toggleButton("show_clients", "Clients Shown", "Clients Hidden", config.show_clients);
+    init_toggleButton("show_servers", "Servers Shown", "Servers Hidden", config.show_servers);
+    init_toggleButton("show_in", "Inbound Shown", "Inbound Hidden", config.show_in);
+    init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
+    init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
 }
 
 function init_canvas(c, cx) {

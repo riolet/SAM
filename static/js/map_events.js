@@ -232,10 +232,12 @@ function onResize() {
 
 function updateConfig() {
     "use strict";
-    config.show_clients = document.getElementById("show_clients").checked;
-    config.show_servers = document.getElementById("show_servers").checked;
-    config.show_in = document.getElementById("show_in").checked;
-    config.show_out = document.getElementById("show_out").checked;
+    config.show_clients = document.getElementById("show_clients").classList.contains("active");
+    config.show_servers = document.getElementById("show_servers").classList.contains("active");
+    config.show_in = document.getElementById("show_in").classList.contains("active");
+    config.show_out = document.getElementById("show_out").classList.contains("active");
+	config.update = document.getElementById("update").classList.contains("active");
+	runUpdate(); //required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
     render_all();
 }

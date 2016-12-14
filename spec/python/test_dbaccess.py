@@ -5,6 +5,7 @@ import common
 import web
 
 
+<<<<<<< HEAD
 # def test_test_database():
 # def test_create_database():
 
@@ -12,11 +13,19 @@ import web
 def test_parse_sql_file():
     expected = ['DROP TABLE IF EXISTS blah',
                 '\n \n \n CREATE TABLE IF NOT EXISTS blah\n'
+=======
+def test_parse_sql():
+    expected = ['DROP TABLE IF EXISTS myKey_blah',
+                '\n \n \n CREATE TABLE IF NOT EXISTS myKey_blah\n'
+>>>>>>> 237446de65a3b4123f6020149cd6b875b00c1e8f
                 ' (port              INT UNSIGNED NOT NULL\n'
                 ' ,CONSTRAINT PKportAliasLUT PRIMARY KEY (port)\n'
                 ' )',
-                '\n \n SELECT * FROM blah\n ']
-    assert dbaccess.parse_sql_file("./spec/python/test_sql.sql") == expected
+                '\n \n SELECT * FROM myKey_blah\n ']
+    replacements = {'id': "myKey"}
+    actual = dbaccess.parse_sql_file("./spec/python/test_sql.sql", replacements)
+    print actual
+    assert actual == expected
 
 # def test_exec_sql():
 # def test_reset_port_names():
@@ -364,8 +373,8 @@ def test_set_port_info():
         raise e
     finally:
         # clear data for test_port
-        common.db.update("portLUT", where="port={0}".format(test_port), active=1)
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.update("Ports", where="port={0}".format(test_port), active=1)
+        common.db.delete("PortAliases", where="port={0}".format(test_port))
 
     test_port = 4
     try:
@@ -387,5 +396,5 @@ def test_set_port_info():
         raise e
     finally:
         # clear data for test_port
-        common.db.delete("portLUT", where="port={0}".format(test_port))
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.delete("Ports", where="port={0}".format(test_port))
+        common.db.delete("PortAliases", where="port={0}".format(test_port))

@@ -5,20 +5,32 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
     console.log("\tText Status: " + textStatus);
 }
 
+
+function GET_settings(successCallback) {
+    if (typeof(successCallback) !== "function") {
+        return;
+    }
+    $.ajax({
+        url: "/settings",
+        type: "GET",
+        data: {"headless": 1},
+        dataType: "json",
+        error: onNotLoadData,
+        success: successCallback
+    });
+}
+
 /*
 Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
-
 parents: either an array of nodes, or null.
     if a list of nodes, retrieves the children of the nodes that don't have children loaded
     if null, retreives the top-level nodes. (the /8 subnet)
 callback: if is a function, call it when done importing.
-
 ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 */
 function GET_nodes(parents, callback) {
     "use strict";
     var request = {}
-
     if (parents !== null) {
         //filter out parents with children already loaded
         parents = parents.filter(function (parent) {
@@ -32,8 +44,6 @@ function GET_nodes(parents, callback) {
             return parent.address;
         }).join(",");
     }
-    request.filter = config.filter;
-
     $.ajax({
         url: "/nodes",
         type: "GET",

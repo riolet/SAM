@@ -1,9 +1,0 @@
-DELETE FROM LinksIn;
-
-DELETE FROM LinksOut;
-
-DELETE FROM Links;
-
-DELETE FROM Nodes;
-
-DELETE FROM Syslog;

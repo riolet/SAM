@@ -76,8 +76,8 @@ def test_post_new_port():
                                         u'alias_description': u'', u'description': u''}
     finally:
         # remove test_port from database
-        common.db.delete("portLUT", where="port={0}".format(test_port))
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.delete("Ports", where="port={0}".format(test_port))
+        common.db.delete("PortAliases", where="port={0}".format(test_port))
 
 
 def test_post_disable_port():
@@ -101,8 +101,8 @@ def test_post_disable_port():
         assert '"active": 0' in req.data
     finally:
         # restore port to active.
-        common.db.update("portLUT", where="port={0}".format(test_port), active=1)
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.update("Ports", where="port={0}".format(test_port), active=1)
+        common.db.delete("PortAliases", where="port={0}".format(test_port))
 
 
 def test_post_update_port():
@@ -146,5 +146,5 @@ def test_post_update_port():
         assert data[str(test_port)]['alias_description'] == long_desc[:255]
     finally:
         # restore port to active.
-        common.db.update("portLUT", where="port={0}".format(test_port), active=1)
-        common.db.delete("portAliasLUT", where="port={0}".format(test_port))
+        common.db.update("Ports", where="port={0}".format(test_port), active=1)
+        common.db.delete("PortAliases", where="port={0}".format(test_port))

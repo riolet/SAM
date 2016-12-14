@@ -1,4 +1,5 @@
 import sys
+import os
 import subprocess
 import shlex
 import common
@@ -54,6 +55,7 @@ Usage:
         args = shlex.split('nfdump -r {0} -o {1}'.format(path_in, NFDumpImporter.FORMAT))
         proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
 
+
         line_num = -1
         lines_inserted = 0
         counter = 0
@@ -89,6 +91,43 @@ Usage:
             proc.poll()
         proc.wait()
 
+        print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+
+    def import_string(self, s):
+        """
+        Takes a string containing one or more lines and attempts to import it into the database staging table.
+        Args:
+            s: One or more syslog lines
+
+        Returns:
+            None
+        """
+        args = shlex.split('nfdump -o "fmt:%pr,%sa,%sp,%da,%dp,%byt,%bps,%ts"')
+        proc = subprocess.Popen(args, bufsize=-1, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        stdout, stderr = proc.communicate(s)
+        all_lines = stdout.splitlines()
+
+        line_num = -1
+        lines_inserted = 0
+        counter = 0
+        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
+        rows = [row.copy() for i in range(1000)]
+        for line in all_lines:
+            line_num += 1
+
+            if self.translate(line, line_num, rows[counter]) != 0:
+                continue
+
+            counter += 1
+
+            # Perform the actual insertion in batches of 1000
+            if counter == 1000:
+                self.insert_data(rows, counter)
+                lines_inserted += counter
+                counter = 0
+        if counter != 0:
+            self.insert_data(rows, counter)
+            lines_inserted += counter
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
 
     def translate(self, line, linenum, dictionary):

@@ -1,39 +1,39 @@
 """
-Preprocess the data in the database's upload table Syslog
+Preprocess the data in the database's upload table Syslog{suffix}
 """
 
 import common
 import dbaccess
+import integrity
+import sys
+
+# DB connection to use. `common.db` echos every statement to stderr, `common.db_quiet` does not.
+db = common.db_quiet
 
 
-def clean_tables():
-    common.db.query("DROP TABLE IF EXISTS LinksIn;")
-    common.db.query("DROP TABLE IF EXISTS LinksOut;")
-    common.db.query("DROP TABLE IF EXISTS Links;")
-    common.db.query("DROP TABLE IF EXISTS Nodes;")
+def determine_datasource(argv):
+    settings = dbaccess.get_settings(all=True)
+    default_ds = settings['datasource']['id']
+    custom_ds = 0
+    if len(argv) >= 2:
+        requested_ds = argv[1]
+        for ds in settings['datasources']:
+            if ds['name'] == requested_ds:
+                custom_ds = ds['id']
+                break
 
-    common.db.query("DROP TABLE IF EXISTS MasterLinksIn;")
-    common.db.query("DROP TABLE IF EXISTS MasterLinksOut;")
-    common.db.query("DROP TABLE IF EXISTS MasterLinks;")
-    common.db.query("DROP TABLE IF EXISTS Tags;")
-    common.db.query("DROP TABLE IF EXISTS MasterNodes;")
-
-    dbaccess.exec_sql("./sql/setup_tables.sql")
-
-    # create master tables
-    dbaccess.exec_sql("./sql/setup_master_tables.sql")
+    if custom_ds > 0:
+        return custom_ds
+    else:
+        return default_ds
 
 
-def import_nodes():
-    # count(children) / 127.5 + 0.5) gives a number between 0.5 and 2.5
-    # radius used to be:
-    #    (COUNT(cluster.child) / 127.5 + 0.5) * 6000
-    # instead of:
-    #    6000
+def import_nodes(suffix):
+    prefix = dbaccess.get_settings_cached()['prefix']
 
     # Get all /8 nodes. Load them into Nodes8
     query = """
-        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT (log.ip * 16777216) AS 'ipstart'
             , ((log.ip + 1) * 16777216 - 1) AS 'ipend'
             , 8 AS 'subnet'
@@ -41,19 +41,19 @@ def import_nodes():
             , (331776 * (log.ip DIV 16) / 7.5 - 331776) AS 'y'
             , 20736 AS 'radius'
         FROM(
-            SELECT src DIV 16777216 AS 'ip'
-            FROM Syslog
+            SELECT SourceIP DIV 16777216 AS 'ip'
+            FROM {prefix}Syslog{suffix}
             UNION
-            SELECT dst DIV 16777216 AS 'ip'
-            FROM Syslog
+            SELECT DestinationIP DIV 16777216 AS 'ip'
+            FROM {prefix}Syslog{suffix}
         ) AS log;
-    """
+    """.format(prefix=prefix, suffix=suffix)
     qvars = {"radius": 331776}
-    common.db.query(query, vars=qvars)
+    db.query(query, vars=qvars)
 
     # Get all the /16 nodes. Load these into Nodes16
     query = """
-        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT (log.ip * 65536) AS 'ipstart'
             , ((log.ip + 1) * 65536 - 1) AS 'ipend'
             , 16 AS 'subnet'
@@ -61,20 +61,20 @@ def import_nodes():
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT src DIV 65536 AS 'ip'
-            FROM Syslog
+            SELECT SourceIP DIV 65536 AS 'ip'
+            FROM {prefix}Syslog{suffix}
             UNION
-            SELECT dst DIV 65536 AS 'ip'
-            FROM Syslog
+            SELECT DestinationIP DIV 65536 AS 'ip'
+            FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
             ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216);
-        """
-    common.db.query(query)
+        """.format(prefix=prefix, suffix=suffix)
+    db.query(query)
 
     # Get all the /24 nodes. Load these into Nodes24
     query = """
-        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT (log.ip * 256) AS 'ipstart'
             , ((log.ip + 1) * 256 - 1) AS 'ipend'
             , 24 AS 'subnet'
@@ -82,20 +82,20 @@ def import_nodes():
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT src DIV 256 AS 'ip'
-            FROM Syslog
+            SELECT SourceIP DIV 256 AS 'ip'
+            FROM {prefix}Syslog{suffix}
             UNION
-            SELECT dst DIV 256 AS 'ip'
-            FROM Syslog
+            SELECT DestinationIP DIV 256 AS 'ip'
+            FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
             ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536);
-        """
-    common.db.query(query)
+        """.format(prefix=prefix, suffix=suffix)
+    db.query(query)
 
     # Get all the /32 nodes. Load these into Nodes32
     query = """
-        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT log.ip AS 'ipstart'
             , log.ip AS 'ipend'
             , 32 AS 'subnet'
@@ -103,29 +103,31 @@ def import_nodes():
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT src AS 'ip'
-            FROM Syslog
+            SELECT SourceIP AS 'ip'
+            FROM {prefix}Syslog{suffix}
             UNION
-            SELECT dst AS 'ip'
-            FROM Syslog
+            SELECT DestinationIP AS 'ip'
+            FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
             ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256);
-        """
-    common.db.query(query)
+        """.format(prefix=prefix, suffix=suffix)
+    db.query(query)
 
 
-def import_links():
-    build_Links()
+def import_links(prefix, suffix):
+    build_Links(prefix, suffix)
 
-    # Populate Links8
-    deduce_LinksIn()
+    # precalc links in
+    print("precalculating inbound link aggregates")
+    deduce_LinksIn(prefix)
 
-    # Populate Links16
-    deduce_LinksOut()
+    # precalc links out
+    print("precalculating outbound link aggregates")
+    deduce_LinksOut(prefix)
 
 
-def build_Links():
+def build_Links(prefix, suffix):
     query = """
         INSERT INTO Links (src, dst, port, protocol, timestamp,
             links, bytes_sent, bytes_received, packets_sent, packets_received, duration)
@@ -140,16 +142,16 @@ def build_Links():
             , SUM(packets_sent) AS 'packets_sent'
             , SUM(packets_received) AS 'packets_received'
             , AVG(duration) AS 'duration'
-        FROM Syslog
+        FROM {prefix}Syslog{suffix}
         GROUP BY src, dst, dstport, protocol, ts;
-    """
+    """.format(prefix=prefix, suffix=suffix)
     common.db.query(query)
 
 
-def deduce_LinksIn():
+def deduce_LinksIn(prefix):
     # /8 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
@@ -160,14 +162,14 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
     # /16 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
@@ -178,7 +180,7 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
@@ -192,15 +194,15 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
     # /24 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
@@ -211,7 +213,7 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 65536) = (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
@@ -225,7 +227,7 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -240,15 +242,15 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
     # /32 links
     query = """
-        INSERT INTO LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
@@ -259,7 +261,7 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 256) = (dst DIV 256)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
@@ -273,7 +275,7 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 65536) = (dst DIV 65536)
           AND (src DIV 256) != (dst DIV 256)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -288,7 +290,7 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -303,17 +305,17 @@ def deduce_LinksIn():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
 
-def deduce_LinksOut():
+def deduce_LinksOut(prefix):
     # /8 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
@@ -324,14 +326,14 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
     # /16 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
@@ -342,7 +344,7 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
@@ -356,15 +358,15 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
     # /24 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
@@ -375,7 +377,7 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 65536) = (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
@@ -389,7 +391,7 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -404,15 +406,15 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
     # /32 links
     query = """
-        INSERT INTO LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
@@ -423,7 +425,7 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 256) = (dst DIV 256)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
@@ -437,7 +439,7 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 65536) = (dst DIV 65536)
           AND (src DIV 256) != (dst DIV 256)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -452,7 +454,7 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
@@ -467,42 +469,51 @@ def deduce_LinksOut():
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM Links
+        FROM {prefix}staging_Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
-    """
-    common.db.query(query)
+    """.format(prefix=prefix)
+    db.query(query)
 
-#--------------------------
-def copy_data_to_master_tables():
-    dbaccess.exec_sql("./sql/copy_to_master_tables.sql")
-#--------------------------
 
-#--------------------------
-def delete_staging_table_rows():
-    dbaccess.exec_sql("./sql/delete_staging_table_rows.sql")    
-#--------------------------
+# method to copy all data from staging tables to master tables
+def copy_to_master(prefix):
+    dbaccess.exec_sql(db, "./sql/copy_to_master_tables.sql", {'prefix': prefix})
 
-def preprocess_log():
-    clean_tables()
-    import_nodes()
-    import_links()
 
-    # copy data from staging to master
-    copy_data_to_master_tables()
-    
-    # delete all data from staging tables
-    delete_staging_table_rows()
-    
-    print("Pre-processing completed successfully.")
+# method to delete all data from staging tables
+def delete_staging_data(prefix, suffix):
+    dbaccess.exec_sql(db, "./sql/delete_staging_data.sql", {'prefix': prefix, 'suffix': suffix})
+
+
+def preprocess_log(suffix='A', ds=None):
+    print("Beginning preprocessing...")
+    t = db.transaction()
+    try:
+        prefix = "ds_{0}_".format(ds)
+        print("importing nodes...")
+        import_nodes(suffix) # import all nodes into the shared Nodes table
+        print("importing links...")
+        import_links(prefix, suffix) # import all link info into staging tables
+        print("copying from staging to master...")
+        copy_to_master(prefix) # copy data from staging to master tables
+        print("deleting from staging...")
+        delete_staging_data(prefix, suffix) # delete all data from staging tables
+    except:
+        t.rollback()
+        print("Pre-processing rolled back.")
+        raise
+    else:
+        t.commit()
+        print("Pre-processing completed successfully.")
 
 
 # If running as a script
 if __name__ == "__main__":
-    access = dbaccess.test_database()
-    if access == 1049:
-        dbaccess.create_database()
-    elif access == 1045:
-        print("Database access denied. Check you username / password? (dbconfig_local.py)")
+    test = integrity.check_and_fix_db_access()
+    if test == 0:
+        ds = determine_datasource(sys.argv)
+        preprocess_log(ds=ds)
     else:
-        preprocess_log()
+        print("Preprocess aborted. Database check failed.")
+

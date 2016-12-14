@@ -132,12 +132,15 @@ function node_update(response) {
     "use strict";
     Object.keys(response).forEach(function (parent_address) {
         if (parent_address === "_") {
-            //must be top subnet
+            //must be a call using null, update everything
             m_nodes = {};
             response[parent_address].forEach(function (node) {
                 import_node(null, node);
             });
-            resetViewport(m_nodes);
+			if (subnetLabel == "") { //resets view if we aren't zoomed in.
+            	resetViewport(m_nodes);
+			}
+
         } else {
             var parent = findNode(parent_address);
             response[parent_address].forEach(function (node) {

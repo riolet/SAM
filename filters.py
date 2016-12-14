@@ -1,4 +1,5 @@
 import common
+import dbaccess
 
 
 class Filter (object):
@@ -75,15 +76,17 @@ class PortFilter(Filter):
         # 3: doesn't receive connection from port n
 
     def where(self):
+        prefix = dbaccess.get_settings_cached()['prefix']
+
         if self.params['connection'] == '0':
-            return "EXISTS (SELECT port FROM MasterLinksOut as `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM {prefix}LinksOut AS `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         elif self.params['connection'] == '1':
-            return "NOT EXISTS (SELECT port FROM MasterLinksOut as `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM {prefix}LinksOut AS `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
 
         elif self.params['connection'] == '2':
-            return "EXISTS (SELECT port FROM MasterLinksIn as `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM {prefix}LinksIn AS `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         elif self.params['connection'] == '3':
-            return "NOT EXISTS (SELECT port FROM MasterLinksIn as `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM {prefix}LinksIn AS `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         else:
             print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
@@ -130,20 +133,20 @@ class TargetFilter(Filter):
 
     def where(self):
         ipstart, ipend = common.determine_range_string(self.params['target'])
+        prefix = dbaccess.get_settings_cached()['prefix']
         if self.params['to'] == '0':
-            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
-                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
+            return "EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
+                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         elif self.params['to'] == '1':
-            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
-                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
+            return "NOT EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
+                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         
         if self.params['to'] == '2':
-            return "EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
-                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
+            return "EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
+                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         elif self.params['to'] == '3':
-            return "NOT EXISTS (SELECT 1 FROM MasterLinks AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
-                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
-
+            return "NOT EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
+                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         else:
             print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['to'], type(self.params['to'])))

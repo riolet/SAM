@@ -2,42 +2,20 @@ import web
 import common
 import json
 import time
+import os
+import re
 
 
-def test_database():
-    result = 0
-    try:
-        common.db.query("SELECT 1 FROM MasterNodes LIMIT 1;")
-    except Exception as e:
-        result = e[0]
-        # see http://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html for codes
-        # if e[0] == 1049:  # Unknown database 'samapper'
-        #     Common.create_database()
-        #     return self.GET(name)
-        # elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
-        #     rows = [e[1], "Check you username / password? (dbconfig_local.py)"]
-    return result
-
-
-def create_database():
-    params = common.dbconfig.params.copy()
-    params.pop('db')
-    connection = web.database(**params)
-
-    connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
-
-    exec_sql("./sql/setup_database.sql")
-
-    reset_port_names()
-
-
-def parse_sql_file(path):
+def parse_sql_file(path, replacements=None):
     with open(path, 'r') as f:
         lines = f.readlines()
     # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
     # join into one long string
     script = " ".join(lines)
+    # do any necessary string replacements
+    if replacements:
+        script = script.format(**replacements)
     # split string into a list of commands
     commands = script.split(";")
     # ignore empty statements (like trailing newlines)
@@ -45,27 +23,62 @@ def parse_sql_file(path):
     return commands
 
 
-def exec_sql(path):
-    commands = parse_sql_file(path)
+def exec_sql(connection, path, replacements=None):
+    if not replacements:
+        commands = parse_sql_file(path, {})
+    else:
+        commands = parse_sql_file(path, replacements)
     for command in commands:
-        common.db.query(command)
+        connection.query(command)
 
 
-def reset_port_names():
-    # drop and recreate the table
-    exec_sql("./sql/setup_LUTs.sql")
+def validate_ds_name(name):
+    return name == name.strip() and re.match(r'^[a-z][a-z0-9_ ]*$', name, re.I)
 
-    with open("./sql/default_port_data.json", 'rb') as f:
-        port_data = json.loads("".join(f.readlines()))
 
-    ports = port_data["ports"].values()
-    for port in ports:
-        if len(port['name']) > 10:
-            port['name'] = port['name'][:10]
-        if len(port['description']) > 255:
-            port['description'] = port['description'][:255]
+def create_ds_tables(id):
+    replacements = {"id": id}
+    exec_sql(common.db, os.path.join(common.base_path, 'sql/setup_datasource.sql'), replacements)
+    return 0
 
-    common.db.multiple_insert('portLUT', values=ports)
+
+def create_datasource(name):
+    if not validate_ds_name(name):
+        return -1
+    id = common.db.insert("Datasources", name=name)
+    r = create_ds_tables(id)
+    return r
+
+
+def remove_datasource(id):
+    # check id is valid
+    rows = list(common.db.select("Datasources", where={'id': int(id)}))
+    print("|==>--")
+    print("before")
+    print(rows)
+    if len(rows) != 1:
+        print("Removal stopped: data source to remove not found")
+        return
+
+    print("after")
+
+    # select other data source in Settings
+    alternativeDS = common.db.select("Datasources", where="id != {0}".format(int(id)), limit=1)
+    if len(alternativeDS) != 1:
+        print("Removal stopped: No alternative data source available")
+        return
+    alt_id = alternativeDS[0].id
+    common.db.update("Settings", "1=1", datasource=alt_id)
+    # remove from Datasources
+    common.db.delete("Datasources", "id = {0}".format(int(id)))
+    # Drop relevant tables
+    replacements = {"id": int(id)}
+    exec_sql(common.db, os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
+
+
+def get_syslog_size():
+    return common.db.select("{0}Syslog".format(get_settings_cached()['prefix'])
+                            , what="COUNT(1) AS 'rows'")[0].rows
 
 
 def get_timerange():
@@ -79,16 +92,16 @@ def get_nodes(ip_start, ip_end):
     if diff > 16777215:
         # check Nodes8
         # rows = common.db.select("Nodes8")
-        rows = common.db.select("MasterNodes", where="subnet=8")
+        rows = common.db.select("Nodes", where="subnet=8")
     elif diff > 65536:
         # check Nodes16
-        rows = common.db.select("MasterNodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
+        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
     elif diff > 255:
         # check Nodes24
-        rows = common.db.select("MasterNodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
+        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
     elif diff > 0:
         # check Nodes32
-        rows = common.db.select("MasterNodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
+        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(r[0], r[1]))
     else:
         rows = []
     return rows
@@ -121,6 +134,7 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
     """
     ports = (ip_start == ip_end)  # include ports in the results?
     where = build_where_clause(timerange, port_filter, protocol)
+    prefix = get_settings_cached()['prefix']
 
     if ports:
         select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
@@ -132,19 +146,20 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
     if inbound:
         query = """
         SELECT {select}
-        FROM MasterLinksIn
+        FROM {prefix}LinksIn
         WHERE dst_start = $start && dst_end = $end
          {where}
         {group_by}
-        """.format(where=where, select=select, group_by=group_by)
+        """.format(where=where, select=select, group_by=group_by, prefix=prefix)
     else:
         query = """
         SELECT {select}
-        FROM MasterLinksOut
+        FROM {prefix}LinksOut
         WHERE src_start = $start && src_end = $end
          {where}
         {group_by}
-        """.format(where=where, select=select, group_by=group_by)
+        """.format(where=where, select=select, group_by=group_by, prefix=prefix)
+
     qvars = {"start": ip_start, "end": ip_end}
     rows = list(common.db.query(query, vars=qvars))
     return rows
@@ -182,6 +197,7 @@ def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=
 
 def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
+    prefix = get_settings_cached()['prefix']
 
     query = """
     SELECT `inputs`.ips AS 'unique_in'
@@ -189,15 +205,15 @@ def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
         , `inputs`.ports AS 'unique_ports'
     FROM
       (SELECT COUNT(DISTINCT src) AS 'ips', COUNT(DISTINCT port) AS 'ports'
-        FROM MasterLinks
+        FROM {prefix}Links
         WHERE dst BETWEEN $start AND $end
-         {0}
+         {where}
     ) AS `inputs`
     JOIN (SELECT COUNT(DISTINCT dst) AS 'ips'
-        FROM MasterLinks
+        FROM {prefix}Links
         WHERE src BETWEEN $start AND $end
-         {0}
-    ) AS `outputs`;""".format(WHERE)
+         {where}
+    ) AS `outputs`;""".format(where=WHERE, prefix=prefix)
 
     qvars = {'start': ip_start, 'end': ip_end}
     rows = common.db.query(query, vars=qvars)
@@ -213,7 +229,8 @@ def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, por
         'end': ip_end,
         'page': page_size * (page-1),
         'page_size': page_size,
-        'WHERE': build_where_clause(timestamp_range, port)
+        'WHERE': build_where_clause(timestamp_range, port),
+        'prefix': get_settings_cached()['prefix']
     }
     if inbound:
         qvars['collected'] = "src"
@@ -249,10 +266,10 @@ def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, por
 SELECT decodeIP({collected}) AS '{collected}'
     , port AS 'port'
     , sum(links) AS 'links'
-FROM MasterLinks
+FROM {prefix}Links AS `links`
 WHERE {filtered} BETWEEN $start AND $end
  {WHERE}
-GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
+GROUP BY `links`.src, `links`.dst, `links`.port
 ORDER BY {order}
 LIMIT {page}, {page_size}
         """.format(**qvars)
@@ -273,10 +290,10 @@ FROM(
         , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
         , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
         , AVG(duration) AS 'avg_duration'
-    FROM MasterLinks
+    FROM {prefix}Links AS `links`
     WHERE {filtered} BETWEEN $start AND $end
      {WHERE}
-    GROUP BY `MasterLinks`.src, `MasterLinks`.dst, `MasterLinks`.port
+    GROUP BY `links`.src, `links`.dst, `links`.port
     ORDER BY {order}
     LIMIT {page}, {page_size}
 ) AS precalc;
@@ -292,7 +309,8 @@ def get_details_ports(ip_start, ip_end, timestamp_range=None, port=None, page=1,
         'end': ip_end,
         'first': first_result,
         'size': page_size,
-        'WHERE': build_where_clause(timestamp_range, port)
+        'WHERE': build_where_clause(timestamp_range, port),
+        'prefix': get_settings_cached()['prefix']
     }
 
     if order and order[0] == '-':
@@ -307,7 +325,7 @@ def get_details_ports(ip_start, ip_end, timestamp_range=None, port=None, page=1,
 
     query = """
         SELECT port AS 'port', sum(links) AS 'links'
-        FROM MasterLinks
+        FROM {prefix}Links
         WHERE dst BETWEEN $start AND $end
          {WHERE}
         GROUP BY port
@@ -369,7 +387,7 @@ def get_details_children(ip_start, ip_end, page, page_size, order):
             SELECT dst_start DIV $quot * $quot AS 'low'
                 , dst_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM MasterLinksIn
+            FROM {prefix}LinksIn
             GROUP BY low, high
             ) AS `l_in`
         ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
@@ -377,7 +395,7 @@ def get_details_children(ip_start, ip_end, page, page_size, order):
             SELECT src_start DIV $quot * $quot AS 'low'
                 , src_end DIV $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
-            FROM MasterLinksOut
+            FROM {prefix}LinksOut
             GROUP BY low, high
             ) AS `l_out`
         ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
@@ -385,7 +403,7 @@ def get_details_children(ip_start, ip_end, page, page_size, order):
             SELECT ipstart DIV $quot * $quot AS 'low'
                 , ipend DIV $quot * $quot + $quot_1 AS 'high'
                 , COUNT(ipstart) AS 'kids'
-            FROM MasterNodes
+            FROM Nodes
             WHERE ipstart = ipend
             GROUP BY low, high
             ) AS `sn`
@@ -394,7 +412,7 @@ def get_details_children(ip_start, ip_end, page, page_size, order):
             AND `n`.subnet BETWEEN $s_start AND $s_end
         ORDER BY {order}
         LIMIT $first, $size;
-        """.format(order=qvars['order'])
+        """.format(order=qvars['order'], prefix=get_settings_cached()['prefix'])
     return list(common.db.query(query, vars=qvars))
 
 
@@ -500,6 +518,9 @@ def get_protocol_list():
 
 def get_node_info(address):
     ipstart, ipend = common.determine_range_string(address)
+    prefix = get_settings_cached()['prefix']
+    qvars = {"start": ipstart, "end": ipend}
+
     query = """
         SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
             , COALESCE(n.hostname, '') AS 'hostname'
@@ -549,7 +570,7 @@ def get_node_info(address):
             , SUM(packets_received) AS 'p_r'
             , SUM(duration * links) AS 'duration'
             , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
-            FROM MasterLinks
+            FROM {prefix}Links
             WHERE src BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_out
@@ -569,7 +590,7 @@ def get_node_info(address):
             , SUM(duration) AS 'duration'
             , COUNT(DISTINCT port) AS 'ports_used'
             , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
-            FROM MasterLinks
+            FROM {prefix}Links
             WHERE dst BETWEEN $start AND $end
             GROUP BY 's1'
         ) AS l_in
@@ -584,13 +605,12 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
                 , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
-            FROM MasterLinks
+            FROM {prefix}Links
             GROUP BY 's1'
         ) AS t
             ON n.ipstart = t.s1
         LIMIT 1;
-    """
-    qvars = {"start": ipstart, "end": ipend}
+    """.format(prefix=prefix)
     results = common.db.query(query, vars=qvars)
 
     if len(results) == 1:
@@ -607,20 +627,18 @@ def set_node_info(address, data):
 
 def get_port_info(port):
     if isinstance(port, list):
-        arg = "("
-        for i in port:
-            arg += str(i) + ","
-        arg = arg[:-1] + ")"
+        arg = "({0})".format(",".join(port))
     else:
         arg = "({0})".format(port)
+
     query = """
-        SELECT portLUT.port, portLUT.active, portLUT.name, portLUT.description,
-            portAliasLUT.name AS alias_name,
-            portAliasLUT.description AS alias_description
-        FROM portLUT
-        LEFT JOIN portAliasLUT
-            ON portLUT.port=portAliasLUT.port
-        WHERE portLUT.port IN {0}
+        SELECT Ports.port, Ports.active, Ports.name, Ports.description,
+            PortAliases.name AS alias_name,
+            PortAliases.description AS alias_description
+        FROM Ports
+        LEFT JOIN PortAliases
+            ON Ports.port=PortAliases.port
+        WHERE Ports.port IN {0}
     """.format(arg)
     info = list(common.db.query(query))
     return info
@@ -645,8 +663,8 @@ def set_port_info(data):
     if 'active' in data:
         active = 1 if data['active'] == '1' or data['active'] == 1 else 0
 
-    # update portAliasLUT database of names to include the new information
-    exists = common.db.select('portAliasLUT', what="1", where={"port": port})
+    # update PortAliases database of names to include the new information
+    exists = common.db.select('PortAliases', what="1", where={"port": port})
 
     if len(exists) == 1:
         kwargs = {}
@@ -655,25 +673,25 @@ def set_port_info(data):
         if 'alias_description' in data:
             kwargs['description'] = alias_description
         if kwargs:
-            common.db.update('portAliasLUT', {"port": port}, **kwargs)
+            common.db.update('PortAliases', {"port": port}, **kwargs)
     else:
-        common.db.insert('portAliasLUT', port=port, name=alias_name, description=alias_description)
+        common.db.insert('PortAliases', port=port, name=alias_name, description=alias_description)
 
-    # update portLUT database of default values to include the missing information
-    exists = common.db.select('portLUT', what="1", where={"port": port})
+    # update Ports database of default values to include the missing information
+    exists = common.db.select('Ports', what="1", where={"port": port})
     if len(exists) == 1:
         if 'active' in data:
-            common.db.update('portLUT', {"port": port}, active=active)
+            common.db.update('Ports', {"port": port}, active=active)
     else:
-        common.db.insert('portLUT', port=port, active=active, tcp=1, udp=1, name="", description="")
+        common.db.insert('Ports', port=port, active=active, tcp=1, udp=1, name="", description="")
 
 
 def get_table_info(clauses, page, page_size, order_by, order_dir):
-    WHERE = " && ".join(clause.where() for clause in clauses if clause.where() and clause.enabled)
+    WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
     if WHERE:
         WHERE = "WHERE " + WHERE
 
-    HAVING = " && ".join(clause.having() for clause in clauses if clause.having() and clause.enabled)
+    HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
         HAVING = "HAVING " + HAVING
 
@@ -697,12 +715,12 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
             LIMIT 1
         ), 'production') AS "env"
         , COALESCE((SELECT SUM(links)
-            FROM MasterLinksOut AS l_out
+            FROM {prefix}LinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
               AND l_out.src_end = nodes.ipend
          ),0) AS 'conn_out'
         , COALESCE((SELECT SUM(links)
-            FROM MasterLinksIn AS l_in
+            FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
@@ -744,7 +762,7 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
             WHERE (Tags.ipstart <= nodes.ipstart AND Tags.ipend > nodes.ipend) OR (Tags.ipstart < nodes.ipstart AND Tags.ipend >= nodes.ipend)
             GROUP BY nodes.ipstart, nodes.ipend
          ),"") AS 'parent_tags'
-    FROM MasterNodes AS nodes
+    FROM Nodes AS nodes
     {WHERE}
     {HAVING}
     {ORDER}
@@ -754,7 +772,96 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
         HAVING=HAVING,
         ORDER=ORDERBY,
         START=page * page_size,
-        RANGE=page_size + 1)
+        RANGE=page_size + 1,
+        prefix=get_settings_cached()['prefix'])
 
     info = list(common.db.query(query))
     return info
+
+
+settingsCache = {}
+
+
+def get_settings_cached():
+    global settingsCache
+    if not settingsCache:
+        settingsCache = get_settings()
+    settingsCache['prefix'] = "ds_{0}_".format(str(settingsCache['datasource']['id']))
+    return settingsCache
+
+
+def get_settings(all=False):
+    settings = dict(common.db.select("Settings", limit=1)[0])
+    if all:
+        sources = map(dict, common.db.select("Datasources"))
+        settings['datasources'] = sources
+        target = settings['datasource']
+        settings['datasource'] = None
+        for ds_index in range(len(sources)):
+            if sources[ds_index]['id'] == target:
+                settings['datasource'] = sources[ds_index]
+    else:
+        where = "id={0}".format(settings['datasource'])
+        ds = common.db.select("Datasources", where=where, limit=1)
+        if len(ds) == 1:
+            settings['datasource'] = dict(ds[0])
+        else:
+            settings['datasource'] = None
+
+    # keep the cache up to date
+    global settingsCache
+    settingsCache = settings
+
+    return settings
+
+
+def get_datasource(id):
+    rows = common.db.select("Datasources", where="id={0}".format(int(id)), limit=1)
+    if len(rows) == 1:
+        return rows[0]
+    return None
+
+
+def delete_custom_tags():
+    common.db.delete("Tags", "1")
+
+def delete_custom_envs():
+    common.db.update("Nodes", "1", env=common.web.sqlliteral("NULL"))
+
+def delete_custom_hostnames():
+    common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
+
+def delete_connections(ds):
+    if len(common.db.select("Datasources", where={'id': ds})) == 1:
+        prefix = "ds_{0}_".format(ds)
+        common.db.delete("{0}Links".format(prefix), "1")
+        common.db.delete("{0}LinksIn".format(prefix), "1")
+        common.db.delete("{0}LinksOut".format(prefix), "1")
+
+
+def set_settings(**kwargs):
+    if "datasource" in kwargs:
+        new_ds = kwargs.pop('datasource')
+        common.db.update("Settings", "1", datasource=new_ds)
+
+    ds = 0
+    if "ds" in kwargs:
+        ds = kwargs.pop('ds')
+
+    if ds and kwargs:
+        common.db.update("Datasources", ds, **kwargs)
+    elif kwargs:
+        common.db.update("Settings JOIN Datasources ON Settings.datasource = Datasources.id", "1", **kwargs)
+
+    # clear the cache
+    global settingsCache
+    settingsCache = {}
+
+
+def print_dict(d, indent = 0):
+    for k,v in d.iteritems():
+        if type(v) == dict:
+            print("{0}{1:>20s}: ".format(indent * 4 * " ", k))
+            print_dict(v, indent + 1)
+        else:
+            print("{0}{1:>20s}: {2}".format(indent*4*" ", k, repr(v)))
