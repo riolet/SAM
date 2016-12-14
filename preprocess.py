@@ -41,10 +41,10 @@ def import_nodes(suffix):
             , (331776 * (log.ip DIV 16) / 7.5 - 331776) AS 'y'
             , 20736 AS 'radius'
         FROM(
-            SELECT SourceIP DIV 16777216 AS 'ip'
+            SELECT src DIV 16777216 AS 'ip'
             FROM {prefix}Syslog{suffix}
             UNION
-            SELECT DestinationIP DIV 16777216 AS 'ip'
+            SELECT dst DIV 16777216 AS 'ip'
             FROM {prefix}Syslog{suffix}
         ) AS log;
     """.format(prefix=prefix, suffix=suffix)
@@ -61,10 +61,10 @@ def import_nodes(suffix):
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT SourceIP DIV 65536 AS 'ip'
+            SELECT src DIV 65536 AS 'ip'
             FROM {prefix}Syslog{suffix}
             UNION
-            SELECT DestinationIP DIV 65536 AS 'ip'
+            SELECT dst DIV 65536 AS 'ip'
             FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
@@ -82,10 +82,10 @@ def import_nodes(suffix):
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT SourceIP DIV 256 AS 'ip'
+            SELECT src DIV 256 AS 'ip'
             FROM {prefix}Syslog{suffix}
             UNION
-            SELECT DestinationIP DIV 256 AS 'ip'
+            SELECT dst DIV 256 AS 'ip'
             FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
@@ -103,10 +103,10 @@ def import_nodes(suffix):
             , ((parent.radius * (log.ip MOD 256 DIV 16) / 7.5 - parent.radius) + parent.y) AS 'y'
             , (parent.radius / 24) AS 'radius'
         FROM(
-            SELECT SourceIP AS 'ip'
+            SELECT src AS 'ip'
             FROM {prefix}Syslog{suffix}
             UNION
-            SELECT DestinationIP AS 'ip'
+            SELECT dst AS 'ip'
             FROM {prefix}Syslog{suffix}
         ) AS log
         JOIN Nodes AS parent
@@ -119,17 +119,17 @@ def import_links(prefix, suffix):
     build_Links(prefix, suffix)
 
     # precalc links in
-    print("precalculating inbound link aggregates")
+    print("precalculating inbound link aggregates...")
     deduce_LinksIn(prefix)
 
     # precalc links out
-    print("precalculating outbound link aggregates")
+    print("precalculating outbound link aggregates...")
     deduce_LinksOut(prefix)
 
 
 def build_Links(prefix, suffix):
     query = """
-        INSERT INTO Links (src, dst, port, protocol, timestamp,
+        INSERT INTO {prefix}staging_Links (src, dst, port, protocol, timestamp,
             links, bytes_sent, bytes_received, packets_sent, packets_received, duration)
         SELECT src
             , dst
@@ -145,13 +145,13 @@ def build_Links(prefix, suffix):
         FROM {prefix}Syslog{suffix}
         GROUP BY src, dst, dstport, protocol, ts;
     """.format(prefix=prefix, suffix=suffix)
-    common.db.query(query)
+    db.query(query)
 
 
 def deduce_LinksIn(prefix):
     # /8 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
@@ -169,7 +169,7 @@ def deduce_LinksIn(prefix):
 
     # /16 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
@@ -202,7 +202,7 @@ def deduce_LinksIn(prefix):
 
     # /24 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
@@ -250,7 +250,7 @@ def deduce_LinksIn(prefix):
 
     # /32 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
@@ -315,7 +315,7 @@ def deduce_LinksIn(prefix):
 def deduce_LinksOut(prefix):
     # /8 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
@@ -333,7 +333,7 @@ def deduce_LinksOut(prefix):
 
     # /16 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
@@ -366,7 +366,7 @@ def deduce_LinksOut(prefix):
 
     # /24 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
@@ -414,7 +414,7 @@ def deduce_LinksOut(prefix):
 
     # /32 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, port, timestamp, links)
+        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'

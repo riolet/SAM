@@ -104,8 +104,7 @@ Usage:
         line_num = -1
         lines_inserted = 0
         counter = 0
-        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
-        rows = [row.copy() for i in range(1000)]
+        rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
         for line in all_lines:
             line_num += 1
 

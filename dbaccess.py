@@ -1,6 +1,6 @@
 import web
 import common
-import json
+from datetime import datetime
 import time
 import os
 import re
@@ -82,8 +82,12 @@ def get_syslog_size():
 
 
 def get_timerange():
-    rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' FROM MasterLinks;")
+    prefix = get_settings_cached()['prefix']
+    rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
+                           "FROM {prefix}Links;".format(prefix=prefix))
     row = rows[0]
+    if row['min'] == None or row['max'] == None:
+        return {'min': time.mktime(datetime.now().timetuple()), 'max': time.mktime(datetime.now().timetuple())}
     return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
 
@@ -257,7 +261,7 @@ def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, por
             sort_by = sort_options[0]
     # add table prefix for some columns
     if sort_by in ['port', 'src', 'dst']:
-        sort_by = "`MasterLinks`." + sort_by
+        sort_by = "`{prefix}Links`." + sort_by
 
     qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
 
@@ -382,7 +386,7 @@ def get_details_children(ip_start, ip_end, page, page_size, order):
           , `n`.subnet AS 'subnet'
           , `sn`.kids AS 'endpoints'
           , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
-        FROM MasterNodes AS `n`
+        FROM Nodes AS `n`
         LEFT JOIN (
             SELECT dst_start DIV $quot * $quot AS 'low'
                 , dst_end DIV $quot * $quot + $quot_1 AS 'high'
@@ -482,7 +486,7 @@ def get_env(address):
     ipstart, ipend = common.determine_range_string(address)
     WHERE = 'ipstart <= $start AND ipend >= $end'
     qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("MasterNodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
+    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
     parent_env = "production"
     env = "inherit"
     nearest_distance = -1
@@ -499,7 +503,7 @@ def get_env(address):
 
 
 def get_env_list():
-    envs = set(row.env for row in common.db.select("MasterNodes", what="DISTINCT env") if row.env)
+    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
     envs.add("production")
     envs.add("inherit")
     envs.add("dev")
@@ -509,11 +513,13 @@ def get_env_list():
 def set_env(address, env):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('MasterNodes', where, env=env)
+    common.db.update('Nodes', where, env=env)
 
 
 def get_protocol_list():
-    return [row.protocol for row in common.db.select("MasterLinks", what="DISTINCT protocol") if row.protocol]
+    prefix = get_settings_cached()['prefix']
+    table = "{0}Links".format(prefix)
+    return [row.protocol for row in common.db.select(table, what="DISTINCT protocol") if row.protocol]
 
 
 def get_node_info(address):
@@ -553,7 +559,7 @@ def get_node_info(address):
             , COALESCE(l_out.protocol, "") AS 'out_protocols'
         FROM (
             SELECT ipstart, subnet, alias AS 'hostname'
-            FROM MasterNodes
+            FROM Nodes
             WHERE ipstart = $start AND ipend = $end
         ) AS n
         LEFT JOIN (
@@ -598,7 +604,7 @@ def get_node_info(address):
         LEFT JOIN (
             SELECT $start AS 's1'
             , COUNT(ipstart) AS 'endpoints'
-            FROM MasterNodes
+            FROM Nodes
             WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
         ) AS children
             ON n.ipstart = children.s1
@@ -622,7 +628,7 @@ def get_node_info(address):
 def set_node_info(address, data):
     r = common.determine_range_string(address)
     where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('MasterNodes', where, **data)
+    common.db.update('Nodes', where, **data)
 
 
 def get_port_info(port):
@@ -709,7 +715,7 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
         , COALESCE(nodes.alias, '') AS 'alias'
         , COALESCE((
             SELECT env
-            FROM MasterNodes nz
+            FROM Nodes nz
             WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
             ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
             LIMIT 1
@@ -725,31 +731,31 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'conn_in'
         , COALESCE((SELECT SUM(bytes)
-            FROM MasterLinksOut AS l_out
+            FROM {prefix}LinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
               AND l_out.src_end = nodes.ipend
          ),0) AS 'bytes_out'
         , COALESCE((SELECT SUM(bytes)
-            FROM MasterLinksIn AS l_in
+            FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'bytes_in'
         , COALESCE((SELECT SUM(packets)
-            FROM MasterLinksOut AS l_out
+            FROM {prefix}LinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart
               AND l_out.src_end = nodes.ipend
          ),0) AS 'packets_out'
         , COALESCE((SELECT SUM(packets)
-            FROM MasterLinksIn AS l_in
+            FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'packets_in'
         , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
-            FROM MasterLinksIn AS l_in
+            FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart AND l_in.dst_end = nodes.ipend
          ),"") AS 'proto_in'
         , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
-            FROM MasterLinksOut AS l_out
+            FROM {prefix}LinksOut AS l_out
             WHERE l_out.src_start = nodes.ipstart AND l_out.src_end = nodes.ipend
          ),"") AS 'proto_out'
         , COALESCE((SELECT GROUP_CONCAT(tag SEPARATOR ', ')
