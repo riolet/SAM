@@ -633,7 +633,7 @@ def set_node_info(address, data):
 
 def get_port_info(port):
     if isinstance(port, list):
-        arg = "({0})".format(",".join(port))
+        arg = "({0})".format(",".join(map(str, port)))
     else:
         arg = "({0})".format(port)
 
