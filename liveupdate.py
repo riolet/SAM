@@ -5,6 +5,7 @@ import time
 import import_paloalto
 import preprocess
 import dbaccess
+import traceback
 
 buffer_mutex = threading.Lock()
 mem_buffer = []
@@ -13,8 +14,6 @@ syslog_size = 0
 handler_server = None
 handler_thread = None
 shutdown_processor = threading.Event()
-processor_thread = None
-counter = 0
 
 
 def thread_batch_processor():
@@ -103,6 +102,10 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
 
 def signal_handler(signal_number, stack_frame):
     print("\nInterrupt received.")
+    shutdown()
+
+
+def shutdown():
     print("Shutting down handler.")
     handler_server.shutdown()
     if handler_thread:
@@ -110,9 +113,6 @@ def signal_handler(signal_number, stack_frame):
         print("Handler stopped.")
     print("Shutting down batch processor.")
     shutdown_processor.set()
-    if processor_thread:
-        processor_thread.join()
-        print("Processor stopped.")
 
 
 if __name__ == "__main__":
@@ -130,6 +130,11 @@ if __name__ == "__main__":
 
     print("Live Update server listening on {0}:{1}.".format(HOST, PORT))
 
-    thread_batch_processor()
+    try:
+        thread_batch_processor()
+    except:
+        traceback.print_exc()
+        print("==>--<" * 10)
+        shutdown()
 
     print("Server shut down successfully.")
