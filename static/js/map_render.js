@@ -1,12 +1,19 @@
 //rendering configuration settings
+// test at https://jsfiddle.net/tn7836so/
 var renderConfig = {
   backgroundColor: "#AAFFDD",
   nodeColor: "#5555CC",
   nodeColorFaded: "#95D5D9",
+
   linkColorTcp: "#5555CC",
-  linkColorTcpFaded: "#95D5D9",
-  linkColorUdp: "#55CC55",
-  linkColorUdpFaded: "#95D995",
+  linkColorTcpFaded: "#BBBBDD",
+  linkColorUdpTcp: "#994499",
+  linkColorUdpTcpFaded: "#DDBBDD",
+  linkColorUdp: "#CC5555",
+  linkColorUdpFaded: "#DDBBBB",
+  linkColorOther: "#555555",
+  linkColorOtherFaded: "#CCCCCC",
+
   labelColor: "#000000",
   labelBackgroundColor: "#FFFFFF",
   labelColorError: "#996666"
@@ -17,6 +24,27 @@ function fadeFont(color, alpha) {
   g = parseInt(color.slice(3, 5), 16);
   b = parseInt(color.slice(5, 7), 16);
   return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+}
+
+function color_links(links) {
+    links.forEach(function (link) {
+        var udp = link.protocols.indexOf("UDP") !== -1;
+        var tcp = link.protocols.indexOf("TCP") !== -1;
+        var other = !tcp && !udp;
+        if (udp && tcp) {
+            link.color = renderConfig.linkColorUdpTcp;
+            link.color_faded = renderConfig.linkColorUdpTcpFaded;
+        } else if (udp) {
+            link.color = renderConfig.linkColorUdp;
+            link.color_faded = renderConfig.linkColorUdpFaded;
+        } else if (tcp) {
+            link.color = renderConfig.linkColorTcp;
+            link.color_faded = renderConfig.linkColorTcpFaded;
+        } else {
+            link.color = renderConfig.linkColorOther;
+            link.color_faded = renderConfig.linkColorOtherFaded;
+        }
+    });
 }
 
 //Given a node's subnet, return the opacity to render it at.
@@ -198,6 +226,7 @@ function drawLoopArrow(node, scale) {
     x4 += node.x;
     y4 += node.y;
 
+    // draw the curve.
     ctx.moveTo(x1, y1);
     ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
     // precalculated as math.cos(math.pi/8-0.2), math.sin(math.pi/8-0.2)
@@ -248,26 +277,40 @@ function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
     ctx.lineTo(x2, y2);
 }
 
-function renderLinks(node, scale) {
+function renderLinks(node, scale, faded) {
     "use strict";
     if (config.show_in) {
         node.inputs.forEach(function (link) {
+            ctx.beginPath();
+            if (faded) {
+                ctx.strokeStyle = link.color_faded;
+            } else {
+                ctx.strokeStyle = link.color;
+            }
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
-                drawLoopArrow(node, link.links, scale);
+                drawLoopArrow(node, scale);
             } else {
                 drawArrow(link.x1, link.y1, link.x2, link.y2, scale);
             }
+            ctx.stroke();
         });
     }
     if (config.show_out) {
         node.outputs.forEach(function (link) {
+            ctx.beginPath();
+            if (faded) {
+                ctx.strokeStyle = link.color_faded;
+            } else {
+                ctx.strokeStyle = link.color;
+            }
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
-                drawLoopArrow(node, link.links, scale);
+                drawLoopArrow(node, scale);
             } else {
                 drawArrow(link.x1, link.y1, link.x2, link.y2, scale, false);
             }
+            ctx.stroke();
         });
     }
 }
@@ -415,34 +458,35 @@ function renderClusters(collection, x, y, scale) {
     var alpha = 0;
     var skip = false;
     var drawingLevel;
-    if (m_selection["selection"] === null) {
-        ctx.strokeStyle = renderConfig.linkColorTcp;
-    } else {
-        ctx.strokeStyle = renderConfig.linkColorTcpFaded;
-    }
+    var faded = m_selection["selection"] !== null;
+    //if (faded) {
+    //    ctx.strokeStyle = renderConfig.linkColorTcp;
+    //} else {
+    //    ctx.strokeStyle = renderConfig.linkColorTcpFaded;
+    //}
     ctx.globalAlpha = 1;
 
     //Draw the graph edges
     ctx.lineWidth = 2 / scale;
     drawingLevel = collection[0].subnet;
-    ctx.beginPath();
+    //ctx.beginPath();
     alpha = opacity(collection[0].subnet, "links", scale);
     ctx.globalAlpha = alpha;
     skip = alpha === 0;
     collection.forEach(function (node) {
         if (node.subnet !== drawingLevel) {
-            ctx.stroke();
-            ctx.beginPath();
+            //ctx.stroke();
+            //ctx.beginPath();
             alpha = opacity(node.subnet, "links", scale);
             ctx.globalAlpha = alpha;
             skip = alpha === 0;
             drawingLevel = node.subnet;
         }
         if (!skip) {
-            renderLinks(node, scale);
+            renderLinks(node, scale, faded);
         }
     });
-    ctx.stroke();
+    //ctx.stroke();
 
     if (m_selection["selection"] === null) {
         ctx.strokeStyle = renderConfig.nodeColor;
@@ -488,7 +532,7 @@ function renderClusters(collection, x, y, scale) {
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links", scale);
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
-        renderLinks(m_selection["selection"], scale);
+        renderLinks(m_selection["selection"], scale, false);
         ctx.stroke();
 
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node", scale);

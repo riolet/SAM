@@ -158,11 +158,21 @@ function onfilter() {
 
 function applysearch() {
     "use strict";
-    var target = document.getElementById("search").value;
-    var ips = target.split(".");
+    var searchElement = document.getElementById("search");
+    var ips = searchElement.value.split(".");
     var segment;
     var subnet = null;
     var i = 0;
+
+    //validate ip address numbers
+   /* if (ips.length > 4 || ips.every(function (val) {
+        var n = Number(val);
+        return Number.isNaN(n) || n < 0 || n > 255;
+        })) {
+        searchElement.classList.add("error");
+    } else {
+        searchElement.classList.remove("error");
+    }*/
 
     for (i = 0; i < ips.length; i += 1) {
         if (ips[i] === "") {
@@ -222,12 +232,32 @@ function onResize() {
 
 function updateConfig() {
     "use strict";
-    config.show_clients = document.getElementById("show_clients").checked;
-    config.show_servers = document.getElementById("show_servers").checked;
-    config.show_in = document.getElementById("show_in").checked;
-    config.show_out = document.getElementById("show_out").checked;
+    config.show_clients = document.getElementById("show_clients").classList.contains("active");
+    config.show_servers = document.getElementById("show_servers").classList.contains("active");
+    config.show_in = document.getElementById("show_in").classList.contains("active");
+    config.show_out = document.getElementById("show_out").classList.contains("active");
+	config.update = document.getElementById("update").classList.contains("active");
+	runUpdate(); //required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
     render_all();
+}
+
+function applyProtocolFilter() {
+    "use strict";
+    console.log("fired");
+    config.protocol = document.getElementById("proto_filter").value;
+    sel_set_selection(null);
+    links_reset();
+    updateRenderRoot();
+    render_all();
+}
+function onProtocolFilter() {
+    "use strict";
+    console.log("on");
+    if (g_timer !== null) {
+        clearTimeout(g_timer);
+    }
+    g_timer = setTimeout(applyProtocolFilter, 700);
 }
 
 (function () {

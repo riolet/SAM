@@ -11,7 +11,7 @@ $def with (columns, sorting, rows, tags, envs, spread, prev, next)
 <!--
 ----------------- Pagination -----------------
 -->
-  <div class="ui two column grid">
+  <div class="ui three column grid">
     <div class="row">
       <div class="left floated left aligned column">
         $if prev:
@@ -24,6 +24,18 @@ $def with (columns, sorting, rows, tags, envs, spread, prev, next)
         $else:
           <button class="ui button disabled">next</button>
       </div>
+      <div class="left aligned column">
+        <div class="ui buttons">
+          <div id='btn_dl' class="ui button">Download CSV</div>
+            <div class="ui floating dropdown icon button">
+              <i class="dropdown icon"></i>
+              <div class="menu">
+              <div class="item">Download Page (CSV)</div>
+              <div class="item">Download All (CSV)</div>
+            </div>
+          </div>
+        </div>
+      </div><div id="linkplace"></div>
       <div class="right floated right aligned column">
         Results per page:
         <div class="ui floated right buttons pagesize">

@@ -103,29 +103,35 @@ function sel_build_title(node) {
   return titles;
 }
 
-function sel_build_table_connections(dataset) {
+function sel_build_table(headers, dataset) {
   "use strict";
   var tr;
   var td;
   var tbody = document.createElement("tbody");
-  dataset.forEach(function (connection) {
+  var row;
+  var header;
+  for (row = 0; row < dataset.length; row += 1) {
     tr = document.createElement("tr");
-    td = document.createElement("td");
-    //td.rowSpan = connection[1].length;
-    td.appendChild(document.createTextNode(connection.ip));
-    tr.appendChild(td);
-    td = document.createElement("td");
-    td.appendChild(ports.get_presentation(connection.port))
-    tr.appendChild(td);
-    td = document.createElement("td");
-    td.appendChild(document.createTextNode(connection.links.toString()));
-    tr.appendChild(td);
+    for (header = 0; header < headers.length; header += 1) {
+        td = document.createElement("td");
+        if (headers[header][0] === "port") {
+            td.appendChild(ports.get_presentation(dataset[row][header]));
+        } else if (headers[header][0] === "sum_bytes") {
+            td.appendChild(document.createTextNode(build_label_bytes(dataset[row][header])));
+        } else if (headers[header][0] === "avg_duration") {
+            td.appendChild(document.createTextNode(build_label_duration(dataset[row][header])));
+        } else {
+            td.appendChild(document.createTextNode(dataset[row][header]));
+        }
+        tr.appendChild(td);
+    }
     tbody.appendChild(tr);
-  });
+  }
   return tbody;
 }
 
 function sel_build_table_headers(headers, order, callback) {
+    "use strict";
     var tr = document.createElement("tr");
     var th;
     var sort_dir;
@@ -154,26 +160,6 @@ function sel_build_table_headers(headers, order, callback) {
     return tr;
 }
 
-function sel_build_table_ports(dataset) {
-  "use strict";
-  var tbody = document.createElement("tbody");
-  var tr;
-  var td;
-  dataset.forEach(function (port) {
-    tr = document.createElement("tr");
-    td = document.createElement("td");
-    td.appendChild(ports.get_presentation(port.port));
-    tr.appendChild(td);
-
-    td = document.createElement("td");
-    td.appendChild(document.createTextNode(port.links.toString()));
-    tr.appendChild(td);
-
-    tbody.appendChild(tr);
-  });
-  return tbody;
-}
-
 function sel_build_overflow(amount, columns) {
     "use strict";
     var row = document.createElement("tr");
@@ -190,6 +176,66 @@ function sel_build_overflow(amount, columns) {
       return row;
     }
     return undefined;
+}
+
+function build_label_bytes(bytes) {
+    "use strict";
+    if (bytes < 10000) {
+        return bytes + " B";
+    }
+    bytes /= 1024;
+    if (bytes < 10000) {
+        return Math.round(bytes) + " KB";
+    }
+    bytes /= 1024;
+    if (bytes < 10000) {
+        return Math.round(bytes) + " MB";
+    }
+    bytes /= 1024;
+    if (bytes < 10000) {
+        return Math.round(bytes) + " GB";
+    }
+    bytes /= 1024;
+    return Math.round(bytes) + " TB";
+}
+
+function build_label_datarate(bps) {
+    if (bps < 1024) {
+        return bps.toFixed(2) + " B/s";
+    }
+    bps /= 1024;
+    if (bps < 1024) {
+        return bps.toFixed(2) + " KiB/s";
+    }
+    bps /= 1024;
+    if (bps < 1024) {
+        return bps.toFixed(2) + " MiB/s";
+    }
+    bps /= 1024;
+    if (bps < 1024) {
+        return bps.toFixed(2) + " GiB/s";
+    }
+}
+
+function build_label_duration(elapsed) {
+    "use strict";
+    if (elapsed < 120) {
+        return Math.round(elapsed) + " seconds";
+    }
+    elapsed /= 60;
+    if (elapsed < 120) {
+        return Math.round(elapsed) + " minutes";
+    }
+    elapsed /= 60;
+    if (elapsed < 48) {
+        return Math.round(elapsed) + " hours";
+    }
+    elapsed /= 24;
+    if (elapsed < 14) {
+        return Math.round(elapsed) + " days";
+    }
+    elapsed /= 7;
+    return Math.round(elapsed) + " weeks";
 }
 
 function sel_panel_height() {
@@ -249,7 +295,6 @@ function sel_details_sort_callback(event) {
         console.error("Unknown component to sort");
         return;
     }
-    console.log("requesting an update: GET_details_sorted(node=" + m_selection.selection.address + ", component=" + component + ", order=" + new_sort);
     GET_details_sorted(m_selection.selection, component, new_sort, sel_update_display);
 }
 
@@ -282,7 +327,7 @@ function sel_update_display(node) {
     new_row = sel_build_table_headers(node.details.inputs.headers, node.details.inputs.order, sel_details_sort_callback);
     old_row.parentElement.replaceChild(new_row, old_row);
     new_row.id = "conn_in_h";
-    tbody = sel_build_table_connections(node.details.inputs.rows);
+    tbody = sel_build_table(node.details.inputs.headers, node.details.inputs.rows);
     m_selection['conn_in'].parentElement.replaceChild(tbody, m_selection['conn_in']);
     m_selection['conn_in'] = tbody;
 
@@ -291,7 +336,7 @@ function sel_update_display(node) {
     new_row = sel_build_table_headers(node.details.outputs.headers, node.details.outputs.order, sel_details_sort_callback);
     old_row.parentElement.replaceChild(new_row, old_row);
     new_row.id = "conn_out_h";
-    tbody = sel_build_table_connections(node.details.outputs.rows);
+    tbody = sel_build_table(node.details.outputs.headers, node.details.outputs.rows);
     m_selection['conn_out'].parentElement.replaceChild(tbody, m_selection['conn_out']);
     m_selection['conn_out'] = tbody;
 
@@ -300,7 +345,8 @@ function sel_update_display(node) {
     new_row = sel_build_table_headers(node.details.ports.headers, node.details.ports.order, sel_details_sort_callback);
     old_row.parentElement.replaceChild(new_row, old_row);
     new_row.id = "ports_in_h";
-    tbody = sel_build_table_ports(node.details.ports.rows);
+    //tbody = sel_build_table_ports(node.details.ports.rows);
+    tbody = sel_build_table(node.details.ports.headers, node.details.ports.rows);
     m_selection['ports_in'].parentElement.replaceChild(tbody, m_selection['ports_in']);
     m_selection['ports_in'] = tbody;
 

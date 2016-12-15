@@ -19,9 +19,74 @@ def role_text(ratio):
     return "{0:.2f} ({1})".format(ratio, desc)
 
 
+def bytes_text(bytes):
+    if bytes < 10000:
+        return "{0} B".format(int(bytes))
+    bytes /= 1024
+    if bytes < 10000:
+        return "{0} KB".format(int(bytes))
+    bytes /= 1024
+    if bytes < 10000:
+        return "{0} MB".format(int(bytes))
+    bytes /= 1024
+    if bytes < 10000:
+        return "{0} GB".format(int(bytes))
+    bytes /= 1024
+    return "{0} TB".format(int(bytes))
+
+
+def nice_protocol(p_in, p_out):
+    pin = p_in.split(",")
+    pout = p_out.split(",")
+    protocols = set(pin).union(set(pout))
+    if '' in protocols:
+        protocols.remove('')
+    directional_protocols = []
+    for p in protocols:
+        if p in pin and p in pout:
+            directional_protocols.append(p + " (i/o)")
+        elif p in pin:
+            directional_protocols.append(p + " (in)")
+        else:
+            directional_protocols.append(p + " (out)")
+    return u', '.join(directional_protocols)
+
+
+def csv_escape(datum, escape):
+    escaped = datum.replace('"', escape + '"')
+    if escaped.find(",") != -1:
+        return '"{0}"'.format(escaped)
+    return escaped
+
+
+def csv_encode_row(ary, colsep, escape):
+    if len(ary) == 0:
+        return ""
+    first = csv_escape(ary.pop(0), escape)
+    if len(ary) == 0:
+        return first
+
+    return reduce(lambda accum, current: accum + colsep + csv_escape(current, escape), ary, first)
+
+
+def csv_encode(data, colsep, rowsep, escape):
+    if len(data) == 0:
+        return ""
+
+    first = csv_encode_row(data.pop(0), colsep, escape)
+
+    if len(data) == 0:
+        return first
+
+    return reduce(lambda accum, current: accum + rowsep + csv_encode_row(current, colsep, escape), data, first)
+
+
 class Columns(object):
     def __init__(self, **kwargs):
-        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags']
+        # manually specified here to give them an order
+        self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets',
+                    'protocols']
+
         self.columns = {
             'address': {
                 'nice_name': "Address",
@@ -42,7 +107,7 @@ class Columns(object):
             'role': {
                 'nice_name': "Role (0 = client, 1 = server)",
                 'active': 'role' in kwargs,
-                'get': lambda x: role_text(float(x.conn_in) / float(x.conn_in + x.conn_out))},
+                'get': lambda x: role_text(float(x.conn_in) / max(1.0, float(x.conn_in + x.conn_out)))},
             'environment': {
                 'nice_name': "Environment",
                 'active': 'environment' in kwargs,
@@ -50,9 +115,21 @@ class Columns(object):
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
-                'get': lambda x: [x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
+                'get': lambda x: [
+                    x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
+            'bytes': {
+                'nice_name': "Bytes Handled",
+                'active': 'bytes' in kwargs,
+                'get': lambda x: bytes_text(x.bytes_in + x.bytes_out)},
+            'packets': {
+                'nice_name': "Packets Handled",
+                'active': 'packets' in kwargs,
+                'get': lambda x: x.packets_in + x.packets_out},
+            'protocols': {
+                'nice_name': "Protocols used",
+                'active': 'packets' in kwargs,
+                'get': lambda x: nice_protocol(x.proto_in, x.proto_out)},
         }
-
 
     def translate_row(self, data):
         row = []
@@ -69,7 +146,7 @@ class Columns(object):
 class Table(object):
     def __init__(self):
         self.pageTitle = "Table View"
-        self.columns = Columns(address=1, alias=1, role=1, environment=1, tags=1)
+        self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
     def filters(self, GET_data):
         fs = []
@@ -96,6 +173,18 @@ class Table(object):
         return page_size
 
     def rows(self, filters, page, page_size, order):
+        """
+
+        :param filters:  List of filter objects (see filters.py)
+        :param page: page to return (1 is first page)
+        :param page_size: number of result rows to return
+        :param order: tuple of (column, direction) to sort results by.
+        :return: a list of lists of tuples.
+            return is a list of [rows]
+            row is a list of [columns]
+            column is a tuple of (name, value)
+
+        """
         # The page-1 is because page 1 should start with result 0;
         # Note: get_table_info returns page_size + 1 results,
         #       so that IF it gets filled I know there's at least 1 more page to display.
@@ -164,8 +253,30 @@ class Table(object):
             direction = 'asc'
         return i, direction
 
+    def get_csv_download(self, GET_data):
+        filters = self.filters(GET_data)
+        order = self.order(GET_data)
+        headers = self.columns.headers()
+        rows = self.rows(filters, 1, 1000000, order)
+        #stringify rows
+        for row in rows:
+            for icol in range(len(row)):
+                if row[icol][0] == 'tags':
+                    row[icol] = " ".join([" ".join(row[icol][1][0]), " ".join(row[icol][1][1])])
+                else:
+                    row[icol] = str(row[icol][1])
+        headers = [h[1] for h in headers]
+
+        table = [headers] + rows
+        web.header("Content-Type", "application/csv")
+        return csv_encode(table, ',', '\r\n', '\\')
+
     def GET(self):
         GET_data = web.input()
+        download = bool('download' in GET_data and GET_data['download'] == '1')
+        if download:
+            return self.get_csv_download(GET_data)
+
         filters = self.filters(GET_data)
         page = self.page(GET_data)
         page_size = self.page_size(GET_data)

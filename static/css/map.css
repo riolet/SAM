@@ -44,6 +44,21 @@ body, html {
     left: 20px;
     z-index: 1;
 }
+#searchbar div.thin.item{
+    padding: 2px !important;
+}
+
+#searchbar button.active {
+    background: #2185D0 !important;
+}
+
+#searchbar button.active:hover {
+    background: #1170B0 !important;
+}
+
+#time_box p {
+    margin: 0;
+}
 
 h4 {
     text-align: center;

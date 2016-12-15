@@ -5,20 +5,32 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
     console.log("\tText Status: " + textStatus);
 }
 
+
+function GET_settings(successCallback) {
+    if (typeof(successCallback) !== "function") {
+        return;
+    }
+    $.ajax({
+        url: "/settings",
+        type: "GET",
+        data: {"headless": 1},
+        dataType: "json",
+        error: onNotLoadData,
+        success: successCallback
+    });
+}
+
 /*
 Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
-
 parents: either an array of nodes, or null.
     if a list of nodes, retrieves the children of the nodes that don't have children loaded
     if null, retreives the top-level nodes. (the /8 subnet)
 callback: if is a function, call it when done importing.
-
 ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 */
 function GET_nodes(parents, callback) {
     "use strict";
     var request = {}
-
     if (parents !== null) {
         //filter out parents with children already loaded
         parents = parents.filter(function (parent) {
@@ -32,8 +44,6 @@ function GET_nodes(parents, callback) {
             return parent.address;
         }).join(",");
     }
-    request.filter = config.filter;
-
     $.ajax({
         url: "/nodes",
         type: "GET",
@@ -81,6 +91,7 @@ function GET_links(addrs) {
     var requestData = {
         "address": addrs.join(","),
         "filter": config.filter,
+        "protocol": config.protocol,
         "tstart": config.tstart,
         "tend": config.tend};
     $.ajax({
@@ -143,7 +154,9 @@ function GET_details(node, callback) {
         "address": node.address,
         "filter": config.filter,
         "tstart": config.tstart,
-        "tend": config.tend
+        "tend": config.tend,
+        "order": "-links",
+        "simple": true
         };
 
     $.ajax({
@@ -161,15 +174,26 @@ function GET_details(node, callback) {
             node.details["ports"] = result.ports;
             node.details["loaded"] = true;
 
-            result.inputs.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
-            result.outputs.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
-            result.ports.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
+            var index;
+            for (index = result.inputs.headers.length - 1; index >= 0 && result.inputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.inputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+            for (index = result.outputs.headers.length - 1; index >= 0 && result.outputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.outputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+
+            for (index = result.ports.headers.length - 1; index >= 0 && result.ports.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.ports.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
             ports.request_submit();
 
             if (typeof callback === "function") {
@@ -187,21 +211,27 @@ function GET_details_sorted(node, component, order, callback) {
         "filter": config.filter,
         "tstart": config.tstart,
         "tend": config.tend,
-        "order": order
+        "order": order,
+        "simple": true,
+        "component": component
         };
 
     $.ajax({
-        url: "/details/" + component,
+        url: "/details",
         //dataType: "json",
         type: "GET",
         data: requestData,
         error: onNotLoadData,
         success: function (result) {
+            var index;
             Object.keys(result).forEach(function (part) {
                 node.details[part] = result[part]
-                result[part].rows.forEach(function (element) {
-                    ports.request_add(element.port);
-                });
+                for (index = result[part].headers.length - 1; index >= 0 && result[part].headers[index][0] !== "port"; index -= 1) {};
+                if (index >= 0) {
+                    result[part].rows.forEach(function (element) {
+                        ports.request_add(element[index]);
+                    });
+                }
             });
             ports.request_submit();
 
