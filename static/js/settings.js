@@ -209,7 +209,7 @@ function markupCheckboxInput(classname, checked, labeltext, changeCallback) {
     input.type = "checkbox";
     console.log("Checked is " + checked + " and of type " + typeof(checked));
     input.checked = (checked === 1);
-    input.onchange = changeCallback
+    input.onchange = changeCallback;
 
     label = document.createElement("LABEL");
     if (typeof(labeltext) == "string" && labeltext.length > 0) {
@@ -271,7 +271,8 @@ function addDSTab(ds) {
     tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, POST_ds_livechange));
+    console.log("building a ")
+    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, " ", POST_ds_livechange));
     tbody.appendChild(tr);
 
     tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
