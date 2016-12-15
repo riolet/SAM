@@ -37,7 +37,7 @@ def playback_data(path, speed):
 
 
 def send_data():
-    player = playback_data("../data/syslog_garbled", 1.0)
+    player = playback_data("./data/syslog_garbled", 1.0)
     for message in player:
         sock.sendall(message)
         # time.sleep(7)

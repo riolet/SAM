@@ -70,7 +70,7 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
             bufferMutex.release()
 
         if processOldBuffer:
-            preprocess.preprocess_log(oldBuffer)
+            preprocess.preprocess_log(suffix=oldBuffer, ds=settings['live_dest'])
 
 def signal_handler(signal, frame):
     sys.exit(0)
