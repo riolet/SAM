@@ -297,7 +297,9 @@ function rebuild_tabs(settings) {
     settings.datasources.forEach(addDSTab);
 
     //build tabs
-    $(".tabular.menu .item").tab();
+    $(".tabular.menu .item").tab({
+        onVisible: POST_ds_selection
+    });
 
     //select active one
     var active_ds = settings.datasource.id;
@@ -350,6 +352,22 @@ function populateUploadDSList(options) {
     } else {
         $(log_ds.parentElement).dropdown("set selected", getSelectedDS());
     }
+}
+
+function populateLiveDestDSList(options) {
+    "use strict";
+    let live_dest_list = document.getElementById("live_dest_list");
+    live_dest_list.innerHTML = "";
+
+    //set options
+    var div;
+    options.forEach(function (option) {
+        div = document.createElement("DIV");
+        div.className = "item"
+        div.dataset['value'] = option[0];
+        div.appendChild(document.createTextNode(option[1]));
+        live_dest_list.appendChild(div);
+    });
 }
 
 function validateUpload() {
@@ -444,6 +462,7 @@ function POST_ds_new(name) {
         if (response.code === 0) {
             //successfully created new data source
             rebuild_tabs(response.settings);
+            populateLiveDestDSList(getDSs());
         }
     });
 }
@@ -452,8 +471,9 @@ function POST_ds_delete(id) {
     "use strict";
     POST_AJAX({name:"ds_rm", param1:id}, function (response) {
         if (response.code === 0) {
-            //successfully deleted new data source
+            //successfully deleted the data source
             rebuild_tabs(response.settings);
+            populateLiveDestDSList(getDSs());
         }
     });
 }
