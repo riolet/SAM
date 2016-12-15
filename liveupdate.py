@@ -1,7 +1,4 @@
 import SocketServer
-import socket
-import sys
-import os
 import threading
 import signal
 import time
@@ -9,8 +6,8 @@ import import_paloalto
 import preprocess
 import dbaccess
 
-bufferMutex = threading.Lock()
-buffer = "A"
+buffer_mutex = threading.Lock()
+buffer_id = "A"
 buffer_size = 0
 handler_server = None
 handler_thread = None
@@ -50,29 +47,30 @@ def thread_batch_processor():
 
 
 def preprocess_buffer():
-    global buffer
+    global buffer_id
     global buffer_size
-    old_buffer = buffer
+    old_buffer_id = buffer_id
     process_old_buffer = False
     settings = dbaccess.get_settings_cached()
 
-    bufferMutex.acquire()
-    print("PROCESS: buffer {0} size is {1}".format(buffer, buffer_size))
+    buffer_mutex.acquire()
+    print("PROCESS: buffer {0} size is {1}".format(buffer_id, buffer_size))
     try:
-        if buffer == "A":
-            buffer = "B"
+        if buffer_id == "A":
+            buffer_id = "B"
         else:
-            buffer = "A"
-        buffer_size = dbaccess.get_syslog_size(settings['live_dest'], buffer)
+            buffer_id = "A"
+        buffer_size = dbaccess.get_syslog_size(settings['live_dest'], buffer_id)
         process_old_buffer = True
     except:
         print("PROCESS: hit an exception.")
     finally:
-        bufferMutex.release()
+        buffer_mutex.release()
 
     if process_old_buffer:
-        print("PROCESS: Actually running preprocess on buffer {0} of ds_{1}".format(old_buffer, settings['live_dest']))
-        preprocess.preprocess_log(suffix=old_buffer, ds=settings['live_dest'])
+        print("PROCESS: Actually running preprocess on buffer {0} of ds_{1}"
+              .format(old_buffer_id, settings['live_dest']))
+        preprocess.preprocess_log(suffix=old_buffer_id, ds=settings['live_dest'])
 
 
 # Request handler used to listen on the port
@@ -80,27 +78,15 @@ def preprocess_buffer():
 class UDPRequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         global buffer_size
-        global buffer
+        global buffer_id
         data = self.request[0].strip()
-
-
-        # Response to client??
-        # get port number
-        #port = self.client_address[1]
-        # get the communicate socket
-        #socket = self.request[1]
-        # get client host ip address
-        #client_address = (self.client_address[0])
-        # assemble a response message to client
-        # response = "%s" % data
-        #socket.sendto(data.upper(), self.client_address)
 
         lines = data.splitlines()
         # palo Alto log translation
         importer = import_paloalto.PaloAltoImporter()
         settings = dbaccess.get_settings_cached()
         importer.datasource = settings['live_dest']
-        importer.buffer = buffer
+        importer.buffer = buffer_id
         if importer.datasource is None:
             # live updates are configured to be discarded
             return
@@ -116,15 +102,15 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
         importer.insert_data(translated_lines, len(translated_lines))
 
         # update buffer stats
-        bufferMutex.acquire()
+        buffer_mutex.acquire()
         try:
             buffer_size += len(translated_lines)
         finally:
-            bufferMutex.release()
+            buffer_mutex.release()
 
 
-def signal_handler(signal, frame):
-    print("\nCtrl-C received.")
+def signal_handler(signal_number, stack_frame):
+    print("\nInterrupt received.")
     print("Shutting down handler.")
     handler_server.shutdown()
     if handler_thread:
@@ -150,10 +136,10 @@ if __name__ == "__main__":
     size_a = dbaccess.get_syslog_size(dbaccess.get_settings_cached()['live_dest'], "A")
     size_b = dbaccess.get_syslog_size(dbaccess.get_settings_cached()['live_dest'], "B")
     if size_a > 0:
-        buffer = "A"
+        buffer_id = "A"
         buffer_size = size_a
     elif size_b > 0:
-        buffer = "B"
+        buffer_id = "B"
         buffer_size = size_b
 
     # Start the daemon listening on the port in an infinite loop that exits when the program is killed
