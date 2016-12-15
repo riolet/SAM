@@ -107,7 +107,7 @@ class Columns(object):
             'role': {
                 'nice_name': "Role (0 = client, 1 = server)",
                 'active': 'role' in kwargs,
-                'get': lambda x: role_text(float(x.conn_in) / float(x.conn_in + x.conn_out))},
+                'get': lambda x: role_text(float(x.conn_in) / max(1.0, float(x.conn_in + x.conn_out)))},
             'environment': {
                 'nice_name': "Environment",
                 'active': 'environment' in kwargs,

@@ -694,7 +694,9 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
 
     HAVING = " && ".join(clause.having() for clause in clauses if clause.having())
     if HAVING:
-        HAVING = "HAVING " + HAVING
+        HAVING = "HAVING (conn_out + conn_in != 0) && " + HAVING
+    else:
+        HAVING = "HAVING (conn_out + conn_in != 0)"
 
     #      ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols']
     cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)', '(bytes_in + bytes_out)', '(packets_in + packets_out)', 'CONCAT(proto_in, proto_out)']
