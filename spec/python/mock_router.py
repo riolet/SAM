@@ -13,7 +13,8 @@ if len(sys.argv) < 2:
 else:
     numThreads = int(sys.argv[1])
 
-#Plays back the data based on the relative differences between the timestamps
+
+# Plays back the data based on the relative differences between the timestamps
 def playback_data(path, speed):
     # speed relative to realtime
     delay_multiplier = 1.0 / speed
@@ -37,7 +38,7 @@ def playback_data(path, speed):
 
 
 def send_data():
-    player = playback_data("./data/syslog_garbled", 1.0)
+    player = playback_data("./data/syslog_test", 1.0)
     for message in player:
         sock.sendall(message)
         # time.sleep(7)
