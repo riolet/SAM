@@ -38,6 +38,61 @@ var DEFAULT_SORT = "0,asc";
     window.cookie_data = cookies;
 }());
 
+(function () {
+    "use strict";
+    var csv = {};
+
+    csv.escape = function (datum, escape) {
+        var escaped = datum.replace(/\"/g, escape + "\"");
+        if (escaped.indexOf(",") !== -1) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    csv.encode_row = function (ary, colsep, escape) {
+        if (ary.length == 0) {
+            return "";
+        }
+        var first = csv.escape(ary.shift(), escape);
+        if (ary.length == 0) {
+            return first;
+        }
+        return ary.reduce(function (accumulator, currentValue) {
+            return accumulator + colsep + csv.escape(currentValue, escape);
+        }, first);
+    }
+
+    csv.encode = function (data, colsep, rowsep, escape) {
+        if (data.length == 0) {
+            return ""
+        }
+        var first = csv.encode_row(data.shift(), colsep, escape);
+
+        if (data.length == 0) {
+            return first;
+        }
+        return data.reduce(function (accumulator, currentValue) {
+            return accumulator + rowsep + csv.encode_row(currentValue, colsep, escape);
+        }, first);
+    }
+
+    csv.download = function (data, filename) {
+        var holder = document.getElementById("linkplace");
+        var downloadLink = document.createElement("A");
+        downloadLink.download = filename;
+        downloadLink.href = "data:application/csv;charset=utf-8," + encodeURIComponent(data);
+        downloadLink.style="display: none";
+
+        //place into the DOM so that .click() works
+        holder.innerHTML = "";
+        holder.appendChild(downloadLink);
+        downloadLink.click();
+    }
+
+    window.csv = csv;
+}());
+
 function importURL() {
     "use strict";
     var tmp;
@@ -99,7 +154,6 @@ function btn_pagesize_callback(e) {
 
 function btn_header_callback(e) {
     "use strict";
-    console.log(e);
     var oldSort = cookie_data.get("sort", DEFAULT_SORT);
     var newSort = e.target.id.substr(6) + ",asc";
     if (newSort !== oldSort) {
@@ -141,6 +195,95 @@ function hostname_edit_callback(event) {
     return false;
 }
 
+function get_stamp() {
+    "use strict";
+    var d = new Date();
+    return d.getFullYear() + "_" + d.getMonth() + "_" + d.getDay() + "_" + d.getHours() + "_" + d.getMinutes();
+}
+
+function scrape_thead(thead) {
+    "use strict";
+    var ths = thead.getElementsByTagName("TH");
+    var headers = [];
+    var i;
+    for(i=ths.length - 1; i >= 0; i -= 1) {
+        headers[i] = ths[i].innerText;
+    }
+    console.log("Headers: ");
+    console.log(headers);
+    return headers;
+}
+
+function scrape_tbody(tbody) {
+    "use strict";
+    var trs = tbody.getElementsByTagName("TR");
+    var tds;
+    var rows = [];
+    var row;
+    var irow;
+    var icol;
+    for (irow = trs.length - 1; irow >= 0; irow -= 1) {
+        row = [];
+        tds = trs[irow].getElementsByTagName("TD");
+        for (icol = tds.length - 1; icol >= 0; icol -= 1) {
+            row[icol] = tds[icol].innerText;
+            if (row[icol] === "") {
+                //console.log("table empty at row " + irow + " and column " + icol);
+                //For column Hostname:
+                //    try searching for an input with a value
+                var inputs = tds[icol].getElementsByTagName("INPUT");
+                if (inputs.length == 1) {
+                    row[icol] = inputs[0].value;
+                }
+                //For column Tags:
+                //TODO: Should be comma separated? Currently works as just concatenated with spaces
+            }
+        }
+        rows[irow] = row;
+    }
+    return rows;
+}
+
+function table_to_csv(table, colsep=",", rowsep="\r\n", escape="\\") {
+    "use strict";
+    var headers = scrape_thead(table.getElementsByTagName("THEAD")[0]);
+    var rows = scrape_tbody(table.getElementsByTagName("TBODY")[0]);
+    rows.unshift(headers);
+    return csv.encode(rows, colsep, rowsep, escape);
+
+    //  http://localhost:8080/table?page=1&page_size=20&sort=0,asc&filters=3%3B1%3B0%3B8080%7C6%3B1%3B32
+}
+
+function download(link, filename) {
+    var holder = document.getElementById("linkplace");
+    var downloadLink = document.createElement("A");
+    downloadLink.download = filename;
+    downloadLink.href = link;
+    downloadLink.style="display: none";
+
+    //place into the DOM so that .click() works
+    holder.innerHTML = "";
+    holder.appendChild(downloadLink);
+    downloadLink.click();
+}
+
+function initiateDownload(event) {
+    "use strict";
+    var target = event.target;
+    var btn_text = target.innerText;
+    if (btn_text.toLocaleLowerCase().indexOf("all") == -1) {
+        //download page
+        console.log("Downloading this page of data at " + get_stamp());
+        var data = table_to_csv(document.getElementById("resultsTable"));
+        csv.download(data, "table_" + get_stamp() + ".csv");
+    } else {
+        //download all
+        console.log("Downloading ALL the data");
+        var download_string = "/table?download=1&" + location.search.substr(1)
+        download(download_string, "table_" + get_stamp() + ".csv")
+    }
+}
+
 function init() {
     "use strict";
 
@@ -155,6 +298,11 @@ function init() {
             active: "Voted"
         }
     });
+
+    $(".dropdown.button").dropdown({
+        action: 'combo'
+    });
+    document.getElementById("btn_dl").onclick = initiateDownload
 
     //Configure Filters
     filters.displayDiv = document.getElementById("filters");

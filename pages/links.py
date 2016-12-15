@@ -3,6 +3,7 @@ import dbaccess
 import web
 import decimal
 import datetime
+import common
 
 
 # This class is for getting the links or edges connecting nodes in the graph
@@ -15,17 +16,24 @@ def decimal_default(obj):
 
 
 class Links:
-    def get_links(self, addresses, port_filter, timerange):
+    def get_links(self, addresses, port_filter, timerange, protocol):
         result = {}
         for address in addresses:
-            ips = [int(i) for i in address.split(".")]
+            ipstart, ipend = common.determine_range_string(address)
             result[address] = {}
             if port_filter:
-                result[address]['inputs'] = dbaccess.get_links_in(*ips, port_filter=port_filter, timerange=timerange)
-                result[address]['outputs'] = dbaccess.get_links_out(*ips, port_filter=port_filter, timerange=timerange)
+                result[address]['inputs'] = dbaccess.get_links(ipstart, ipend, inbound=True, port_filter=port_filter, timerange=timerange, protocol=protocol)
+                result[address]['outputs'] = dbaccess.get_links(ipstart, ipend, inbound=False, port_filter=port_filter, timerange=timerange, protocol=protocol)
             else:
-                result[address]['inputs'] = dbaccess.get_links_in(*ips, timerange=timerange)
-                result[address]['outputs'] = dbaccess.get_links_out(*ips, timerange=timerange)
+                result[address]['inputs'] = dbaccess.get_links(ipstart, ipend, inbound=True, timerange=timerange, protocol=protocol)
+                result[address]['outputs'] = dbaccess.get_links(ipstart, ipend, inbound=False, timerange=timerange, protocol=protocol)
+
+            # remove duplicate protocol names
+            for row in result[address]['inputs']:
+                row['protocols'] = ",".join(set(row['protocols'].split(',')))
+            for row in result[address]['outputs']:
+                row['protocols'] = ",".join(set(row['protocols'].split(',')))
+
         return json.dumps(result, default=decimal_default)
 
     def GET(self):
@@ -58,13 +66,19 @@ class Links:
         timeend = get_data.get("tend", 2 ** 31 - 1)
         timestart = int(timestart)
         timeend = int(timeend)
-        print("getting links from: {0} \n"
-              "                to: {1}".format(
-            datetime.datetime.fromtimestamp(timestart),
-            datetime.datetime.fromtimestamp(timeend)))
+        #print("getting links from: {0} \n"
+        #      "                to: {1}".format(
+        #    datetime.datetime.fromtimestamp(timestart),
+        #    datetime.datetime.fromtimestamp(timeend)))
+        protocol = get_data.get("protocol", "ALL")
+        protocol = protocol.upper()
+        if protocol == "ALL":
+            protocol = None
+
         if addresses:
             return self.get_links(addresses,
                                   port_filter=port_filter,
-                                  timerange=(timestart, timeend))
+                                  timerange=(timestart, timeend),
+                                  protocol=protocol)
         else:
             return json.dumps({'result': "ERROR: no 'address' specified."})

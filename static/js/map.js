@@ -28,7 +28,8 @@ var config = {
 	"update_interval": 60,
     "filter": "",
     "tstart": 1,
-    "tend": 2147483647
+    "tend": 2147483647,
+    "protocol": "all"
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -61,6 +62,10 @@ function init() {
     var filterElement = document.getElementById("filter");
     filterElement.oninput = onfilter;
     config.filter = filterElement.value;
+
+    filterElement = document.getElementById("proto_filter");
+    filterElement.oninput = onProtocolFilter;
+    config.protocol = filterElement.value;
 
     var searchElement = document.getElementById("search");
     searchElement.value = "";

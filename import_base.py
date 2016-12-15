@@ -8,6 +8,19 @@ class BaseImporter:
     mysql_time_format = '%Y-%m-%d %H:%M:%S'
 
     def __init__(self):
+        self.keys = [
+                "src",
+                "srcport",
+                "dst",
+                "dstport",
+                "timestamp",
+                "protocol",
+                "bytes_sent",
+                "bytes_received",
+                "packets_sent",
+                "packets_received",
+                "duration",
+            ]
         self.instructions = """
 This program imports a syslog dump into the database.
 It extracts IP addresses and ports and discards other data. Only TCP traffic data is used.
@@ -91,8 +104,7 @@ Usage:
         line_num = -1
         lines_inserted = 0
         counter = 0
-        row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
-        rows = [row.copy() for i in range(1000)]
+        rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
         for line in all_lines:
             line_num += 1
 
@@ -124,8 +136,7 @@ Usage:
             line_num = -1
             lines_inserted = 0
             counter = 0
-            row = {"SourceIP": "", "SourcePort": "", "DestinationIP": "", "DestinationPort": "", "Timestamp": ""}
-            rows = [row.copy() for i in range(1000)]
+            rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
             for line in fin:
                 line_num += 1
 
@@ -142,7 +153,7 @@ Usage:
             if counter != 0:
                 self.insert_data(rows, counter)
                 lines_inserted += counter
-            print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+            print("Done. {0} lines processed, {1} rows inserted".format(line_num + 1, lines_inserted))
 
     def insert_data(self, rows, count):
         """
@@ -159,6 +170,12 @@ Usage:
         table_name = "ds_{ds}_Syslog{buffer}".format(ds=self.datasource, buffer=self.buffer)
         try:
             truncated_rows = rows[:count]
+            if count > 0 and len(rows[0].keys()) != len(self.keys):
+                print("Database key length doesn't match. Check that your importer's translate function "
+                      "fills all the dictionary keys in import_base.keys exactly.")
+                print("Expected keys: {0}".format(repr(self.keys)))
+                print("Received keys: {0}".format(repr(rows[0].keys())))
+                sys.exit(3)
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
             # >>> db.multiple_insert('person', values=values, _test=True)
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)

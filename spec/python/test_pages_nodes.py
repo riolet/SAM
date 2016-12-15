@@ -29,7 +29,7 @@ def test_8():
     assert data.keys() == ['79']
     assert sorted(data['79'][0].keys()) == [u'alias', u'env', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
     assert [common.IPtoString(i['ipstart']) for i in data['79']] == \
-           ['79.35.0.0', '79.80.0.0', '79.106.0.0', '79.119.0.0', '79.146.0.0', '79.179.0.0', '79.229.0.0']
+           ['79.35.0.0', '79.64.0.0', '79.80.0.0', '79.106.0.0', '79.119.0.0', '79.146.0.0', '79.179.0.0', '79.229.0.0']
 
 
 def test_16():
@@ -43,7 +43,7 @@ def test_16():
     assert data.keys() == ['79.106']
     assert sorted(data['79.106'][0].keys()) == [u'alias', u'env', u'ipend', u'ipstart', u'radius', u'subnet', u'x', u'y']
     assert [common.IPtoString(i['ipstart']) for i in data['79.106']] == \
-           ['79.106.151.0', '79.106.191.0', '79.106.226.0']
+           ['79.106.151.0', '79.106.179.0', '79.106.191.0', '79.106.226.0']
 
 
 def test_24():
@@ -82,5 +82,5 @@ def test_multiple():
     assert sorted(data.keys()) == ['79', '79.106', '79.106.151', '79.106.151.50']
     assert len(data['79.106.151.50']) == 0
     assert len(data['79.106.151']) == 3
-    assert len(data['79.106']) == 3
-    assert len(data['79']) == 7
+    assert len(data['79.106']) == 4
+    assert len(data['79']) == 8

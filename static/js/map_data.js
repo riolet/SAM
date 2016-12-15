@@ -91,6 +91,7 @@ function GET_links(addrs) {
     var requestData = {
         "address": addrs.join(","),
         "filter": config.filter,
+        "protocol": config.protocol,
         "tstart": config.tstart,
         "tend": config.tend};
     $.ajax({
@@ -153,7 +154,9 @@ function GET_details(node, callback) {
         "address": node.address,
         "filter": config.filter,
         "tstart": config.tstart,
-        "tend": config.tend
+        "tend": config.tend,
+        "order": "-links",
+        "simple": true
         };
 
     $.ajax({
@@ -171,15 +174,26 @@ function GET_details(node, callback) {
             node.details["ports"] = result.ports;
             node.details["loaded"] = true;
 
-            result.inputs.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
-            result.outputs.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
-            result.ports.rows.forEach(function (element) {
-                ports.request_add(element.port);
-            });
+            var index;
+            for (index = result.inputs.headers.length - 1; index >= 0 && result.inputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.inputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+            for (index = result.outputs.headers.length - 1; index >= 0 && result.outputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.outputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+
+            for (index = result.ports.headers.length - 1; index >= 0 && result.ports.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.ports.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
             ports.request_submit();
 
             if (typeof callback === "function") {
@@ -197,21 +211,27 @@ function GET_details_sorted(node, component, order, callback) {
         "filter": config.filter,
         "tstart": config.tstart,
         "tend": config.tend,
-        "order": order
+        "order": order,
+        "simple": true,
+        "component": component
         };
 
     $.ajax({
-        url: "/details/" + component,
+        url: "/details",
         //dataType: "json",
         type: "GET",
         data: requestData,
         error: onNotLoadData,
         success: function (result) {
+            var index;
             Object.keys(result).forEach(function (part) {
                 node.details[part] = result[part]
-                result[part].rows.forEach(function (element) {
-                    ports.request_add(element.port);
-                });
+                for (index = result[part].headers.length - 1; index >= 0 && result[part].headers[index][0] !== "port"; index -= 1) {};
+                if (index >= 0) {
+                    result[part].rows.forEach(function (element) {
+                        ports.request_add(element[index]);
+                    });
+                }
             });
             ports.request_submit();
 

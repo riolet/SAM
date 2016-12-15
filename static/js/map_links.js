@@ -105,14 +105,19 @@ function GET_links_callback(result) {
         var node = findNode(address);
         node.inputs = result[address].inputs;
         node.outputs = result[address].outputs;
+        //position links
         if (node.subnet === 32) {
             link_processPorts(node.inputs, node);
         } else {
             link_processPosition(node.inputs, node, "dst");
         }
         link_processPosition(node.outputs, node, "src");
+        //determine server/client
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
+        //colorize links (map_render::color_links)
+        color_links(node.inputs);
+        color_links(node.outputs);
     });
     ports.request_submit();
     updateRenderRoot();

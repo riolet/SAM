@@ -79,14 +79,14 @@ class PortFilter(Filter):
         prefix = dbaccess.get_settings_cached()['prefix']
 
         if self.params['connection'] == '0':
-            return "EXISTS (SELECT port FROM {prefix}LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
+            return "EXISTS (SELECT port FROM {prefix}LinksOut AS `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         elif self.params['connection'] == '1':
-            return "NOT EXISTS (SELECT port FROM {prefix}LinksOut WHERE LinksOut.port = '{0}' && LinksOut.src_start = nodes.ipstart && LinksOut.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
+            return "NOT EXISTS (SELECT port FROM {prefix}LinksOut AS `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
 
         elif self.params['connection'] == '2':
-            return "EXISTS (SELECT port FROM {prefix}LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
+            return "EXISTS (SELECT port FROM {prefix}LinksIn AS `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         elif self.params['connection'] == '3':
-            return "NOT EXISTS (SELECT port FROM {prefix}LinksIn WHERE LinksIn.port = '{0}' && LinksIn.dst_start = nodes.ipstart && LinksIn.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
+            return "NOT EXISTS (SELECT port FROM {prefix}LinksIn AS `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']), prefix=prefix)
         else:
             print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
@@ -125,23 +125,28 @@ class TargetFilter(Filter):
         Filter.__init__(self, "target", enabled)
         self.params['target'] = ""
         self.params['to'] = ""
+        # for variable `to`:
+        #   0: hosts connect to target
+        #   1: hosts do NOT connect to target
+        #   2: hosts receive connections from target
+        #   3: hosts do NOT receive connections from target
 
     def where(self):
-        # ip_segments = [int(x) for x in self.params['target'].split(".")]
-        # target = common.IPtoInt(*ip_segments)
-        r = common.determine_range_string(self.params['target'])
+        ipstart, ipend = common.determine_range_string(self.params['target'])
         prefix = dbaccess.get_settings_cached()['prefix']
-
         if self.params['to'] == '0':
-            return "EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
+            return "EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
+                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         elif self.params['to'] == '1':
-            return "NOT EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.dst BETWEEN {lower} AND {upper} AND Links.src = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
+            return "NOT EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
+                   "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         
         if self.params['to'] == '2':
-            return "EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
+            return "EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
+                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         elif self.params['to'] == '3':
-            return "NOT EXISTS (SELECT 1 FROM {prefix}Links WHERE Links.src BETWEEN {lower} AND {upper} AND Links.dst = nodes.ipstart)".format(lower=r[0], upper=r[1], prefix=prefix)
-
+            return "NOT EXISTS (SELECT 1 FROM {prefix}Links AS `l` WHERE l.src BETWEEN {lower} AND {upper} " \
+                   "AND l.dst BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend, prefix=prefix)
         else:
             print ("Warning: no match for 'to' parameter of TargetFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['to'], type(self.params['to'])))
@@ -184,8 +189,8 @@ class EnvFilter(Filter):
 class RoleFilter(Filter):
     def __init__(self, enabled):
         Filter.__init__(self, "role", enabled)
-        self.params['ratio'] = ""
         self.params['comparator'] = ""
+        self.params['ratio'] = ""
 
     def where(self):
         return ""
@@ -198,7 +203,34 @@ class RoleFilter(Filter):
         return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
 
 
-filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter, EnvFilter]
+class ProtocolFilter(Filter):
+    def __init__(self, enabled):
+        Filter.__init__(self, "protocol", enabled)
+        self.params['handles'] = ""
+        self.params['protocol'] = ""
+
+    def where(self):
+        return ""
+
+    def having(self):
+        handles = '0'
+        if self.params['handles'] in ['0', '1', '2', '3']:
+            handles = self.params['handles']
+        protocol = common.web.sqlquote("%" + self.params['protocol'] + "%")
+
+        if handles == '0':
+            return "proto_in LIKE {protocol}".format(protocol=protocol)
+        if handles == '1':
+            return "proto_in NOT LIKE {protocol}".format(protocol=protocol)
+        if handles == '2':
+            return "proto_out LIKE {protocol}".format(protocol=protocol)
+        if handles == '3':
+            return "proto_out NOT LIKE {protocol}".format(protocol=protocol)
+
+        return ""
+
+
+filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter,EnvFilter,ProtocolFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 

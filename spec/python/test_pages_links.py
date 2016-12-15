@@ -7,6 +7,8 @@ import time
 
 app = web.application(server.urls, globals())
 
+keys = [u'dst_end', u'dst_start', u'links', u'protocols', u'src_end', u'src_start']
+keys_p = [u'dst_end', u'dst_start', u'links', u'port', u'protocols', u'src_end', u'src_start']
 
 def test_empty_request():
     req = app.request('/links', 'GET')
@@ -28,7 +30,6 @@ def test_simple_request8():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dst_end', u'dst_start', u'links', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -44,7 +45,6 @@ def test_simple_request16():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dst_end', u'dst_start', u'links', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -60,7 +60,6 @@ def test_simple_request24():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dst_end', u'dst_start', u'links', u'src_end', u'src_start']
     assert sorted(data[test_ip]['inputs'][0].keys()) == keys
     assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
@@ -76,9 +75,8 @@ def test_simple_request32():
     data = json.loads(req.data)
     assert data.keys() == [test_ip]
     assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    keys = [u'dst_end', u'dst_start', u'links', u'port', u'src_end', u'src_start']
-    assert sorted(data[test_ip]['inputs'][0].keys()) == keys
-    assert sorted(data[test_ip]['outputs'][0].keys()) == keys
+    assert sorted(data[test_ip]['inputs'][0].keys()) == keys_p
+    assert sorted(data[test_ip]['outputs'][0].keys()) == keys_p
 
 
 def test_filter():

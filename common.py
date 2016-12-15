@@ -92,7 +92,8 @@ def IPStringtoInt(ip):
     Returns: The IP address as a simple 32-bit unsigned integer
 
     """
-    parts = ip.split(".")
+    address_mask = ip.split("/")
+    parts = address_mask[0].split(".")
     ip_int = 0
     for i in range(4):
         ip_int <<= 8
