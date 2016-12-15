@@ -38,11 +38,14 @@ def playback_data(path, speed):
 
 
 def send_data():
+    counter = 0
     player = playback_data("./data/syslog_test", 1.0)
     for message in player:
+        counter += 1
         sock.sendall(message)
         # time.sleep(7)
     print("Player finished playing back file.")
+    print("Messages sent: {0}".format(counter))
     print("Feel free to close this application by pressing ctrl-C.")
 
 

@@ -101,7 +101,7 @@ Usage:
             None
         """
         all_lines = s.splitlines()
-        line_num = -1
+        line_num = 0
         lines_inserted = 0
         counter = 0
         rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
@@ -133,7 +133,7 @@ Usage:
             None
         """
         with open(path_in) as fin:
-            line_num = -1
+            line_num = 0
             lines_inserted = 0
             counter = 0
             rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
@@ -153,7 +153,7 @@ Usage:
             if counter != 0:
                 self.insert_data(rows, counter)
                 lines_inserted += counter
-            print("Done. {0} lines processed, {1} rows inserted".format(line_num + 1, lines_inserted))
+            print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
 
     def insert_data(self, rows, count):
         """
