@@ -32,7 +32,6 @@ Usage:
 
 """.format(sys.argv[0])
         self.datasource = 0
-        self.buffer = 'A' # 'A' or 'B'
 
     def main(self, argv):
         if not (1 < len(argv) < 4):
@@ -122,6 +121,7 @@ Usage:
             self.insert_data(rows, counter)
             lines_inserted += counter
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+        return lines_inserted
 
     def import_file(self, path_in):
         """
@@ -150,10 +150,11 @@ Usage:
                     self.insert_data(rows, counter)
                     lines_inserted += counter
                     counter = 0
-            if counter != 0:
-                self.insert_data(rows, counter)
-                lines_inserted += counter
-            print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+        if counter != 0:
+            self.insert_data(rows, counter)
+            lines_inserted += counter
+        print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+        return lines_inserted
 
     def insert_data(self, rows, count):
         """
@@ -167,7 +168,11 @@ Usage:
         Returns:
             None
         """
-        table_name = "ds_{ds}_Syslog{buffer}".format(ds=self.datasource, buffer=self.buffer)
+        if self.datasource is None:
+            raise ValueError("No data source specified. Import aborted.")
+
+        table_name = "ds_{ds}_Syslog".format(ds=self.datasource)
+
         try:
             truncated_rows = rows[:count]
             if count > 0 and len(rows[0].keys()) != len(self.keys):
@@ -181,6 +186,7 @@ Usage:
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
             print("Error inserting into database:")
+            print("\t{0}".format(e))
             import integrity
             if integrity.check_and_fix_db_access() == 0:
                 print("Resuming...")

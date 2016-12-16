@@ -52,14 +52,14 @@ def thread_batch_processor():
     print("CHRON: process server shutting down")
 
 
-def store_lines(lines):
+def store_data(lines):
     global mem_buffer
     global buffer_mutex
 
     # acquire lock
     with buffer_mutex:
         # append line
-        mem_buffer.extend(lines)
+        mem_buffer.append(lines)
     # release lock
 
 
@@ -72,19 +72,26 @@ def import_lines():
         lines = mem_buffer
         mem_buffer = []
 
-    settings = dbaccess.get_settings_cached()
+    settings = dbaccess.get_settings()
     importer = import_paloalto.PaloAltoImporter()
     importer.datasource = settings['live_dest']
-    print("IMPORTER: importing {0} lines to the Syslog. Syslog is now {1} lines".format(len(lines), len(lines) + syslog_size))
-    importer.import_string("\n".join(lines))
-    syslog_size += len(lines)
+    if importer.datasource is None:
+        print("IMPORTER: {0} lines lost. No destination specified for live data".format(len(lines)))
+    else:
+        print("IMPORTER: importing {0} lines to the Syslog. ".format(len(lines)),)
+        num_inserted = importer.import_string("\n".join(lines))
+        syslog_size += num_inserted
+        print("Syslog is now {0}".format(syslog_size))
 
 
 def preprocess_lines():
     global syslog_size
     print("PREPROCESSOR: preprocessing the syslog. ({0} lines)".format(syslog_size))
-    settings = dbaccess.get_settings_cached()
-    preprocess.preprocess_log(ds=settings['live_dest'])
+    settings = dbaccess.get_settings()
+    if settings['live_dest'] is None:
+        print("PREPROCESSOR: No live data source specified. Check settings.")
+    else:
+        preprocess.preprocess_log(ds=settings['live_dest'])
     syslog_size = 0
 
 
@@ -96,8 +103,7 @@ class UDPRequestHandler(SocketServer.BaseRequestHandler):
         global buffer_id
 
         data = self.request[0].strip()
-        lines = data.splitlines()
-        store_lines(lines)
+        store_data(data)
 
 
 def signal_handler(signal_number, stack_frame):

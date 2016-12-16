@@ -10,4 +10,4 @@ DELETE FROM {prefix}staging_LinksOut;
 DELETE FROM {prefix}staging_Links;
 
 -- delete all data from Syslog table
-DELETE FROM {prefix}Syslog{suffix};
+DELETE FROM {prefix}Syslog;
