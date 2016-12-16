@@ -488,12 +488,10 @@ def deduce_LinksOut(prefix):
     db.query(query)
 
 
-# method to copy all data from staging tables to master tables
 def copy_to_master(prefix):
     dbaccess.exec_sql(db, "./sql/copy_to_master_tables.sql", {'prefix': prefix})
 
 
-# method to delete all data from staging tables
 def delete_staging_data(prefix):
     dbaccess.exec_sql(db, "./sql/delete_staging_data.sql", {'prefix': prefix})
 
