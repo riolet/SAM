@@ -33,7 +33,7 @@ def import_nodes():
 
     # Get all /8 nodes. Load them into Nodes8
     query = """
-        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT (log.ip * 16777216) AS 'ipstart'
             , ((log.ip + 1) * 16777216 - 1) AS 'ipend'
             , 8 AS 'subnet'
@@ -46,14 +46,17 @@ def import_nodes():
             UNION
             SELECT dst DIV 16777216 AS 'ip'
             FROM {prefix}Syslog
-        ) AS log;
+        ) AS log
+        LEFT JOIN Nodes AS `filter`
+            ON (log.ip * 16777216) = `filter`.ipstart AND ((log.ip + 1) * 16777216 - 1) = `filter`.ipend
+        WHERE filter.ipstart IS NULL;
     """.format(prefix=prefix)
     qvars = {"radius": 331776}
     db.query(query, vars=qvars)
 
     # Get all the /16 nodes. Load these into Nodes16
     query = """
-        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT (log.ip * 65536) AS 'ipstart'
             , ((log.ip + 1) * 65536 - 1) AS 'ipend'
             , 16 AS 'subnet'
@@ -68,13 +71,16 @@ def import_nodes():
             FROM {prefix}Syslog
         ) AS log
         JOIN Nodes AS parent
-            ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216);
+            ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216)
+        LEFT JOIN Nodes AS `filter`
+            ON (log.ip * 65536) = `filter`.ipstart AND ((log.ip + 1) * 65536 - 1) = `filter`.ipend
+        WHERE filter.ipstart IS NULL;
         """.format(prefix=prefix)
     db.query(query)
 
     # Get all the /24 nodes. Load these into Nodes24
     query = """
-        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT (log.ip * 256) AS 'ipstart'
             , ((log.ip + 1) * 256 - 1) AS 'ipend'
             , 24 AS 'subnet'
@@ -89,13 +95,16 @@ def import_nodes():
             FROM {prefix}Syslog
         ) AS log
         JOIN Nodes AS parent
-            ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536);
+            ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536)
+        LEFT JOIN Nodes AS `filter`
+            ON (log.ip * 256) = `filter`.ipstart AND ((log.ip + 1) * 256 - 1) = `filter`.ipend
+        WHERE filter.ipstart IS NULL;
         """.format(prefix=prefix)
     db.query(query)
 
     # Get all the /32 nodes. Load these into Nodes32
     query = """
-        INSERT IGNORE INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+        INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
         SELECT log.ip AS 'ipstart'
             , log.ip AS 'ipend'
             , 32 AS 'subnet'
@@ -110,7 +119,10 @@ def import_nodes():
             FROM {prefix}Syslog
         ) AS log
         JOIN Nodes AS parent
-            ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256);
+            ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256)
+        LEFT JOIN Nodes AS `filter`
+            ON log.ip = `filter`.ipstart AND log.ip = `filter`.ipend
+        WHERE filter.ipstart IS NULL;
         """.format(prefix=prefix)
     db.query(query)
 
