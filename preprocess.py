@@ -131,12 +131,12 @@ def import_links(prefix):
     build_Links(prefix)
 
     # precalc links in
-    print("precalculating inbound link aggregates...")
-    deduce_LinksIn(prefix)
+    # print("precalculating inbound link aggregates...")
+    # deduce_LinksIn(prefix)
 
     # precalc links out
-    print("precalculating outbound link aggregates...")
-    deduce_LinksOut(prefix)
+    # print("precalculating outbound link aggregates...")
+    # deduce_LinksOut(prefix)
 
 
 def build_Links(prefix):
@@ -160,10 +160,25 @@ def build_Links(prefix):
     db.query(query)
 
 
-def deduce_LinksIn(prefix):
+def precompute_links(prefix):
+    rows = db.select("{0}staging_Links".format(prefix), what="MIN(timestamp) AS 'start', MAX(timestamp) AS 'end'")
+    timerange = rows[0]
+
+    db.delete("{0}LinksIn".format(prefix), where="timestamp BETWEEN $start AND $end", vars=timerange)
+    db.delete("{0}LinksOut".format(prefix), where="timestamp BETWEEN $start AND $end", vars=timerange)
+    deduce_LinksIn(prefix, timerange.start, timerange.end)
+    deduce_LinksOut(prefix, timerange.start, timerange.end)
+
+
+def deduce_LinksIn(prefix, timestart, timestop):
+    time_vars = {
+        "start": timestart,
+        "stop": timestop
+    }
+
     # /8 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
@@ -174,14 +189,15 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
+        WHERE timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
     # /16 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
@@ -192,8 +208,9 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
@@ -206,15 +223,16 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
     # /24 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
@@ -225,8 +243,9 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 65536) = (dst DIV 65536)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 65536 * 65536 AS 'src_start'
@@ -239,9 +258,10 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
@@ -254,15 +274,16 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
     # /32 links
     query = """
-        INSERT INTO {prefix}staging_LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksIn (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
@@ -273,8 +294,9 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 256) = (dst DIV 256)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 256 * 256 AS 'src_start'
@@ -287,9 +309,10 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 65536) = (dst DIV 65536)
           AND (src DIV 256) != (dst DIV 256)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 65536 * 65536 AS 'src_start'
@@ -302,9 +325,10 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
@@ -317,17 +341,22 @@ def deduce_LinksIn(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
 
-def deduce_LinksOut(prefix):
+def deduce_LinksOut(prefix, timestart, timestop):
+    time_vars = {
+        "start": timestart,
+        "stop": timestop
+    }
     # /8 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 16777216 * 16777216 AS 'src_start'
             , src DIV 16777216 * 16777216 + 16777215 AS 'src_end'
             , dst DIV 16777216 * 16777216 AS 'dst_start'
@@ -338,14 +367,15 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
+        WHERE timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
     # /16 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 65536 * 65536 AS 'src_start'
             , src DIV 65536 * 65536 + 65535 AS 'src_end'
             , dst DIV 65536 * 65536 AS 'dst_start'
@@ -356,8 +386,9 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 65536 * 65536 AS 'src_start'
@@ -370,15 +401,16 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
     # /24 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src DIV 256 * 256 AS 'src_start'
             , src DIV 256 * 256 + 255 AS 'src_end'
             , dst DIV 256 * 256 AS 'dst_start'
@@ -389,8 +421,9 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 65536) = (dst DIV 65536)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 256 * 256 AS 'src_start'
@@ -403,9 +436,10 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src DIV 256 * 256 AS 'src_start'
@@ -418,15 +452,16 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
     """.format(prefix=prefix)
-    db.query(query)
+    db.query(query, vars=time_vars)
 
     # /32 links
     query = """
-        INSERT INTO {prefix}staging_LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
+        INSERT INTO {prefix}LinksOut (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)
         SELECT src AS 'src_start'
             , src AS 'src_end'
             , dst AS 'dst_start'
@@ -437,8 +472,9 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 256) = (dst DIV 256)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src AS 'src_start'
@@ -451,9 +487,10 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 65536) = (dst DIV 65536)
           AND (src DIV 256) != (dst DIV 256)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src AS 'src_start'
@@ -466,9 +503,10 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) = (dst DIV 16777216)
           AND (src DIV 65536) != (dst DIV 65536)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp
         UNION
         SELECT src AS 'src_start'
@@ -481,9 +519,24 @@ def deduce_LinksOut(prefix):
             , SUM(links)
             , SUM(bytes_sent + COALESCE(bytes_received, 0))
             , SUM(packets_sent + COALESCE(packets_received, 0))
-        FROM {prefix}staging_Links
+        FROM {prefix}Links
         WHERE (src DIV 16777216) != (dst DIV 16777216)
+          AND timestamp BETWEEN $start AND $stop
         GROUP BY src_start, src_end, dst_start, dst_end, port, timestamp;
+    """.format(prefix=prefix)
+    db.query(query, vars=time_vars)
+
+
+def copy_links_to_master(prefix):
+    query = """
+INSERT INTO {prefix}Links SELECT * FROM {prefix}staging_Links
+  ON DUPLICATE KEY UPDATE
+    `{prefix}Links`.duration=(`{prefix}Links`.duration*`{prefix}Links`.links+VALUES(links)*VALUES(duration)) / GREATEST(1, `{prefix}Links`.duration + VALUES(duration))
+  , `{prefix}Links`.links=`{prefix}Links`.links+VALUES(links)
+  , `{prefix}Links`.bytes_sent=`{prefix}Links`.bytes_sent+VALUES(bytes_sent)
+  , `{prefix}Links`.bytes_received=`{prefix}Links`.bytes_received+VALUES(bytes_received)
+  , `{prefix}Links`.packets_sent=`{prefix}Links`.packets_sent+VALUES(packets_sent)
+  , `{prefix}Links`.packets_received=`{prefix}Links`.packets_received+VALUES(packets_received);
     """.format(prefix=prefix)
     db.query(query)
 
@@ -506,7 +559,9 @@ def preprocess_log(ds=None):
         print("importing links...")
         import_links(prefix) # import all link info into staging tables
         print("copying from staging to master...")
-        copy_to_master(prefix) # copy data from staging to master tables
+        copy_links_to_master(prefix) # copy data from staging to master tables
+        print("precomputing aggregates...")
+        precompute_links(prefix)
         print("deleting from staging...")
         delete_staging_data(prefix) # delete all data from staging tables
     except:
