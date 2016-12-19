@@ -207,7 +207,6 @@ function markupCheckboxInput(classname, checked, labeltext, changeCallback) {
     input.className = classname;
     input.name = classname;
     input.type = "checkbox";
-    console.log("Checked is " + checked + " and of type " + typeof(checked));
     input.checked = (checked === 1);
     input.onchange = changeCallback;
 
@@ -362,6 +361,12 @@ function populateLiveDestDSList(options) {
 
     //set options
     var div;
+    div = document.createElement("DIV");
+    div.className = "item"
+    div.dataset['value'] = "ds_";
+    div.appendChild(document.createTextNode("Discard live data"));
+    live_dest_list.appendChild(div);
+
     options.forEach(function (option) {
         div = document.createElement("DIV");
         div.className = "item"

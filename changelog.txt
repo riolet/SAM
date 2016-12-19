@@ -1,4 +1,75 @@
+2016-12-19 .. 2016-12-23
+Fixed some issues with live mode:
+    Links are merged now instead of INSERT/IGNORED
+    New LinksIn/Out are recalculated during each preprocess
+    removed staging tables for LinksIn/Out
+Merged all to master.
+
+2016-12-12 .. 2016-12-16
+preprocessing is done in transactions to maintain integrity
+log uploading mostly works.
+Lots of testing and fixing of bugs.
+upgraded live_update.py:
+    two threads:
+        one for reading the socket
+        one for processing in batches
+    Fixed issue with inserting duplicates into Nodes table.
+    Fills buffers now and processes batches
+        instead of fully processing every single line received at once
+
+2016-12-05 .. 2016-12-09
+Settings page to switch between data sources
+Allows for:
+    Selecting data sources,
+    Turning on and off auto-refresh on the map
+    Creating a new data source
+    Deleting an old data source
+    Deleting custom data:
+        Hostnames
+        Tags
+        Environments
+    Uploading a file-based log to a datasource
+Data-source specific tables are now prefixed.
+Converted all db-accessing files to use prefixed data sources
+MAP: obeys settings now.
+
+
+2016-11-28 .. 2016-12-02
+BACKEND: reformatted node-details requisition endpoint to be more robust
+BACKEND: removed "overview" page
+QA: updated old test cases
+QA: Added filter tests
+MAP: sped up details summary query (slightly)
+MAP: simplified details query code
+METADATA: added protocol support
+TABLE: added protocol support
+TABLE: fixed styling of filter input
+TABLE: download button! csv format data.
+MAP: colorized links
+MAP: added protocol support
+MAP: fixed bug with missing loopback arrowheads
+
+2016-11-21 .. 2016-11-22
+Added new data points!
+    Bytes, Packets, Dirations, and Protocols (almost)
+Merged into Syslog table
+Merged into Links Table
+Merged into LinksIn/Out Tables
+Converted details to list format instead of dictionary.
+    Less data to transfer, more generalized
+Updated PaloAlto importer to store new information
+Updated nfdump importer to store new information
+Placeholder updates for ASA and AWS importers
+Metadata: updated to display new information
+Table View: fixed sorting bug on some columns
+Table View: Fixed bug in "apply search" button not working
+
 2016-11-17
+added logo images to repo
+cleared old metadata when new search begun
+fixed bug in disabled filters not working
+fixed bug in url list
+removed extra debug printing/logging
 
 2106-11-16
 sorting tables on metadata page

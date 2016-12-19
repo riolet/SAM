@@ -81,9 +81,10 @@ def remove_datasource(id):
     exec_sql(common.db, os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
 
 
-def get_syslog_size(_test=False):
-    return common.db.select("{0}Syslog".format(get_settings_cached()['prefix'])
-                            , what="COUNT(1) AS 'rows'", _test=_test)[0].rows
+def get_syslog_size(datasource, buffer, _test=False):
+    return common.db.select("ds_{0}_Syslog{1}".format(datasource, buffer)
+                            , what="COUNT(1) AS 'rows'"
+                            , _test=_test)[0].rows
 
 
 def get_timerange():

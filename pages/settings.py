@@ -31,7 +31,6 @@ class Uploader(object):
             class_ = getattr(m_importer, classes[0])
             self.importer = class_()
             self.importer.datasource = self.ds
-            self.importer.buffer = 'A'
         except:
             self.importer = None
 
@@ -46,8 +45,7 @@ class Uploader(object):
         print("Running preprocessor..")
         print("ds: " + str(self.ds))
 
-
-        preprocess.preprocess_log('A', self.ds)
+        preprocess.preprocess_log(self.ds)
 
     def import_log(self, data):
         self.run_import(data)
