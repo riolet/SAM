@@ -7,7 +7,7 @@ import re
 from MySQLdb import OperationalError
 
 shared_tables = ["Nodes", "Tags", "Datasources", "Ports", "PortAliases", "Settings"]
-tables_per_ds = ["staging_Links", "staging_LinksIn", "staging_LinksOut", "Links", "LinksIn", "LinksOut", "Syslog"]
+tables_per_ds = ["staging_Links", "Links", "LinksIn", "LinksOut", "Syslog"]
 default_datasource_name = "default"
 db = common.db_quiet
 

@@ -127,18 +127,6 @@ def import_nodes():
     db.query(query)
 
 
-def import_links(prefix):
-    build_Links(prefix)
-
-    # precalc links in
-    # print("precalculating inbound link aggregates...")
-    # deduce_LinksIn(prefix)
-
-    # precalc links out
-    # print("precalculating outbound link aggregates...")
-    # deduce_LinksOut(prefix)
-
-
 def build_Links(prefix):
     query = """
         INSERT INTO {prefix}staging_Links (src, dst, port, protocol, timestamp,
@@ -160,7 +148,7 @@ def build_Links(prefix):
     db.query(query)
 
 
-def precompute_links(prefix):
+def build_link_aggregates(prefix):
     rows = db.select("{0}staging_Links".format(prefix), what="MIN(timestamp) AS 'start', MAX(timestamp) AS 'end'")
     timerange = rows[0]
 
@@ -532,6 +520,7 @@ def copy_links_to_master(prefix):
 INSERT INTO {prefix}Links SELECT * FROM {prefix}staging_Links
   ON DUPLICATE KEY UPDATE
     `{prefix}Links`.duration=(`{prefix}Links`.duration*`{prefix}Links`.links+VALUES(links)*VALUES(duration)) / GREATEST(1, `{prefix}Links`.duration + VALUES(duration))
+  , `{prefix}Links`.timestamp=VALUES(timestamp)
   , `{prefix}Links`.links=`{prefix}Links`.links+VALUES(links)
   , `{prefix}Links`.bytes_sent=`{prefix}Links`.bytes_sent+VALUES(bytes_sent)
   , `{prefix}Links`.bytes_received=`{prefix}Links`.bytes_received+VALUES(bytes_received)
@@ -539,10 +528,6 @@ INSERT INTO {prefix}Links SELECT * FROM {prefix}staging_Links
   , `{prefix}Links`.packets_received=`{prefix}Links`.packets_received+VALUES(packets_received);
     """.format(prefix=prefix)
     db.query(query)
-
-
-def copy_to_master(prefix):
-    dbaccess.exec_sql(db, "./sql/copy_to_master_tables.sql", {'prefix': prefix})
 
 
 def delete_staging_data(prefix):
@@ -557,11 +542,11 @@ def preprocess_log(ds=None):
         print("importing nodes...")
         import_nodes() # import all nodes into the shared Nodes table
         print("importing links...")
-        import_links(prefix) # import all link info into staging tables
+        build_Links(prefix) # import all link info into staging tables
         print("copying from staging to master...")
         copy_links_to_master(prefix) # copy data from staging to master tables
         print("precomputing aggregates...")
-        precompute_links(prefix)
+        build_link_aggregates(prefix)
         print("deleting from staging...")
         delete_staging_data(prefix) # delete all data from staging tables
     except:

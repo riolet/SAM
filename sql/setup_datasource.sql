@@ -32,38 +32,6 @@ CREATE TABLE IF NOT EXISTS ds_{id}_staging_Links
 ,CONSTRAINT PK{id}tLinks PRIMARY KEY (src, dst, port, protocol, timestamp)
 );
 
-CREATE TABLE IF NOT EXISTS ds_{id}_staging_LinksIn
-(src_start         INT UNSIGNED NOT NULL
-,src_end           INT UNSIGNED NOT NULL
-,dst_start         INT UNSIGNED NOT NULL
-,dst_end           INT UNSIGNED NOT NULL
-,protocols         VARCHAR(1024)
-,port              INT NOT NULL
-,timestamp         TIMESTAMP NOT NULL
-,links             INT DEFAULT 1
-,bytes             INT NOT NULL
-,packets           INT NOT NULL
-,CONSTRAINT PK{id}tLinksIn PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
-,CONSTRAINT FK{id}tLinksInSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
-,CONSTRAINT FK{id}tLinksInDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
-);
-
-CREATE TABLE IF NOT EXISTS ds_{id}_staging_LinksOut
-(src_start         INT UNSIGNED NOT NULL
-,src_end           INT UNSIGNED NOT NULL
-,dst_start         INT UNSIGNED NOT NULL
-,dst_end           INT UNSIGNED NOT NULL
-,protocols         VARCHAR(1024)
-,port              INT NOT NULL
-,timestamp         TIMESTAMP NOT NULL
-,links             INT DEFAULT 1
-,bytes             INT NOT NULL
-,packets           INT NOT NULL
-,CONSTRAINT PK{id}tLinksOut PRIMARY KEY (src_start, src_end, dst_start, dst_end, port, timestamp)
-,CONSTRAINT FK{id}tLinksOutSrc FOREIGN KEY (src_start, src_end) REFERENCES Nodes (ipstart, ipend)
-,CONSTRAINT FK{id}tLinksOutDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
-);
-
 -- -----------------------
 -- Create the Link tables
 -- -----------------------
