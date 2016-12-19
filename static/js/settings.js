@@ -207,9 +207,8 @@ function markupCheckboxInput(classname, checked, labeltext, changeCallback) {
     input.className = classname;
     input.name = classname;
     input.type = "checkbox";
-    console.log("Checked is " + checked + " and of type " + typeof(checked));
     input.checked = (checked === 1);
-    input.onchange = changeCallback
+    input.onchange = changeCallback;
 
     label = document.createElement("LABEL");
     if (typeof(labeltext) == "string" && labeltext.length > 0) {
@@ -271,7 +270,8 @@ function addDSTab(ds) {
     tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, POST_ds_livechange));
+    console.log("building a ")
+    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, " ", POST_ds_livechange));
     tbody.appendChild(tr);
 
     tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
@@ -297,7 +297,9 @@ function rebuild_tabs(settings) {
     settings.datasources.forEach(addDSTab);
 
     //build tabs
-    $(".tabular.menu .item").tab();
+    $(".tabular.menu .item").tab({
+        onVisible: POST_ds_selection
+    });
 
     //select active one
     var active_ds = settings.datasource.id;
@@ -350,6 +352,28 @@ function populateUploadDSList(options) {
     } else {
         $(log_ds.parentElement).dropdown("set selected", getSelectedDS());
     }
+}
+
+function populateLiveDestDSList(options) {
+    "use strict";
+    let live_dest_list = document.getElementById("live_dest_list");
+    live_dest_list.innerHTML = "";
+
+    //set options
+    var div;
+    div = document.createElement("DIV");
+    div.className = "item"
+    div.dataset['value'] = "ds_";
+    div.appendChild(document.createTextNode("Discard live data"));
+    live_dest_list.appendChild(div);
+
+    options.forEach(function (option) {
+        div = document.createElement("DIV");
+        div.className = "item"
+        div.dataset['value'] = option[0];
+        div.appendChild(document.createTextNode(option[1]));
+        live_dest_list.appendChild(div);
+    });
 }
 
 function validateUpload() {
@@ -444,6 +468,7 @@ function POST_ds_new(name) {
         if (response.code === 0) {
             //successfully created new data source
             rebuild_tabs(response.settings);
+            populateLiveDestDSList(getDSs());
         }
     });
 }
@@ -452,8 +477,9 @@ function POST_ds_delete(id) {
     "use strict";
     POST_AJAX({name:"ds_rm", param1:id}, function (response) {
         if (response.code === 0) {
-            //successfully deleted new data source
+            //successfully deleted the data source
             rebuild_tabs(response.settings);
+            populateLiveDestDSList(getDSs());
         }
     });
 }

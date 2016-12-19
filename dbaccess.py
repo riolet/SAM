@@ -51,19 +51,29 @@ def create_datasource(name):
 
 
 def remove_datasource(id):
+    settings = get_settings(all=True)
+    ids = [ds['id'] for ds in settings['datasources']]
+
     # check id is valid
-    rows = list(common.db.select("Datasources", where={'id': int(id)}))
-    if len(rows) != 1:
+    if not id in ids:
         print("Removal stopped: data source to remove not found")
         return
 
     # select other data source in Settings
-    alternativeDS = common.db.select("Datasources", where="id != {0}".format(int(id)), limit=1)
-    if len(alternativeDS) != 1:
-        print("Removal stopped: No alternative data source available")
+    alt_id = -1
+    for n in ids:
+        if n != id:
+            alt_id = n
+            break
+    if alt_id == -1:
+        print("Removal stopped: Cannot remove last data source")
         return
-    alt_id = alternativeDS[0].id
-    common.db.update("Settings", "1=1", datasource=alt_id)
+    set_settings(datasource=alt_id)
+
+    # remove from live_dest if selected
+    if settings['live_dest'] == id:
+        set_settings(live_dest=None)
+
     # remove from Datasources
     common.db.delete("Datasources", "id = {0}".format(int(id)))
     # Drop relevant tables
@@ -71,9 +81,10 @@ def remove_datasource(id):
     exec_sql(common.db, os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
 
 
-def get_syslog_size(_test=False):
-    return common.db.select("{0}Syslog".format(get_settings_cached()['prefix'])
-                            , what="COUNT(1) AS 'rows'", _test=_test)[0].rows
+def get_syslog_size(datasource, buffer, _test=False):
+    return common.db.select("ds_{0}_Syslog{1}".format(datasource, buffer)
+                            , what="COUNT(1) AS 'rows'"
+                            , _test=_test)[0].rows
 
 
 def get_timerange():

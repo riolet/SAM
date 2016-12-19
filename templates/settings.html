@@ -67,7 +67,7 @@ $def with (settings, datasources, importers)
     <input id="live_dest" name="live_dest" type="hidden" value="ds_$settings['live_dest']">
     <i class="dropdown icon"></i>
     <div class="default text">data source</div>
-    <div class="menu">
+    <div class="menu" id="live_dest_list">
       <div class="item" data-value="ds_">Discard live data</div>
       $for ds in datasources:
         <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
@@ -82,14 +82,6 @@ $def with (settings, datasources, importers)
   -->
   <!-- Colors -->
   <!-- <h3 class="ui header">Colors</h3> -->
-
-
-  <!-- Changes
-  <h3 class="ui header">Changes</h3>
-  <div class="ui buttons">
-    <button class="ui blue button">Save</button>
-    <button class="ui button">Discard</button>
-  </div><!---->
 </div>
 
 <!-- Confirm Delete modal -->

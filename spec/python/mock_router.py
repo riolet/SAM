@@ -13,7 +13,8 @@ if len(sys.argv) < 2:
 else:
     numThreads = int(sys.argv[1])
 
-#Plays back the data based on the relative differences between the timestamps
+
+# Plays back the data based on the relative differences between the timestamps
 def playback_data(path, speed):
     # speed relative to realtime
     delay_multiplier = 1.0 / speed
@@ -29,18 +30,23 @@ def playback_data(path, speed):
             line_time = time.strptime(line_time_string, "%H:%M:%S")
             if line_time != last_time:
                 delay = (time.mktime(line_time) - time.mktime(last_time)) * delay_multiplier
-                #time.sleep(delay) # this lines causes are error to occur at the 45 min mark when running SAM
-                time.sleep(0.5) # this line does not cause error but we should be using delay instead of 0.5 
+                time.sleep(delay) # this lines causes are error to occur at the 45 min mark when running SAM
+                #time.sleep(0.5) # this line does not cause error but we should be using delay instead of 0.5
                 last_time = line_time
             yield line
     return
 
 
 def send_data():
-    player = playback_data("./data/syslog_garbled", 1.0)
+    counter = 0
+    player = playback_data("./data/syslog_test", 1.0)
     for message in player:
+        counter += 1
         sock.sendall(message)
         # time.sleep(7)
+    print("Player finished playing back file.")
+    print("Messages sent: {0}".format(counter))
+    print("Feel free to close this application by pressing ctrl-C.")
 
 
 def signal_handler(sig, frame):
