@@ -2,11 +2,15 @@ import socket
 import time
 import signal
 import random
+import ssl
+import live_protocol
+
 
 SERVER = ("localhost", 8081)
+PASSCODE = b'not-so-secret-passcode'
 
 
-alive = True
+ALIVE = True
 
 
 def rand_word():
@@ -55,52 +59,45 @@ def rand_syl(vowels, consonants, c_len1, v_len, c_len2):
 
 def signal_handler(sig, frame):
     print("\nInterrupt received")
-    global alive
-    alive = False
-
-
-def send_message(sock, msg):
-    l = len(msg)
-    m = "{0:05d}{1}".format(l, msg)
-    sock.sendall(m)
-
-
-def receive_message(sock):
-    chars = ""
-    while len(chars) < 5:
-        chars += sock.recv(1)
-    length = int(chars[:5])
-
-    message = chars[5:]
-    while len(message) < length:
-        message += sock.recv(10)
-    return message
+    global ALIVE
+    ALIVE = False
 
 
 def transact(address, message):
-    global alive
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    global ALIVE
+    global PASSCODE
+    plain_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ssl_sock = ssl.wrap_socket(plain_sock,
+                               ca_certs="cert.pem",
+                               cert_reqs=ssl.CERT_REQUIRED,
+                               ssl_version=ssl.PROTOCOL_TLSv1_2)
+
+    if random.random() < 0.5:
+        translator = live_protocol.LiveProtocol(ssl_sock, PASSCODE)
+    else:
+        translator = live_protocol.LiveProtocol(ssl_sock)
     try:
         print("SOCKET: Opening...")
-        sock.connect(address)
+        ssl_sock.connect(address)
+        print("SOCKET: SSL Version is: {0}".format(ssl_sock.version()))
 
         print("SOCKET: Sending {0} chars. {1}...".format(len(message), repr(message[:50])))
-        send_message(sock, message)
+        encoded = translator.encode(message)
+        translator.send(encoded)
 
-        sock.shutdown(socket.SHUT_WR)
-        response = receive_message(sock)
+        response = translator.receive()
         print("SOCKET: Receiving: {0} chars. {1}...".format(len(response), repr(response[:50])))
-        sock.close()
+        ssl_sock.close()
     except socket.error as e:
         print("SOCKET: Could not connect to socket {0}:{1}".format(*address))
         print("SOCKET: Error {0}: {1}".format(e.errno, e.strerror))
 
 
 def client_loop():
-    global alive
+    global ALIVE
     buffer = []
     print("buffer:")
-    while alive:
+    while ALIVE:
         new_word = rand_word()
         buffer.append(new_word)
         print(" + {0}".format(new_word))
