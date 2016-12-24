@@ -6,12 +6,6 @@ class LiveProtocol(object):
         self.sock = sock
         self.num_len = 5
 
-    def validate_password(self, password):
-        if self.password:
-            return self.password == password
-        else:
-            return True
-
     def send(self, message):
         encoded = cPickle.dumps(message)
         transmission_length = len(encoded) + self.num_len

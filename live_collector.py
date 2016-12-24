@@ -9,64 +9,74 @@ import live_protocol
 import socket
 import ssl
 
-socket_buffer_mutex = threading.Lock()
-socket_buffer = []
+COLLECTOR_ADDRESS = ('localhost', 514)
+SERVER_ADDRESS = ('localhost', 8081)
+CERTIFICATE_FILE = "cert.pem"
 
-transmit_buffer = []
-transmit_buffer_size = 0
-handler_server = None
-handler_thread = None
-shutdown_processor = threading.Event()
+SOCKET_BUFFER = []
+SOCKET_BUFFER_LOCK = threading.Lock()
+TRANSMIT_BUFFER = []
+TRANSMIT_BUFFER_SIZE = 0
+TRANSMIT_BUFFER_THRESHOLD = 200 # push the transmit buffer to the database server if it reaches this many entries.
+TIME_BETWEEN_IMPORTING = 1 # seconds. Period for translating lines from SOCKET to TRANSMIT
+TIME_BETWEEN_TRANSMISSION = 10 # seconds. Period for transmitting to the database server.
+
+COLLECTOR = None  # collector server object
+COLLECTOR_THREAD = None # collector server thread
+SHUTDOWN_EVENT = threading.Event() # shuts down the processing loop when .set()
 
 
 def thread_batch_processor():
+    global TRANSMIT_BUFFER_SIZE
+    global TRANSMIT_BUFFER_THRESHOLD
+    global TIME_BETWEEN_IMPORTING
+    global TIME_BETWEEN_TRANSMISSION
+    global SOCKET_BUFFER
+    global SHUTDOWN_EVENT
     # loop:
     #    wait for event, with timeout
     #    check bufferSize
     #       conditionally swap buffers and do processing.
-    global syslog_size
-    seconds_per_scan = 1
-    max_time_between_processing = 20
 
     last_processing = time.time()  # time.time() is in floating point seconds
     alive = True
     while alive:
-        triggered = shutdown_processor.wait(seconds_per_scan)
+        triggered = SHUTDOWN_EVENT.wait(TIME_BETWEEN_IMPORTING)
         if triggered:
             alive = False
 
         deltatime = time.time() - last_processing
-        if transmit_buffer_size > 100:
+        if TRANSMIT_BUFFER_SIZE > TRANSMIT_BUFFER_THRESHOLD:
             print("CHRON: process server running batch (due to buffer cap reached)")
             transmit_lines()
             last_processing = time.time()
-        elif deltatime > max_time_between_processing and transmit_buffer_size > 0:
+        elif deltatime > TIME_BETWEEN_TRANSMISSION and TRANSMIT_BUFFER_SIZE > 0:
             print("CHRON: process server running batch (due to time)")
             transmit_lines()
             last_processing = time.time()
-        elif transmit_buffer_size > 0:
-            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime, transmit_buffer_size))
+        elif TRANSMIT_BUFFER_SIZE > 0:
+            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime, TRANSMIT_BUFFER_SIZE))
         else:
             # Don't let time accumulate while the buffer is empty
             last_processing = time.time()
 
         # import lines in memory buffer:
-        if len(socket_buffer) > 0:
+        if len(SOCKET_BUFFER) > 0:
             import_lines()
 
     print("CHRON: process server shutting down")
 
 
 def import_lines():
-    global socket_buffer
-    global socket_buffer_mutex
-    global transmit_buffer
-    global transmit_buffer_size
+    global SOCKET_BUFFER
+    global SOCKET_BUFFER_LOCK
+    global TRANSMIT_BUFFER
+    global TRANSMIT_BUFFER_SIZE
     # clear socket buffer
     lines = []
-    with socket_buffer_mutex:
-        lines = socket_buffer
-        socket_buffer = []
+    with SOCKET_BUFFER_LOCK:
+        lines = SOCKET_BUFFER
+        SOCKET_BUFFER = []
     
     # translate lines
     importer = import_paloalto.PaloAltoImporter()
@@ -77,25 +87,28 @@ def import_lines():
         if success == 0:
             translated.append(translated_line)
 
-    # insert translations into transmit_buffer
+    # insert translations into TRANSMIT_BUFFER
     headers = import_base.BaseImporter.keys
     for line in translated:
         list_line = [line[header] for header in headers]
-        transmit_buffer.append(list_line)
+        TRANSMIT_BUFFER.append(list_line)
 
-    # update transmit_buffer size
-    transmit_buffer_size = len(transmit_buffer)
+    # update TRANSMIT_BUFFER size
+    TRANSMIT_BUFFER_SIZE = len(TRANSMIT_BUFFER)
+
 
 def transmit_lines():
-    global transmit_buffer
-    global transmit_buffer_size
+    global TRANSMIT_BUFFER
+    global TRANSMIT_BUFFER_SIZE
+    global CERTIFICATE_FILE
+    global SERVER_ADDRESS
     address = ("localhost", 8081)
     password = "not-so-secret-passcode"
     version = "1.0"
     headers = import_base.BaseImporter.keys
-    lines = transmit_buffer
-    transmit_buffer = []
-    transmit_buffer_size = 0
+    lines = TRANSMIT_BUFFER
+    TRANSMIT_BUFFER = []
+    TRANSMIT_BUFFER_SIZE = 0
     package = {
         'password': password,
         'version': version,
@@ -113,7 +126,7 @@ def transmit_lines():
 
     try:
         print("SOCKET: Opening...")
-        ssl_sock.connect(address)
+        ssl_sock.connect(SERVER_ADDRESS)
 
         print("SOCKET: Sending {0} lines.".format(len(package['lines'])))
         translator.send(package)
@@ -127,13 +140,13 @@ def transmit_lines():
 
 
 def store_data(lines):
-    global socket_buffer
-    global socket_buffer_mutex
+    global SOCKET_BUFFER
+    global SOCKET_BUFFER_LOCK
 
     # acquire lock
-    with socket_buffer_mutex:
+    with SOCKET_BUFFER_LOCK:
         # append line
-        socket_buffer.append(lines)
+        SOCKET_BUFFER.append(lines)
     # release lock
 
 
@@ -141,9 +154,6 @@ def store_data(lines):
 # Uses synchronous message processing as threading was causing database issues
 class UDPRequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
-        global buffer_size
-        global buffer_id
-
         data = self.request[0].strip()
         store_data(data)
 
@@ -154,29 +164,31 @@ def signal_handler(signal_number, stack_frame):
 
 
 def shutdown():
+    global COLLECTOR
+    global COLLECTOR_THREAD
+    global SHUTDOWN_EVENT
+
     print("Shutting down handler.")
-    handler_server.shutdown()
-    if handler_thread:
-        handler_thread.join()
+    COLLECTOR.shutdown()
+    if COLLECTOR_THREAD:
+        COLLECTOR_THREAD.join()
         print("Handler stopped.")
     print("Shutting down batch processor.")
-    shutdown_processor.set()
+    SHUTDOWN_EVENT.set()
 
 
 if __name__ == "__main__":
     # Port and host to listen from
-    HOST, PORT = "localhost", 514
 
     # register signals for safe shut down
     signal.signal(signal.SIGINT, signal_handler)
-    handler_server = SocketServer.UDPServer((HOST, PORT), UDPRequestHandler)
-    ip, port = handler_server.server_address
+    COLLECTOR = SocketServer.UDPServer(COLLECTOR_ADDRESS, UDPRequestHandler)
 
     # Start the daemon listening on the port in an infinite loop that exits when the program is killed
-    handler_thread = threading.Thread(target=handler_server.serve_forever)
-    handler_thread.start()
+    COLLECTOR_THREAD = threading.Thread(target=COLLECTOR.serve_forever)
+    COLLECTOR_THREAD.start()
 
-    print("Live Collector listening on {0}:{1}.".format(HOST, PORT))
+    print("Live Collector listening on {0}:{1}.".format(*COLLECTOR_ADDRESS))
 
     try:
         thread_batch_processor()
