@@ -2,15 +2,18 @@ import SocketServer
 import threading
 import signal
 import time
-import import_paloalto
-import preprocess
-import dbaccess
 import traceback
+import import_paloalto
+import import_base
+import live_protocol
+import socket
+import ssl
 
-buffer_mutex = threading.Lock()
-mem_buffer = []
+socket_buffer_mutex = threading.Lock()
+socket_buffer = []
 
-syslog_size = 0
+transmit_buffer = []
+transmit_buffer_size = 0
 handler_server = None
 handler_thread = None
 shutdown_processor = threading.Event()
@@ -22,7 +25,6 @@ def thread_batch_processor():
     #    check bufferSize
     #       conditionally swap buffers and do processing.
     global syslog_size
-    global importer
     seconds_per_scan = 1
     max_time_between_processing = 20
 
@@ -34,65 +36,105 @@ def thread_batch_processor():
             alive = False
 
         deltatime = time.time() - last_processing
-        if syslog_size > 1000:
+        if transmit_buffer_size > 100:
             print("CHRON: process server running batch (due to buffer cap reached)")
-            preprocess_lines()
+            transmit_lines()
             last_processing = time.time()
-        elif deltatime > max_time_between_processing and syslog_size > 0:
+        elif deltatime > max_time_between_processing and transmit_buffer_size > 0:
             print("CHRON: process server running batch (due to time)")
-            preprocess_lines()
+            transmit_lines()
             last_processing = time.time()
+        elif transmit_buffer_size > 0:
+            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime, transmit_buffer_size))
         else:
-            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime, syslog_size))
+            # Don't let time accumulate while the buffer is empty
+            last_processing = time.time()
 
         # import lines in memory buffer:
-        if len(mem_buffer) > 0:
+        if len(socket_buffer) > 0:
             import_lines()
 
     print("CHRON: process server shutting down")
 
 
+def import_lines():
+    global socket_buffer
+    global socket_buffer_mutex
+    global transmit_buffer
+    global transmit_buffer_size
+    # clear socket buffer
+    lines = []
+    with socket_buffer_mutex:
+        lines = socket_buffer
+        socket_buffer = []
+    
+    # translate lines
+    importer = import_paloalto.PaloAltoImporter()
+    translated = []
+    for line in lines:
+        translated_line = {}
+        success = importer.translate(line, 1, translated_line)
+        if success == 0:
+            translated.append(translated_line)
+
+    # insert translations into transmit_buffer
+    headers = import_base.BaseImporter.keys
+    for line in translated:
+        list_line = [line[header] for header in headers]
+        transmit_buffer.append(list_line)
+
+    # update transmit_buffer size
+    transmit_buffer_size = len(transmit_buffer)
+
+def transmit_lines():
+    global transmit_buffer
+    global transmit_buffer_size
+    address = ("localhost", 8081)
+    password = "not-so-secret-passcode"
+    version = "1.0"
+    headers = import_base.BaseImporter.keys
+    lines = transmit_buffer
+    transmit_buffer = []
+    transmit_buffer_size = 0
+    package = {
+        'password': password,
+        'version': version,
+        'headers': headers,
+        'lines': lines
+    }
+
+    # Send data on the socket!
+    plain_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ssl_sock = ssl.wrap_socket(plain_sock,
+                               ca_certs="cert.pem",
+                               cert_reqs=ssl.CERT_REQUIRED,
+                               ssl_version=ssl.PROTOCOL_TLSv1_2)
+    translator = live_protocol.LiveProtocol(ssl_sock)
+
+    try:
+        print("SOCKET: Opening...")
+        ssl_sock.connect(address)
+
+        print("SOCKET: Sending {0} lines.".format(len(package['lines'])))
+        translator.send(package)
+
+        response = translator.receive()
+        print("SOCKET: Receiving: {0} chars. {1}...".format(len(response), repr(response[:50])))
+        ssl_sock.close()
+    except socket.error as e:
+        print("SOCKET: Could not connect to socket {0}:{1}".format(*address))
+        print("SOCKET: Error {0}: {1}".format(e.errno, e.strerror))
+
+
 def store_data(lines):
-    global mem_buffer
-    global buffer_mutex
+    global socket_buffer
+    global socket_buffer_mutex
 
     # acquire lock
-    with buffer_mutex:
+    with socket_buffer_mutex:
         # append line
-        mem_buffer.append(lines)
+        socket_buffer.append(lines)
     # release lock
-
-
-def import_lines():
-    global mem_buffer
-    global syslog_size
-    global buffer_mutex
-
-    with buffer_mutex:
-        lines = mem_buffer
-        mem_buffer = []
-
-    settings = dbaccess.get_settings()
-    importer = import_paloalto.PaloAltoImporter()
-    importer.datasource = settings['live_dest']
-    if importer.datasource is None:
-        print("IMPORTER: {0} lines lost. No destination specified for live data".format(len(lines)))
-    else:
-        print("IMPORTER: importing {0} lines to the Syslog. ".format(len(lines)),)
-        num_inserted = importer.import_string("\n".join(lines))
-        syslog_size += num_inserted
-        print("Syslog is now {0}".format(syslog_size))
-
-
-def preprocess_lines():
-    global syslog_size
-    print("PREPROCESSOR: preprocessing the syslog. ({0} lines)".format(syslog_size))
-    settings = dbaccess.get_settings()
-    if settings['live_dest'] is None:
-        print("PREPROCESSOR: No live data source specified. Check settings.")
-    else:
-        preprocess.preprocess_log(ds=settings['live_dest'])
-    syslog_size = 0
 
 
 # Request handler used to listen on the port
@@ -134,7 +176,7 @@ if __name__ == "__main__":
     handler_thread = threading.Thread(target=handler_server.serve_forever)
     handler_thread.start()
 
-    print("Live Update server listening on {0}:{1}.".format(HOST, PORT))
+    print("Live Collector listening on {0}:{1}.".format(HOST, PORT))
 
     try:
         thread_batch_processor()
