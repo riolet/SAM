@@ -6,21 +6,21 @@ import dbaccess
 
 class BaseImporter:
     mysql_time_format = '%Y-%m-%d %H:%M:%S'
+    keys = [
+        "src",
+        "srcport",
+        "dst",
+        "dstport",
+        "timestamp",
+        "protocol",
+        "bytes_sent",
+        "bytes_received",
+        "packets_sent",
+        "packets_received",
+        "duration",
+    ]
 
     def __init__(self):
-        self.keys = [
-                "src",
-                "srcport",
-                "dst",
-                "dstport",
-                "timestamp",
-                "protocol",
-                "bytes_sent",
-                "bytes_received",
-                "packets_sent",
-                "packets_received",
-                "duration",
-            ]
         self.instructions = """
 This program imports a syslog dump into the database.
 It extracts IP addresses and ports and discards other data. Only TCP traffic data is used.
