@@ -431,8 +431,8 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.in.bytes_received)));
             table.appendChild(buildKeyValueRow("Avg bps", build_label_datarate(info.in.avg_bps)));
             table.appendChild(buildKeyValueRow("Max bps (single connection)", build_label_datarate(info.in.max_bps)));
-            table.appendChild(buildKeyValueRow("Packets Sent", build_label_packetrate(info.in.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow("Packets Received", build_label_packetrate(info.in.packets_received / avg_denom)));
+            table.appendChild(buildKeyValueRow("Packets Send Rate", build_label_packetrate(info.in.packets_sent / avg_denom)));
+            table.appendChild(buildKeyValueRow("Packets Receive Rate", build_label_packetrate(info.in.packets_received / avg_denom)));
             table.appendChild(buildKeyValueRow("Avg Connection Duration", build_label_duration(info.in.duration)));
             segment.appendChild(table);
         }
@@ -455,10 +455,10 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.out.bytes_sent)));
             table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.out.bytes_received)));
-            table.appendChild(buildKeyValueRow("Avg bps", build_label_datarate(info.out.avg_bps)));
-            table.appendChild(buildKeyValueRow("Max bps (single connection)", build_label_datarate(info.out.max_bps)));
-            table.appendChild(buildKeyValueRow("Packets Sent", build_label_packetrate(info.out.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow("Packets Received", build_label_packetrate(info.out.packets_received / avg_denom)))
+            table.appendChild(buildKeyValueRow("Avg Bps", build_label_datarate(info.out.avg_bps)));
+            table.appendChild(buildKeyValueRow("Max Bps (single connection)", build_label_datarate(info.out.max_bps)));
+            table.appendChild(buildKeyValueRow("Packet Send Rate", build_label_packetrate(info.out.packets_sent / avg_denom)));
+            table.appendChild(buildKeyValueRow("Packet Receive Rate", build_label_packetrate(info.out.packets_received / avg_denom)))
             table.appendChild(buildKeyValueRow("Avg Connection Duration", build_label_duration(info.out.duration)));
             segment.appendChild(table);
         }

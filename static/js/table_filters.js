@@ -20,19 +20,13 @@
  *
  *  private methods:
  *      //create filter list HTML items, and filter objects
- *      createSubnetFilter(subnet)
+ *      createFilter(enabled, type, params, row)
  *      createSubnetFilterRow(subnet)
- *      createMaskFilter(subnet)
  *      createMaskFilterRow(subnet)
- *      createEnvFilter(subnet)
  *      createEnvFilterRow(subnet)
- *      createPortFilter(comparator_port)
  *      createPortFilterRow(comparator, port)
- *      createTagFilter(has_tags)
  *      createTagFilterRow(has, tags)
- *      createTargetFilter(has_tags)
  *      createTargetFilterRow(has, tags)
- *      createConnectionsFilter(comparator_limit)
  *      createConnectionsFilterRow(comparator, limit)
  *
  *      //create HTML for each filter type
@@ -82,7 +76,7 @@
             if (params.length === source[2].length) {
                 var paramObj = {};
                 source[2].forEach(function (name, index) {
-                  paramObj[name] = params[index];
+                    paramObj[name] = params[index];
                 });
                 newFilter = filters.private.createFilter(true, type, paramObj, source[0]);
             } else {

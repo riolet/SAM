@@ -716,7 +716,7 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
     # note: group concat max length is default at 1024.
-    # if info is lost, try:
+    # if any data is lost due to max length, try:
     # SET group_concat_max_len = 2048
     query = """
     SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
@@ -758,6 +758,9 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'packets_in'
+        , COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)) + 300)
+            FROM ds_19_Links AS l
+        ),0) AS 'seconds'
         , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
             FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart AND l_in.dst_end = nodes.ipend

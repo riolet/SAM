@@ -201,15 +201,15 @@ function build_label_bytes(bytes) {
 
 function build_label_datarate(bps) {
   "use strict";
-  if (bps < 1024) {
+  if (bps < 1000) {
     return bps.toFixed(2) + " B/s";
   }
   bps /= 1024;
-  if (bps < 1024) {
+  if (bps < 1000) {
     return bps.toFixed(2) + " KiB/s";
   }
   bps /= 1024;
-  if (bps < 1024) {
+  if (bps < 1000) {
     return bps.toFixed(2) + " MiB/s";
   }
   bps /= 1024;

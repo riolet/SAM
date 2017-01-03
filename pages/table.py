@@ -35,6 +35,40 @@ def bytes_text(bytes):
     return "{0} TB".format(int(bytes))
 
 
+def byte_rate_text(bytes, time):
+    bytes = bytes / time
+    if bytes < 2000:
+        return "{0} B/s".format(int(bytes))
+    bytes /= 1024
+    if bytes < 2000:
+        return "{0} KB/s".format(int(bytes))
+    bytes /= 1024
+    if bytes < 2000:
+        return "{0} MB/s".format(int(bytes))
+    bytes /= 1024
+    if bytes < 2000:
+        return "{0} GB/s".format(int(bytes))
+    bytes /= 1024
+    return "{0} TB/s".format(int(bytes))
+
+
+def packet_rate_text(bytes, time):
+    bytes = bytes / time
+    if bytes < 10000:
+        return "{0} p/s".format(int(bytes))
+    bytes /= 1000
+    if bytes < 10000:
+        return "{0} Kp/s".format(int(bytes))
+    bytes /= 1000
+    if bytes < 10000:
+        return "{0} Mp/s".format(int(bytes))
+    bytes /= 1000
+    if bytes < 10000:
+        return "{0} Gp/s".format(int(bytes))
+    bytes /= 1000
+    return "{0} Tp/s".format(int(bytes))
+
+
 def nice_protocol(p_in, p_out):
     pin = p_in.split(",")
     pout = p_out.split(",")
@@ -120,11 +154,11 @@ class Columns(object):
             'bytes': {
                 'nice_name': "Bytes Handled",
                 'active': 'bytes' in kwargs,
-                'get': lambda x: bytes_text(x.bytes_in + x.bytes_out)},
+                'get': lambda x: byte_rate_text(x.bytes_in + x.bytes_out, x.seconds)},
             'packets': {
                 'nice_name': "Packets Handled",
                 'active': 'packets' in kwargs,
-                'get': lambda x: x.packets_in + x.packets_out},
+                'get': lambda x: packet_rate_text(x.packets_in + x.packets_out, x.seconds)},
             'protocols': {
                 'nice_name': "Protocols used",
                 'active': 'packets' in kwargs,
