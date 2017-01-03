@@ -10,8 +10,9 @@ import preprocess
 import import_base
 
 
-# Certificate Generation:
+# Self-signed certificate generation for testing:
 # openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout cert.pem
+
 CERTIFICATE_FILE = "cert.pem"
 HOST = "localhost"
 PORT = 8081
@@ -175,7 +176,6 @@ def thread_batch_processor():
 def main():
     global SERVER
     global SERVER_THREAD
-    global ALIVE
     global HOST
     global PORT
     global CERTIFICATE_FILE
