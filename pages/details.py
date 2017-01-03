@@ -101,6 +101,8 @@ class Details:
     def quick_info(self):
         info = {}
         node_info = dbaccess.get_node_info(self.ip_string)
+        #TODO: magic number.
+        DB_TIME_QUANTIZATION = 300 # seconds. (5 minutes)
 
         info['address'] = self.nice_ip_address()
         
@@ -134,7 +136,7 @@ class Details:
             info['in']['total'] = node_info.total_in
             info['in']['u_ip'] = node_info.unique_in_ip
             info['in']['u_conn'] = node_info.unique_in_conn
-            info['in']['seconds'] = node_info.seconds
+            info['in']['seconds'] = node_info.seconds + DB_TIME_QUANTIZATION
             if not node_info.in_bytes_sent and not node_info.in_bytes_received:
                 info['in']['bytes_sent'] = 0
                 info['in']['bytes_received'] = 0
@@ -155,7 +157,7 @@ class Details:
             info['out']['total'] = node_info.total_out
             info['out']['u_ip'] = node_info.unique_out_ip
             info['out']['u_conn'] = node_info.unique_out_conn
-            info['out']['seconds'] = node_info.seconds
+            info['out']['seconds'] = node_info.seconds + DB_TIME_QUANTIZATION
             if not node_info.out_bytes_sent and not node_info.out_bytes_received:
                 info['out']['bytes_sent'] = 0
                 info['out']['bytes_received'] = 0
