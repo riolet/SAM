@@ -321,6 +321,7 @@ class Details:
         details['unique_out'] = summary.unique_out
         details['unique_in'] = summary.unique_in
         details['unique_ports'] = summary.unique_ports
+        details['seconds'] = summary.seconds
 
         details['inputs'] = self.inputs()
         details['outputs'] = self.outputs()
