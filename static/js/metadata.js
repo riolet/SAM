@@ -413,7 +413,6 @@ function present_quick_info(info) {
             segment = document.getElementById("in_col");
             segment.innerHTML = "";
             let avg_denom = info.in.duration ? info.in.duration : 1;
-            console.log(info.in);
 
             //Add Header
             td = document.createElement("H3");
@@ -440,6 +439,7 @@ function present_quick_info(info) {
             segment = document.getElementById("out_col");
             segment.innerHTML = "";
             let avg_denom = info.out.duration ? info.out.duration : 1;
+            console.log(info.out);
 
             //Add Header
             td = document.createElement("H3");

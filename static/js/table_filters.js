@@ -286,7 +286,7 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Has "));
+        parts.push(filters.private.markupSpan("Handles "));
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
             [">", "more than"],
             ["<", "fewer than"]
@@ -294,9 +294,10 @@
         parts.push(filters.private.markupInput("limit", "a number of", params.limit));
         parts.push(filters.private.markupSelection("direction", "in/outbound", [
             ["i", "inbound"],
-            ["o", "outbound"]
+            ["o", "outbound"],
+            ["c", "combined"]
         ], params.direction));
-        parts.push(filters.private.markupSpan("connections."));
+        parts.push(filters.private.markupSpan("connections / second."));
         return parts;
     };
 
@@ -532,7 +533,13 @@
                     }
 
                 } else if (filter.type === "connections") {
-                    span = filters.private.markupSpan(filter.comparator + filter.limit + " conns");
+                    var dir = ""
+                    if (filter.direction == 'i') {
+                      dir = " (in)";
+                    } else if (filter.direction == 'o') {
+                      dir = " (out)";
+                    }
+                    span = filters.private.markupSpan(filter.comparator + filter.limit + " conns/s" + dir);
 
                 } else if (filter.type === "protocol") {
                     if (filter.handles === "0") {
