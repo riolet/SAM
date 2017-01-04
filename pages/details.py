@@ -30,6 +30,21 @@ def nice_protocol(p_in, p_out):
     return u', '.join(directional_protocols)
 
 
+def si_formatting(f, places=2):
+    format_string = "{{val:.{places}f}}{{prefix}}".format(places=places)
+
+    if f < 1000:
+        return format_string.format(val=f, prefix="")
+    f /= 1000
+    if f < 1000:
+        return format_string.format(val=f, prefix="K")
+    f /= 1000
+    if f < 1000:
+        return format_string.format(val=f, prefix="M")
+    f /= 1000
+    return format_string.format(val=f, prefix="G")
+
+
 class Details:
     def __init__(self):
         self.ip_range = (0, 4294967295)
@@ -60,6 +75,9 @@ class Details:
             pass
         if 'tstart' in GET_data and 'tend' in GET_data:
             self.time_range = (int(GET_data.tstart), int(GET_data.tend))
+        else:
+            range = dbaccess.get_timerange()
+            self.time_range = (range['min'], range['max'])
         if 'address' in GET_data:
             try:
                 self.ip_string = GET_data["address"]
@@ -194,14 +212,14 @@ class Details:
             headers = [
                 ['src', "Source IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count']
+                ['links', 'Count / min']
             ]
         else:
             headers = [
                 ['src', "Source IP"],
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count'],
+                ['links', 'Count / min'],
                 #['protocols', 'Protocols'],
                 ['sum_bytes', 'Sum Bytes'],
                 #['avg_bytes', 'Avg Bytes'],
@@ -210,7 +228,16 @@ class Details:
                 ['avg_duration', 'Avg Duration'],
             ]
         # convert list of dicts to ordered list of values
-        conn_in = [[row[h[0]] for h in headers] for row in inputs]
+        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        conn_in = []
+        for row in inputs:
+            conn_row = []
+            for h in headers:
+                if h[0] == 'links':
+                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                else:
+                    conn_row.append(row[h[0]])
+            conn_in.append(conn_row)
         response = {
             "page": self.page,
             "page_size": self.page_size,
@@ -237,14 +264,14 @@ class Details:
             headers = [
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count']
+                ['links', 'Count / min']
             ]
         else:
             headers = [
                 ['src', "Source IP"],
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count'],
+                ['links', 'Count / min'],
                 #['protocols', 'Protocols'],
                 ['sum_bytes', 'Sum Bytes'],
                 #['avg_bytes', 'Avg Bytes'],
@@ -252,7 +279,16 @@ class Details:
                 #['avg_packets', 'Avg Packets'],
                 ['avg_duration', 'Avg Duration'],
             ]
-        conn_out = [[row[h[0]] for h in headers] for row in outputs]
+        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        conn_out = []
+        for row in outputs:
+            conn_row = []
+            for h in headers:
+                if h[0] == 'links':
+                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                else:
+                    conn_row.append(row[h[0]])
+            conn_out.append(conn_row)
         response = {
             "page": self.page,
             "page_size": self.page_size,
@@ -275,15 +311,25 @@ class Details:
             order=self.order)
         headers = [
             ['port', "Port Accessed"],
-            ['links', 'Occurrences']
+            ['links', 'Count / min']
         ]
+        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        ports_in = []
+        for row in ports:
+            conn_row = []
+            for h in headers:
+                if h[0] == 'links':
+                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                else:
+                    conn_row.append(row[h[0]])
+            ports_in.append(conn_row)
         response = {
             "page": self.page,
             "page_size": self.page_size,
             "order": self.order,
             "component": "ports",
             "headers": headers,
-            "rows": [[row[h[0]] for h in headers] for row in ports]
+            "rows": ports_in
         }
         return response
 
@@ -321,7 +367,6 @@ class Details:
         details['unique_out'] = summary.unique_out
         details['unique_in'] = summary.unique_in
         details['unique_ports'] = summary.unique_ports
-        details['seconds'] = summary.seconds
 
         details['inputs'] = self.inputs()
         details['outputs'] = self.outputs()

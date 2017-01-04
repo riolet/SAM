@@ -213,9 +213,6 @@ def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     SELECT `inputs`.ips AS 'unique_in'
         , `outputs`.ips AS 'unique_out'
         , `inputs`.ports AS 'unique_ports'
-        , COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)) + 300)
-            FROM {prefix}Links
-            ),0) AS 'seconds'
     FROM
       (SELECT COUNT(DISTINCT src) AS 'ips', COUNT(DISTINCT port) AS 'ports'
         FROM {prefix}Links
