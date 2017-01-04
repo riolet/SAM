@@ -405,7 +405,7 @@ function present_quick_info(info) {
             target.appendChild(buildKeyValueRow("Endpoints represented", info.endpoints + " (of " + possible + " possible)"));
         }
         if (info.hasOwnProperty("bps")) {
-            target.appendChild(buildKeyValueRow("Average Overall bps (approx)", build_label_datarate(info.bps)));
+            target.appendChild(buildKeyValueRow("Average Total bps (approx)", build_label_datarate(info.bps)));
         }
 
         // in/out data is placed seperately
