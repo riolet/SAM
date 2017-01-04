@@ -208,7 +208,7 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
 def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
     prefix = get_settings_cached()['prefix']
-
+    # TODO: seconds has a magic number 300 added to account for DB time quantization.
     query = """
     SELECT `inputs`.ips AS 'unique_in'
         , `outputs`.ips AS 'unique_out'
@@ -532,6 +532,7 @@ def get_node_info(address):
     ipstart, ipend = common.determine_range_string(address)
     prefix = get_settings_cached()['prefix']
     qvars = {"start": ipstart, "end": ipend}
+    #TODO: seconds has a magic number 300 added to account for DB time quantization.
 
     query = """
         SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
@@ -539,28 +540,27 @@ def get_node_info(address):
             , COALESCE(l_out.unique_out_ip, 0) AS 'unique_out_ip'
             , COALESCE(l_out.unique_out_conn, 0) AS 'unique_out_conn'
             , COALESCE(l_out.total_out, 0) AS 'total_out'
-            , l_out.b_s AS 'out_bytes_sent'
-            , l_out.b_r AS 'out_bytes_received'
-            , l_out.max_bps AS 'out_max_bps'
-            , l_out.min_bps AS 'out_min_bps'
-            , (l_out.sum_b / l_out.duration) AS 'out_avg_bps'
-            , l_out.p_s AS 'out_packets_sent'
-            , l_out.p_r AS 'out_packets_received'
-            , (l_out.duration / COALESCE(l_out.total_out, 1)) AS 'out_duration'
+            , COALESCE(l_out.b_s, 0) AS 'out_bytes_sent'
+            , COALESCE(l_out.b_r, 0) AS 'out_bytes_received'
+            , COALESCE(l_out.max_bps, 0) AS 'out_max_bps'
+            , COALESCE(l_out.sum_b / l_out.duration, 0) AS 'out_avg_bps'
+            , COALESCE(l_out.p_s, 0) AS 'out_packets_sent'
+            , COALESCE(l_out.p_r, 0) AS 'out_packets_received'
+            , COALESCE(l_out.duration / l_out.total_out, 0) AS 'out_duration'
             , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
             , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
             , COALESCE(l_in.total_in, 0) AS 'total_in'
-            , l_in.b_s AS 'in_bytes_sent'
-            , l_in.b_r AS 'in_bytes_received'
-            , l_in.max_bps AS 'in_max_bps'
-            , l_in.min_bps AS 'in_min_bps'
-            , (l_in.sum_b / l_in.duration) AS 'in_avg_bps'
-            , l_in.p_s AS 'in_packets_sent'
-            , l_in.p_r AS 'in_packets_received'
-            , (l_in.duration / COALESCE(l_in.total_in, 1)) AS 'in_duration'
+            , COALESCE(l_in.b_s, 0) AS 'in_bytes_sent'
+            , COALESCE(l_in.b_r, 0) AS 'in_bytes_received'
+            , COALESCE(l_in.max_bps, 0) AS 'in_max_bps'
+            , COALESCE(l_in.sum_b / l_in.duration, 0) AS 'in_avg_bps'
+            , COALESCE(l_in.p_s, 0) AS 'in_packets_sent'
+            , COALESCE(l_in.p_r, 0) AS 'in_packets_received'
+            , COALESCE(l_in.duration / l_in.total_in, 0) AS 'in_duration'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
             , children.endpoints AS 'endpoints'
-            , t.seconds
+            , COALESCE(t.seconds, 0) + 300 AS 'seconds'
+            , (COALESCE(l_in.sum_b, 0) + COALESCE(l_out.sum_b, 0)) / (COALESCE(t.seconds, 0) + 300) AS 'overall_bps'
             , COALESCE(l_in.protocol, "") AS 'in_protocols'
             , COALESCE(l_out.protocol, "") AS 'out_protocols'
         FROM (
@@ -576,7 +576,6 @@ def get_node_info(address):
             , SUM(bytes_sent) AS 'b_s'
             , SUM(bytes_received) AS 'b_r'
             , MAX((bytes_sent + bytes_received) / duration) AS 'max_bps'
-            , MIN((bytes_sent + bytes_received) / duration) AS 'min_bps'
             , SUM(bytes_sent + bytes_received) AS 'sum_b'
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
@@ -595,7 +594,6 @@ def get_node_info(address):
             , SUM(bytes_sent) AS 'b_s'
             , SUM(bytes_received) AS 'b_r'
             , MAX((bytes_sent + bytes_received) / duration) AS 'max_bps'
-            , MIN((bytes_sent + bytes_received) / duration) AS 'min_bps'
             , SUM(bytes_sent + bytes_received) AS 'sum_b'
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
@@ -715,8 +713,9 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
+    #TODO: seconds has a magic number 300 added to account for DB time quantization.
     # note: group concat max length is default at 1024.
-    # if info is lost, try:
+    # if any data is lost due to max length, try:
     # SET group_concat_max_len = 2048
     query = """
     SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
@@ -758,6 +757,9 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
             WHERE l_in.dst_start = nodes.ipstart
               AND l_in.dst_end = nodes.ipend
          ),0) AS 'packets_in'
+        , COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)) + 300)
+            FROM {prefix}Links AS l
+        ),0) AS 'seconds'
         , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
             FROM {prefix}LinksIn AS l_in
             WHERE l_in.dst_start = nodes.ipstart AND l_in.dst_end = nodes.ipend

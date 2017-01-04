@@ -108,15 +108,20 @@ class ConnectionsFilter(Filter):
 
     def having(self):
         HAVING = ""
-        if self.params['comparator'] not in ['=', '<', '>']:
+        if self.params['comparator'] not in ['<', '>']:
             return ""
-        limit = int(self.params['limit'])
-        if self.params['direction'] == "i":
-            src = "conn_in"
+        limit = float(self.params['limit'])
+        if self.params['direction'] == 'i':
+            src = "conn_in / seconds"
+            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+        elif self.params['direction'] == 'o':
+            src = "conn_out / seconds"
+            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+        elif self.params['direction'] == 'c':
+            src = "(conn_in + conn_out) / seconds"
+            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
         else:
-            src = "conn_out"
-
-        HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+            return ""
         return HAVING
 
 

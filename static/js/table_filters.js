@@ -20,19 +20,13 @@
  *
  *  private methods:
  *      //create filter list HTML items, and filter objects
- *      createSubnetFilter(subnet)
+ *      createFilter(enabled, type, params, row)
  *      createSubnetFilterRow(subnet)
- *      createMaskFilter(subnet)
  *      createMaskFilterRow(subnet)
- *      createEnvFilter(subnet)
  *      createEnvFilterRow(subnet)
- *      createPortFilter(comparator_port)
  *      createPortFilterRow(comparator, port)
- *      createTagFilter(has_tags)
  *      createTagFilterRow(has, tags)
- *      createTargetFilter(has_tags)
  *      createTargetFilterRow(has, tags)
- *      createConnectionsFilter(comparator_limit)
  *      createConnectionsFilterRow(comparator, limit)
  *
  *      //create HTML for each filter type
@@ -79,8 +73,12 @@
         var source = null;
         if (filters.private.types.hasOwnProperty(type)) {
             source = filters.private.types[type];
-            if (params.length === source[2]) {
-                newFilter = source[0](params, true);
+            if (params.length === source[2].length) {
+                var paramObj = {};
+                source[2].forEach(function (name, index) {
+                    paramObj[name] = params[index];
+                });
+                newFilter = filters.private.createFilter(true, type, paramObj, source[0]);
             } else {
                 console.error("addFilter: Params length didn't match:");
                 console.log(arguments);
@@ -148,284 +146,158 @@
     // ==================================
     // Private methods
     // ==================================
-    filters.private.createSubnetFilter = function (subnet, enabled) {
-        var filter;
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createSubnetFilterRow(subnet);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
+    filters.private.createFilter = function(enabled, type, params, row) {
+      let filter = {};
+      let filterdiv = filters.private.markupBoilerplate(enabled);
+      let parts = row(params);
+      parts.forEach(function (part) {
+        filterdiv.appendChild(part);
+      });
 
-        filter = {};
-        filter.enabled = enabled;
-        filter.type = "subnet";
-        filter.subnet = subnet;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createSubnetFilterRow = function (subnet) {
+      filter.enabled = enabled;
+      filter.type = type;
+      filter.html = filterdiv;
+      Object.keys(params).forEach(function (key) {
+        filter[key] = params[key];
+      });
+      return filter;
+    }
+
+    filters.private.createSubnetFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
+
         parts.push(filters.private.markupSpan("Return results from subnet "));
         parts.push(filters.private.markupSelection("subnet", "Choose subnet...", [
             ["8", "/8"],
             ["16", "/16"],
             ["24", "/24"],
             ["32", "/32"]
-        ], subnet));
+        ], params.subnet));
         return parts;
     };
-    filters.private.createMaskFilter = function (mask, enabled) {
-        var filter;
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createMaskFilterRow(mask);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        filter = {};
-        filter.enabled = enabled;
-        filter.type = "mask";
-        filter.mask = mask;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createMaskFilterRow = function (mask) {
+    filters.private.createMaskFilterRow = function (params) {
         var parts = [];
-        parts.push(filters.private.markupSpan("Search children of "));
-        parts.push(filters.private.markupInput("mask", "192.168.0.0/24", mask));
-        return parts;
-    };
-    filters.private.createRoleFilter = function (cmp_ratio, enabled) {
-        var comparator;
-        var ratio;
-        if (cmp_ratio) {
-            comparator = cmp_ratio[0];
-            ratio = cmp_ratio[1];
+        if (params == undefined) {
+          params = {};
         }
-        var filter;
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createRoleFilterRow(comparator, ratio);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
 
-        filter = {};
-        filter.enabled = enabled;
-        filter.type = "role";
-        filter.comparator = comparator;
-        filter.ratio = ratio;
-        filter.html = filterdiv;
-        return filter;
+        parts.push(filters.private.markupSpan("Search children of "));
+        parts.push(filters.private.markupInput("mask", "192.168.0.0/24", params.mask));
+        return parts;
     };
-    filters.private.createRoleFilterRow = function (comparator, ratio) {
+    filters.private.createRoleFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
+
         parts.push(filters.private.markupSpan("Client/Server ratio is "));
         parts.push(filters.private.markupSelection("comparator", "more/less than", [
             [">", "more than"],
             ["<", "less than"]
-        ], comparator));
-        parts.push(filters.private.markupInput("ratio", "0.5", ratio));
+        ], params.comparator));
+        parts.push(filters.private.markupInput("ratio", "0.5", params.ratio));
         parts.push(filters.private.markupSpan(" (0 = client, 1 = server)"));
         return parts;
     };
-    filters.private.createEnvFilter = function (env, enabled) {
-        var filter;
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createEnvFilterRow(env);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        filter = {};
-        filter.enabled = enabled;
-        filter.type = "env";
-        filter.env = env;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createEnvFilterRow = function (env) {
+    filters.private.createEnvFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
+
         parts.push(filters.private.markupSpan("Node environment is "));
         parts.push(filters.private.markupSelection("env", "Choose environment",
-                g_known_envs.map(function (e) { return [e, e];}), env));
+                g_known_envs.map(function (e) { return [e, e];}), params.env));
         return parts;
     };
-    filters.private.createPortFilter = function (connection_port, enabled) {
-        var connection;
-        var port;
-        if (connection_port) {
-            connection = connection_port[0];
-            port = connection_port[1];
-        }
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createPortFilterRow(connection, port);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        var filter = {};
-        filter.enabled = enabled;
-        filter.type = "port";
-        filter.connection = connection;
-        filter.port = port;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createPortFilterRow = function (connection, port) {
+    filters.private.createPortFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
 
         parts.push(filters.private.markupSelection("connection", "Filter type...", [
             ["0", "Connects to"],
             ["1", "Doesn't connect to"],
             ["2", "Receives connections from"],
             ["3", "Doesn't receive connections from"]
-        ], connection));
+        ], params.connection));
         parts.push(filters.private.markupSpan("another host via port"));
         //parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
-        parts.push(filters.private.markupInput("port", "443", port));
+        parts.push(filters.private.markupInput("port", "443", params.port));
         return parts;
     };
-    filters.private.createProtocolFilter = function (handles_protocol, enabled) {
-        var handles;
-        var protocol;
-        if (handles_protocol) {
-            handles = handles_protocol[0];
-            protocol = handles_protocol[1];
-        }
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createProtocolFilterRow(handles, protocol);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        var filter = {};
-        filter.enabled = enabled;
-        filter.type = "protocol";
-        filter.handles = handles;
-        filter.protocol = protocol;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createProtocolFilterRow = function (handles, protocol) {
+    filters.private.createProtocolFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
 
         parts.push(filters.private.markupSelection("handles", "handles in/outbound", [
             ["0", "Handles inbound"],
             ["1", "Doesn't handle inbound"],
             ["2", "Initiates outbound"],
             ["3", "Doesn't intiate outbound"]
-        ], handles));
+        ], params.handles));
         parts.push(filters.private.markupSpan("connections using protocol"));
-        parts.push(filters.private.markupInput("protocol", "UDP", protocol));
+        parts.push(filters.private.markupInput("protocol", "UDP", params.protocol));
         return parts;
     };
-    filters.private.createTagFilter = function (has_tags, enabled) {
-        var has;
-        var tags;
-        if (has_tags) {
-            has = has_tags[0];
-            tags = has_tags[1];
-        } else {
-            has = "1";
-        }
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createTagFilterRow(has, tags);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        var filter = {};
-        filter.enabled = enabled;
-        filter.type = "tags";
-        filter.has = has;
-        filter.tags = tags;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createTagFilterRow = function (has, tags) {
+    filters.private.createTagFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
+
         parts.push(filters.private.markupSpan("host "));
         parts.push(filters.private.markupSelection("has", "has/not", [
             ["1", "has"],
             ["0", "doesn't have"]
-        ], has));
+        ], params.has));
         parts.push(filters.private.markupSpan(" tags: "));
         parts.push(filters.private.markupTags("tags", "Choose tag(s)",
-                g_known_tags.map(function (tag) { return [tag, tag];}), tags));
+                g_known_tags.map(function (tag) { return [tag, tag];}), params.tags));
         return parts;
     };
-    filters.private.createTargetFilter = function (target_to, enabled) {
-        var target;
-        var to;
-        if (target_to) {
-            target = target_to[0];
-            to = target_to[1];
-        }
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createTargetFilterRow(to, target);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        var filter = {};
-        filter.enabled = enabled;
-        filter.type = "target";
-        filter.to = to;
-        filter.target = target;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createTargetFilterRow = function (to, target) {
+    filters.private.createTargetFilterRow = function (params) {
         var parts = [];
+        if (params == undefined) {
+          params = {};
+        }
+
         parts.push(filters.private.markupSpan("Show only hosts that "));
         parts.push(filters.private.markupSelection("to", "connect to/from", [
             ["0", "connect to"],
             ["1", "don't connect to"],
             ["2", "receive connections from"],
             ["3", "don't receive connections from"]
-        ], to));
+        ], params.to));
         parts.push(filters.private.markupSpan(" IP address:"));
-        parts.push(filters.private.markupInput("target", "192.168.0.4", target));
+        parts.push(filters.private.markupInput("target", "192.168.0.4", params.target));
         return parts;
     };
-    filters.private.createConnectionsFilter = function (cmp_dir_limit, enabled) {
-        var comparator;
-        var direction;
-        var limit;
-        if (cmp_dir_limit) {
-            comparator = cmp_dir_limit[0];
-            direction = cmp_dir_limit[1];
-            limit = cmp_dir_limit[2];
-        }
-        var filterdiv = filters.private.markupBoilerplate(enabled);
-        var parts = filters.private.createConnectionsFilterRow(comparator, direction, limit);
-        parts.forEach(function (part) {
-            filterdiv.appendChild(part);
-        });
-
-        var filter = {};
-        filter.enabled = enabled;
-        filter.type = "connections";
-        filter.comparator = comparator;
-        filter.direction = direction;
-        filter.limit = limit;
-        filter.html = filterdiv;
-        return filter;
-    };
-    filters.private.createConnectionsFilterRow = function (comparator, direction, limit) {
+    filters.private.createConnectionsFilterRow = function (params) {
         var parts = [];
-        parts.push(filters.private.markupSpan("Has "));
+        if (params == undefined) {
+          params = {};
+        }
+
+        parts.push(filters.private.markupSpan("Handles "));
         parts.push(filters.private.markupSelection("comparator", "Filter type...", [
             [">", "more than"],
-            ["<", "fewer than"],
-            ["=", "exactly"]
-        ], comparator));
-        parts.push(filters.private.markupInput("limit", "a number of", limit));
+            ["<", "fewer than"]
+        ], params.comparator));
+        parts.push(filters.private.markupInput("limit", "a number of", params.limit));
         parts.push(filters.private.markupSelection("direction", "in/outbound", [
             ["i", "inbound"],
-            ["o", "outbound"]
-        ], direction));
-        parts.push(filters.private.markupSpan("connections."));
+            ["o", "outbound"],
+            ["c", "combined"]
+        ], params.direction));
+        parts.push(filters.private.markupSpan("connections / second."));
         return parts;
     };
 
@@ -661,11 +533,13 @@
                     }
 
                 } else if (filter.type === "connections") {
-                    if (filter.comparator === "=") {
-                        span = filters.private.markupSpan(filter.limit + " conns");
-                    } else {
-                        span = filters.private.markupSpan(filter.comparator + filter.limit + " conns");
+                    var dir = ""
+                    if (filter.direction == 'i') {
+                      dir = " (in)";
+                    } else if (filter.direction == 'o') {
+                      dir = " (out)";
                     }
+                    span = filters.private.markupSpan(filter.comparator + filter.limit + " conns/s" + dir);
 
                 } else if (filter.type === "protocol") {
                     if (filter.handles === "0") {
@@ -743,6 +617,7 @@
     };
     filters.private.decodeFilters = function (filterGET) {
         var decodedFilters = [];
+        let types = Object.keys(filters.private.types).sort()
 
         //split by &
         var filterList = filterGET.split("|");
@@ -751,25 +626,37 @@
             // split by |
             var filterArgs = filterString.split(";");
             var typeIndex = filterArgs.shift();
+            var type = types[typeIndex];
+            var filterReg = filters.private.types[type];
             var enabled = filterArgs.shift();
             enabled = (enabled === "1");
-            var type = Object.keys(filters.private.types).sort()[typeIndex];
-            var filter = filters.private.types[type][0](filterArgs, enabled);
+            //param count matches:
+            if (filterArgs.length !== filterReg[2].length) {
+              console.error("Cannot import "+type+" filter. Param length is " + filterArgs.length + ". (expected " + filterReg[2].length + ")");
+              return;
+            }
+            var params = {};
+            filterReg[2].forEach(function (name, index) {
+              params[name] = filterArgs[index];
+            });
+
+            var filter = filters.private.createFilter(enabled, type, params, filterReg[0])
             decodedFilters.push(filter);
         });
         return decodedFilters;
     };
 
     //Register filter types, and their constructors
-    filters.private.types.connections = [filters.private.createConnectionsFilter, filters.private.createConnectionsFilterRow, 3];
-    filters.private.types.env = [filters.private.createEnvFilter, filters.private.createEnvFilterRow, 1];
-    filters.private.types.mask = [filters.private.createMaskFilter, filters.private.createMaskFilterRow, 1];
-    filters.private.types.port = [filters.private.createPortFilter, filters.private.createPortFilterRow, 2];
-    filters.private.types.protocol = [filters.private.createProtocolFilter, filters.private.createProtocolFilterRow, 2];
-    filters.private.types.role = [filters.private.createRoleFilter, filters.private.createRoleFilterRow, 2];
-    filters.private.types.tags = [filters.private.createTagFilter, filters.private.createTagFilterRow, 2];
-    filters.private.types.target = [filters.private.createTargetFilter, filters.private.createTargetFilterRow, 2];
-    filters.private.types.subnet = [filters.private.createSubnetFilter, filters.private.createSubnetFilterRow, 1];
+    // format: [row-builder(), type"", param_names[]]
+    filters.private.types.connections = [filters.private.createConnectionsFilterRow, "connections", ["comparator", "direction", "limit"]];
+    filters.private.types.env = [filters.private.createEnvFilterRow, "env", ["env"]];
+    filters.private.types.mask = [filters.private.createMaskFilterRow, "mask", ["mask"]];
+    filters.private.types.port = [filters.private.createPortFilterRow, "port", ["connection", "port"]];
+    filters.private.types.protocol = [filters.private.createProtocolFilterRow, "protocol", ["handles", "protocol"]];
+    filters.private.types.role = [filters.private.createRoleFilterRow, "role", ["comparator", "ratio"]];
+    filters.private.types.tags = [filters.private.createTagFilterRow, "tags", ["has", "tags"]];
+    filters.private.types.target = [filters.private.createTargetFilterRow, "target", ["target", "to"]];
+    filters.private.types.subnet = [filters.private.createSubnetFilterRow, "subnet", ["subnet"]];
 
     filters.private.createFilterCreator = function () {
         //The add button
@@ -800,7 +687,7 @@
                 while (typeSelector.nextElementSibling !== null) {
                     filterdiv.removeChild(typeSelector.nextElementSibling);
                 }
-                var filterParts = filters.private.types[type][1]();
+                var filterParts = filters.private.types[type][0]();
                 filterParts.forEach(function (part) {
                     filterdiv.appendChild(part);
                 });
