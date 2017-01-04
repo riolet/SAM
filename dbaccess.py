@@ -532,6 +532,7 @@ def get_node_info(address):
     ipstart, ipend = common.determine_range_string(address)
     prefix = get_settings_cached()['prefix']
     qvars = {"start": ipstart, "end": ipend}
+    #TODO: seconds has a magic number 300 added to account for DB time quantization.
 
     query = """
         SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
@@ -558,7 +559,8 @@ def get_node_info(address):
             , (l_in.duration / COALESCE(l_in.total_in, 1)) AS 'in_duration'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
             , children.endpoints AS 'endpoints'
-            , t.seconds
+            , t.seconds + 300 AS 'seconds'
+            , (l_in.sum_b + l_out.sum_b) / t.seconds AS 'overall_bps'
             , COALESCE(l_in.protocol, "") AS 'in_protocols'
             , COALESCE(l_out.protocol, "") AS 'out_protocols'
         FROM (
@@ -711,6 +713,7 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
     if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
         ORDERBY = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
+    #TODO: seconds has a magic number 300 added to account for DB time quantization.
     # note: group concat max length is default at 1024.
     # if any data is lost due to max length, try:
     # SET group_concat_max_len = 2048

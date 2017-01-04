@@ -122,9 +122,6 @@ class ConnectionsFilter(Filter):
             HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
         else:
             return ""
-        print(" Conn Filter ".center(50, '-'))
-        print(HAVING)
-        print(" End Conn Filter ".center(50, '-'))
         return HAVING
 
 
