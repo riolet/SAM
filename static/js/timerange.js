@@ -38,23 +38,23 @@ function dateConverter() {
 	Main function responsible for the time slider, It creates the slider if it hasn't been made, otherwise it updates the slider.
 */
 function slider_init() {
-    "use strict";
-    $.ajax({
-        url: "/stats",
-        type: "GET",
-        data: {'q': 'timerange'},
-        dataType: "json",
-        error: onNotLoadData,
-        success: function (response) {
-		if (sliderMade == false) {
-			   	config.tstart = response.max - (5*60);
-				config.tend = response.max;
-				create_slider(Math.floor(response.min), Math.floor(response.max));
-			} else {
-				updateSliderRange(Math.floor(response.min), Math.floor(response.max));
-			}
-        }
-    });
+  "use strict";
+  $.ajax({
+    url: "/stats",
+    type: "GET",
+    data: {'q': 'timerange', 'ds': config.ds},
+    dataType: "json",
+    error: onNotLoadData,
+    success: function (response) {
+      if (sliderMade == false) {
+        config.tstart = response.max - (5*60);
+        config.tend = response.max;
+        create_slider(Math.floor(response.min), Math.floor(response.max));
+      } else {
+        updateSliderRange(Math.floor(response.min), Math.floor(response.max));
+      }
+    }
+  });
 }
 
 function create_slider(dtmin, dtmax) {

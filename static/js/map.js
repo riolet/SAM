@@ -29,7 +29,8 @@ var config = {
     "filter": "",
     "tstart": 1,
     "tend": 2147483647,
-    "protocol": "all"
+    "protocol": "all",
+    "ds": null
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -77,6 +78,7 @@ function init() {
     GET_settings(function (settings) {
         config.update = (settings.datasource.ar_active === 1);
         config.update_interval = settings.datasource.ar_interval;
+        config.ds = "ds_" + (settings.datasource.id) + "_"
         init_configbuttons();
 	    runUpdate();
     });
@@ -94,7 +96,7 @@ function init() {
         sel_update_display();
     };
 
-	  //updateCall();
+	  updateCall();
 }
 
 function init_toggleButton(id, ontext, offtext, isOn) {
@@ -119,6 +121,9 @@ function init_configbuttons() {
     init_toggleButton("show_in", "Inbound Shown", "Inbound Hidden", config.show_in);
     init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
     init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
+    $(".ds.toggle.button").state();
+    let active_ds = document.getElementById(config.ds);
+    active_ds.classList.add("active");
 }
 
 function init_canvas(c, cx) {

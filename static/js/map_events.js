@@ -230,6 +230,29 @@ function onResize() {
     sel_panel_height();
 }
 
+function updateDsSelection() {
+  "use strict";
+  //determine which ds buttons are clicked.
+  var btns = document.getElementsByClassName("ds button active");
+  var oldDS = config.ds;
+  var newDS = config.ds;
+  var count;
+  for(count = btns.length - 1; count >= 0; count -= 1) {
+    if (btns[count].id !== oldDS) {
+      newDS = btns[count].id;
+    }
+  }
+  if (newDS !== oldDS) {
+    config.ds = newDS;
+    node_reset();
+    for(count = btns.length - 1; count >= 0; count -= 1) {
+      if (btns[count].id !== newDS) {
+        btns[count].classList.remove("active");
+      }
+    }
+  }
+}
+
 function updateConfig() {
     "use strict";
     config.show_clients = document.getElementById("show_clients").classList.contains("active");
@@ -237,6 +260,8 @@ function updateConfig() {
     config.show_in = document.getElementById("show_in").classList.contains("active");
     config.show_out = document.getElementById("show_out").classList.contains("active");
     config.update = document.getElementById("update").classList.contains("active");
+    updateDsSelection();
+
     runUpdate(); //required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
     render_all();

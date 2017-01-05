@@ -27,6 +27,12 @@ function Node(alias, address, number, subnet, connections, x, y, radius) {
     link_request_add(address.toString());
 }
 
+function node_reset() {
+  "user strict";
+  m_nodes = {};
+  GET_nodes(null);
+}
+
 function get_node_name(node) {
     "use strict";
     if (node.alias.length === 0) {

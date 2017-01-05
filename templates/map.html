@@ -55,8 +55,8 @@ $def with (protocols, datasources)
           <div class="menu">
             <div class="thin item">
               <div class="ui two vertical buttons">
-                $for source in datasources
-                  <button class="ui ds button" id="$source[0]"><i class="cube icon"></i>$source[1]</button>
+                $for source in datasources:
+                  <button class="ui ds toggle button" id="$source[0]"><i class="cube icon"></i>$source[1]</button>
               </div>
             </div>
           </div>
