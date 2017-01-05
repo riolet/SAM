@@ -90,7 +90,7 @@ def get_syslog_size(datasource, buffer, _test=False):
 def get_timerange(ds):
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
@@ -180,7 +180,7 @@ def get_links(ds, ip_start, ip_end, inbound, port_filter=None, timerange=None, p
     where = build_where_clause(timerange, port_filter, protocol)
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     if ports:
@@ -216,7 +216,7 @@ def get_details_summary(ds, ip_start, ip_end, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     # TODO: seconds has a magic number 300 added to account for DB time quantization.
@@ -247,7 +247,7 @@ def get_details_connections(ds, ip_start, ip_end, inbound, timestamp_range=None,
     sort_options_simple = ['links', 'src', 'dst', 'port']
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     qvars = {
@@ -332,7 +332,7 @@ def get_details_ports(ds, ip_start, ip_end, timestamp_range=None, port=None, pag
     first_result = (page - 1) * page_size
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     qvars = {
@@ -370,7 +370,7 @@ def get_details_children(ds, ip_start, ip_end, page, page_size, order):
     sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     ip_diff = ip_end - ip_start
@@ -551,7 +551,7 @@ def set_env(address, env):
 def get_protocol_list(ds):
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
     table = "{0}Links".format(prefix)
     return [row.protocol for row in common.db.select(table, what="DISTINCT protocol") if row.protocol]
@@ -561,7 +561,7 @@ def get_node_info(ds, address):
     ipstart, ipend = common.determine_range_string(address)
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
     qvars = {"start": ipstart, "end": ipend}
     #TODO: seconds has a magic number 300 added to account for DB time quantization.
@@ -731,7 +731,7 @@ def set_port_info(data):
 def get_table_info(ds, clauses, page, page_size, order_by, order_dir):
     dses = get_ds_list_cached()
     if ds not in dses:
-        raise ValueError("Invalid data source specified.")
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
 
     WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
