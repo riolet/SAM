@@ -44,7 +44,6 @@ function GET_nodes(parents, callback) {
             return parent.address;
         }).join(",");
     }
-    request.ds = config.ds;
     $.ajax({
         url: "/nodes",
         type: "GET",

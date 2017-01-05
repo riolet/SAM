@@ -244,7 +244,7 @@ function updateDsSelection() {
   }
   if (newDS !== oldDS) {
     config.ds = newDS;
-    node_reset();
+    links_reset();
     for(count = btns.length - 1; count >= 0; count -= 1) {
       if (btns[count].id !== newDS) {
         btns[count].classList.remove("active");

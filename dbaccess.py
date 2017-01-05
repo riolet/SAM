@@ -147,7 +147,7 @@ def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=
     return WHERE
 
 
-def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
+def get_links(ds, ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
 
@@ -174,7 +174,10 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
     """
     ports = (ip_start == ip_end)  # include ports in the results?
     where = build_where_clause(timerange, port_filter, protocol)
-    prefix = get_settings_cached()['prefix']
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        return []
+
 
     if ports:
         select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
@@ -796,13 +799,20 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
 
 
 settingsCache = {}
-
+dsCache = []
 
 def get_settings_cached():
     global settingsCache
     if not settingsCache:
         settingsCache = get_settings()
     settingsCache['prefix'] = "ds_{0}_".format(str(settingsCache['datasource']['id']))
+    return settingsCache
+
+def get_ds_list_cached():
+    global dsCache
+    if not dsCache:
+        global dsCache
+        dsCache = [src.id for src in common.db.select("Datasources")]
     return settingsCache
 
 
@@ -816,6 +826,8 @@ def get_settings(all=False):
         for ds_index in range(len(sources)):
             if sources[ds_index]['id'] == target:
                 settings['datasource'] = sources[ds_index]
+        global dsCache
+        dsCache = [src['id'] for src in sources]
     else:
         where = "id={0}".format(settings['datasource'])
         ds = common.db.select("Datasources", where=where, limit=1)
@@ -847,7 +859,9 @@ def set_settings(**kwargs):
 
     # clear the cache
     global settingsCache
+    global dsCache
     settingsCache = {}
+    dsCache = []
 
 
 def get_datasource(id):
