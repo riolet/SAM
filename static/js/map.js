@@ -24,8 +24,8 @@ var config = {
     "show_servers": true,
     "show_in": true,
     "show_out": true,
-	"update": true,
-	"update_interval": 60,
+    "update": true,
+    "update_interval": 60,
     "filter": "",
     "tstart": 1,
     "tend": 2147483647,
@@ -94,14 +94,7 @@ function init() {
         sel_update_display();
     };
 
-    //loadData();
-	//This esentially delays the initial display of data until after the slider handles are updated, I am uncertain how viable
-	//this will remain as the number of nodes in the system increase.
-    //window.setTimeout(updateCall,500);
-
-	//does the initial call to determine if updates.
-	updateCall();
-	
+	  //updateCall();
 }
 
 function init_toggleButton(id, ontext, offtext, isOn) {

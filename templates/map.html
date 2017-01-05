@@ -1,4 +1,4 @@
-$def with (protocols)
+$def with (protocols, datasources)
 <script src="/static/js/map.js"></script>
 <h3 class="ui center aligned header">Loading...</h3>
 <div id="output">
@@ -10,6 +10,7 @@ $def with (protocols)
   <div class="ui icon menu">
     <div id="settings_menu" class="ui left dropdown item">
       <i class="setting icon large"></i>
+      <!--The settings menu -->
       <div class="menu">
         <div class="item" id="time_box">
           <p>Time Range</p>
@@ -48,8 +49,21 @@ $def with (protocols)
             <button class="ui toggle button" id="update"></button>
           </div>
         </div>
+        <div class="ui dropdown item" style="display: flex">
+          Data source
+          <i class="dropdown icon"></i>
+          <div class="menu">
+            <div class="thin item">
+              <div class="ui two vertical buttons">
+                $for source in datasources
+                  <button class="ui ds button" id="$source[0]"><i class="cube icon"></i>$source[1]</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </div> <!-- end menu -->
+    <!-- The actual search bar, not in the menu -->
     <div class="ui item">
       <div class="ui icon input" data-content="Find an IP address. e.g. 192.168.0.12">
         <input placeholder="Find IP..." id="search" type="text">
