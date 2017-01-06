@@ -91,6 +91,7 @@ function GET_links_callback(result) {
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
+    console.log(result);
     Object.keys(result).forEach(function (address) {
         var node = findNode(address);
         node.inputs = result[address].inputs;

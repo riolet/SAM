@@ -185,10 +185,10 @@ def get_links(ds, ip_start, ip_end, inbound, port_filter=None, timerange=None, p
     prefix = "ds_{0}_".format(ds)
 
     if ports:
-        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
+        select = "src_start, src_end, dst_start, dst_end, port, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
+        select = "src_start, src_end, dst_start, dst_end, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
 
     if inbound:

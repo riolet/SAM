@@ -27,17 +27,27 @@ class Links:
     def get_links(self):
         result = {}
         timerange = (self.timestart, self.timeend)
+        seconds = self.timeend - self.timestart
+        minutes = seconds // 60
         for address in self.addresses:
             ipstart, ipend = common.determine_range_string(address)
             result[address] = {}
             result[address]['inputs'] = dbaccess.get_links(self.ds, ipstart, ipend, inbound=True, port_filter=self.port, timerange=timerange, protocol=self.protocol)
             result[address]['outputs'] = dbaccess.get_links(self.ds, ipstart, ipend, inbound=False, port_filter=self.port, timerange=timerange, protocol=self.protocol)
 
-            # remove duplicate protocol names
+            # remove duplicate protocol names, normalize values over time
             for row in result[address]['inputs']:
                 row['protocols'] = ",".join(set(row['protocols'].split(',')))
+                row['links'] /= minutes
+                row['bytes'] /= seconds
+                row['packets'] /= seconds
+
             for row in result[address]['outputs']:
                 row['protocols'] = ",".join(set(row['protocols'].split(',')))
+                row['links'] /= minutes
+                row['bytes'] /= seconds
+                row['packets'] /= seconds
+
 
         return json.dumps(result, default=decimal_default)
 

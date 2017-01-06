@@ -287,7 +287,7 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(link.links).length / scale;
+                ctx.lineWidth = String(Math.round(link.links)).length / scale;
             }
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
@@ -306,7 +306,7 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(link.links).length / scale;
+                ctx.lineWidth = String(Math.round(link.links)).length / scale;
             }
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
