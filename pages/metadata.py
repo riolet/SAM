@@ -12,6 +12,8 @@ class Metadata(object):
         ip = ''
         if 'ip' in get_data:
             ip = get_data['ip']
+        settings = dbaccess.get_settings_cached()
+        default_ds = settings['prefix']
         return str(common.render._head(self.pageTitle,
                                        stylesheets=[],
                                        scripts=["/static/js/metadata.js",
@@ -19,5 +21,5 @@ class Metadata(object):
                                                 "/static/js/map_selection.js",
                                                 "/static/js/map_data.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.metadata(ip, dbaccess.get_tag_list(), dbaccess.get_env_list())) \
+               + str(common.render.metadata(ip, dbaccess.get_tag_list(), dbaccess.get_env_list(), default_ds)) \
                + str(common.render._tail())

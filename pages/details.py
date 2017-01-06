@@ -71,6 +71,10 @@ class Details:
 
     def parse_request(self, GET_data):
         # ignore port, for now at least.
+        if "ds" in GET_data:
+            ds_match = re.search("(\d+)", GET_data['ds'])
+            if ds_match:
+                self.ds = int(ds_match.group())
         if 'filter' in GET_data:
             # TODO: ignore port filters. For now.
             # self.port = GET_data.filter
@@ -78,7 +82,7 @@ class Details:
         if 'tstart' in GET_data and 'tend' in GET_data:
             self.time_range = (int(GET_data.tstart), int(GET_data.tend))
         else:
-            range = dbaccess.get_timerange()
+            range = dbaccess.get_timerange(self.ds)
             self.time_range = (range['min'], range['max'])
         if 'address' in GET_data:
             try:
@@ -107,11 +111,6 @@ class Details:
             self.simple = GET_data['simple'] == "true"
         if 'component' in GET_data:
             self.requested_components = GET_data['component'].split(",")
-
-        if "ds" in GET_data:
-            ds_match = re.search("(\d+)", GET_data['ds'])
-            if ds_match:
-                self.ds = int(ds_match.group())
 
     def nice_ip_address(self):
         address = ".".join(map(str, self.ips))

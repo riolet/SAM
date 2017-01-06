@@ -1,4 +1,4 @@
-$def with (ip, tags, envs)
+$def with (ip, tags, envs, default_ds)
 <script>
   g_initial_ip = "$ip";
   var g_known_tags = [];
@@ -7,6 +7,7 @@ $def with (ip, tags, envs)
   var g_known_envs = [];
   $for env in envs:
     g_known_envs.push("$env");
+  g_ds = "$default_ds";
 </script>
 <div class="ui container">
   <h3 class="ui center aligned header">
