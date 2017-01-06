@@ -39,47 +39,34 @@ function dateConverter() {
 */
 function slider_init() {
   "use strict";
-  console.log("calling GET_timerange");
-  $.ajax({
-    url: "/stats",
-    type: "GET",
-    data: {'q': 'timerange', 'ds': config.ds},
-    dataType: "json",
-    error: onNotLoadData,
-    success: function (response) {
-      console.log("timerange results came in");
-      console.log(response);
-      if (sliderMade == false) {
-        config.tstart = response.max - (5*60);
-        config.tend = response.max;
-        create_slider(Math.floor(response.min), Math.floor(response.max));
-      } else {
-        updateSliderRange(Math.floor(response.min), Math.floor(response.max));
-      }
-    }
-  });
+  let newMin = config.tmin;
+  let newMax = config.tmax;
+  let newStart = config.tstart;
+  let newEnd = config.tend;
+
+  //dateslider object in the menu
+  let dateSlider = document.getElementById('slider-date');
+
+  //if the slider doesn't exist, create it.
+  if (dateSlider.noUiSlider === undefined) {
+    create_slider(newMin, newMax, newStart, newEnd);
+  }
+
+  //Otherwise, update time range and selection.
+  else {
+    update_slider(newMin, newMax, newStart, newEnd);
+  }
 }
 
-function create_slider(dtmin, dtmax) {
+function create_slider(tmin, tmax, tstart, tend) {
   "use strict";
   var dateSlider = document.getElementById('slider-date');
-  //get the box containing all timing data
-  var timebox = document.getElementById('time_box');
-  /*This can occur if not enough data is in the system yet to make a time range. */
-  if (dtmin == dtmax) {
-    //hide the time frame box
-    $(timebox).hide()
-    return;
-  }
-	
-	// allows us to set the default position of the lower handle to 5 minutes(1 step) before the latest timestamp
-  var lowPos = dtmax - (5 * 60);
 
   noUiSlider.create(dateSlider, {
     // Create two timestamps to define a range.
     range: {
-      min: dtmin,
-      max: dtmax
+      min: tmin,
+      max: tmax
     },
 
     // Steps of 5 minutes
@@ -89,8 +76,7 @@ function create_slider(dtmin, dtmax) {
     margin: 5 * 60,
 
     // Two more timestamps indicate the default handle starting positions.
-    start: [ lowPos, dtmax ],
-
+    start: [ tstart, tend],
 
     // Shade the selection
     connect: true,
@@ -105,8 +91,6 @@ function create_slider(dtmin, dtmax) {
       format: {"to": function(v) { return ""; } } //no labels
     }
   });
-  //confirm that we have created the slider
-  sliderMade = true;
 
   var inputA = document.getElementById('input-start');
   var inputB = document.getElementById('input-end');
@@ -137,8 +121,18 @@ function create_slider(dtmin, dtmax) {
   inputB.addEventListener('change', function(){
     dateSlider.noUiSlider.set([null, converter.from(this.value)]);
   });
+}
 
-  //make sure the time box is visible
-  $(timebox).show();
+function update_slider(tmin, tmax, tstart, tend) {
+  "use strict";
+  var dateSlider = document.getElementById('slider-date');
 
+  //set slider handles
+  dateSlider.noUiSlider.updateOptions({
+		range: {
+			'min': tmin,
+			'max': tmax
+		}
+	});
+  dateSlider.noUiSlider.set([tstart, tend]);
 }

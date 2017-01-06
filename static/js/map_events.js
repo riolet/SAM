@@ -246,21 +246,13 @@ function updateDsSelection() {
     config.ds = newDS;
     links_reset();
     GET_settings(newDS, function (settings) {
-        console.log("GET_settings result came in");
-        config.update = (settings.datasource.ar_active === 1);
-        config.update_interval = settings.datasource.ar_interval;
-        config.ds = "ds_" + settings.datasource.id + "_";
-        if (config.update) {
-          document.getElementById("update").classList.remove("active");
-        } else {
-          document.getElementById("update").classList.add("active");
-        }
-        sliderMade = false;
-        var dateSlider = document.getElementById("slider-date");
-        dateSlider.noUiSlider.destroy();
+      config.update = (settings.datasource.ar_active === 1);
+      config.update_interval = settings.datasource.ar_interval;
+      config.ds = "ds_" + settings.datasource.id + "_";
+      init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
 
-        runUpdate();
-	      updateCall();
+      setAutoUpdate();
+      updateCall();
     });
     for(count = btns.length - 1; count >= 0; count -= 1) {
       if (btns[count].id !== newDS) {
@@ -279,7 +271,7 @@ function updateConfig() {
     config.update = document.getElementById("update").classList.contains("active");
     updateDsSelection();
 
-    runUpdate(); //required to kill the timer if we wnat to turn it off.
+    setAutoUpdate(); //required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
     render_all();
 }

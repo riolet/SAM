@@ -93,6 +93,8 @@ function init() {
         config.update = (settings.datasource.ar_active === 1);
         config.update_interval = settings.datasource.ar_interval;
         config.ds = "ds_" + settings.datasource.id + "_";
+        setAutoUpdate();
+
         GET_timerange(function (range) {
           if (range.min == range.max) {
             config.tmin = range.min - 300;
@@ -103,9 +105,9 @@ function init() {
           }
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
+
           slider_init(config);
-          runUpdate();
-          updateCall();
+          GET_nodes(null);
         });
         init_configbuttons();
     });
@@ -113,11 +115,13 @@ function init() {
 
 function init_toggleButton(id, ontext, offtext, isOn) {
     var toggleButton = document.getElementById(id);
+    toggleButton.innerHTML = "";
     if (isOn) {
         toggleButton.appendChild(document.createTextNode(ontext));
         toggleButton.classList.add("active");
     } else {
         toggleButton.appendChild(document.createTextNode(offtext));
+        toggleButton.classList.remove("active");
     }
     $(toggleButton).state({
         text: {
