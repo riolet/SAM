@@ -54,7 +54,8 @@ function slider_init() {
 
   //Otherwise, update time range and selection.
   else {
-    update_slider(newMin, newMax, newStart, newEnd);
+    //update_slider(newMin, newMax, newStart, newEnd);
+    recreate_slider(newMin, newMax, newStart, newEnd);
   }
 }
 
@@ -123,6 +124,64 @@ function create_slider(tmin, tmax, tstart, tend) {
   });
 }
 
+function recreate_slider(tmin, tmax, tstart, tend) {
+  "use strict";
+  var dateSlider = document.getElementById('slider-date');
+  dateSlider.noUiSlider.destroy();
+
+  noUiSlider.create(dateSlider, {
+    // Create two timestamps to define a range.
+    range: {
+      min: tmin,
+      max: tmax
+    },
+
+    // Steps of 5 minutes
+    step: 5 * 60,
+
+    // at least 5 minutes between handles
+    margin: 5 * 60,
+
+    // Two more timestamps indicate the default handle starting positions.
+    start: [ tstart, tend],
+
+    // Shade the selection
+    connect: true,
+    // Allow range draggin
+    behaviour: "drag",
+
+    pips: {
+      mode: 'count',
+      values: 5,
+      stepped: true,
+      density: 6,
+      format: {"to": function(v) { return ""; } } //no labels
+    }
+  });
+
+  var inputA = document.getElementById('input-start');
+  var inputB = document.getElementById('input-end');
+  var converter = dateConverter();
+
+  dateSlider.noUiSlider.on('update', function( values, handle ) {
+    var value = values[handle];
+    if ( handle ) {
+      inputB.value = converter.to(Math.round(value));
+      config.tend = Math.round(value);
+    } else {
+      inputA.value = converter.to(Math.round(value));
+      config.tstart = Math.round(value);
+    }
+  });
+  dateSlider.noUiSlider.on('end', function(){
+    sel_remove_all(m_nodes);
+    sel_set_selection(m_selection.selection)
+    links_reset();
+    updateRenderRoot();
+    render_all();
+  });
+}
+
 function update_slider(tmin, tmax, tstart, tend) {
   "use strict";
   var dateSlider = document.getElementById('slider-date');
@@ -132,7 +191,9 @@ function update_slider(tmin, tmax, tstart, tend) {
 		range: {
 			'min': tmin,
 			'max': tmax
-		}
+		},
+		step: 5*60,
+		margin: 5*60
 	});
   dateSlider.noUiSlider.set([tstart, tend]);
 }
