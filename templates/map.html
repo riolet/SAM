@@ -32,21 +32,18 @@ $def with (datasources)
             <i class="exchange icon"></i>
           </div>
         </div>
-        <div class="thin item">
-          <div class="two ui buttons">
-            <button class="ui toggle button" id="show_clients"></button>
-            <button class="ui toggle button" id="show_servers"></button>
-          </div>
-        </div>
-        <div class="thin item">
-          <div class="two ui buttons">
-            <button class="ui toggle button" id="show_in"></button>
-            <button class="ui toggle button" id="show_out"></button>
-          </div>
-        </div>
-        <div class="thin item">
-          <div class="two ui buttons">
-            <button class="ui toggle button" id="update"></button>
+        <div class="ui dropdown item" style="display: flex">
+          Show/Hide
+          <i class="dropdown icon"></i>
+          <div class="menu">
+            <div class="thin item">
+              <div class="ui four vertical buttons">
+                <button class="ui toggle button" id="show_in"></button>
+                <button class="ui toggle button" id="show_out"></button>
+                <button class="ui toggle button" id="show_clients"></button>
+                <button class="ui toggle button" id="show_servers"></button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="ui dropdown item" style="display: flex">
@@ -59,6 +56,11 @@ $def with (datasources)
                   <button class="ui ds toggle button" id="$source[0]"><i class="cube icon"></i>$source[1]</button>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="thin item">
+          <div class="two ui buttons">
+            <button class="ui toggle button" id="update"></button>
           </div>
         </div>
       </div>
