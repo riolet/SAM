@@ -6,18 +6,34 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
 }
 
 
-function GET_settings(successCallback) {
+function GET_settings(ds, successCallback) {
+    "use strict";
     if (typeof(successCallback) !== "function") {
         return;
     }
     $.ajax({
         url: "/settings",
         type: "GET",
-        data: {"headless": 1},
+        data: {"headless": 1, 'ds': ds},
         dataType: "json",
         error: onNotLoadData,
         success: successCallback
     });
+}
+
+function GET_timerange(successCallback) {
+  "use strict";
+  if (typeof(successCallback) !== "function") {
+      return;
+  }
+  $.ajax({
+    url: "/stats",
+    type: "GET",
+    data: {"q": "timerange", 'ds': config.ds},
+    dataType: "json",
+    error: onNotLoadData,
+    success: successCallback
+  });
 }
 
 /*

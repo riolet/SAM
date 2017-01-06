@@ -97,7 +97,8 @@ def get_timerange(ds):
                            "FROM {prefix}Links;".format(prefix=prefix))
     row = rows[0]
     if row['min'] == None or row['max'] == None:
-        return {'min': time.mktime(datetime.now().timetuple()), 'max': time.mktime(datetime.now().timetuple())}
+        now = time.mktime(datetime.now().timetuple())
+        return {'min': now, 'max': now}
     return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
 
@@ -849,7 +850,7 @@ def get_ds_list_cached():
     if not dsCache:
         global dsCache
         dsCache = [src.id for src in common.db.select("Datasources")]
-    return settingsCache
+    return dsCache
 
 
 def get_settings(all=False):

@@ -245,6 +245,23 @@ function updateDsSelection() {
   if (newDS !== oldDS) {
     config.ds = newDS;
     links_reset();
+    GET_settings(newDS, function (settings) {
+        console.log("GET_settings result came in");
+        config.update = (settings.datasource.ar_active === 1);
+        config.update_interval = settings.datasource.ar_interval;
+        config.ds = "ds_" + settings.datasource.id + "_";
+        if (config.update) {
+          document.getElementById("update").classList.remove("active");
+        } else {
+          document.getElementById("update").classList.add("active");
+        }
+        sliderMade = false;
+        var dateSlider = document.getElementById("slider-date");
+        dateSlider.noUiSlider.destroy();
+
+        runUpdate();
+	      updateCall();
+    });
     for(count = btns.length - 1; count >= 0; count -= 1) {
       if (btns[count].id !== newDS) {
         btns[count].classList.remove("active");

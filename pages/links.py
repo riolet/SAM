@@ -43,7 +43,7 @@ class Links:
 
     def parse_request(self, get_data):
         if "address" in get_data:
-            self.addresses = get_data['address_str'].split(",")
+            self.addresses = get_data['address'].split(",")
 
         if "filter" in get_data:
             self.port = get_data['filter']

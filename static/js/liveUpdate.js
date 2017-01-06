@@ -30,14 +30,17 @@ function runUpdate() {
 
 //the actual json calls that are executed when the update triggers
 function updateCall() {
+	//makes / updates the time slider
+	slider_init(config);
 	//updates the nodes visible on the map
 	GET_nodes(null);
-	//makes / updates the time slider
-	slider_init();
 }
 
 // the callback function for the query that gets the ranges for the slider
 function updateSliderRange (min, max) {
+  if (min == max) {
+    min = max - 300;
+  }
 
 	if (min == minSlideRange && max == maxSlideRange) {
 		return; //no update in range, don't bother changing anything.

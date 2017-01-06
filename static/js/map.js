@@ -27,8 +27,10 @@ var config = {
     "update": true,
     "update_interval": 60,
     "filter": "",
-    "tstart": 1,
-    "tend": 2147483647,
+    "tmin": 1,  // range minimum
+    "tmax": 2147483647,  // range maximum
+    "tstart": 1,  // window minimum
+    "tend": 2147483647,  // window maximum
     "protocol": "all",
     "ds": null
 };
@@ -73,16 +75,6 @@ function init() {
     searchElement.oninput = onsearch;
 
     sel_panel_height();
-
-    //retrieve config settings
-    GET_settings(function (settings) {
-        config.update = (settings.datasource.ar_active === 1);
-        config.update_interval = settings.datasource.ar_interval;
-        config.ds = "ds_" + (settings.datasource.id) + "_"
-        init_configbuttons();
-	    runUpdate();
-    });
-
     $(".ui.accordion").accordion();
     $("#settings_menu").dropdown({
         action: updateConfig
@@ -96,7 +88,27 @@ function init() {
         sel_update_display();
     };
 
-	  updateCall();
+    //retrieve config settings
+    GET_settings(null, function (settings) {
+        config.update = (settings.datasource.ar_active === 1);
+        config.update_interval = settings.datasource.ar_interval;
+        config.ds = "ds_" + settings.datasource.id + "_";
+        GET_timerange(function (range) {
+          if (range.min == range.max) {
+            config.tmin = range.min - 300;
+            config.tmax = range.max;
+          } else {
+            config.tmin = range.min;
+            config.tmax = range.max;
+          }
+          config.tend = config.tmax;
+          config.tstart = config.tmax - 300;
+          slider_init(config);
+          runUpdate();
+          updateCall();
+        });
+        init_configbuttons();
+    });
 }
 
 function init_toggleButton(id, ontext, offtext, isOn) {
