@@ -78,13 +78,7 @@ h5 {
     overflow-y: auto;
 }
 
-.ui.ds.button {
-  text-align: left;
-  padding-top: 0.4em;
-  padding-bottom: 0.4em;
-}
-
-.ui.lw.button {
+#settings_menu .dropdown .ui.button {
   text-align: left;
   padding-top: 0.4em;
   padding-bottom: 0.4em;

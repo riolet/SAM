@@ -140,6 +140,7 @@ function init_configbuttons() {
     init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
     $(".ds.toggle.button").state();
     $(".lw.toggle.button").state();
+    document.getElementById("links").classList.add("active");
     let active_ds = document.getElementById(config.ds);
     active_ds.classList.add("active");
 }

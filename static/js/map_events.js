@@ -284,7 +284,7 @@ function updateLwSelection() {
   if (newLW !== oldLW) {
     // do special stuff
     config.linewidth = newLW;
-
+    render_all();
     for(let i = num_buttons - 1; i >= 0; i -= 1) {
       if (lwbuttons[i].id !== newLW) {
         lwbuttons[i].classList.remove("active");
