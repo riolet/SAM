@@ -32,7 +32,8 @@ var config = {
     "tstart": 1,  // window minimum
     "tend": 2147483647,  // window maximum
     "protocol": "all",
-    "ds": null
+    "ds": null,
+    "linewidth": "links"
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -138,6 +139,7 @@ function init_configbuttons() {
     init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
     init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
     $(".ds.toggle.button").state();
+    $(".lw.toggle.button").state();
     let active_ds = document.getElementById(config.ds);
     active_ds.classList.add("active");
 }

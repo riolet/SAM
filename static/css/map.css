@@ -83,3 +83,9 @@ h5 {
   padding-top: 0.4em;
   padding-bottom: 0.4em;
 }
+
+.ui.lw.button {
+  text-align: left;
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+}

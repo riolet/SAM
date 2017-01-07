@@ -236,8 +236,12 @@ function updateDsSelection() {
   var btns = document.getElementsByClassName("ds button active");
   var oldDS = config.ds;
   var newDS = config.ds;
-  var count;
-  for(count = btns.length - 1; count >= 0; count -= 1) {
+  var count = btns.length - 1;
+  if (count === -1) {
+    document.getElementById(newDS).classList.add("active");
+    return;
+  }
+  for(; count >= 0; count -= 1) {
     if (btns[count].id !== oldDS) {
       newDS = btns[count].id;
     }
@@ -262,6 +266,33 @@ function updateDsSelection() {
   }
 }
 
+function updateLwSelection() {
+  "use strict";
+  let lwbuttons = document.getElementsByClassName("lw button active");
+  let num_buttons = lwbuttons.length;
+  var oldLW = config.linewidth;
+  var newLW = config.linewidth;
+  if (num_buttons === 0) {
+    document.getElementById(newLW).classList.add("active");
+    return;
+  }
+  for(let i = num_buttons - 1; i >= 0; i -= 1) {
+    if (lwbuttons[i].id !== oldLW) {
+      newLW = lwbuttons[i].id;
+    }
+  }
+  if (newLW !== oldLW) {
+    // do special stuff
+    config.linewidth = newLW;
+
+    for(let i = num_buttons - 1; i >= 0; i -= 1) {
+      if (lwbuttons[i].id !== newLW) {
+        lwbuttons[i].classList.remove("active");
+      }
+    }
+  }
+}
+
 function updateConfig() {
     "use strict";
     config.show_clients = document.getElementById("show_clients").classList.contains("active");
@@ -270,6 +301,7 @@ function updateConfig() {
     config.show_out = document.getElementById("show_out").classList.contains("active");
     config.update = document.getElementById("update").classList.contains("active");
     updateDsSelection();
+    updateLwSelection();
 
     setAutoUpdate(); //required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
