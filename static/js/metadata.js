@@ -1,5 +1,5 @@
 /*global
-    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip, g_known_tags, g_known_envs
+    ports, $, sel_init, sel_build_table_connections, sel_build_table_ports, window, g_initial_ip, g_known_tags, g_known_envs, g_ds
 */
 var g_typing_timer = null;
 var g_running_requests = [];
@@ -741,7 +741,8 @@ function GET_data(ip, part, order, callback) {
     var request = {
         "address": minimizeIP(ip),
         "order": order,
-        "component": part
+        "component": part,
+        "ds": g_ds
     };
     $.ajax({
         url: "/details",
@@ -771,7 +772,8 @@ function GET_page(ip, part, page, order) {
     var request = {"address": minimizeIP(ip),
             "page": page,
             "order": order,
-            "component": part};
+            "component": part,
+            "ds": g_ds};
     $.ajax({
         url: "/details",
         type: "GET",

@@ -87,13 +87,18 @@ def get_syslog_size(datasource, buffer, _test=False):
                             , _test=_test)[0].rows
 
 
-def get_timerange():
-    prefix = get_settings_cached()['prefix']
+def get_timerange(ds):
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
+
     rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
                            "FROM {prefix}Links;".format(prefix=prefix))
     row = rows[0]
     if row['min'] == None or row['max'] == None:
-        return {'min': time.mktime(datetime.now().timetuple()), 'max': time.mktime(datetime.now().timetuple())}
+        now = time.mktime(datetime.now().timetuple())
+        return {'min': now, 'max': now}
     return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
 
@@ -147,7 +152,7 @@ def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=
     return WHERE
 
 
-def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
+def get_links(ds, ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
     """
     This function returns a list of the connections coming in to a given node from the rest of the graph.
 
@@ -174,13 +179,16 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
     """
     ports = (ip_start == ip_end)  # include ports in the results?
     where = build_where_clause(timerange, port_filter, protocol)
-    prefix = get_settings_cached()['prefix']
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
 
     if ports:
-        select = "src_start, src_end, dst_start, dst_end, port, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
+        select = "src_start, src_end, dst_start, dst_end, port, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
     else:
-        select = "src_start, src_end, dst_start, dst_end, sum(links) AS 'links', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
+        select = "src_start, src_end, dst_start, dst_end, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
         group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
 
     if inbound:
@@ -205,9 +213,13 @@ def get_links(ip_start, ip_end, inbound, port_filter=None, timerange=None, proto
     return rows
 
 
-def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
+def get_details_summary(ds, ip_start, ip_end, timestamp_range=None, port=None):
     WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
-    prefix = get_settings_cached()['prefix']
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
+
     # TODO: seconds has a magic number 300 added to account for DB time quantization.
     query = """
     SELECT `inputs`.ips AS 'unique_in'
@@ -231,16 +243,21 @@ def get_details_summary(ip_start, ip_end, timestamp_range=None, port=None):
     return row
 
 
-def get_details_connections(ip_start, ip_end, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links", simple=False):
+def get_details_connections(ds, ip_start, ip_end, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links", simple=False):
     sort_options = ['links', 'src', 'dst', 'port', 'sum_bytes', 'sum_packets', 'protocols', 'avg_duration']
     sort_options_simple = ['links', 'src', 'dst', 'port']
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
+
     qvars = {
         'start': ip_start,
         'end': ip_end,
         'page': page_size * (page-1),
         'page_size': page_size,
         'WHERE': build_where_clause(timestamp_range, port),
-        'prefix': get_settings_cached()['prefix']
+        'prefix': prefix
     }
     if inbound:
         qvars['collected'] = "src"
@@ -311,16 +328,21 @@ FROM(
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_ports(ip_start, ip_end, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
+def get_details_ports(ds, ip_start, ip_end, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
     sort_options = ['links', 'port']
     first_result = (page - 1) * page_size
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
+
     qvars = {
         'start': ip_start,
         'end': ip_end,
         'first': first_result,
         'size': page_size,
         'WHERE': build_where_clause(timestamp_range, port),
-        'prefix': get_settings_cached()['prefix']
+        'prefix': prefix
     }
 
     if order and order[0] == '-':
@@ -345,8 +367,13 @@ def get_details_ports(ip_start, ip_end, timestamp_range=None, port=None, page=1,
     return list(common.db.query(query, vars=qvars))
 
 
-def get_details_children(ip_start, ip_end, page, page_size, order):
+def get_details_children(ds, ip_start, ip_end, page, page_size, order):
     sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
+
     ip_diff = ip_end - ip_start
     if ip_diff == 0:
         return []
@@ -422,7 +449,7 @@ def get_details_children(ip_start, ip_end, page, page_size, order):
             AND `n`.subnet BETWEEN $s_start AND $s_end
         ORDER BY {order}
         LIMIT $first, $size;
-        """.format(order=qvars['order'], prefix=get_settings_cached()['prefix'])
+        """.format(order=qvars['order'], prefix=prefix)
     return list(common.db.query(query, vars=qvars))
 
 
@@ -522,15 +549,21 @@ def set_env(address, env):
     common.db.update('Nodes', where, env=env)
 
 
-def get_protocol_list():
-    prefix = get_settings_cached()['prefix']
+def get_protocol_list(ds):
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
     table = "{0}Links".format(prefix)
     return [row.protocol for row in common.db.select(table, what="DISTINCT protocol") if row.protocol]
 
 
-def get_node_info(address):
+def get_node_info(ds, address):
     ipstart, ipend = common.determine_range_string(address)
-    prefix = get_settings_cached()['prefix']
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
     qvars = {"start": ipstart, "end": ipend}
     #TODO: seconds has a magic number 300 added to account for DB time quantization.
 
@@ -696,7 +729,12 @@ def set_port_info(data):
         common.db.insert('Ports', port=port, active=active, tcp=1, udp=1, name="", description="")
 
 
-def get_table_info(clauses, page, page_size, order_by, order_dir):
+def get_table_info(ds, clauses, page, page_size, order_by, order_dir):
+    dses = get_ds_list_cached()
+    if ds not in dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    prefix = "ds_{0}_".format(ds)
+
     WHERE = " && ".join(clause.where() for clause in clauses if clause.where())
     if WHERE:
         WHERE = "WHERE " + WHERE
@@ -789,13 +827,14 @@ def get_table_info(clauses, page, page_size, order_by, order_dir):
         ORDER=ORDERBY,
         START=page * page_size,
         RANGE=page_size + 1,
-        prefix=get_settings_cached()['prefix'])
+        prefix=prefix)
 
     info = list(common.db.query(query))
     return info
 
 
 settingsCache = {}
+dsCache = []
 
 
 def get_settings_cached():
@@ -804,6 +843,14 @@ def get_settings_cached():
         settingsCache = get_settings()
     settingsCache['prefix'] = "ds_{0}_".format(str(settingsCache['datasource']['id']))
     return settingsCache
+
+
+def get_ds_list_cached():
+    global dsCache
+    if not dsCache:
+        global dsCache
+        dsCache = [src.id for src in common.db.select("Datasources")]
+    return dsCache
 
 
 def get_settings(all=False):
@@ -816,6 +863,8 @@ def get_settings(all=False):
         for ds_index in range(len(sources)):
             if sources[ds_index]['id'] == target:
                 settings['datasource'] = sources[ds_index]
+        global dsCache
+        dsCache = [src['id'] for src in sources]
     else:
         where = "id={0}".format(settings['datasource'])
         ds = common.db.select("Datasources", where=where, limit=1)
@@ -847,7 +896,9 @@ def set_settings(**kwargs):
 
     # clear the cache
     global settingsCache
+    global dsCache
     settingsCache = {}
+    dsCache = []
 
 
 def get_datasource(id):

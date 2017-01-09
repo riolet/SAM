@@ -137,10 +137,9 @@ function node_update(response) {
             response[parent_address].forEach(function (node) {
                 import_node(null, node);
             });
-			if (subnetLabel == "") { //resets view if we aren't zoomed in.
-            	resetViewport(m_nodes);
-			}
-
+            if (subnetLabel == "") { //resets view if we aren't zoomed in.
+                    resetViewport(m_nodes);
+            }
         } else {
             var parent = findNode(parent_address);
             response[parent_address].forEach(function (node) {

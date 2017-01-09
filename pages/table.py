@@ -2,6 +2,7 @@ import common
 import web
 import filters
 import dbaccess
+import re
 
 
 def role_text(ratio):
@@ -206,9 +207,21 @@ class Table(object):
                 page_size = 10
         return page_size
 
-    def rows(self, filters, page, page_size, order):
-        """
+    def ds(self, GET_data):
+        settings = dbaccess.get_settings_cached()
+        dss = dbaccess.get_ds_list_cached()
 
+        ds = settings['datasource']['id']
+        if 'ds' in GET_data:
+            ds_match = re.search("(\d+)", GET_data['ds'])
+            if ds_match:
+                ds = int(ds_match.group())
+
+        return ds
+
+    def rows(self, ds, filters, page, page_size, order):
+        """
+        :param ds: data source to display results from
         :param filters:  List of filter objects (see filters.py)
         :param page: page to return (1 is first page)
         :param page_size: number of result rows to return
@@ -217,12 +230,11 @@ class Table(object):
             return is a list of [rows]
             row is a list of [columns]
             column is a tuple of (name, value)
-
         """
         # The page-1 is because page 1 should start with result 0;
         # Note: get_table_info returns page_size + 1 results,
         #       so that IF it gets filled I know there's at least 1 more page to display.
-        data = dbaccess.get_table_info(filters, page - 1, page_size, order[0], order[1])
+        data = dbaccess.get_table_info(ds, filters, page - 1, page_size, order[0], order[1])
         rows = []
         for tr in data:
             rows.append(self.columns.translate_row(tr))
@@ -240,7 +252,10 @@ class Table(object):
             page_i = path.find("page=")
             if page_i != -1:
                 ampPos = path.find('&', page_i)
-                nextPage = "{0}page={1}{2}".format(path[:page_i], page + 1, path[ampPos:])
+                if ampPos != -1:
+                    nextPage = "{0}page={1}{2}".format(path[:page_i], page + 1, path[ampPos:])
+                else:
+                    nextPage = "{0}page={1}".format(path[:page_i], page + 1)
             else:
                 if "?" in path:
                     nextPage = path + "&page={0}".format(page + 1)
@@ -256,9 +271,15 @@ class Table(object):
             page_i = path.find("page=")
             if page_i != -1:
                 ampPos = path.find('&', page_i)
-                prevPage = "{0}page={1}{2}".format(path[:page_i], page - 1, path[ampPos:])
+                if ampPos != -1:
+                    prevPage = "{0}page={1}{2}".format(path[:page_i], page - 1, path[ampPos:])
+                else:
+                    prevPage = "{0}page={1}".format(path[:page_i], page - 1)
             else:
-                prevPage = path + "&page={0}".format(page - 1)
+                if "?" in path:
+                    prevPage = path + "&page={0}".format(page - 1)
+                else:
+                    prevPage = path + "?page={0}".format(page - 1)
         else:
             prevPage = False
         return prevPage
@@ -315,7 +336,8 @@ class Table(object):
         page = self.page(GET_data)
         page_size = self.page_size(GET_data)
         order = self.order(GET_data)
-        rows = self.rows(filters, page, page_size, order)
+        ds = self.ds(GET_data)
+        rows = self.rows(ds, filters, page, page_size, order)
         tags = self.tags()
         envs = self.envs()
 

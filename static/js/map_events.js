@@ -230,14 +230,80 @@ function onResize() {
     sel_panel_height();
 }
 
+function updateDsSelection() {
+  "use strict";
+  //determine which ds buttons are clicked.
+  var btns = document.getElementsByClassName("ds button active");
+  var oldDS = config.ds;
+  var newDS = config.ds;
+  var count = btns.length - 1;
+  if (count === -1) {
+    document.getElementById(newDS).classList.add("active");
+    return;
+  }
+  for(; count >= 0; count -= 1) {
+    if (btns[count].id !== oldDS) {
+      newDS = btns[count].id;
+    }
+  }
+  if (newDS !== oldDS) {
+    config.ds = newDS;
+    links_reset();
+    GET_settings(newDS, function (settings) {
+      config.update = (settings.datasource.ar_active === 1);
+      config.update_interval = settings.datasource.ar_interval;
+      config.ds = "ds_" + settings.datasource.id + "_";
+      init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
+
+      setAutoUpdate();
+      updateCall();
+    });
+    for(count = btns.length - 1; count >= 0; count -= 1) {
+      if (btns[count].id !== newDS) {
+        btns[count].classList.remove("active");
+      }
+    }
+  }
+}
+
+function updateLwSelection() {
+  "use strict";
+  let lwbuttons = document.getElementsByClassName("lw button active");
+  let num_buttons = lwbuttons.length;
+  var oldLW = config.linewidth;
+  var newLW = config.linewidth;
+  if (num_buttons === 0) {
+    document.getElementById(newLW).classList.add("active");
+    return;
+  }
+  for(let i = num_buttons - 1; i >= 0; i -= 1) {
+    if (lwbuttons[i].id !== oldLW) {
+      newLW = lwbuttons[i].id;
+    }
+  }
+  if (newLW !== oldLW) {
+    // do special stuff
+    config.linewidth = newLW;
+    render_all();
+    for(let i = num_buttons - 1; i >= 0; i -= 1) {
+      if (lwbuttons[i].id !== newLW) {
+        lwbuttons[i].classList.remove("active");
+      }
+    }
+  }
+}
+
 function updateConfig() {
     "use strict";
     config.show_clients = document.getElementById("show_clients").classList.contains("active");
     config.show_servers = document.getElementById("show_servers").classList.contains("active");
     config.show_in = document.getElementById("show_in").classList.contains("active");
     config.show_out = document.getElementById("show_out").classList.contains("active");
-	config.update = document.getElementById("update").classList.contains("active");
-	runUpdate(); //required to kill the timer if we wnat to turn it off.
+    config.update = document.getElementById("update").classList.contains("active");
+    updateDsSelection();
+    updateLwSelection();
+
+    setAutoUpdate(); //required to kill the timer if we wnat to turn it off.
     updateRenderRoot();
     render_all();
 }

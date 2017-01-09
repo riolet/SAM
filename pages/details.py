@@ -3,6 +3,7 @@ import web
 import dbaccess
 import common
 import decimal
+import re
 
 
 # This class is for getting the main selection details, such as ins, outs, and ports.
@@ -57,6 +58,7 @@ class Details:
         self.page_size=50
         self.order = None
         self.simple = False
+        self.ds = 0
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
@@ -67,8 +69,12 @@ class Details:
         }
         self.requested_components = []
 
-    def process_input(self, GET_data):
+    def parse_request(self, GET_data):
         # ignore port, for now at least.
+        if "ds" in GET_data:
+            ds_match = re.search("(\d+)", GET_data['ds'])
+            if ds_match:
+                self.ds = int(ds_match.group())
         if 'filter' in GET_data:
             # TODO: ignore port filters. For now.
             # self.port = GET_data.filter
@@ -76,7 +82,7 @@ class Details:
         if 'tstart' in GET_data and 'tend' in GET_data:
             self.time_range = (int(GET_data.tstart), int(GET_data.tend))
         else:
-            range = dbaccess.get_timerange()
+            range = dbaccess.get_timerange(self.ds)
             self.time_range = (range['min'], range['max'])
         if 'address' in GET_data:
             try:
@@ -86,19 +92,19 @@ class Details:
                 self.ip_range = common.determine_range(*self.ips)
                 self.subnet = len(ips) * 8
             except ValueError:
-                print("details.py: process_input: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
+                print("details.py: parse_request: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
         if 'page' in GET_data:
             try:
                 page = int(GET_data['page'])
                 self.page = max(0, page)
             except ValueError:
-                print("details.py: process_input: Could not interpret page number: {0}".format(repr(GET_data['page'])))
+                print("details.py: parse_request: Could not interpret page number: {0}".format(repr(GET_data['page'])))
         if 'page_size' in GET_data:
             try:
                 page_size = int(GET_data['page_size'])
                 self.page_size = max(0, page_size)
             except ValueError:
-                print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
+                print("details.py: parse_request: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
         if 'order' in GET_data:
             self.order = GET_data['order']
         if 'simple' in GET_data:
@@ -118,7 +124,7 @@ class Details:
 
     def quick_info(self):
         info = {}
-        node_info = dbaccess.get_node_info(self.ip_string)
+        node_info = dbaccess.get_node_info(self.ds, self.ip_string)
 
         info['address'] = self.nice_ip_address()
         
@@ -199,6 +205,7 @@ class Details:
 
     def inputs(self):
         inputs = dbaccess.get_details_connections(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             inbound=True,
@@ -251,6 +258,7 @@ class Details:
 
     def outputs(self):
         outputs = dbaccess.get_details_connections(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             inbound=False,
@@ -302,6 +310,7 @@ class Details:
 
     def ports(self):
         ports = dbaccess.get_details_ports(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             timestamp_range=self.time_range,
@@ -335,6 +344,7 @@ class Details:
 
     def children(self, simple=False):
         children = dbaccess.get_details_children(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             page=self.page,
@@ -357,7 +367,7 @@ class Details:
         return response
 
     def summary(self):
-        summary = dbaccess.get_details_summary(self.ip_range[0], self.ip_range[1], self.time_range, self.port)
+        summary = dbaccess.get_details_summary(self.ds, self.ip_range[0], self.ip_range[1], self.time_range, self.port)
         return summary
 
     def selection_info(self):
@@ -379,6 +389,7 @@ class Details:
             'address': dotted-decimal IP addresses.
                 Each address is only as long as the subnet,
                     so 12.34.0.0/16 would be written as 12.34
+            'ds': string, specify the data source, ex: "ds_19_"
             'filter': optional. If included, ignored.
             'tstart': optional. Used with 'tend'. The start of the time range to report links during.
             'tend': optional. Used with 'tstart'. The end of the time range to report links during.
@@ -388,7 +399,7 @@ class Details:
         """
         web.header("Content-Type", "application/json")
 
-        self.process_input(web.input())
+        self.parse_request(web.input())
         details = {}
 
         if self.ips:

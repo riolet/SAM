@@ -38,106 +38,162 @@ function dateConverter() {
 	Main function responsible for the time slider, It creates the slider if it hasn't been made, otherwise it updates the slider.
 */
 function slider_init() {
-    "use strict";
-    $.ajax({
-        url: "/stats",
-        type: "GET",
-        data: {'q': 'timerange'},
-        dataType: "json",
-        error: onNotLoadData,
-        success: function (response) {
-		if (sliderMade == false) {
-			   	config.tstart = response.max - (5*60);
-				config.tend = response.max;
-				create_slider(Math.floor(response.min), Math.floor(response.max));
-			} else {
-				updateSliderRange(Math.floor(response.min), Math.floor(response.max));
-			}
-        }
-    });
+  "use strict";
+  let newMin = config.tmin;
+  let newMax = config.tmax;
+  let newStart = config.tstart;
+  let newEnd = config.tend;
+
+  //dateslider object in the menu
+  let dateSlider = document.getElementById('slider-date');
+
+  //if the slider doesn't exist, create it.
+  if (dateSlider.noUiSlider === undefined) {
+    create_slider(newMin, newMax, newStart, newEnd);
+  }
+
+  //Otherwise, update time range and selection.
+  else {
+    //update_slider(newMin, newMax, newStart, newEnd);
+    recreate_slider(newMin, newMax, newStart, newEnd);
+  }
 }
 
-function create_slider(dtmin, dtmax) {
-    "use strict";
-    var dateSlider = document.getElementById('slider-date');
-	//get the box containing all timing data
-	var timebox = document.getElementById('time_box');
-	/*This can occur if not enough data is in the system yet to make a time range. */	
-	if (dtmin == dtmax) {
-		//hide the time frame box
-		$(timebox).hide()
-		return;
-	}
-	
-	// allows us to set the default position of the lower handle to 5 minutes(1 step) before the latest timestamp
-	var lowPos = dtmax - (5 * 60);
-	
-    noUiSlider.create(dateSlider, {
-        // Create two timestamps to define a range.
-        range: {
-            min: dtmin,
-            max: dtmax
-        },
+function create_slider(tmin, tmax, tstart, tend) {
+  "use strict";
+  var dateSlider = document.getElementById('slider-date');
 
-        // Steps of 5 minutes
-        step: 5 * 60,
+  noUiSlider.create(dateSlider, {
+    // Create two timestamps to define a range.
+    range: {
+      min: tmin,
+      max: tmax
+    },
 
-        // at least 5 minutes between handles
-        margin: 5 * 60,
+    // Steps of 5 minutes
+    step: 5 * 60,
 
-        // Two more timestamps indicate the default handle starting positions.
-        start: [ lowPos, dtmax ],
+    // at least 5 minutes between handles
+    margin: 5 * 60,
 
+    // Two more timestamps indicate the default handle starting positions.
+    start: [ tstart, tend],
 
-        // Shade the selection
-        connect: true,
-        // Allow range draggin
-        behaviour: "drag",
+    // Shade the selection
+    connect: true,
+    // Allow range draggin
+    behaviour: "drag",
 
-        pips: {
-            mode: 'count',
-            values: 5,
-            stepped: true,
-            density: 6,
-            format: {"to": function(v) { return ""; } } //no labels
-        }
-    });
-	//confirm that we have created the slider
-	sliderMade = true;
+    pips: {
+      mode: 'count',
+      values: 5,
+      stepped: true,
+      density: 6,
+      format: {"to": function(v) { return ""; } } //no labels
+    }
+  });
 
-    var inputA = document.getElementById('input-start');
-    var inputB = document.getElementById('input-end');
-    var converter = dateConverter();
+  var inputA = document.getElementById('input-start');
+  var inputB = document.getElementById('input-end');
+  var converter = dateConverter();
 
-    dateSlider.noUiSlider.on('update', function( values, handle ) {
-        var value = values[handle];
-        if ( handle ) {
-            inputB.value = converter.to(Math.round(value));
-            config.tend = Math.round(value);
-        } else {
-            inputA.value = converter.to(Math.round(value));
-            config.tstart = Math.round(value);
-        }
-    });
-    dateSlider.noUiSlider.on('end', function(){
-        sel_remove_all(m_nodes);
-        sel_set_selection(m_selection.selection)
-        links_reset();
-        updateRenderRoot();
-        render_all();
-    });
+  dateSlider.noUiSlider.on('update', function( values, handle ) {
+    var value = values[handle];
+    if ( handle ) {
+      inputB.value = converter.to(Math.round(value));
+      config.tend = Math.round(value);
+    } else {
+      inputA.value = converter.to(Math.round(value));
+      config.tstart = Math.round(value);
+    }
+  });
+  dateSlider.noUiSlider.on('end', function(){
+    sel_remove_all(m_nodes);
+    sel_set_selection(m_selection.selection)
+    links_reset();
+    updateRenderRoot();
+    render_all();
+  });
 
-    inputA.addEventListener('change', function(){
-        dateSlider.noUiSlider.set([converter.from(this.value), null]);
-    });
+  inputA.addEventListener('change', function(){
+    dateSlider.noUiSlider.set([converter.from(this.value), null]);
+  });
 
-    inputB.addEventListener('change', function(){
-        dateSlider.noUiSlider.set([null, converter.from(this.value)]);
-    });
-	
-	//make sure the time box is visible
-	$(timebox).show();
-	
+  inputB.addEventListener('change', function(){
+    dateSlider.noUiSlider.set([null, converter.from(this.value)]);
+  });
 }
 
-$(slider_init);
+function recreate_slider(tmin, tmax, tstart, tend) {
+  "use strict";
+  var dateSlider = document.getElementById('slider-date');
+  dateSlider.noUiSlider.destroy();
+
+  noUiSlider.create(dateSlider, {
+    // Create two timestamps to define a range.
+    range: {
+      min: tmin,
+      max: tmax
+    },
+
+    // Steps of 5 minutes
+    step: 5 * 60,
+
+    // at least 5 minutes between handles
+    margin: 5 * 60,
+
+    // Two more timestamps indicate the default handle starting positions.
+    start: [ tstart, tend],
+
+    // Shade the selection
+    connect: true,
+    // Allow range draggin
+    behaviour: "drag",
+
+    pips: {
+      mode: 'count',
+      values: 5,
+      stepped: true,
+      density: 6,
+      format: {"to": function(v) { return ""; } } //no labels
+    }
+  });
+
+  var inputA = document.getElementById('input-start');
+  var inputB = document.getElementById('input-end');
+  var converter = dateConverter();
+
+  dateSlider.noUiSlider.on('update', function( values, handle ) {
+    var value = values[handle];
+    if ( handle ) {
+      inputB.value = converter.to(Math.round(value));
+      config.tend = Math.round(value);
+    } else {
+      inputA.value = converter.to(Math.round(value));
+      config.tstart = Math.round(value);
+    }
+  });
+  dateSlider.noUiSlider.on('end', function(){
+    sel_remove_all(m_nodes);
+    sel_set_selection(m_selection.selection)
+    links_reset();
+    updateRenderRoot();
+    render_all();
+  });
+}
+
+function update_slider(tmin, tmax, tstart, tend) {
+  "use strict";
+  var dateSlider = document.getElementById('slider-date');
+
+  //set slider handles
+  dateSlider.noUiSlider.updateOptions({
+		range: {
+			'min': tmin,
+			'max': tmax
+		},
+		step: 5*60,
+		margin: 5*60
+	});
+  dateSlider.noUiSlider.set([tstart, tend]);
+}
