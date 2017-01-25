@@ -307,7 +307,7 @@ SELECT src, dst, port, links, protocols
     , (sum_bytes / links) AS 'avg_bytes'
     , sum_packets
     , (sum_packets / links) AS 'avg_packets'
-    , avg_duration
+    , (_duration / links) AS 'avg_duration'
 FROM(
     SELECT decodeIP(src) AS 'src'
         , decodeIP(dst) AS 'dst'
@@ -316,7 +316,7 @@ FROM(
         , GROUP_CONCAT(DISTINCT protocol SEPARATOR ", ") AS 'protocols'
         , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
         , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
-        , AVG(duration) AS 'avg_duration'
+        , SUM(duration*links) AS '_duration'
     FROM {prefix}Links AS `links`
     WHERE {filtered} BETWEEN $start AND $end
      {WHERE}
@@ -576,20 +576,20 @@ def get_node_info(ds, address):
             , COALESCE(l_out.b_s, 0) AS 'out_bytes_sent'
             , COALESCE(l_out.b_r, 0) AS 'out_bytes_received'
             , COALESCE(l_out.max_bps, 0) AS 'out_max_bps'
-            , COALESCE(l_out.sum_b / l_out.duration, 0) AS 'out_avg_bps'
+            , COALESCE(l_out.sum_b / l_out.sum_duration, 0) AS 'out_avg_bps'
             , COALESCE(l_out.p_s, 0) AS 'out_packets_sent'
             , COALESCE(l_out.p_r, 0) AS 'out_packets_received'
-            , COALESCE(l_out.duration / l_out.total_out, 0) AS 'out_duration'
+            , COALESCE(l_out.sum_duration / l_out.total_out, 0) AS 'out_duration'
             , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
             , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
             , COALESCE(l_in.total_in, 0) AS 'total_in'
             , COALESCE(l_in.b_s, 0) AS 'in_bytes_sent'
             , COALESCE(l_in.b_r, 0) AS 'in_bytes_received'
             , COALESCE(l_in.max_bps, 0) AS 'in_max_bps'
-            , COALESCE(l_in.sum_b / l_in.duration, 0) AS 'in_avg_bps'
+            , COALESCE(l_in.sum_b / l_in.sum_duration, 0) AS 'in_avg_bps'
             , COALESCE(l_in.p_s, 0) AS 'in_packets_sent'
             , COALESCE(l_in.p_r, 0) AS 'in_packets_received'
-            , COALESCE(l_in.duration / l_in.total_in, 0) AS 'in_duration'
+            , COALESCE(l_in.sum_duration / l_in.total_in, 0) AS 'in_duration'
             , COALESCE(l_in.ports_used, 0) AS 'ports_used'
             , children.endpoints AS 'endpoints'
             , COALESCE(t.seconds, 0) + 300 AS 'seconds'
@@ -612,7 +612,7 @@ def get_node_info(ds, address):
             , SUM(bytes_sent + bytes_received) AS 'sum_b'
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
-            , SUM(duration * links) AS 'duration'
+            , SUM(duration * links) AS 'sum_duration'
             , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
             FROM {prefix}Links
             WHERE src BETWEEN $start AND $end
@@ -630,7 +630,7 @@ def get_node_info(ds, address):
             , SUM(bytes_sent + bytes_received) AS 'sum_b'
             , SUM(packets_sent) AS 'p_s'
             , SUM(packets_received) AS 'p_r'
-            , SUM(duration) AS 'duration'
+            , SUM(duration * links) AS 'sum_duration'
             , COUNT(DISTINCT port) AS 'ports_used'
             , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
             FROM {prefix}Links
@@ -848,7 +848,6 @@ def get_settings_cached():
 def get_ds_list_cached():
     global dsCache
     if not dsCache:
-        global dsCache
         dsCache = [src.id for src in common.db.select("Datasources")]
     return dsCache
 
