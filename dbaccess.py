@@ -418,7 +418,7 @@ def get_details_children(ds, ip_start, ip_end, page, page_size, order):
           , COALESCE(`n`.alias, '') AS 'hostname'
           , `n`.subnet AS 'subnet'
           , `sn`.kids AS 'endpoints'
-          , COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)) AS 'ratio'
+          , COALESCE(COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)), 0) AS 'ratio'
         FROM Nodes AS `n`
         LEFT JOIN (
             SELECT dst_start DIV $quot * $quot AS 'low'

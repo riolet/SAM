@@ -196,7 +196,7 @@ class Details:
                 info['out']['packets_sent'] = node_info.out_packets_sent
                 info['out']['packets_received'] = node_info.out_packets_received
             info['out']['duration'] = node_info.out_duration
-            info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
+            info['role'] = float(node_info.total_in / max(1, (node_info.total_in + node_info.total_out)))
             info['ports'] = node_info.ports_used
             info['endpoints'] = int(node_info.endpoints)
         else:
