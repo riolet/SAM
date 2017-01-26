@@ -1,4 +1,4 @@
-$def with (columns, sorting, rows, tags, envs, spread, prev, next)
+$def with (tags, envs, dses, columns, sorting, rows, spread, prev, next)
 <div class="ui">
 <!--
 ----------------- Filters -----------------
@@ -119,4 +119,7 @@ $def with (columns, sorting, rows, tags, envs, spread, prev, next)
   var g_known_envs = [];
   $for env in envs:
     g_known_envs.push("$env");
+  var g_dses = {}
+  $for ds in dses:
+    g_dses["$ds['name']"] = "ds_$ds['id']_";
 </script>

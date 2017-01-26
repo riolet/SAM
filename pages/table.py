@@ -182,11 +182,14 @@ class Table(object):
     def __init__(self):
         self.pageTitle = "Table View"
         self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
+        self.dses = None
+        self.ds = None
 
     def filters(self, GET_data):
         fs = []
         if "filters" in GET_data:
-            fs = filters.readEncoded(GET_data["filters"])
+            ds, fs = filters.readEncoded(GET_data["filters"])
+            self.ds = ds
         return fs
 
     def page(self, GET_data):
@@ -207,15 +210,21 @@ class Table(object):
                 page_size = 10
         return page_size
 
-    def ds(self, GET_data):
-        settings = dbaccess.get_settings_cached()
-        dss = dbaccess.get_ds_list_cached()
+    def get_ds(self, GET_data):
+        settings = dbaccess.get_settings(all=True)
 
-        ds = settings['datasource']['id']
-        if 'ds' in GET_data:
-            ds_match = re.search("(\d+)", GET_data['ds'])
-            if ds_match:
-                ds = int(ds_match.group())
+        if self.ds:
+            ds = self.ds
+        else:
+            ds = settings['datasource']['id']
+            self.ds = ds
+
+        # put default datasource at the head of the list
+        self.dses = [datasource for datasource in settings['datasources']]
+        for i in range(len(self.dses)):
+            if self.dses[i]['id'] == ds:
+                self.dses.insert(0, self.dses.pop(i))
+                break
 
         return ds
 
@@ -312,7 +321,8 @@ class Table(object):
         filters = self.filters(GET_data)
         order = self.order(GET_data)
         headers = self.columns.headers()
-        rows = self.rows(filters, 1, 1000000, order)
+        ds = self.get_ds(GET_data)
+        rows = self.rows(ds, filters, 1, 1000000, order)
         #stringify rows
         for row in rows:
             for icol in range(len(row)):
@@ -333,13 +343,15 @@ class Table(object):
             return self.get_csv_download(GET_data)
 
         filters = self.filters(GET_data)
+
         page = self.page(GET_data)
         page_size = self.page_size(GET_data)
         order = self.order(GET_data)
-        ds = self.ds(GET_data)
+        ds = self.get_ds(GET_data)
         rows = self.rows(ds, filters, page, page_size, order)
         tags = self.tags()
         envs = self.envs()
+        headers = self.columns.headers()
 
         nextPage = self.next_page(rows, page, page_size)
         prevPage = self.prev_page(page)
@@ -350,5 +362,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, envs, spread, prevPage, nextPage)) \
+               + str(common.render.table(tags, envs, self.dses, headers, order, rows[:page_size], spread, prevPage, nextPage)) \
                + str(common.render._tail())

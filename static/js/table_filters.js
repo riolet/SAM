@@ -60,6 +60,7 @@
     filters.filters = [];
     filters.displayDiv = null;
     filters.applyCallback = null;
+    filters.ds = null;
     filters.private = {};
     filters.private.types = {};
 
@@ -112,7 +113,20 @@
         buttonApply.appendChild(buttonIcon);
         buttonApply.appendChild(document.createTextNode("Apply Filter"));
 
+        //DS Switcher
+        var DSSelector = document.createElement("DIV");
+        var pairs = [];
+        Object.keys(g_dses).forEach(function (key) {
+          pairs.push([g_dses[key], key]);
+        });
+        var ds = filters.ds || Object.values(g_dses)[0];
+        DSSelector.appendChild(filters.private.markupSelection("ds_choice", "Data source", pairs, ds, filters.private.dsCallback));
+        DSSelector.appendChild(filters.private.markupSpan("Data Source"))
+
+        // Clear the div
         filters.displayDiv.innerHTML = "";
+        // Put new things in the div
+        filters.displayDiv.appendChild(DSSelector);
         filters.filters.forEach(function (filter) {
             filters.displayDiv.appendChild(filter.html);
         });
@@ -333,7 +347,7 @@
         filterdiv.appendChild(toggleEnabled);
         return filterdiv;
     };
-    filters.private.markupSelection = function (name, placeholderText, options, selected) {
+    filters.private.markupSelection = function (name, placeholderText, options, selected, onchange) {
         //name: the form name used by this element
         //placeholderText: text shown before a selection is made
         //options: the selection choices. Pairs of data value and string, like [["=", "equal to"], ["<", "less than"]]
@@ -342,7 +356,7 @@
         var input = document.createElement("input");
         input.name = name;
         input.type = "hidden";
-        input.onchange = filters.private.updateEvent;
+        input.onchange = onchange || filters.private.updateEvent;
 
         //The dropdown icon
         var icon = document.createElement("i");
@@ -421,6 +435,9 @@
         return span;
     };
 
+    filters.private.dsCallback = function (event) {
+        filters.ds = event.target.value;
+    }
     filters.private.addCallback = function (event) {
         //extract: filter type
         var button = event.target;
@@ -613,17 +630,18 @@
             });
             filterString += "|" + f_s;
         });
-        return filterString.substr(1);
+        return filters.ds + filterString;
     };
     filters.private.decodeFilters = function (filterGET) {
         var decodedFilters = [];
         let types = Object.keys(filters.private.types).sort()
 
-        //split by &
+        //split by |
         var filterList = filterGET.split("|");
-        filterList.forEach(function (filterString) {
+        filters.ds = filterList[0]
+        filterList.slice(1).forEach(function (filterString) {
             // Should I decodeURIComponent()?
-            // split by |
+            // split by ;
             var filterArgs = filterString.split(";");
             var typeIndex = filterArgs.shift();
             var type = types[typeIndex];
