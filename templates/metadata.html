@@ -1,4 +1,4 @@
-$def with (ip, tags, envs, default_ds)
+$def with (ip, tags, envs, dses)
 <script>
   g_initial_ip = "$ip";
   var g_known_tags = [];
@@ -7,8 +7,14 @@ $def with (ip, tags, envs, default_ds)
   var g_known_envs = [];
   $for env in envs:
     g_known_envs.push("$env");
-  g_ds = "$default_ds";
+  g_ds = "ds_$dses[0]['id']_";
 </script>
+<style type="text/css">
+.ui.tab.segment {
+  min-height: 30em;
+  margin-bottom: 2em;
+}
+</style>
 <div class="ui container">
   <h3 class="ui center aligned header">
     <div id="hostSearch" class="ui icon input">
@@ -16,6 +22,15 @@ $def with (ip, tags, envs, default_ds)
       <i class="circular search link icon"></i>
     </div>
   </h3>
+  <div id="dsChoice" class="ui selection dropdown">
+    <input name="ds" type="hidden" value="ds_$dses[0]['id']_">
+    <i class="dropdown icon"></i>
+    <div class="default text">Data Source</div>
+    <div class="menu">
+      $for ds in dses:
+        <div class="item" data-value="ds_$ds['id']_">$ds['name']</div>
+    </div>
+  </div>
 <!--
 ----------------- Quick Info -----------------
 -->

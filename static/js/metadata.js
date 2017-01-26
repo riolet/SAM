@@ -72,6 +72,17 @@ function minimizeIP(ip) {
     return minimized_ip;
 }
 
+function dsCallback(value) {
+  "user strict";
+  g_ds = value;
+
+  // start request sequence
+  dispatcher({
+    type: "input",
+    newState: requestQuickInfo
+  });
+}
+
 /**************************
    Presentation Functions
  **************************/
@@ -967,8 +978,12 @@ function init() {
     $(".secondary.menu .item").tab();
     // Enable the port data popup window
     $(".input.icon").popup();
-    // Make the ports table sortable
-    //$("table.sortable").tablesort();
+
+    // Enable the data source dropdown menu
+    $(".selection.dropdown").dropdown({
+      action: 'activate',
+      onChange: dsCallback
+    });
 
     //configure ports
     ports.display_callback = present_detailed_info;
