@@ -72,6 +72,60 @@ function minimizeIP(ip) {
     return minimized_ip;
 }
 
+function dsCallback(value) {
+  "user strict";
+  g_ds = value;
+
+  writeHash();
+}
+
+function writeHash() {
+  "use strict";
+  // grab the ip
+  let searchbar = document.getElementById("hostSearch");
+  let ip_input = searchbar.getElementsByTagName("input")[0];
+  let ip = ip_input.value
+
+  // grab the ds
+  let ds = $(".dropdown.button").dropdown('get value');
+
+  //if the # is missing, it's added automagically
+  window.location.hash = "#ip="+ip+"&ds="+ds;
+}
+
+function readHash() {
+  "use strict";
+  var hash = "";
+  if(window.location.hash) {
+    hash = window.location.hash.substring(1); //Puts hash in variable, and removes the # character
+  }
+
+  if (hash.length === 0) {
+    return;
+  }
+
+  // grab the ip object
+  let searchbar = document.getElementById("hostSearch");
+  let ip_input = searchbar.getElementsByTagName("input")[0];
+
+  // disseminate new ip/ds
+  let hashparts = hash.split("&");
+  hashparts.forEach(function (part) {
+    if (part.slice(0, 3) === "ds=") {
+      $(".dropdown.button").dropdown('set selected', part.slice(3));
+      g_ds = part.slice(3);
+    } else if (part.slice(0, 3) === "ip=") {
+      ip_input.value = part.slice(3);
+    }
+  });
+
+  // reload data
+  dispatcher({
+    type: "input",
+    newState: requestQuickInfo
+  });
+}
+
 /**************************
    Presentation Functions
  **************************/
@@ -924,9 +978,16 @@ function requestQuickInfo(event) {
         searchbar.classList.add("loading");
         present_quick_info({"message": "Loading"});
         var normalizedIP = normalizeIP(input.value);
+
         GET_data(normalizedIP, "quick_info", "", function (response) {
             // Quick info arrived
             searchbar.classList.remove("loading");
+            // Check for valid response
+            if (!response.quick_info) {
+              console.error("Error requesting quick info:");
+              console.log(response);
+              return;
+            }
             // Render into browser
             present_quick_info(response.quick_info);
             g_data.quick = response.quick_info;
@@ -967,18 +1028,22 @@ function init() {
     $(".secondary.menu .item").tab();
     // Enable the port data popup window
     $(".input.icon").popup();
-    // Make the ports table sortable
-    //$("table.sortable").tablesort();
+
+    // Enable the data source dropdown menu
+    $(".dropdown.button").dropdown({
+      action: 'activate',
+      onChange: dsCallback
+    });
 
     //configure ports
     ports.display_callback = present_detailed_info;
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 
-    if (g_initial_ip !== "") {
-        input.value = g_initial_ip;
-        dispatcher(new StateChangeEvent(requestQuickInfo));
-    }
+
+    //determine ds and ip from hash
+    readHash();
+    window.onhashchange = readHash;
 }
 
 window.onload = function () {
