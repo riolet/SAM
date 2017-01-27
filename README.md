@@ -21,10 +21,6 @@ Pip - for installing python packages
 
     apt-get install python-pip
 
-nfdump - _optional_, for importing Cisco binary NetFlow dumps
-
-    apt-get install nfdump
-
 ## Installation
 
 1. Clone the repository
