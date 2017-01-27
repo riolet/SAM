@@ -1,5 +1,4 @@
 import sys
-import common
 from import_base import BaseImporter
 import datetime
 
@@ -18,9 +17,9 @@ class AWSImporter(BaseImporter):
         """
         awsLog = line.split(" ")
 
-        dictionary['src'] = common.IPtoInt(*(awsLog[3].split(".")))
+        dictionary['src'] = self.ip_to_int(*(awsLog[3].split(".")))
         dictionary['srcport'] = awsLog[5]
-        dictionary['dst'] = common.IPtoInt(*(awsLog[4].split(".")))
+        dictionary['dst'] = self.ip_to_int(*(awsLog[4].split(".")))
         dictionary['dstport'] = awsLog[6]
         dictionary['timestamp'] = datetime.datetime.fromtimestamp((int(awsLog[10]))).strftime(self.mysql_time_format)
 

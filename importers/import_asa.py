@@ -1,6 +1,5 @@
 import sys
 import re
-import common
 from import_base import BaseImporter
 import time
 
@@ -27,14 +26,14 @@ class ASAImporter(BaseImporter):
             # srcIP, srcPort, dstIP, dstPort
             # The order of the source and destination depends on the direction, i.e., inbound or outbound
             if m.group('asa_in_out') == 'in':
-                dictionary['src'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
+                dictionary['src'] = self.ip_to_int(*(m.group('asa_src_ip').split(".")))
                 dictionary['srcport'] = m.group('asa_src_port')
-                dictionary['dst'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
+                dictionary['dst'] = self.ip_to_int(*(m.group('asa_dst_ip').split(".")))
                 dictionary['dstport'] = m.group('asa_dst_port')
             else:
-                dictionary['dst'] = common.IPtoInt(*(m.group('asa_src_ip').split(".")))
+                dictionary['dst'] = self.ip_to_int(*(m.group('asa_src_ip').split(".")))
                 dictionary['dstport'] = m.group('asa_src_port')
-                dictionary['src'] = common.IPtoInt(*(m.group('asa_dst_ip').split(".")))
+                dictionary['src'] = self.ip_to_int(*(m.group('asa_dst_ip').split(".")))
                 dictionary['srcport'] = m.group('asa_dst_port')
 
             protocol = m.group('asa_protocol').upper()

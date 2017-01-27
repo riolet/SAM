@@ -1,6 +1,5 @@
 import json
 import sys
-import common
 from import_base import BaseImporter
 from datetime import datetime
 
@@ -13,7 +12,7 @@ def print_dict(d, indent=0, skip=list()):
             print("{0}{1:15s}:".format(' ' * indent, k))
             print_dict(v, indent + 4, skip)
         else:
-            print("{0}{1:15s}: {2}".format(' '*indent,k, v))
+            print("{0}{1:15s}: {2}".format(' '*indent, k, v))
 
 
 class PaloAltoImporter(BaseImporter):
@@ -67,11 +66,12 @@ class PaloAltoImporter(BaseImporter):
             return 2
 
         # srcIP, srcPort, dstIP, dstPort
-        dictionary['src'] = common.IPtoInt(*(split_data[PaloAltoImporter.SourceIP].split(".")))
+        dictionary['src'] = self.ip_to_int(*(split_data[PaloAltoImporter.SourceIP].split(".")))
         dictionary['srcport'] = split_data[PaloAltoImporter.SourcePort]
-        dictionary['dst'] = common.IPtoInt(*(split_data[PaloAltoImporter.DestIP].split(".")))
+        dictionary['dst'] = self.ip_to_int(*(split_data[PaloAltoImporter.DestIP].split(".")))
         dictionary['dstport'] = split_data[PaloAltoImporter.DestPort]
-        dictionary['timestamp'] = datetime.strptime(split_data[PaloAltoImporter.Timestamp], "%Y/%m/%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+        dictionary['timestamp'] = datetime.strptime(
+            split_data[PaloAltoImporter.Timestamp], "%Y/%m/%d %H:%M:%S").strftime(self.mysql_time_format)
         dictionary['protocol'] = split_data[PaloAltoImporter.Protocol].upper()
         if split_data[PaloAltoImporter.BytesSent] and split_data[PaloAltoImporter.BytesReceived] and int(
                 split_data[PaloAltoImporter.BytesSent]) + int(split_data[PaloAltoImporter.BytesReceived]) == int(
@@ -92,7 +92,6 @@ class PaloAltoImporter(BaseImporter):
             dictionary['packets_received'] = split_data[PaloAltoImporter.TotalPackets]
         dictionary['duration'] = split_data[PaloAltoImporter.TimeElapsed]
         return 0
-
 
 
 # If running as a script, begin by executing main.

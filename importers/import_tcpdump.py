@@ -1,11 +1,11 @@
 import sys
-import common
 from import_base import BaseImporter
 try:
     import dateutil.parser
 except ImportError as e:
     sys.stderr.write("Please install the dateutil package to use this importer.\n\t`pip install py-dateutil`\n")
-    raise e
+    sys.stderr.write(e.message + '\n')
+    sys.exit(-1)
 
 
 class TCPDumpImporter(BaseImporter):
@@ -29,9 +29,9 @@ class TCPDumpImporter(BaseImporter):
         dst_ip_port = a[4].split(".")
         dst_port = dst_ip_port.pop()
 
-        dictionary['src'] = common.IPtoInt(*src_ip_port)
+        dictionary['src'] = self.ip_to_int(*src_ip_port)
         dictionary['srcport'] = int(src_port)
-        dictionary['dst'] = common.IPtoInt(*dst_ip_port)
+        dictionary['dst'] = self.ip_to_int(*dst_ip_port)
         dictionary['dstport'] = int(dst_port.strip(":"))
         dictionary['timestamp'] = dt.strftime(self.mysql_time_format)
 
