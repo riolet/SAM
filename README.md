@@ -29,15 +29,21 @@ Pip - for installing python packages
 
 ## Usage
 
-1. Import log files into database by any combination of the following methods:
+1. Create Data source
 
-      `python import_paloalto.py <file> <data-source>`
+1. If you have pre-collected log files, import them into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
+
+      `python -m importers.import_* <log_file> <destination>`
+      
+      `python preprocess.py <destination>`
+      
+      Log formats currently supported include:
    1. Palo Alto logs: The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
    2. nfdumps: Binary files from **nfcapd** are expected. nfdump must be installed.
-   3. Cisco ASA logs: Partial Implementation. Thanks to Emre for contributing. 
-   4. AWS VPC Flow logs: Partial Implementation. Thanks to Emre for contributing. [VPC log spec](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records)
-   5. tcpdump: Partial Implementation.
-   6. TShark: Partial Implementation.
+   3. Cisco ASA logs: Partial support. Thanks to Emre for contributing. 
+   4. AWS VPC Flow logs: Partial support. Thanks to Emre for contributing. [VPC log spec](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records)
+   5. tcpdump: Partial support.
+   6. TShark: Partial support.
 
    Import from all files before going to step 2
 
