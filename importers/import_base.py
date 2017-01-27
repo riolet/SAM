@@ -183,7 +183,20 @@ Usage:
         if self.datasource is None:
             raise ValueError("No data source specified. Import aborted.")
 
-        table_name = "ds_{ds}_Syslog".format(ds=self.datasource)
+        try:
+            import dbaccess
+            import common
+        except:
+            print("Cannot load database connection.")
+            sys.exit(4)
+
+        settings = dbaccess.get_settings(all=True)
+        ds = -1
+        for datasource in settings['datasources']:
+            if datasource['name'] == self.datasource:
+                ds = datasource['id']
+                break
+        table_name = "ds_{ds}_Syslog".format(ds=ds)
 
         try:
             truncated_rows = rows[:count]
@@ -195,8 +208,7 @@ Usage:
                 sys.exit(3)
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
             # >>> db.multiple_insert('person', values=values, _test=True)
-            raise EnvironmentError("DB CONNECTION MISSING")
-            # common.db_quiet.multiple_insert(table_name, values=truncated_rows)
+            common.db_quiet.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
             print("Error inserting into database:")
             print("\t{0}".format(e))
