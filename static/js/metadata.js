@@ -76,11 +76,7 @@ function dsCallback(value) {
   "user strict";
   g_ds = value;
 
-  // start request sequence
-  dispatcher({
-    type: "input",
-    newState: requestQuickInfo
-  });
+  writeHash();
 }
 
 function writeHash() {
@@ -91,9 +87,7 @@ function writeHash() {
   let ip = ip_input.value
 
   // grab the ds
-  let dsbar = document.getElementById("dsChoice");
-  let ds_input = dsbar.getElementsByTagName("input")[0];
-  let ds = ds_input.value
+  let ds = $(".dropdown.button").dropdown('get value');
 
   //if the # is missing, it's added automagically
   window.location.hash = "#ip="+ip+"&ds="+ds;
@@ -114,16 +108,12 @@ function readHash() {
   let searchbar = document.getElementById("hostSearch");
   let ip_input = searchbar.getElementsByTagName("input")[0];
 
-  // grab the ds object
-  let dsbar = document.getElementById("dsChoice");
-  let ds_input = dsbar.getElementsByTagName("input")[0];
-
-
   // disseminate new ip/ds
   let hashparts = hash.split("&");
   hashparts.forEach(function (part) {
     if (part.slice(0, 3) === "ds=") {
-      $(document.getElementById("dsChoice")).dropdown('set selected', part.slice(3));
+      $(".dropdown.button").dropdown('set selected', part.slice(3));
+      g_ds = part.slice(3);
     } else if (part.slice(0, 3) === "ip=") {
       ip_input.value = part.slice(3);
     }
@@ -988,10 +978,16 @@ function requestQuickInfo(event) {
         searchbar.classList.add("loading");
         present_quick_info({"message": "Loading"});
         var normalizedIP = normalizeIP(input.value);
-        writeHash("?ip="+normalizedIP+"&ds="+g_ds);
+
         GET_data(normalizedIP, "quick_info", "", function (response) {
             // Quick info arrived
             searchbar.classList.remove("loading");
+            // Check for valid response
+            if (!response.quick_info) {
+              console.error("Error requesting quick info:");
+              console.log(response);
+              return;
+            }
             // Render into browser
             present_quick_info(response.quick_info);
             g_data.quick = response.quick_info;
@@ -1034,7 +1030,7 @@ function init() {
     $(".input.icon").popup();
 
     // Enable the data source dropdown menu
-    $(".selection.dropdown").dropdown({
+    $(".dropdown.button").dropdown({
       action: 'activate',
       onChange: dsCallback
     });

@@ -23,15 +23,14 @@ $def with (tags, envs, dses)
       <i class="circular search link icon"></i>
     </div>
   </h3>
-  <div id="dsChoice" class="ui selection dropdown">
-    <input name="ds" type="hidden" value="ds_$dses[0]['id']_">
-    <i class="dropdown icon"></i>
-    <div class="default text">Data Source</div>
+  <div class="ui floating labeled right icon dropdown button">
+    <i class="cubes icon"></i>
+    <span class="text">Data source</span>
     <div class="menu">
       $for ds in dses:
         <div class="item" data-value="ds_$ds['id']_">$ds['name']</div>
     </div>
-  </div><label for="dsChoice">Data source</label>
+  </div>
 <!--
 ----------------- Quick Info -----------------
 -->
