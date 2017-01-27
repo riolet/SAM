@@ -230,3 +230,6 @@ Usage:
             else:
                 print("Critical failure. Aborting.")
                 sys.exit(2)
+
+
+_class = BaseImporter

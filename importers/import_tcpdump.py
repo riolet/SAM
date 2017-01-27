@@ -44,12 +44,13 @@ class TCPDumpImporter(BaseImporter):
         dictionary['packets_received'] = '1'
         dictionary['packets_sent'] = '1'
 
-
         return 0
 
+
+_class = TCPDumpImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":
     sys.stderr.write("Warning: This importer is incomplete and uses empty data for some fields.")
-    importer = TCPDumpImporter()
+    importer = _class()
     importer.main(sys.argv)
