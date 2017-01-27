@@ -64,7 +64,7 @@ class Settings(object):
         return settings
 
     def get_available_importers(self):
-        files = os.listdir(common.base_path)
+        files = os.listdir(os.path.join(common.base_path, "importers"))
         files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
         #remove .py extension
         files = [(x[:-3], niceName(x[7:-3])) for x in files]
