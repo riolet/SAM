@@ -31,7 +31,7 @@ Pip - for installing python packages
 
 1. Create Data source
 
-1. If you have pre-collected log files, import them into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
+1. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
 
       `python -m importers.import_* <log_file> <destination>`
       
@@ -47,7 +47,7 @@ Pip - for installing python packages
 
    Import from all files before going to step 2
 
-2. Run the preprocessing script `python preprocess.py` to analyze and organize the data
+2. For live analysis, run 
 
 3. Start the server locally by running: `python server.py`
 

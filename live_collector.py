@@ -3,11 +3,12 @@ import threading
 import signal
 import time
 import traceback
-import import_paloalto
-import import_base
+import importers.import_base as base_importer
 import live_protocol
 import socket
 import ssl
+import sys
+import importlib
 
 COLLECTOR_ADDRESS = ('localhost', 514)
 SERVER_ADDRESS = ('localhost', 8081)
@@ -17,13 +18,43 @@ SOCKET_BUFFER = []
 SOCKET_BUFFER_LOCK = threading.Lock()
 TRANSMIT_BUFFER = []
 TRANSMIT_BUFFER_SIZE = 0
-TRANSMIT_BUFFER_THRESHOLD = 200 # push the transmit buffer to the database server if it reaches this many entries.
-TIME_BETWEEN_IMPORTING = 1 # seconds. Period for translating lines from SOCKET to TRANSMIT
-TIME_BETWEEN_TRANSMISSION = 10 # seconds. Period for transmitting to the database server.
+TRANSMIT_BUFFER_THRESHOLD = 200  # push the transmit buffer to the database server if it reaches this many entries.
+TIME_BETWEEN_IMPORTING = 1  # seconds. Period for translating lines from SOCKET to TRANSMIT
+TIME_BETWEEN_TRANSMISSION = 10  # seconds. Period for transmitting to the database server.
 
 COLLECTOR = None  # collector server object
-COLLECTOR_THREAD = None # collector server thread
-SHUTDOWN_EVENT = threading.Event() # shuts down the processing loop when .set()
+COLLECTOR_THREAD = None  # collector server thread
+SHUTDOWN_EVENT = threading.Event()  # shuts down the processing loop when .set()
+IMPORTER = None
+
+
+def get_importer(argv):
+    global IMPORTER
+    if len(argv) != 2:
+        print("Please specify the format when running the collector. \nFor example:")
+        print("\t{0} nfdump".format(argv[0]))
+
+    # strip the extras of the name
+    importer_name = argv[1]
+    if importer_name.startswith("import_"):
+        importer_name = importer_name[7:]
+    i = importer_name.rfind(".py")
+    if i != -1:
+        importer_name = importer_name[:i]
+
+    # attempt to import the module
+    fullname = "importers.import_{0}".format(importer_name)
+    try:
+        module = importlib.import_module(fullname)
+        instance = module._class()
+    except ImportError:
+        print("Cannot find importer {0}".format(importer_name))
+        instance = None
+    except AttributeError:
+        traceback.print_exc()
+        print("Cannot instantiate importer. Is _class defined?")
+        instance = None
+    return instance
 
 
 def thread_batch_processor():
@@ -55,7 +86,8 @@ def thread_batch_processor():
             transmit_lines()
             last_processing = time.time()
         elif TRANSMIT_BUFFER_SIZE > 0:
-            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime, TRANSMIT_BUFFER_SIZE))
+            print("CHRON: waiting for time limit or a full buffer. "
+                  "Time at {0:.1f}, Size at {1}".format(deltatime, TRANSMIT_BUFFER_SIZE))
         else:
             # Don't let time accumulate while the buffer is empty
             last_processing = time.time()
@@ -79,16 +111,15 @@ def import_lines():
         SOCKET_BUFFER = []
     
     # translate lines
-    importer = import_paloalto.PaloAltoImporter()
     translated = []
     for line in lines:
         translated_line = {}
-        success = importer.translate(line, 1, translated_line)
+        success = IMPORTER.translate(line, 1, translated_line)
         if success == 0:
             translated.append(translated_line)
 
     # insert translations into TRANSMIT_BUFFER
-    headers = import_base.BaseImporter.keys
+    headers = base_importer.BaseImporter.keys
     for line in translated:
         list_line = [line[header] for header in headers]
         TRANSMIT_BUFFER.append(list_line)
@@ -105,7 +136,7 @@ def transmit_lines():
     address = ("localhost", 8081)
     password = "not-so-secret-passcode"
     version = "1.0"
-    headers = import_base.BaseImporter.keys
+    headers = base_importer.BaseImporter.keys
     lines = TRANSMIT_BUFFER
     TRANSMIT_BUFFER = []
     TRANSMIT_BUFFER_SIZE = 0
@@ -178,7 +209,11 @@ def shutdown():
 
 
 if __name__ == "__main__":
-    # Port and host to listen from
+    # set up the importer
+    IMPORTER = get_importer(sys.argv)
+    if not IMPORTER:
+        print("Aborting.")
+        sys.exit(1)
 
     # register signals for safe shut down
     signal.signal(signal.SIGINT, signal_handler)
@@ -189,6 +224,7 @@ if __name__ == "__main__":
     COLLECTOR_THREAD.start()
 
     print("Live Collector listening on {0}:{1}.".format(*COLLECTOR_ADDRESS))
+
 
     try:
         thread_batch_processor()
