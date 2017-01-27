@@ -263,7 +263,7 @@ function sel_panel_height() {
 
 function sel_create_link(node) {
     var address = get_node_address(node);
-    var link = "/metadata?ip=" + address;
+    var link = "/metadata#ip=" + address + "&ds=" + config.ds;
     var text = "More details for " + address;
 
     var icon = document.createElement("I");

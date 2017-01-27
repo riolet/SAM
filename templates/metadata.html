@@ -1,12 +1,13 @@
-$def with (ip, tags, envs, dses)
+$def with (tags, envs, dses)
 <script>
-  g_initial_ip = "$ip";
   var g_known_tags = [];
   $for tag in tags:
     g_known_tags.push("$tag");
+
   var g_known_envs = [];
   $for env in envs:
     g_known_envs.push("$env");
+
   g_ds = "ds_$dses[0]['id']_";
 </script>
 <style type="text/css">
@@ -30,7 +31,7 @@ $def with (ip, tags, envs, dses)
       $for ds in dses:
         <div class="item" data-value="ds_$ds['id']_">$ds['name']</div>
     </div>
-  </div>
+  </div><label for="dsChoice">Data source</label>
 <!--
 ----------------- Quick Info -----------------
 -->

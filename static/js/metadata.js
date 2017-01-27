@@ -83,6 +83,59 @@ function dsCallback(value) {
   });
 }
 
+function writeHash() {
+  "use strict";
+  // grab the ip
+  let searchbar = document.getElementById("hostSearch");
+  let ip_input = searchbar.getElementsByTagName("input")[0];
+  let ip = ip_input.value
+
+  // grab the ds
+  let dsbar = document.getElementById("dsChoice");
+  let ds_input = dsbar.getElementsByTagName("input")[0];
+  let ds = ds_input.value
+
+  //if the # is missing, it's added automagically
+  window.location.hash = "#ip="+ip+"&ds="+ds;
+}
+
+function readHash() {
+  "use strict";
+  var hash = "";
+  if(window.location.hash) {
+    hash = window.location.hash.substring(1); //Puts hash in variable, and removes the # character
+  }
+
+  if (hash.length === 0) {
+    return;
+  }
+
+  // grab the ip object
+  let searchbar = document.getElementById("hostSearch");
+  let ip_input = searchbar.getElementsByTagName("input")[0];
+
+  // grab the ds object
+  let dsbar = document.getElementById("dsChoice");
+  let ds_input = dsbar.getElementsByTagName("input")[0];
+
+
+  // disseminate new ip/ds
+  let hashparts = hash.split("&");
+  hashparts.forEach(function (part) {
+    if (part.slice(0, 3) === "ds=") {
+      $(document.getElementById("dsChoice")).dropdown('set selected', part.slice(3));
+    } else if (part.slice(0, 3) === "ip=") {
+      ip_input.value = part.slice(3);
+    }
+  });
+
+  // reload data
+  dispatcher({
+    type: "input",
+    newState: requestQuickInfo
+  });
+}
+
 /**************************
    Presentation Functions
  **************************/
@@ -935,6 +988,7 @@ function requestQuickInfo(event) {
         searchbar.classList.add("loading");
         present_quick_info({"message": "Loading"});
         var normalizedIP = normalizeIP(input.value);
+        writeHash("?ip="+normalizedIP+"&ds="+g_ds);
         GET_data(normalizedIP, "quick_info", "", function (response) {
             // Quick info arrived
             searchbar.classList.remove("loading");
@@ -990,10 +1044,10 @@ function init() {
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 
-    if (g_initial_ip !== "") {
-        input.value = g_initial_ip;
-        dispatcher(new StateChangeEvent(requestQuickInfo));
-    }
+
+    //determine ds and ip from hash
+    readHash();
+    window.onhashchange = readHash;
 }
 
 window.onload = function () {
