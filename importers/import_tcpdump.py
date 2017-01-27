@@ -1,20 +1,14 @@
-import re
 import sys
-
-import dateutil.parser
-
 import common
 from import_base import BaseImporter
-import datetime
+try:
+    import dateutil.parser
+except ImportError as e:
+    sys.stderr.write("Please install the dateutil package to use this importer.\n\t`pip install py-dateutil`\n")
+    raise e
 
 
-# This implementation is incomplete:
-# TODO: validate implementation with test data
-# TODO: verify protocol is TCP
-# TODO: parse timestamp into dictionary['Timestamp']
-
-
-class AWSImporter(BaseImporter):
+class TCPDumpImporter(BaseImporter):
     def translate(self, line, line_num, dictionary):
         """
         Converts a given syslog line into a dictionary of (ip, port, ip, port)
@@ -26,8 +20,6 @@ class AWSImporter(BaseImporter):
         Returns:
             0 on success and non-zero on error.
         """
-        # if line_num == 0:
-        #     return 0
 
         a = line.split()
 
@@ -37,18 +29,27 @@ class AWSImporter(BaseImporter):
         dst_ip_port = a[4].split(".")
         dst_port = dst_ip_port.pop()
 
-        dictionary['Timestamp'] = dt.strftime(self.mysql_time_format)
+        dictionary['src'] = common.IPtoInt(*src_ip_port)
+        dictionary['srcport'] = int(src_port)
+        dictionary['dst'] = common.IPtoInt(*dst_ip_port)
+        dictionary['dstport'] = int(dst_port.strip(":"))
+        dictionary['timestamp'] = dt.strftime(self.mysql_time_format)
 
-        dictionary['SourceIP'] = common.IPtoInt(*src_ip_port)
-        dictionary['SourcePort'] = int(src_port)
+        # TODO: the following is placeholder.
+        #       Needed: test data or spec to read
+        dictionary['protocol'] = 'TCP'.upper()
+        dictionary['duration'] = '1'
+        dictionary['bytes_received'] = '1'
+        dictionary['bytes_sent'] = '1'
+        dictionary['packets_received'] = '1'
+        dictionary['packets_sent'] = '1'
 
-        dictionary['DestinationIP'] = common.IPtoInt(*dst_ip_port)
-        dictionary['DestinationPort'] = int(dst_port.strip(":"))
 
         return 0
 
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":
-    importer = AWSImporter()
+    sys.stderr.write("Warning: This importer is incomplete and uses empty data for some fields.")
+    importer = TCPDumpImporter()
     importer.main(sys.argv)
