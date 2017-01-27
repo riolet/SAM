@@ -1,6 +1,7 @@
 import sys
 import os
-
+dbaccess = None
+common = None
 
 class BaseImporter:
     mysql_time_format = '%Y-%m-%d %H:%M:%S'
@@ -29,6 +30,8 @@ Usage:
 
 """.format(sys.argv[0])
         self.datasource = 0
+        self.settings = None
+        self.ds = -1
 
     @staticmethod
     def ip_to_int(a, b, c, d):
@@ -68,8 +71,6 @@ Usage:
             requested_ds = argv[2]
         else:
             raise ValueError("Cannot determine datasource. Argv is {0}".format(repr(argv)))
-
-
 
         return requested_ds
 
@@ -183,20 +184,29 @@ Usage:
         if self.datasource is None:
             raise ValueError("No data source specified. Import aborted.")
 
-        try:
-            import dbaccess
-            import common
-        except:
-            print("Cannot load database connection.")
-            sys.exit(4)
+        global dbaccess
+        global common
+        if not dbaccess or not common:
+            try:
+                import dbaccess
+                import common
+                self.settings = dbaccess.get_settings(all=True)
+                for datasource in self.settings['datasources']:
+                    if datasource['name'] == self.datasource:
+                        self.ds = datasource['id']
+                        break
+                if self.ds == -1:
+                    raise ValueError()
+            except ValueError:
+                print("No data source matches name {0}.".format(self.datasource))
+                if self.settings:
+                    print("Data sources include: {0}".format(repr([ds['name'] for ds in self.settings['datasources']])))
+                sys.exit(5)
+            except:
+                print("Cannot connect to database.")
+                sys.exit(4)
 
-        settings = dbaccess.get_settings(all=True)
-        ds = -1
-        for datasource in settings['datasources']:
-            if datasource['name'] == self.datasource:
-                ds = datasource['id']
-                break
-        table_name = "ds_{ds}_Syslog".format(ds=ds)
+        table_name = "ds_{ds}_Syslog".format(ds=self.ds)
 
         try:
             truncated_rows = rows[:count]
@@ -206,6 +216,7 @@ Usage:
                 print("Expected keys: {0}".format(repr(self.keys)))
                 print("Received keys: {0}".format(repr(rows[0].keys())))
                 sys.exit(3)
+
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
             # >>> db.multiple_insert('person', values=values, _test=True)
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)
