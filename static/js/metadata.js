@@ -175,7 +175,7 @@ function buildKeyMultiValueRows(key, values) {
 function build_link(address, subnet) {
     "use strict";
     var text = address + "/" + subnet;
-    var link = "/metadata?ip=" + text;
+    var link = "/metadata#ip=" + text + "&ds=" + g_ds;
 
     var icon = document.createElement("I");
     icon.className = "tasks icon";
