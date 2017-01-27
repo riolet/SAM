@@ -5,10 +5,6 @@ from import_base import BaseImporter
 import time
 
 
-# This implementation is incomplete:
-# TODO: validate implementation with test data
-# TODO: parse timestamp into dictionary['Timestamp']
-
 class ASAImporter(BaseImporter):
     def translate(self, line, line_num, dictionary):
         """
@@ -44,7 +40,8 @@ class ASAImporter(BaseImporter):
             protocol = m.group('asa_protocol').upper()
             dictionary['protocol'] = protocol
 
-            # placeholder values
+            # TODO: the following is placeholder.
+            #       Needed: test data or spec to read
             dictionary['duration'] = '1'
             dictionary['bytes_received'] = '1'
             dictionary['bytes_sent'] = '1'
@@ -62,5 +59,6 @@ class ASAImporter(BaseImporter):
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":
+    sys.stderr.write("Warning: This importer is incomplete and uses empty data for some fields.")
     importer = ASAImporter()
     importer.main(sys.argv)

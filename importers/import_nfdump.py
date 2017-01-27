@@ -53,8 +53,11 @@ Usage:
     def import_file(self, path_in):
         # Assume a binary file as input
         args = shlex.split('nfdump -r {0} -o {1}'.format(path_in, NFDumpImporter.FORMAT))
-        proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
-
+        try:
+            proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
+        except OSError as e:
+            sys.stderr.write("To use this importer, please install nfdump.\n\t`apt-get install nfdump`\n")
+            raise e
 
         line_num = -1
         lines_inserted = 0
