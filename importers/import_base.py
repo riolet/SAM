@@ -29,9 +29,9 @@ Usage:
     python {0} <input-file> <data source>
 
 """.format(sys.argv[0])
-        self.datasource = 0
+        self.datasource = None
         self.settings = None
-        self.ds = -1
+        self.ds = None
 
     @staticmethod
     def ip_to_int(a, b, c, d):
@@ -186,7 +186,7 @@ Usage:
 
         global dbaccess
         global common
-        if not dbaccess or not common:
+        if not self.ds:
             try:
                 import dbaccess
                 import common
@@ -195,7 +195,10 @@ Usage:
                     if datasource['name'] == self.datasource:
                         self.ds = datasource['id']
                         break
-                if self.ds == -1:
+                    if datasource['id'] == self.datasource:
+                        self.ds = datasource['id']
+                        break
+                if self.ds == None:
                     raise ValueError()
             except ValueError:
                 print("No data source matches name {0}.".format(self.datasource))
