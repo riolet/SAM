@@ -47,7 +47,12 @@ Pip - for installing python packages
 
    Import from all files before going to step 2
 
-2. For live analysis, run 
+2. For live analysis, 
+   1. configure your server settings (data source and live dest)
+   2. configure your local live_collector to use the server and port and secret code
+   3. run `python live_collector.py <format>` where format is which importer to use. e.g. "paloalto"
+   4. direct your log files to write lines to that socket. (e.g. localhost:514)
+   
 
 3. Start the server locally by running: `python server.py`
 
