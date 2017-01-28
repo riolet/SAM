@@ -21,10 +21,6 @@ Pip - for installing python packages
 
     apt-get install python-pip
 
-nfdump - _optional_, for importing Cisco binary NetFlow dumps
-
-    apt-get install nfdump
-
 ## Installation
 
 1. Clone the repository
@@ -33,15 +29,30 @@ nfdump - _optional_, for importing Cisco binary NetFlow dumps
 
 ## Usage
 
-1. Import log files into database by any combination of the following methods:
-   1. Palo Alto logs: `python import_paloalto.py <file>`. The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
-   2. nfdumps: `python import_nfdump.py <file>` Binary files from **nfcapd** are expected. nfdump must be installed.
-   3. Cisco ASA logs: `python import_asa.py <file>`.  Thanks to Emre for contributing. 
-   4. AWS VPC Flow logs: `python import_aws.py <file>`. Thanks to Emre for contributing. [VPC log spec](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records)  
+1. Create Data source
+
+1. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
+
+      `python -m importers.import_* <log_file> <destination>`
+      
+      `python preprocess.py <destination>`
+      
+      Log formats currently supported include:
+   1. Palo Alto logs: The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
+   2. nfdumps: Binary files from **nfcapd** are expected. nfdump must be installed.
+   3. Cisco ASA logs: Partial support. Thanks to Emre for contributing. 
+   4. AWS VPC Flow logs: Partial support. Thanks to Emre for contributing. [VPC log spec](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records)
+   5. tcpdump: Partial support.
+   6. TShark: Partial support.
 
    Import from all files before going to step 2
 
-2. Run the preprocessing script `python preprocess.py` to analyze and organize the data
+2. For live analysis, 
+   1. configure your server settings (data source and live dest)
+   2. configure your local live_collector to use the server and port and secret code
+   3. run `python live_collector.py <format>` where format is which importer to use. e.g. "paloalto"
+   4. direct your log files to write lines to that socket. (e.g. localhost:514)
+   
 
 3. Start the server locally by running: `python server.py`
 

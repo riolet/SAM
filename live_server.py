@@ -7,7 +7,7 @@ import time
 import live_protocol
 import dbaccess
 import preprocess
-import import_base
+import importers.import_base
 
 
 # Self-signed certificate generation for testing:
@@ -98,7 +98,7 @@ def shutdown():
 def import_messages(messages):
     global SYSLOG_SIZE
     settings = dbaccess.get_settings()
-    importer = import_base.BaseImporter()
+    importer = importers.import_base.BaseImporter()
     importer.datasource = settings['live_dest']
     if importer.datasource is None:
         print("IMPORTER: No destination specified for live data")

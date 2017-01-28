@@ -1,8 +1,7 @@
 import sys
 import os
-import common
-import dbaccess
-
+dbaccess = None
+common = None
 
 class BaseImporter:
     mysql_time_format = '%Y-%m-%d %H:%M:%S'
@@ -27,42 +26,56 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Optionally, include the name of the datasource to import in to. Default uses currently selected data source.
 
 Usage:
-    python {0} <input-file>
     python {0} <input-file> <data source>
 
 """.format(sys.argv[0])
-        self.datasource = 0
+        self.datasource = None
+        self.settings = None
+        self.ds = None
+
+    @staticmethod
+    def ip_to_int(a, b, c, d):
+        """
+        Converts a number from a sequence of dotted decimals into a single unsigned int.
+        Args:
+            a: IP address segment 1 ###.0.0.0
+            b: IP address segment 2 0.###.0.0
+            c: IP address segment 3 0.0.###.0
+            d: IP address segment 4 0.0.0.###
+
+        Returns: The IP address as a simple 32-bit unsigned integer
+
+        """
+        return (int(a) << 24) + (int(b) << 16) + (int(c) << 8) + int(d)
 
     def main(self, argv):
         if not (1 < len(argv) < 4):
             print(self.instructions)
             return
 
-        self.datasource = self.determine_datasource(argv)
+        try:
+            self.datasource = self.determine_datasource(argv)
+        except ValueError:
+            print(self.instructions)
+            return
 
-        if self.validate_file(argv[1]) and self.datasource > 0:
+        if self.validate_file(argv[1]):
             self.import_file(argv[1])
         else:
             print(self.instructions)
             return
 
-    def determine_datasource(self, argv):
-        settings = dbaccess.get_settings(all=True)
-        default_ds = settings['datasource']['id']
-        custom_ds = 0
-        if len(argv) >= 3:
+    @staticmethod
+    def determine_datasource(argv):
+        if len(argv) >= 3 and len(argv[2]) > 1:
             requested_ds = argv[2]
-            for ds in settings['datasources']:
-                if ds['name'] == requested_ds:
-                    custom_ds = ds['id']
-                    break
-
-        if custom_ds > 0:
-            return custom_ds
         else:
-            return default_ds
+            raise ValueError("Cannot determine datasource. Argv is {0}".format(repr(argv)))
 
-    def validate_file(self, path):
+        return requested_ds
+
+    @staticmethod
+    def validate_file(path):
         """
         Check whether a given path is a file.
         Args:
@@ -74,7 +87,7 @@ Usage:
         if os.path.isfile(path):
             return True
         else:
-            print("File not found:", path)
+            print("File not found: {0}".format(path))
             return False
 
     def translate(self, line, line_num, dictionary):
@@ -103,7 +116,7 @@ Usage:
         line_num = 0
         lines_inserted = 0
         counter = 0
-        rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
+        rows = [dict.fromkeys(self.keys, '') for _ in range(1000)]
         for line in all_lines:
             line_num += 1
 
@@ -136,7 +149,7 @@ Usage:
             line_num = 0
             lines_inserted = 0
             counter = 0
-            rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
+            rows = [dict.fromkeys(self.keys, '') for _ in range(1000)]
             for line in fin:
                 line_num += 1
 
@@ -171,7 +184,32 @@ Usage:
         if self.datasource is None:
             raise ValueError("No data source specified. Import aborted.")
 
-        table_name = "ds_{ds}_Syslog".format(ds=self.datasource)
+        global dbaccess
+        global common
+        if not self.ds:
+            try:
+                import dbaccess
+                import common
+                self.settings = dbaccess.get_settings(all=True)
+                for datasource in self.settings['datasources']:
+                    if datasource['name'] == self.datasource:
+                        self.ds = datasource['id']
+                        break
+                    if datasource['id'] == self.datasource:
+                        self.ds = datasource['id']
+                        break
+                if self.ds == None:
+                    raise ValueError()
+            except ValueError:
+                print("No data source matches name {0}.".format(self.datasource))
+                if self.settings:
+                    print("Data sources include: {0}".format(repr([ds['name'] for ds in self.settings['datasources']])))
+                sys.exit(5)
+            except:
+                print("Cannot connect to database.")
+                sys.exit(4)
+
+        table_name = "ds_{ds}_Syslog".format(ds=self.ds)
 
         try:
             truncated_rows = rows[:count]
@@ -181,6 +219,7 @@ Usage:
                 print("Expected keys: {0}".format(repr(self.keys)))
                 print("Received keys: {0}".format(repr(rows[0].keys())))
                 sys.exit(3)
+
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
             # >>> db.multiple_insert('person', values=values, _test=True)
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)
@@ -194,3 +233,6 @@ Usage:
             else:
                 print("Critical failure. Aborting.")
                 sys.exit(2)
+
+
+_class = BaseImporter
