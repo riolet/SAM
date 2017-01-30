@@ -1,55 +1,12 @@
 import sys
 import os
 import web
+import models.links
 
 base_path = os.path.dirname(__file__)
 
-navbar = [
-    {
-        "name": "Map",
-        "icon": "sitemap",
-        "link": "/map"
-    },
-    {
-        "name": "Stats",
-        "icon": "filter",
-        "link": "/stats"
-    },
-    {
-        "name": "Table View",
-        "icon": "table",
-        "link": "/table"
-    },
-    {
-        "name": "Host Details",
-        "icon": "tasks",
-        "link": "/metadata"
-    },
-    {
-        "name": "Settings",
-        "icon": "settings",
-        "link": "/settings"
-    }
-]
 
-# tell renderer where to look for templates
-render = web.template.render(os.path.join(base_path, 'templates/'))
 
-try:
-    sys.dont_write_bytecode = True
-    import dbconfig_local as dbconfig
-except Exception as e:
-    print e
-    import dbconfig
-finally:
-    sys.dont_write_bytecode = False
-
-db = web.database(**dbconfig.params)
-old = web.config.debug
-web.config.debug = False
-db_quiet = web.database(**dbconfig.params)
-web.config.debug = old
-del old
 
 def IPtoString(ipNumber):
     # type: (int) -> str
@@ -140,3 +97,53 @@ def determine_range_string(ip="0/0"):
     low = address & mask
     high = address | (0xffffffff ^ mask)
     return low, high
+
+
+navbar = [
+    {
+        "name": "Map",
+        "icon": "sitemap",
+        "link": "/map"
+    },
+    {
+        "name": "Stats",
+        "icon": "filter",
+        "link": "/stats"
+    },
+    {
+        "name": "Table View",
+        "icon": "table",
+        "link": "/table"
+    },
+    {
+        "name": "Host Details",
+        "icon": "tasks",
+        "link": "/metadata"
+    },
+    {
+        "name": "Settings",
+        "icon": "settings",
+        "link": "/settings"
+    }
+]
+
+# tell renderer where to look for templates
+render = web.template.render(os.path.join(base_path, 'templates/'))
+
+try:
+    sys.dont_write_bytecode = True
+    import dbconfig_local as dbconfig
+except Exception as e:
+    print e
+    import dbconfig
+finally:
+    sys.dont_write_bytecode = False
+
+db = web.database(**dbconfig.params)
+old = web.config.debug
+web.config.debug = False
+db_quiet = web.database(**dbconfig.params)
+web.config.debug = old
+del old
+
+links = models.links.Links()

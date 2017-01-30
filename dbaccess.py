@@ -840,7 +840,7 @@ dsCache = []
 def get_settings_cached():
     global settingsCache
     if not settingsCache:
-        settingsCache = get_settings()
+        settingsCache.update(get_settings())
     settingsCache['prefix'] = "ds_{0}_".format(str(settingsCache['datasource']['id']))
     return settingsCache
 
@@ -874,7 +874,7 @@ def get_settings(all=False):
 
     # keep the cache up to date
     global settingsCache
-    settingsCache = settings
+    settingsCache.update(settings)
 
     return settings
 
