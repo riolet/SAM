@@ -6,18 +6,34 @@ function onNotLoadData(xhr, textStatus, errorThrown) {
 }
 
 
-function GET_settings(successCallback) {
+function GET_settings(ds, successCallback) {
+    "use strict";
     if (typeof(successCallback) !== "function") {
         return;
     }
     $.ajax({
         url: "/settings",
         type: "GET",
-        data: {"headless": 1},
+        data: {"headless": 1, 'ds': ds},
         dataType: "json",
         error: onNotLoadData,
         success: successCallback
     });
+}
+
+function GET_timerange(successCallback) {
+  "use strict";
+  if (typeof(successCallback) !== "function") {
+      return;
+  }
+  $.ajax({
+    url: "/stats",
+    type: "GET",
+    data: {"q": "timerange", 'ds': config.ds},
+    dataType: "json",
+    error: onNotLoadData,
+    success: successCallback
+  });
 }
 
 /*
@@ -76,7 +92,10 @@ function reportErrors(response) {
  */
 function POST_node_alias(address, name) {
     "use strict";
-    var request = {"node": address, "alias": name}
+    var request = {
+      "node": address,
+      "alias": name
+    }
     $.ajax({
         url: "/nodeinfo",
         type: "POST",
@@ -93,7 +112,9 @@ function GET_links(addrs) {
         "filter": config.filter,
         "protocol": config.protocol,
         "tstart": config.tstart,
-        "tend": config.tend};
+        "tend": config.tend,
+        "ds": config.ds
+    };
     $.ajax({
         url: "/links",
         type: "GET",
@@ -156,7 +177,8 @@ function GET_details(node, callback) {
         "tstart": config.tstart,
         "tend": config.tend,
         "order": "-links",
-        "simple": true
+        "simple": true,
+        "ds": config.ds
         };
 
     $.ajax({
@@ -213,7 +235,8 @@ function GET_details_sorted(node, component, order, callback) {
         "tend": config.tend,
         "order": order,
         "simple": true,
-        "component": component
+        "component": component,
+        "ds": config.ds
         };
 
     $.ajax({

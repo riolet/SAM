@@ -11,6 +11,10 @@ import sys
 db = common.db_quiet
 
 
+class InvalidDatasource(ValueError):
+    pass
+
+
 def determine_datasource(argv):
     settings = dbaccess.get_settings(all=True)
     default_ds = settings['datasource']['id']
@@ -25,7 +29,7 @@ def determine_datasource(argv):
     if custom_ds > 0:
         return custom_ds
     else:
-        return default_ds
+        raise InvalidDatasource
 
 
 def import_nodes():
@@ -562,8 +566,12 @@ def preprocess_log(ds=None):
 if __name__ == "__main__":
     test = integrity.check_and_fix_db_access()
     if test == 0:
-        ds = determine_datasource(sys.argv)
-        preprocess_log(ds=ds)
+        try:
+            ds = determine_datasource(sys.argv)
+            preprocess_log(ds=ds)
+        except InvalidDatasource:
+            print("Data source missing or invalid. Aborting.")
+            print("please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
     else:
         print("Preprocess aborted. Database check failed.")
 

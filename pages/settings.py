@@ -64,7 +64,7 @@ class Settings(object):
         return settings
 
     def get_available_importers(self):
-        files = os.listdir(common.base_path)
+        files = os.listdir(os.path.join(common.base_path, "importers"))
         files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
         #remove .py extension
         files = [(x[:-3], niceName(x[7:-3])) for x in files]
@@ -197,6 +197,18 @@ class Settings(object):
     def GET(self):
         if "headless" in web.input():
             web.header("Content-Type", "application/json")
+            ds_s = web.input().get("ds", None)
+            if ds_s:
+                ds_match = re.search("(\d+)", ds_s)
+                if ds_match:
+                    ds = int(ds_match.group())
+                    settings = dbaccess.get_settings(all=True)
+                    for datasource in settings['datasources']:
+                        if datasource['id'] == ds:
+                            settings['datasource'] = datasource
+                            break
+                    settings.pop("datasources", None)
+                    return json.dumps(settings)
             return json.dumps(dbaccess.get_settings_cached())
 
         settings = self.read_settings()

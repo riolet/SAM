@@ -4,6 +4,7 @@ import json
 import web
 import time
 from datetime import datetime
+import re
 
 
 class Stats:
@@ -61,8 +62,24 @@ class Stats:
     def GET(self):
         get_data = web.input()
         if "q" in get_data:
-            web.header("Content-Type", "application/json")
-            return json.dumps(dbaccess.get_timerange())
+            query = get_data['q']
+            if query == "timerange":
+                ds_match = re.search("(\d+)", get_data.get('ds', "0"))
+                if ds_match:
+                    ds = int(ds_match.group())
+                else:
+                    ds = 0
+                web.header("Content-Type", "application/json")
+                return json.dumps(dbaccess.get_timerange(ds))
+            elif query == "protocols":
+                ds_match = re.search("(\d+)", get_data.get('ds', "0"))
+                if ds_match:
+                    ds = int(ds_match.group())
+                else:
+                    ds = 0
+                web.header("Content-Type", "application/json")
+                return json.dumps(dbaccess.get_protocol_list(ds))
+
         else:
             self.collect_stats()
             return str(common.render._head(self.pageTitle)) \

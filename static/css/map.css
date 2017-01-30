@@ -77,3 +77,9 @@ h5 {
     max-height: 500px;
     overflow-y: auto;
 }
+
+#settings_menu .dropdown .ui.button {
+  text-align: left;
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+}

@@ -1,17 +1,9 @@
-var m_links = {};
 var m_link_requests = [];
 var m_link_timer;
 
-function link_loaded(address) {
-    "use strict";
-    return m_links.hasOwnProperty(address);
-}
-
 function link_request_add(address) {
     "use strict";
-    if (!link_loaded(address)) {
-        m_link_requests.push(address);
-    }
+    m_link_requests.push(address);
 }
 
 function link_request_add_all(collection) {
@@ -52,9 +44,7 @@ function link_comparator(a, b) {
 
 function link_request_submit() {
     "use strict";
-    var request = m_link_requests.filter(function (address) {
-        return !m_links.hasOwnProperty(address);
-    });
+    var request = m_link_requests.slice();
 
     //remove duplicates by sorting and comparing neighbors
     request = request.sort().filter(function(address, i, ary) {
@@ -101,6 +91,7 @@ function GET_links_callback(result) {
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
+    console.log(result);
     Object.keys(result).forEach(function (address) {
         var node = findNode(address);
         node.inputs = result[address].inputs;

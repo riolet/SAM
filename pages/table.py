@@ -2,6 +2,7 @@ import common
 import web
 import filters
 import dbaccess
+import re
 
 
 def role_text(ratio):
@@ -33,6 +34,40 @@ def bytes_text(bytes):
         return "{0} GB".format(int(bytes))
     bytes /= 1024
     return "{0} TB".format(int(bytes))
+
+
+def byte_rate_text(bytes, time):
+    bytes = bytes / time
+    if bytes < 2000:
+        return "{0} B/s".format(int(bytes))
+    bytes /= 1024
+    if bytes < 2000:
+        return "{0} KB/s".format(int(bytes))
+    bytes /= 1024
+    if bytes < 2000:
+        return "{0} MB/s".format(int(bytes))
+    bytes /= 1024
+    if bytes < 2000:
+        return "{0} GB/s".format(int(bytes))
+    bytes /= 1024
+    return "{0} TB/s".format(int(bytes))
+
+
+def packet_rate_text(bytes, time):
+    bytes = bytes / time
+    if bytes < 10000:
+        return "{0} p/s".format(int(bytes))
+    bytes /= 1000
+    if bytes < 10000:
+        return "{0} Kp/s".format(int(bytes))
+    bytes /= 1000
+    if bytes < 10000:
+        return "{0} Mp/s".format(int(bytes))
+    bytes /= 1000
+    if bytes < 10000:
+        return "{0} Gp/s".format(int(bytes))
+    bytes /= 1000
+    return "{0} Tp/s".format(int(bytes))
 
 
 def nice_protocol(p_in, p_out):
@@ -120,11 +155,11 @@ class Columns(object):
             'bytes': {
                 'nice_name': "Bytes Handled",
                 'active': 'bytes' in kwargs,
-                'get': lambda x: bytes_text(x.bytes_in + x.bytes_out)},
+                'get': lambda x: byte_rate_text(x.bytes_in + x.bytes_out, x.seconds)},
             'packets': {
                 'nice_name': "Packets Handled",
                 'active': 'packets' in kwargs,
-                'get': lambda x: x.packets_in + x.packets_out},
+                'get': lambda x: packet_rate_text(x.packets_in + x.packets_out, x.seconds)},
             'protocols': {
                 'nice_name': "Protocols used",
                 'active': 'packets' in kwargs,
@@ -147,11 +182,14 @@ class Table(object):
     def __init__(self):
         self.pageTitle = "Table View"
         self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
+        self.dses = None
+        self.ds = None
 
     def filters(self, GET_data):
         fs = []
         if "filters" in GET_data:
-            fs = filters.readEncoded(GET_data["filters"])
+            ds, fs = filters.readEncoded(GET_data["filters"])
+            self.ds = ds
         return fs
 
     def page(self, GET_data):
@@ -172,9 +210,27 @@ class Table(object):
                 page_size = 10
         return page_size
 
-    def rows(self, filters, page, page_size, order):
-        """
+    def get_ds(self, GET_data):
+        settings = dbaccess.get_settings(all=True)
 
+        if self.ds:
+            ds = self.ds
+        else:
+            ds = settings['datasource']['id']
+            self.ds = ds
+
+        # put default datasource at the head of the list
+        self.dses = [datasource for datasource in settings['datasources']]
+        for i in range(len(self.dses)):
+            if self.dses[i]['id'] == ds:
+                self.dses.insert(0, self.dses.pop(i))
+                break
+
+        return ds
+
+    def rows(self, ds, filters, page, page_size, order):
+        """
+        :param ds: data source to display results from
         :param filters:  List of filter objects (see filters.py)
         :param page: page to return (1 is first page)
         :param page_size: number of result rows to return
@@ -183,12 +239,11 @@ class Table(object):
             return is a list of [rows]
             row is a list of [columns]
             column is a tuple of (name, value)
-
         """
         # The page-1 is because page 1 should start with result 0;
         # Note: get_table_info returns page_size + 1 results,
         #       so that IF it gets filled I know there's at least 1 more page to display.
-        data = dbaccess.get_table_info(filters, page - 1, page_size, order[0], order[1])
+        data = dbaccess.get_table_info(ds, filters, page - 1, page_size, order[0], order[1])
         rows = []
         for tr in data:
             rows.append(self.columns.translate_row(tr))
@@ -206,7 +261,10 @@ class Table(object):
             page_i = path.find("page=")
             if page_i != -1:
                 ampPos = path.find('&', page_i)
-                nextPage = "{0}page={1}{2}".format(path[:page_i], page + 1, path[ampPos:])
+                if ampPos != -1:
+                    nextPage = "{0}page={1}{2}".format(path[:page_i], page + 1, path[ampPos:])
+                else:
+                    nextPage = "{0}page={1}".format(path[:page_i], page + 1)
             else:
                 if "?" in path:
                     nextPage = path + "&page={0}".format(page + 1)
@@ -222,9 +280,15 @@ class Table(object):
             page_i = path.find("page=")
             if page_i != -1:
                 ampPos = path.find('&', page_i)
-                prevPage = "{0}page={1}{2}".format(path[:page_i], page - 1, path[ampPos:])
+                if ampPos != -1:
+                    prevPage = "{0}page={1}{2}".format(path[:page_i], page - 1, path[ampPos:])
+                else:
+                    prevPage = "{0}page={1}".format(path[:page_i], page - 1)
             else:
-                prevPage = path + "&page={0}".format(page - 1)
+                if "?" in path:
+                    prevPage = path + "&page={0}".format(page - 1)
+                else:
+                    prevPage = path + "?page={0}".format(page - 1)
         else:
             prevPage = False
         return prevPage
@@ -257,7 +321,8 @@ class Table(object):
         filters = self.filters(GET_data)
         order = self.order(GET_data)
         headers = self.columns.headers()
-        rows = self.rows(filters, 1, 1000000, order)
+        ds = self.get_ds(GET_data)
+        rows = self.rows(ds, filters, 1, 1000000, order)
         #stringify rows
         for row in rows:
             for icol in range(len(row)):
@@ -278,12 +343,15 @@ class Table(object):
             return self.get_csv_download(GET_data)
 
         filters = self.filters(GET_data)
+
         page = self.page(GET_data)
         page_size = self.page_size(GET_data)
         order = self.order(GET_data)
-        rows = self.rows(filters, page, page_size, order)
+        ds = self.get_ds(GET_data)
+        rows = self.rows(ds, filters, page, page_size, order)
         tags = self.tags()
         envs = self.envs()
+        headers = self.columns.headers()
 
         nextPage = self.next_page(rows, page, page_size)
         prevPage = self.prev_page(page)
@@ -294,5 +362,5 @@ class Table(object):
                                        scripts=["/static/js/table.js",
                                                 "/static/js/table_filters.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(self.columns.headers(), order, rows[:page_size], tags, envs, spread, prevPage, nextPage)) \
+               + str(common.render.table(tags, envs, self.dses, headers, order, rows[:page_size], spread, prevPage, nextPage)) \
                + str(common.render._tail())

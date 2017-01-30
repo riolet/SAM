@@ -1,10 +1,7 @@
 import sys
-import os
 import subprocess
 import shlex
-import common
 from import_base import BaseImporter
-from datetime import datetime
 
 
 def safe_translate(value):
@@ -44,23 +41,26 @@ class NFDumpImporter(BaseImporter):
         BaseImporter.__init__(self)
         self.instructions = """
 This program imports a nfdump into the MySQL database.  The file must be binary data from nfcapd.
-It extracts IP addresses and ports and discards other data. Only TCP traffic data is imported.
+Optionally, include the name of the datasource to import in to. Default uses currently selected data source.
 
 Usage:
-    python {0} <input-file>
+    python {0} <input-file> <data source>
 """.format(sys.argv[0])
 
     def import_file(self, path_in):
         # Assume a binary file as input
         args = shlex.split('nfdump -r {0} -o {1}'.format(path_in, NFDumpImporter.FORMAT))
-        proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
-
+        try:
+            proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
+        except OSError as e:
+            sys.stderr.write("To use this importer, please install nfdump.\n\t`apt-get install nfdump`\n")
+            raise e
 
         line_num = -1
         lines_inserted = 0
         counter = 0
         # prepare buffer
-        rows = [dict.fromkeys(self.keys, '') for i in range(1000)]
+        rows = [dict.fromkeys(self.keys, '') for _ in range(1000)]
 
         # skip the titles line at the start of the file
         proc.stdout.readline()
@@ -155,9 +155,9 @@ Usage:
         #        "packets_received",
         #        "duration",
         #    ]
-        dictionary['src'] = common.IPtoInt(*(split_data[NFDumpImporter.SRC].split(".")))
+        dictionary['src'] = self.ip_to_int(*(split_data[NFDumpImporter.SRC].split(".")))
         dictionary['srcport'] = split_data[NFDumpImporter.SRCPORT]
-        dictionary['dst'] = common.IPtoInt(*(split_data[NFDumpImporter.DST].split(".")))
+        dictionary['dst'] = self.ip_to_int(*(split_data[NFDumpImporter.DST].split(".")))
         dictionary['dstport'] = split_data[NFDumpImporter.DSTPORT]
         dictionary['timestamp'] = split_data[NFDumpImporter.TIMESTAMP]
         dictionary['protocol'] = split_data[NFDumpImporter.PROTOCOL].upper()
@@ -168,7 +168,10 @@ Usage:
         dictionary['duration'] = safe_translate(split_data[NFDumpImporter.DURATION])
         return 0
 
+
+_class = NFDumpImporter
+
 # If running as a script, begin by executing main.
 if __name__ == "__main__":
-    importer = NFDumpImporter()
+    importer = _class()
     importer.main(sys.argv)

@@ -200,21 +200,20 @@ function build_label_bytes(bytes) {
 }
 
 function build_label_datarate(bps) {
-    if (bps < 1024) {
-        return bps.toFixed(2) + " B/s";
-    }
-    bps /= 1024;
-    if (bps < 1024) {
-        return bps.toFixed(2) + " KiB/s";
-    }
-    bps /= 1024;
-    if (bps < 1024) {
-        return bps.toFixed(2) + " MiB/s";
-    }
-    bps /= 1024;
-    if (bps < 1024) {
-        return bps.toFixed(2) + " GiB/s";
-    }
+  "use strict";
+  if (bps < 1000) {
+    return bps.toFixed(2) + " B/s";
+  }
+  bps /= 1024;
+  if (bps < 1000) {
+    return bps.toFixed(2) + " KiB/s";
+  }
+  bps /= 1024;
+  if (bps < 1000) {
+    return bps.toFixed(2) + " MiB/s";
+  }
+  bps /= 1024;
+  return bps.toFixed(2) + " GiB/s";
 }
 
 function build_label_duration(elapsed) {
@@ -264,7 +263,7 @@ function sel_panel_height() {
 
 function sel_create_link(node) {
     var address = get_node_address(node);
-    var link = "/metadata?ip=" + address;
+    var link = "/metadata#ip=" + address + "&ds=" + config.ds;
     var text = "More details for " + address;
 
     var icon = document.createElement("I");

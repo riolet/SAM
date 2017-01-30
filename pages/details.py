@@ -3,6 +3,7 @@ import web
 import dbaccess
 import common
 import decimal
+import re
 
 
 # This class is for getting the main selection details, such as ins, outs, and ports.
@@ -30,6 +31,21 @@ def nice_protocol(p_in, p_out):
     return u', '.join(directional_protocols)
 
 
+def si_formatting(f, places=2):
+    format_string = "{{val:.{places}f}}{{prefix}}".format(places=places)
+
+    if f < 1000:
+        return format_string.format(val=f, prefix="")
+    f /= 1000
+    if f < 1000:
+        return format_string.format(val=f, prefix="K")
+    f /= 1000
+    if f < 1000:
+        return format_string.format(val=f, prefix="M")
+    f /= 1000
+    return format_string.format(val=f, prefix="G")
+
+
 class Details:
     def __init__(self):
         self.ip_range = (0, 4294967295)
@@ -42,6 +58,7 @@ class Details:
         self.page_size=50
         self.order = None
         self.simple = False
+        self.ds = 0
         self.components = {
             "quick_info": self.quick_info,
             "inputs": self.inputs,
@@ -52,14 +69,21 @@ class Details:
         }
         self.requested_components = []
 
-    def process_input(self, GET_data):
+    def parse_request(self, GET_data):
         # ignore port, for now at least.
+        if "ds" in GET_data:
+            ds_match = re.search("(\d+)", GET_data['ds'])
+            if ds_match:
+                self.ds = int(ds_match.group())
         if 'filter' in GET_data:
             # TODO: ignore port filters. For now.
             # self.port = GET_data.filter
             pass
         if 'tstart' in GET_data and 'tend' in GET_data:
             self.time_range = (int(GET_data.tstart), int(GET_data.tend))
+        else:
+            range = dbaccess.get_timerange(self.ds)
+            self.time_range = (range['min'], range['max'])
         if 'address' in GET_data:
             try:
                 self.ip_string = GET_data["address"]
@@ -68,19 +92,19 @@ class Details:
                 self.ip_range = common.determine_range(*self.ips)
                 self.subnet = len(ips) * 8
             except ValueError:
-                print("details.py: process_input: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
+                print("details.py: parse_request: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
         if 'page' in GET_data:
             try:
                 page = int(GET_data['page'])
                 self.page = max(0, page)
             except ValueError:
-                print("details.py: process_input: Could not interpret page number: {0}".format(repr(GET_data['page'])))
+                print("details.py: parse_request: Could not interpret page number: {0}".format(repr(GET_data['page'])))
         if 'page_size' in GET_data:
             try:
                 page_size = int(GET_data['page_size'])
                 self.page_size = max(0, page_size)
             except ValueError:
-                print("details.py: process_input: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
+                print("details.py: parse_request: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
         if 'order' in GET_data:
             self.order = GET_data['order']
         if 'simple' in GET_data:
@@ -100,7 +124,7 @@ class Details:
 
     def quick_info(self):
         info = {}
-        node_info = dbaccess.get_node_info(self.ip_string)
+        node_info = dbaccess.get_node_info(self.ds, self.ip_string)
 
         info['address'] = self.nice_ip_address()
         
@@ -111,6 +135,7 @@ class Details:
             # hostname
             # unique_out_ip
             # unique_out_conn
+            # overall_bps
             # total_out
             # out_bytes_sent
             # out_bytes_received
@@ -130,6 +155,7 @@ class Details:
             info['tags'] = tags
             info['envs'] = envs
             info['protocols'] = nice_protocol(node_info.in_protocols, node_info.out_protocols)
+            info['bps'] = node_info.overall_bps
             info['in'] = {}
             info['in']['total'] = node_info.total_in
             info['in']['u_ip'] = node_info.unique_in_ip
@@ -142,7 +168,6 @@ class Details:
                 info['in']['bytes_sent'] = node_info.in_bytes_sent
                 info['in']['bytes_received'] = node_info.in_bytes_received
             info['in']['max_bps'] = node_info.in_max_bps if node_info.in_max_bps else 0
-            info['in']['min_bps'] = node_info.in_min_bps if node_info.in_min_bps else 0
             info['in']['avg_bps'] = node_info.in_avg_bps if node_info.in_avg_bps else 0
             if not node_info.in_packets_sent and not node_info.in_packets_received:
                 info['in']['packets_sent'] = 0
@@ -163,7 +188,6 @@ class Details:
                 info['out']['bytes_sent'] = node_info.out_bytes_sent
                 info['out']['bytes_received'] = node_info.out_bytes_received
             info['out']['max_bps'] = node_info.out_max_bps if node_info.out_max_bps else 0
-            info['out']['min_bps'] = node_info.out_min_bps if node_info.out_min_bps else 0
             info['out']['avg_bps'] = node_info.out_avg_bps if node_info.out_avg_bps else 0
             if not node_info.out_packets_sent and not node_info.out_packets_received:
                 info['out']['packets_sent'] = 0
@@ -172,7 +196,7 @@ class Details:
                 info['out']['packets_sent'] = node_info.out_packets_sent
                 info['out']['packets_received'] = node_info.out_packets_received
             info['out']['duration'] = node_info.out_duration
-            info['role'] = float(node_info.total_in / (node_info.total_in + node_info.total_out))
+            info['role'] = float(node_info.total_in / max(1, (node_info.total_in + node_info.total_out)))
             info['ports'] = node_info.ports_used
             info['endpoints'] = int(node_info.endpoints)
         else:
@@ -181,6 +205,7 @@ class Details:
 
     def inputs(self):
         inputs = dbaccess.get_details_connections(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             inbound=True,
@@ -194,14 +219,14 @@ class Details:
             headers = [
                 ['src', "Source IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count']
+                ['links', 'Count / min']
             ]
         else:
             headers = [
                 ['src', "Source IP"],
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count'],
+                ['links', 'Count / min'],
                 #['protocols', 'Protocols'],
                 ['sum_bytes', 'Sum Bytes'],
                 #['avg_bytes', 'Avg Bytes'],
@@ -210,7 +235,16 @@ class Details:
                 ['avg_duration', 'Avg Duration'],
             ]
         # convert list of dicts to ordered list of values
-        conn_in = [[row[h[0]] for h in headers] for row in inputs]
+        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        conn_in = []
+        for row in inputs:
+            conn_row = []
+            for h in headers:
+                if h[0] == 'links':
+                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                else:
+                    conn_row.append(row[h[0]])
+            conn_in.append(conn_row)
         response = {
             "page": self.page,
             "page_size": self.page_size,
@@ -224,6 +258,7 @@ class Details:
 
     def outputs(self):
         outputs = dbaccess.get_details_connections(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             inbound=False,
@@ -237,14 +272,14 @@ class Details:
             headers = [
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count']
+                ['links', 'Count / min']
             ]
         else:
             headers = [
                 ['src', "Source IP"],
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
-                ['links', 'Count'],
+                ['links', 'Count / min'],
                 #['protocols', 'Protocols'],
                 ['sum_bytes', 'Sum Bytes'],
                 #['avg_bytes', 'Avg Bytes'],
@@ -252,7 +287,16 @@ class Details:
                 #['avg_packets', 'Avg Packets'],
                 ['avg_duration', 'Avg Duration'],
             ]
-        conn_out = [[row[h[0]] for h in headers] for row in outputs]
+        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        conn_out = []
+        for row in outputs:
+            conn_row = []
+            for h in headers:
+                if h[0] == 'links':
+                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                else:
+                    conn_row.append(row[h[0]])
+            conn_out.append(conn_row)
         response = {
             "page": self.page,
             "page_size": self.page_size,
@@ -266,6 +310,7 @@ class Details:
 
     def ports(self):
         ports = dbaccess.get_details_ports(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             timestamp_range=self.time_range,
@@ -275,20 +320,31 @@ class Details:
             order=self.order)
         headers = [
             ['port', "Port Accessed"],
-            ['links', 'Occurrences']
+            ['links', 'Count / min']
         ]
+        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        ports_in = []
+        for row in ports:
+            conn_row = []
+            for h in headers:
+                if h[0] == 'links':
+                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                else:
+                    conn_row.append(row[h[0]])
+            ports_in.append(conn_row)
         response = {
             "page": self.page,
             "page_size": self.page_size,
             "order": self.order,
             "component": "ports",
             "headers": headers,
-            "rows": [[row[h[0]] for h in headers] for row in ports]
+            "rows": ports_in
         }
         return response
 
     def children(self, simple=False):
         children = dbaccess.get_details_children(
+            ds=self.ds,
             ip_start=self.ip_range[0],
             ip_end=self.ip_range[1],
             page=self.page,
@@ -311,7 +367,7 @@ class Details:
         return response
 
     def summary(self):
-        summary = dbaccess.get_details_summary(self.ip_range[0], self.ip_range[1], self.time_range, self.port)
+        summary = dbaccess.get_details_summary(self.ds, self.ip_range[0], self.ip_range[1], self.time_range, self.port)
         return summary
 
     def selection_info(self):
@@ -333,6 +389,7 @@ class Details:
             'address': dotted-decimal IP addresses.
                 Each address is only as long as the subnet,
                     so 12.34.0.0/16 would be written as 12.34
+            'ds': string, specify the data source, ex: "ds_19_"
             'filter': optional. If included, ignored.
             'tstart': optional. Used with 'tend'. The start of the time range to report links during.
             'tend': optional. Used with 'tstart'. The end of the time range to report links during.
@@ -342,7 +399,7 @@ class Details:
         """
         web.header("Content-Type", "application/json")
 
-        self.process_input(web.input())
+        self.parse_request(web.input())
         details = {}
 
         if self.ips:

@@ -98,3 +98,6 @@ dbconfig_local.*
 data/
 
 temp.*
+
+# certificates and keys
+*.pem

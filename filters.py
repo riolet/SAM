@@ -1,5 +1,6 @@
 import common
 import dbaccess
+import re
 
 
 class Filter (object):
@@ -108,15 +109,20 @@ class ConnectionsFilter(Filter):
 
     def having(self):
         HAVING = ""
-        if self.params['comparator'] not in ['=', '<', '>']:
+        if self.params['comparator'] not in ['<', '>']:
             return ""
-        limit = int(self.params['limit'])
-        if self.params['direction'] == "i":
-            src = "conn_in"
+        limit = float(self.params['limit'])
+        if self.params['direction'] == 'i':
+            src = "conn_in / seconds"
+            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+        elif self.params['direction'] == 'o':
+            src = "conn_out / seconds"
+            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+        elif self.params['direction'] == 'c':
+            src = "(conn_in + conn_out) / seconds"
+            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
         else:
-            src = "conn_out"
-
-        HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+            return ""
         return HAVING
 
 
@@ -236,7 +242,16 @@ filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 def readEncoded(filterString):
     filters = []
-    for encodedFilter in filterString.split("|"):
+    fstrings = filterString.split("|")
+
+    # identify data source
+    ds_match = re.search("(\d+)", fstrings[0])
+    if ds_match:
+        ds = int(ds_match.group())
+    else:
+        ds = dbaccess.get_settings_cached()['datasource']['id']
+
+    for encodedFilter in fstrings[1:]:
         try:
             params = encodedFilter.split(";")
             typeIndex, enabled, params = params[0], params[1], params[2:]
@@ -247,4 +262,4 @@ def readEncoded(filterString):
             filters.append(f)
         except:
             print("ERROR: unable to decode filter: " + encodedFilter)
-    return filters
+    return ds, filters

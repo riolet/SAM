@@ -1,13 +1,21 @@
-$def with (ip, tags, envs)
+$def with (tags, envs, dses)
 <script>
-  g_initial_ip = "$ip";
   var g_known_tags = [];
   $for tag in tags:
     g_known_tags.push("$tag");
+
   var g_known_envs = [];
   $for env in envs:
     g_known_envs.push("$env");
+
+  g_ds = "ds_$dses[0]['id']_";
 </script>
+<style type="text/css">
+.ui.tab.segment {
+  min-height: 30em;
+  margin-bottom: 2em;
+}
+</style>
 <div class="ui container">
   <h3 class="ui center aligned header">
     <div id="hostSearch" class="ui icon input">
@@ -15,6 +23,14 @@ $def with (ip, tags, envs)
       <i class="circular search link icon"></i>
     </div>
   </h3>
+  <div class="ui floating labeled right icon dropdown button">
+    <i class="cubes icon"></i>
+    <span class="text">Data source</span>
+    <div class="menu">
+      $for ds in dses:
+        <div class="item" data-value="ds_$ds['id']_">$ds['name']</div>
+    </div>
+  </div>
 <!--
 ----------------- Quick Info -----------------
 -->

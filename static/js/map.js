@@ -24,12 +24,16 @@ var config = {
     "show_servers": true,
     "show_in": true,
     "show_out": true,
-	"update": true,
-	"update_interval": 60,
+    "update": true,
+    "update_interval": 60,
     "filter": "",
-    "tstart": 1,
-    "tend": 2147483647,
-    "protocol": "all"
+    "tmin": 1,  // range minimum
+    "tmax": 2147483647,  // range maximum
+    "tstart": 1,  // window minimum
+    "tend": 2147483647,  // window maximum
+    "protocol": "all",
+    "ds": null,
+    "linewidth": "links"
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -72,15 +76,6 @@ function init() {
     searchElement.oninput = onsearch;
 
     sel_panel_height();
-
-    //retrieve config settings
-    GET_settings(function (settings) {
-        config.update = (settings.datasource.ar_active === 1);
-        config.update_interval = settings.datasource.ar_interval;
-        init_configbuttons();
-	    runUpdate();
-    });
-
     $(".ui.accordion").accordion();
     $("#settings_menu").dropdown({
         action: updateConfig
@@ -94,23 +89,40 @@ function init() {
         sel_update_display();
     };
 
-    //loadData();
-	//This esentially delays the initial display of data until after the slider handles are updated, I am uncertain how viable
-	//this will remain as the number of nodes in the system increase.
-    //window.setTimeout(updateCall,500);
+    //retrieve config settings
+    GET_settings(null, function (settings) {
+        config.update = (settings.datasource.ar_active === 1);
+        config.update_interval = settings.datasource.ar_interval;
+        config.ds = "ds_" + settings.datasource.id + "_";
+        setAutoUpdate();
 
-	//does the initial call to determine if updates.
-	updateCall();
-	
+        GET_timerange(function (range) {
+          if (range.min == range.max) {
+            config.tmin = range.min - 300;
+            config.tmax = range.max;
+          } else {
+            config.tmin = range.min;
+            config.tmax = range.max;
+          }
+          config.tend = config.tmax;
+          config.tstart = config.tmax - 300;
+
+          slider_init(config);
+          GET_nodes(null);
+        });
+        init_configbuttons();
+    });
 }
 
 function init_toggleButton(id, ontext, offtext, isOn) {
     var toggleButton = document.getElementById(id);
+    toggleButton.innerHTML = "";
     if (isOn) {
         toggleButton.appendChild(document.createTextNode(ontext));
         toggleButton.classList.add("active");
     } else {
         toggleButton.appendChild(document.createTextNode(offtext));
+        toggleButton.classList.remove("active");
     }
     $(toggleButton).state({
         text: {
@@ -126,6 +138,11 @@ function init_configbuttons() {
     init_toggleButton("show_in", "Inbound Shown", "Inbound Hidden", config.show_in);
     init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
     init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
+    $(".ds.toggle.button").state();
+    $(".lw.toggle.button").state();
+    document.getElementById("links").classList.add("active");
+    let active_ds = document.getElementById(config.ds);
+    active_ds.classList.add("active");
 }
 
 function init_canvas(c, cx) {

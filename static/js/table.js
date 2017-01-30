@@ -245,7 +245,6 @@ function scrape_tbody(tbody) {
 }
 
 function table_to_csv(table, colsep=",", rowsep="\r\n", escape="\\") {
-    "use strict";
     var headers = scrape_thead(table.getElementsByTagName("THEAD")[0]);
     var rows = scrape_tbody(table.getElementsByTagName("TBODY")[0]);
     rows.unshift(headers);
