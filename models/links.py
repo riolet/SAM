@@ -10,29 +10,18 @@ class Links:
         self.table_name_in = "ds_{}_LinksIn"
         self.table_name_out = "ds_{}_LinksOut"
 
-    def get_links(self, ds, addresses, timerange, port, protocol):
-        seconds = timerange[1] - timerange[0]
-        minutes = seconds // 60
+    def delete_connections(self, ds):
+        common.db.delete(self.table_name.format(ds), "1")
+        common.db.delete(self.table_name_in.format(ds), "1")
+        common.db.delete(self.table_name_out.format(ds), "1")
 
+    def get_links(self, ds, addresses, timerange, port, protocol):
         result = {}
         for address in addresses:
             ip_start, ip_end = common.determine_range_string(address)
             result[address] = {}
             result[address]['inputs'] = self.get_links_in(ds, ip_start, ip_end, timerange, port, protocol)
             result[address]['outputs'] = self.get_links_out(ds, ip_start, ip_end, timerange, port, protocol)
-
-            # remove duplicate protocol names, normalize values over time
-            for row in result[address]['inputs']:
-                row['protocols'] = ",".join(set(row['protocols'].split(',')))
-                row['links'] /= minutes
-                row['bytes'] /= seconds
-                row['packets'] /= seconds
-
-            for row in result[address]['outputs']:
-                row['protocols'] = ",".join(set(row['protocols'].split(',')))
-                row['links'] /= minutes
-                row['bytes'] /= seconds
-                row['packets'] /= seconds
         return result
 
     def get_links_in(self, ds, ip_start, ip_end, timerange, port, protocol):

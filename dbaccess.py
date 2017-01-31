@@ -401,67 +401,6 @@ def get_protocol_list(ds):
     return [row.protocol for row in common.db.select(table, what="DISTINCT protocol") if row.protocol]
 
 
-def get_port_info(port):
-    if isinstance(port, list):
-        arg = "({0})".format(",".join(map(str, port)))
-    else:
-        arg = "({0})".format(port)
-
-    query = """
-        SELECT Ports.port, Ports.active, Ports.name, Ports.description,
-            PortAliases.name AS alias_name,
-            PortAliases.description AS alias_description
-        FROM Ports
-        LEFT JOIN PortAliases
-            ON Ports.port=PortAliases.port
-        WHERE Ports.port IN {0}
-    """.format(arg)
-    info = list(common.db.query(query))
-    return info
-
-
-def set_port_info(data):
-    MAX_NAME_LENGTH = 10
-    MAX_DESCRIPTION_LENGTH = 255
-
-    if 'port' not in data:
-        print "Error setting port info: no port specified"
-        return
-    port = data['port']
-
-    alias_name = ''
-    alias_description = ''
-    active = 0
-    if 'alias_name' in data:
-        alias_name = data['alias_name'][:MAX_NAME_LENGTH]
-    if 'alias_description' in data:
-        alias_description = data['alias_description'][:MAX_DESCRIPTION_LENGTH]
-    if 'active' in data:
-        active = 1 if data['active'] == '1' or data['active'] == 1 else 0
-
-    # update PortAliases database of names to include the new information
-    exists = common.db.select('PortAliases', what="1", where={"port": port})
-
-    if len(exists) == 1:
-        kwargs = {}
-        if 'alias_name' in data:
-            kwargs['name'] = alias_name
-        if 'alias_description' in data:
-            kwargs['description'] = alias_description
-        if kwargs:
-            common.db.update('PortAliases', {"port": port}, **kwargs)
-    else:
-        common.db.insert('PortAliases', port=port, name=alias_name, description=alias_description)
-
-    # update Ports database of default values to include the missing information
-    exists = common.db.select('Ports', what="1", where={"port": port})
-    if len(exists) == 1:
-        if 'active' in data:
-            common.db.update('Ports', {"port": port}, active=active)
-    else:
-        common.db.insert('Ports', port=port, active=active, tcp=1, udp=1, name="", description="")
-
-
 def get_table_info(ds, clauses, page, page_size, order_by, order_dir):
     dses = get_ds_list_cached()
     if ds not in dses:
@@ -638,18 +577,6 @@ def get_datasource(id):
     if len(rows) == 1:
         return rows[0]
     return None
-
-
-def delete_custom_hostnames():
-    common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
-
-
-def delete_connections(ds):
-    if len(common.db.select("Datasources", where={'id': ds})) == 1:
-        prefix = "ds_{0}_".format(ds)
-        common.db.delete("{0}Links".format(prefix), "1")
-        common.db.delete("{0}LinksIn".format(prefix), "1")
-        common.db.delete("{0}LinksOut".format(prefix), "1")
 
 
 def print_dict(d, indent = 0):

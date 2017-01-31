@@ -8,6 +8,7 @@ class Links(base.Headless):
         base.Headless.__init__(self)
         self.default_tstart = 0
         self.default_tend = 2**31-1
+        self.duration = 1
 
     def decode_get_request(self, data):
         try:
@@ -44,7 +45,24 @@ class Links(base.Headless):
 
     def perform_get_command(self, request):
         timerange = (request['tstart'], request['tend'])
+        self.duration = int(timerange[1] - timerange[0])
         return common.links.get_links(request['ds'], request['addresses'], timerange, request['port'], request['protocol'])
 
     def encode_get_response(self, response):
+        seconds = self.duration
+        minutes = seconds // 60
+
+        # remove duplicate protocol names, normalize values over time
+        for address in response.iterkeys():
+            for row in response[address]['inputs']:
+                row['protocols'] = ",".join(set(row['protocols'].split(',')))
+                row['links'] /= minutes
+                row['bytes'] /= seconds
+                row['packets'] /= seconds
+
+            for row in response[address]['outputs']:
+                row['protocols'] = ",".join(set(row['protocols'].split(',')))
+                row['links'] /= minutes
+                row['bytes'] /= seconds
+                row['packets'] /= seconds
         return response

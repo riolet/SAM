@@ -103,6 +103,9 @@ class Nodes:
     def delete_custom_envs(self):
         common.db.update(self.table, "1", env=web.sqlliteral("NULL"))
 
+    def delete_custom_hostnames():
+        common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
+
     def get_root_nodes(self):
         return list(self.db.select(self.table, where="subnet=8"))
 

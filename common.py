@@ -1,8 +1,9 @@
 import sys
 import os
 import web
-import models.links
-import models.nodes
+from models.links import Links
+from models.nodes import Nodes
+from models.ports import Ports
 
 base_path = os.path.dirname(__file__)
 
@@ -147,5 +148,6 @@ db_quiet = web.database(**dbconfig.params)
 web.config.debug = old
 del old
 
-links = models.links.Links()
-nodes = models.nodes.Nodes()
+links = Links()
+nodes = Nodes()
+ports = Ports()

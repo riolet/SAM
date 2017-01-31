@@ -20,7 +20,6 @@ class Metadata(object):
                 break
 
     def GET(self):
-        get_data = web.input()
 
         self.require_dses()
 
@@ -31,5 +30,5 @@ class Metadata(object):
                                                 "/static/js/map_selection.js",
                                                 "/static/js/map_data.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.metadata(dbaccess.get_tag_list(), dbaccess.get_env_list(), self.dses)) \
+               + str(common.render.metadata(common.nodes.get_tag_list(), common.nodes.get_env_list(), self.dses)) \
                + str(common.render._tail())

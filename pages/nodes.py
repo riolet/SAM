@@ -1,6 +1,3 @@
-import json
-import dbaccess
-import web
 import common
 import base
 
