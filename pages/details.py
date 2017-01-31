@@ -80,8 +80,8 @@ class Details(base.Headless):
 
         # time range
         try:
-            tstart = int(data.get['tstart'])
-            tend = int(data.get['tend'])
+            tstart = int(data.get('tstart'))
+            tend = int(data.get('tend'))
         except ValueError:
             raise base.MalformedRequest("Time range cannot be read. Check formatting")
         except KeyError:

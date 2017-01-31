@@ -81,15 +81,6 @@ def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=
     return WHERE
 
 
-
-
-
-
-
-
-
-
-
 def get_protocol_list(ds):
     dses = get_ds_list_cached()
     if ds not in dses:

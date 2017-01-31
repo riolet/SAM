@@ -154,7 +154,7 @@ class Details:
         sort_options_simple = ['links', 'src', 'dst', 'port']
 
         qvars = {
-            'links_table': self.table_links,
+            'table_links': self.table_links,
             'start': self.ip_start,
             'end': self.ip_end,
             'page': self.page_size * (page - 1),
