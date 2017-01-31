@@ -1,4 +1,5 @@
 import common
+import models.datasources
 
 
 class Settings:
@@ -7,38 +8,45 @@ class Settings:
         self.table = "Settings"
         # TODO: store in session
         self._settings = {}
-        self.update_cache()
 
     def __getitem__(self, item):
+        if not self._settings:
+            self.update_cache()
         return self._settings[item]
 
-    def __len__(self):
-        return len(self._settings)
-
     def __setitem__(self, k, value):
+        if not self._settings:
+            self.update_cache()
         if k not in self._settings:
             raise KeyError("Cannot create new keys")
         else:
-            self.set(k=value)
-
-    def __contains__(self, item):
-        return item in self._settings
-
-    def __delitem__(self, k):
-        raise KeyError("Cannot delete keys")
-
-    def __iter__(self):
-        return iter(self._settings)
+            # TODO: is there a better way to do this?
+            self.set(**{k: value})
 
     def copy(self):
+        if not self._settings:
+            self.update_cache()
         return self._settings.copy()
 
     def keys(self):
+        if not self._settings:
+            self.update_cache()
         return self._settings.keys()
 
     def update_cache(self):
-        self._settings.update(dict(self.db.select(self.table, limit=1).first()))
+        print("Rebuilding settings cache for {0}".format(id(self)))
+        self._settings = dict(self.db.select(self.table, limit=1).first())
+
+    def clear_cache(self):
+        print("Clearing settings cache for {0}".format(id(self)))
+        self._settings = {}
 
     def set(self, **kwargs):
+        datasources = models.datasources.Datasources()
+        if 'datasource' in kwargs and kwargs['datasource'] not in datasources.datasources:
+            raise ValueError("Invalid DS specified")
+        if 'live_dest' in kwargs and kwargs['live_dest'] not in datasources.datasources:
+            raise ValueError("Invalid DS specified for live destination")
+
         common.db.update(self.table, "1", **kwargs)
-        self.update_cache()
+        self.clear_cache()

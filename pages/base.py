@@ -15,7 +15,7 @@ class MalformedRequest(Exception): pass
 class RequiredKey(MalformedRequest):
     def __init__(self, name, key, *args, **kwargs):
         MalformedRequest.__init__(self, args, kwargs)
-        self.message = "Missing key: {name} ('{key}') not specified."
+        self.message = "Missing key: {name} ('{key}') not specified.".format(name=name, key=key)
 
 
 class Headless:
@@ -35,14 +35,15 @@ class Headless:
         raise NotImplementedError("Sub-class must implement this method")
 
     def GET(self):
+        web.header("Content-Type", "application/json")
+
         try:
             self.request = self.decode_get_request(self.inbound)
+            self.response = self.perform_get_command(self.request)
+            self.outbound = self.encode_get_response(self.response)
         except MalformedRequest as e:
-            raise web.badrequest(e.message)
-        self.response = self.perform_get_command(self.request)
-        self.outbound = self.encode_get_response(self.response)
+            return json.dumps({'result': 'failure', 'message': e.message})
 
-        web.header("Content-Type", "application/json")
         return json.dumps(self.outbound, default=decimal_default)
 
     def POST(self):

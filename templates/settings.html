@@ -8,13 +8,13 @@ $def with (settings, datasources, importers)
   <div class="ui datasources grid">
     <div class="four wide column">
       <div class="ui vertical fluid tabular menu"  id="ds_tabs">
-        $for ds in datasources:
-          <a class="$('active' if ds == settings['datasource'] else '') item" data-tab="ds_$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
+        $for ds in datasources.values():
+          <a class="$('active' if ds['id'] == settings['datasource'] else '') item" data-tab="ds_$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
       </div>
     </div>
     <div id="ds_tab_contents" class="twelve wide stretched column">
-      $for ds in datasources:
-        <div class="ui $('active' if ds == settings['datasource'] else '') tab segment" data-tab="ds_$ds['id']">
+      $for ds in datasources.values():
+        <div class="ui $('active' if ds['id'] == settings['datasource'] else '') tab segment" data-tab="ds_$ds['id']">
           <table class="ui fixed definition table">
             <tbody>
             <tr>
@@ -69,7 +69,7 @@ $def with (settings, datasources, importers)
     <div class="default text">data source</div>
     <div class="menu" id="live_dest_list">
       <div class="item" data-value="ds_">Discard live data</div>
-      $for ds in datasources:
+      $for ds in datasources.values():
         <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
     </div>
   </div>
@@ -173,11 +173,11 @@ $def with (settings, datasources, importers)
       <div class="field">
         <label>Data source</label>
         <div class="ui selection dropdown">
-          <input name="log_ds" id="log_ds" type="hidden" value="ds_$datasources[0]['id']">
+          <input name="log_ds" id="log_ds" type="hidden" value="ds_$datasources[settings['datasource']]['id']">
           <i class="dropdown icon"></i>
           <div class="default text">data source</div>
           <div class="menu" id="log_ds_list">
-            $for ds in datasources:
+            $for ds in datasources.values():
               <div class="item" data-value="ds_$ds['id']">$ds['name']</div>
           </div>
         </div>

@@ -283,7 +283,7 @@ function addDSTab(ds) {
     tabcontents.appendChild(div);
 }
 
-function rebuild_tabs(settings) {
+function rebuild_tabs(settings, datasources) {
     "use strict";
     //erase what's there.
     let tabholder = document.getElementById("ds_tabs");
@@ -293,16 +293,17 @@ function rebuild_tabs(settings) {
 
     //for each ds,
     //   add the ds
-    settings.datasources.forEach(addDSTab);
+    Object.values(datasources).forEach(addDSTab);
 
     //build tabs
-    $(".tabular.menu .item").tab({
+    let tabs = $(".tabular.menu .item")
+    tabs.tab({
         onVisible: POST_ds_selection
     });
 
     //select active one
-    var active_ds = settings.datasource.id;
-    $(".tabular.menu .item").tab("change tab", "ds_" + active_ds);
+    var active_ds = settings.datasource;
+    tabs.tab("change tab", "ds_" + active_ds);
 }
 
 function getDSs() {
@@ -432,16 +433,15 @@ function AjaxError(xhr, textStatus, errorThrown) {
 function AjaxSuccess(response) {
     "use strict";
     console.log("Server response:");
-    console.log("\tCode " + response.code + ": " + response.message);
+    console.log("\t" + response.result + ": " + response.message);
 }
 
 function POST_AJAX(command, successCallback) {
     "use strict";
-    let request = command
     $.ajax({
         url: "/settings",
         type: "POST",
-        data: request,
+        data: command,
         error: AjaxError,
         success: function(response) {
             AjaxSuccess(response);
@@ -454,19 +454,19 @@ function POST_AJAX(command, successCallback) {
 
 function POST_upload_log(ds, format, file) {
     POST_AJAX({
-        name: "upload",
-        param1: ds,
-        param2: format,
-        param3: file
+        "command": "upload",
+        "ds": ds,
+        "format": format,
+        "file": file
     });
 }
 
 function POST_ds_new(name) {
     "use strict";
-    POST_AJAX({name:"ds_new", param1:name}, function (response) {
-        if (response.code === 0) {
+    POST_AJAX({"command":"ds_new", "name":name}, function (response) {
+        if (response.result === 'success') {
             //successfully created new data source
-            rebuild_tabs(response.settings);
+            rebuild_tabs(response.settings, response.datasources);
             populateLiveDestDSList(getDSs());
         }
     });
@@ -474,10 +474,10 @@ function POST_ds_new(name) {
 
 function POST_ds_delete(id) {
     "use strict";
-    POST_AJAX({name:"ds_rm", param1:id}, function (response) {
-        if (response.code === 0) {
+    POST_AJAX({"command":"ds_rm", "ds":id}, function (response) {
+        if (response.result === 'success') {
             //successfully deleted the data source
-            rebuild_tabs(response.settings);
+            rebuild_tabs(response.settings, response.datasources);
             populateLiveDestDSList(getDSs());
         }
     });
@@ -496,10 +496,10 @@ function POST_ds_namechange(e) {
         e.target.value = newName;
         var ds = getSelectedDS();
         console.log("Changing the name of " + ds + " to " + newName);
-        POST_AJAX({name:"ds_name", param1:ds, param2:newName}, function(response) {
+        POST_AJAX({"command":"ds_name", "ds":ds, "name":newName}, function(response) {
             var id = getDSId(e.target.dataset['content']);
             setDSTabName(id, newName);
-            if (response.code === 0) {
+            if (response.result === 'success') {
                 e.target.dataset['content'] = newName
             }
 
@@ -512,7 +512,7 @@ function POST_ds_livechange(e) {
     var active = e.target.checked;
     var ds = getSelectedDS();
     console.log("Toggling autorefresh of " + ds + " to " + active);
-    POST_AJAX({name:"ds_live", param1:ds, param2:active});
+    POST_AJAX({"command":"ds_live", "ds":ds, "is_active":active});
 }
 
 function POST_ds_intervalchange(e) {
@@ -528,39 +528,39 @@ function POST_ds_intervalchange(e) {
         e.target.value = newInterval;
         var ds = getSelectedDS();
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
-        POST_AJAX({name:"ds_interval", param1:ds, param2:newInterval});
+        POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});
     }
 }
 
 function POST_ds_selection(ds) {
     "use strict";
-    POST_AJAX({name:"ds_select", param1:ds});
+    POST_AJAX({"command":"ds_select", "ds":ds});
 }
 
 function POST_del_tags() {
     "use strict";
-    POST_AJAX({name:"rm_tags"});
+    POST_AJAX({"command":"rm_tags"});
 }
 
 function POST_del_envs() {
     "use strict";
-    POST_AJAX({name:"rm_envs"});
+    POST_AJAX({"command":"rm_envs"});
 }
 
 function POST_del_aliases() {
     "use strict";
-    POST_AJAX({name:"rm_hosts"});
+    POST_AJAX({"command":"rm_hosts"});
 }
 
 function POST_del_connections() {
     "use strict";
     let ds = getSelectedDS();
-    POST_AJAX({name:"rm_conns", param1:ds});
+    POST_AJAX({"command":"rm_conns", "ds":ds});
 }
 
 function POST_set_livedest(ds) {
     "use strict";
-    POST_AJAX({name:"live_dest", param1:ds});
+    POST_AJAX({"command":"live_dest", "ds":ds});
 }
 
 function foreach(entities, callback) {

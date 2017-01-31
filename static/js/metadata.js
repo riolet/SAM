@@ -101,7 +101,7 @@ function readHash() {
   }
 
   if (hash.length === 0) {
-    return;
+    return -1;
   }
 
   // grab the ip object
@@ -124,6 +124,7 @@ function readHash() {
     type: "input",
     newState: requestQuickInfo
   });
+  return 0;
 }
 
 /**************************
@@ -1039,9 +1040,10 @@ function init() {
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 
-
     //determine ds and ip from hash
-    readHash();
+    if (readHash() !== 0) {
+      $(".dropdown.button").dropdown('set selected', g_ds);
+    }
     window.onhashchange = readHash;
 }
 

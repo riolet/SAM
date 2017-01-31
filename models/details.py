@@ -198,7 +198,7 @@ class Details:
     FROM {table_links} AS `links`
     WHERE {filtered} BETWEEN $start AND $end
      {WHERE}
-    GROUP BY `links`.src, `links`.dst, `links`.port
+    GROUP BY `links`.{collected}, `links`.port
     ORDER BY {order}
     LIMIT {page}, {page_size}
             """.format(**qvars)
