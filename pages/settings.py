@@ -6,6 +6,7 @@ import web
 import json
 import base64
 import importlib
+import base
 
 
 def niceName(s):
@@ -53,14 +54,15 @@ class Uploader(object):
 
 
 
-class Settings(object):
+class Settings(base.HeadlessPost):
     pageTitle = "Settings"
+    recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new", "ds_rm", "ds_select", "rm_hosts" ,"rm_tags", "rm_envs", "rm_conns", "upload", "live_dest"]
 
     def __init__(self):
-        self.recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new", "ds_rm", "ds_select", "rm_hosts" ,"rm_tags", "rm_envs", "rm_conns", "upload", "live_dest"]
+        base.HeadlessPost.__init__(self)
 
     def read_settings(self):
-        settings = dbaccess.get_settings(all=True)
+        settings = common.settings.copy()
         return settings
 
     def get_available_importers(self):
@@ -209,7 +211,7 @@ class Settings(object):
                             break
                     settings.pop("datasources", None)
                     return json.dumps(settings)
-            return json.dumps(dbaccess.get_settings_cached())
+            return json.dumps(common.settings.copy())
 
         settings = self.read_settings()
         datasources = settings.pop('datasources')

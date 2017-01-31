@@ -1,12 +1,13 @@
 import sys
 import os
 import web
+base_path = os.path.dirname(__file__)
+
 from models.links import Links
 from models.nodes import Nodes
 from models.ports import Ports
-
-base_path = os.path.dirname(__file__)
-
+from models.settings import Settings
+from models.datasources import Datasources
 
 
 
@@ -151,3 +152,5 @@ del old
 links = Links()
 nodes = Nodes()
 ports = Ports()
+settings = Settings()
+datasources = Datasources()

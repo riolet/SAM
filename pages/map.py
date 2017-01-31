@@ -7,9 +7,8 @@ class Map:
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        settings = dbaccess.get_settings(all=True)
-        datasources = [("ds_{0}_".format(source['id']), source['name']) for source in settings['datasources']]
-
+        datasources = [("ds_{0}_".format(k), v['name']) for k, v in common.datasources.datasources.iteritems()]
+        print("datasources: {0}".format(datasources))
         return str(common.render._head(self.pageTitle,
                                        stylesheets=['/static/css/map.css',
                                                     '/static/css/timerange.css',

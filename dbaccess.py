@@ -32,55 +32,6 @@ def exec_sql(connection, path, replacements=None):
         connection.query(command)
 
 
-def validate_ds_name(name):
-    return name == name.strip() and re.match(r'^[a-z][a-z0-9_ ]*$', name, re.I)
-
-
-def create_ds_tables(id):
-    replacements = {"id": id}
-    exec_sql(common.db, os.path.join(common.base_path, 'sql/setup_datasource.sql'), replacements)
-    return 0
-
-
-def create_datasource(name):
-    if not validate_ds_name(name):
-        return -1
-    id = common.db.insert("Datasources", name=name)
-    r = create_ds_tables(id)
-    return r
-
-
-def remove_datasource(id):
-    settings = get_settings(all=True)
-    ids = [ds['id'] for ds in settings['datasources']]
-
-    # check id is valid
-    if id not in ids:
-        print("Removal stopped: data source to remove not found")
-        return
-
-    # select other data source in Settings
-    alt_id = -1
-    for n in ids:
-        if n != id:
-            alt_id = n
-            break
-    if alt_id == -1:
-        print("Removal stopped: Cannot remove last data source")
-        return
-    set_settings(datasource=alt_id)
-
-    # remove from live_dest if selected
-    if settings['live_dest'] == id:
-        set_settings(live_dest=None)
-
-    # remove from Datasources
-    common.db.delete("Datasources", "id = {0}".format(int(id)))
-    # Drop relevant tables
-    replacements = {"id": int(id)}
-    exec_sql(common.db, os.path.join(common.base_path, 'sql/drop_datasource.sql'), replacements)
-
-
 def get_syslog_size(datasource, buffer, _test=False):
     return common.db.select("ds_{0}_Syslog{1}".format(datasource, buffer),
                             what="COUNT(1) AS 'rows'",
@@ -88,7 +39,7 @@ def get_syslog_size(datasource, buffer, _test=False):
 
 
 def get_timerange(ds):
-    dses = get_ds_list_cached()
+    dses = common.datasources.dses
     if ds not in dses:
         raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
     prefix = "ds_{0}_".format(ds)
@@ -100,26 +51,6 @@ def get_timerange(ds):
         now = time.mktime(datetime.now().timetuple())
         return {'min': now, 'max': now}
     return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
-
-
-def get_nodes(ip_start, ip_end):
-    diff = ip_end - ip_start
-    if diff > 16777215:
-        # check Nodes8
-        # rows = common.db.select("Nodes8")
-        rows = common.db.select("Nodes", where="subnet=8")
-    elif diff > 65536:
-        # check Nodes16
-        rows = common.db.select("Nodes", where="subnet=16 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
-    elif diff > 255:
-        # check Nodes24
-        rows = common.db.select("Nodes", where="subnet=24 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
-    elif diff > 0:
-        # check Nodes32
-        rows = common.db.select("Nodes", where="subnet=32 && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end))
-    else:
-        rows = []
-    return rows
 
 
 def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
@@ -503,80 +434,6 @@ def get_table_info(ds, clauses, page, page_size, order_by, order_dir):
 
     info = list(common.db.query(query))
     return info
-
-
-settingsCache = {}
-dsCache = []
-
-
-def get_settings_cached():
-    global settingsCache
-    if not settingsCache:
-        settingsCache.update(get_settings())
-    settingsCache['prefix'] = "ds_{0}_".format(str(settingsCache['datasource']['id']))
-    return settingsCache
-
-
-def get_ds_list_cached():
-    global dsCache
-    if not dsCache:
-        dsCache = [src.id for src in common.db.select("Datasources")]
-    return dsCache
-
-
-def get_settings(all=False):
-    settings = dict(common.db.select("Settings", limit=1)[0])
-    if all:
-        sources = map(dict, common.db.select("Datasources"))
-        settings['datasources'] = sources
-        target = settings['datasource']
-        settings['datasource'] = None
-        for ds_index in range(len(sources)):
-            if sources[ds_index]['id'] == target:
-                settings['datasource'] = sources[ds_index]
-        global dsCache
-        dsCache = [src['id'] for src in sources]
-    else:
-        where = "id={0}".format(settings['datasource'])
-        ds = common.db.select("Datasources", where=where, limit=1)
-        if len(ds) == 1:
-            settings['datasource'] = dict(ds[0])
-        else:
-            settings['datasource'] = None
-
-    # keep the cache up to date
-    global settingsCache
-    settingsCache.update(settings)
-
-    return settings
-
-
-def set_settings(**kwargs):
-    if "datasource" in kwargs:
-        new_ds = kwargs.pop('datasource')
-        common.db.update("Settings", "1", datasource=new_ds)
-
-    ds = 0
-    if "ds" in kwargs:
-        ds = kwargs.pop('ds')
-
-    if ds and kwargs:
-        common.db.update("Datasources", ds, **kwargs)
-    elif kwargs:
-        common.db.update("Settings JOIN Datasources ON Settings.datasource = Datasources.id", "1", **kwargs)
-
-    # clear the cache
-    global settingsCache
-    global dsCache
-    settingsCache = {}
-    dsCache = []
-
-
-def get_datasource(id):
-    rows = common.db.select("Datasources", where="id={0}".format(int(id)), limit=1)
-    if len(rows) == 1:
-        return rows[0]
-    return None
 
 
 def print_dict(d, indent = 0):

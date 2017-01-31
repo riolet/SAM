@@ -12,8 +12,8 @@ class Stats:
     stats = []
 
     def __init__(self):
-        self.settings = dbaccess.get_settings_cached()
-        self.prefix = self.settings['prefix']
+        self.settings = common.settings.copy()
+        self.prefix = "ds_{0}_".format(self.settings['datasource'])
 
     def collect_stats(self):
 

@@ -9,11 +9,10 @@ class Metadata(object):
         self.dses = None
 
     def require_dses(self):
-        settings = dbaccess.get_settings(all=True)
+        default_ds = common.settings['datasource']
 
-        default_ds = settings['datasource']['id']
         # put default datasource at the head of the list
-        self.dses = [datasource for datasource in settings['datasources']]
+        self.dses = [datasource for datasource in common.datasources.dses]
         for i in range(len(self.dses)):
             if self.dses[i]['id'] == default_ds:
                 self.dses.insert(0, self.dses.pop(i))
