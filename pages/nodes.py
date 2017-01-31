@@ -38,4 +38,4 @@ class Nodes(base.Headless):
         return response
 
     def encode_get_response(self, response):
-        pass
+        return response
