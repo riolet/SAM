@@ -84,21 +84,15 @@ class Details(base.Headless):
             tend = int(data.get('tend'))
         except ValueError:
             raise base.MalformedRequest("Time range cannot be read. Check formatting")
-        except KeyError:
+        except (KeyError, TypeError):
             t_range = dbaccess.get_timerange(ds)
             tstart = t_range['min']
             tend = t_range['max']
 
         # address
-        ip_string = data.get('address')
-        if not ip_string:
+        address = data.get('address')
+        if not address:
             raise base.RequiredKey('address', 'address')
-        try:
-            ips = [int(i) for i in ip_string]
-        except ValueError:
-            raise base.MalformedRequest("Error decoding IP address")
-        subnet = len(ips) * 8
-        ip_range = common.determine_range(*ips)
 
         # pagination
         try:
@@ -116,14 +110,11 @@ class Details(base.Headless):
         if components:
             components = components.split(',')
 
-        self.detailsModel = models.details.Details(ds, ip_string, (tstart, tend), port, page_size)
+        self.detailsModel = models.details.Details(ds, address, (tstart, tend), port, page_size)
 
         request = {
             'ds': ds,
-            'ips': ips,
-            'ip_range': ip_range,
-            'ip_string': ip_string,
-            'subnet': subnet,
+            'address': address,
             'page': page,
             'page_size': page_size,
             'order': order,
@@ -155,22 +146,23 @@ class Details(base.Headless):
         if request['components']:
             for c_name in request['components']:
                 if c_name == 'quick_info':
-                    details[c_name] = self.quick_info(request['ip_string'])
+                    details[c_name] = self.quick_info(request['address'])
                 elif c_name == 'inputs':
                     details[c_name] = self.inputs(request['page'],
                                                   request['order'],
                                                   request['simple'])
                 elif c_name == 'outputs':
-                    details[c_name] = self.inputs(request['page'],
+                    details[c_name] = self.outputs(request['page'],
                                                   request['order'],
                                                   request['simple'])
                 elif c_name == 'ports':
                     details[c_name] = self.ports(request['page'],
                                                  request['order'])
                 elif c_name == 'children':
-                    pass
+                    details[c_name] = self.children(request['page'],
+                                                    request['order'])
                 elif c_name == 'summary':
-                    pass
+                    details[c_name] = self.summary()
                 else:
                     details[c_name] = {"result": "No data source matches request for {0}".format(c_name)}
         else:
@@ -182,8 +174,8 @@ class Details(base.Headless):
         return response
 
     @staticmethod
-    def nice_ip_address(ip_string):
-        ip_start, ip_end = common.determine_range_string(ip_string)
+    def nice_ip_address(address):
+        ip_start, ip_end = common.determine_range_string(address)
         subnet = 33 - (len(bin(ip_end-ip_start)) - 2)
         return "{0}/{1}".format(common.IPtoString(ip_start), subnet)
 
