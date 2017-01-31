@@ -1,17 +1,12 @@
-import json
-import web
 import dbaccess
 import common
-import decimal
 import re
+import base
+import models.details
+import models.nodes
 
 
 # This class is for getting the main selection details, such as ins, outs, and ports.
-
-def decimal_default(obj):
-    if isinstance(obj, decimal.Decimal):
-        return float(obj)
-    raise TypeError
 
 
 def nice_protocol(p_in, p_out):
@@ -46,92 +41,162 @@ def si_formatting(f, places=2):
     return format_string.format(val=f, prefix="G")
 
 
-class Details:
+class Details(base.Headless):
+    """
+    The expected GET data includes:
+        'address': dotted-decimal IP addresses.
+            Each address is only as long as the subnet,
+                so 12.34.0.0/16 would be written as 12.34
+        'ds': string, specify the data source, ex: "ds_19_"
+        'filter': optional. If included, ignored.
+        'tstart': optional. Used with 'tend'. The start of the time range to report links during.
+        'tend': optional. Used with 'tstart'. The end of the time range to report links during.
+    :return: A JSON-encoded dictionary where
+        the keys are ['conn_in', 'conn_out', 'ports_in', 'unique_in', 'unique_out', 'unique_ports'] and
+        the values are numbers or lists
+    """
+    default_page = 1
+    default_page_size = 50
+
     def __init__(self):
-        self.ip_range = (0, 4294967295)
-        self.subnet = 0
-        self.ips = []
-        self.ip_string = ""
-        self.time_range = None
-        self.port = None
-        self.page = 1
-        self.page_size=50
-        self.order = None
-        self.simple = False
-        self.ds = 0
-        self.components = {
-            "quick_info": self.quick_info,
-            "inputs": self.inputs,
-            "outputs": self.outputs,
-            "ports": self.ports,
-            "children": self.children,
-            "summary": self.summary,
-        }
-        self.requested_components = []
+        base.Headless.__init__(self)
+        # self.ip_range = (0, 4294967295)
+        self.detailsModel = None
+        self.nodesModel = models.nodes.Nodes()
 
-    def parse_request(self, GET_data):
-        # ignore port, for now at least.
-        if "ds" in GET_data:
-            ds_match = re.search("(\d+)", GET_data['ds'])
+    def decode_get_request(self, data):
+        # data source
+        if "ds" in data:
+            ds_match = re.search("(\d+)", data['ds'])
             if ds_match:
-                self.ds = int(ds_match.group())
-        if 'filter' in GET_data:
-            # TODO: ignore port filters. For now.
-            # self.port = GET_data.filter
-            pass
-        if 'tstart' in GET_data and 'tend' in GET_data:
-            self.time_range = (int(GET_data.tstart), int(GET_data.tend))
+                ds = int(ds_match.group())
+            else:
+                raise base.MalformedRequest("Could not read data source ('ds')")
         else:
-            range = dbaccess.get_timerange(self.ds)
-            self.time_range = (range['min'], range['max'])
-        if 'address' in GET_data:
-            try:
-                self.ip_string = GET_data["address"]
-                ips = self.ip_string.split(".")
-                self.ips = [int(i) for i in ips]
-                self.ip_range = common.determine_range(*self.ips)
-                self.subnet = len(ips) * 8
-            except ValueError:
-                print("details.py: parse_request: Could not convert address ({0}) to integers.".format(repr(GET_data['address'])))
-        if 'page' in GET_data:
-            try:
-                page = int(GET_data['page'])
-                self.page = max(0, page)
-            except ValueError:
-                print("details.py: parse_request: Could not interpret page number: {0}".format(repr(GET_data['page'])))
-        if 'page_size' in GET_data:
-            try:
-                page_size = int(GET_data['page_size'])
-                self.page_size = max(0, page_size)
-            except ValueError:
-                print("details.py: parse_request: Could not interpret page_size: {0}".format(repr(GET_data['page_size'])))
-        if 'order' in GET_data:
-            self.order = GET_data['order']
-        if 'simple' in GET_data:
-            self.simple = GET_data['simple'] == "true"
-        if 'component' in GET_data:
-            self.requested_components = GET_data['component'].split(",")
+            raise base.RequiredKey('data source', 'ds')
 
-    def nice_ip_address(self):
-        address = ".".join(map(str, self.ips))
-        zeroes = 4 - len(self.ips)
-        for i in range(zeroes):
-            address += ".0"
-        subnet = 32 - zeroes * 8
-        if subnet != 32:
-            address += "/" + str(subnet)
-        return address
+        # port filter
+        port = data.get('port')
 
-    def quick_info(self):
+        # time range
+        try:
+            tstart = int(data.get['tstart'])
+            tend = int(data.get['tend'])
+        except ValueError:
+            raise base.MalformedRequest("Time range cannot be read. Check formatting")
+        except KeyError:
+            t_range = dbaccess.get_timerange(ds)
+            tstart = t_range['min']
+            tend = t_range['max']
+
+        # address
+        ip_string = data.get('address')
+        if not ip_string:
+            raise base.RequiredKey('address', 'address')
+        try:
+            ips = [int(i) for i in ip_string]
+        except ValueError:
+            raise base.MalformedRequest("Error decoding IP address")
+        subnet = len(ips) * 8
+        ip_range = common.determine_range(*ips)
+
+        # pagination
+        try:
+            page = int(data.get('page', self.default_page))
+        except ValueError:
+            raise base.MalformedRequest("Could not read page number: {0}".format(data.get('page')))
+        try:
+            page_size = int(data.get('page_size', self.default_page_size))
+        except ValueError:
+            raise base.MalformedRequest("Could not read page size: {0}".format(data.get('page_size')))
+
+        order = data.get('order')
+        simple = data.get('simple', False) == "true"
+        components = data.get('component', [])
+        if components:
+            components = components.split(',')
+
+        self.detailsModel = models.details.Details(ds, ip_string, (tstart, tend), port, page_size)
+
+        request = {
+            'ds': ds,
+            'ips': ips,
+            'ip_range': ip_range,
+            'ip_string': ip_string,
+            'subnet': subnet,
+            'page': page,
+            'page_size': page_size,
+            'order': order,
+            'simple': simple,
+            'components': components,
+            'time_range': (tstart, tend)
+        }
+        return request
+
+    def perform_get_command(self, request):
+        """
+            request = {
+                'ds': ds,
+                'ips': ips,
+                'ip_range': ip_range,
+                'ip_string': ip_string,
+                'subnet': subnet,
+                'page': page,
+                'page_size': page_size,
+                'order': order,
+                'simple': simple,
+                'components': components,
+                'time_range': (tstart, tend)
+            }
+        :param request:
+        :return:
+        """
+        details = {}
+        if request['components']:
+            for c_name in request['components']:
+                if c_name == 'quick_info':
+                    details[c_name] = self.quick_info(request['ip_string'])
+                elif c_name == 'inputs':
+                    details[c_name] = self.inputs(request['page'],
+                                                  request['order'],
+                                                  request['simple'])
+                elif c_name == 'outputs':
+                    details[c_name] = self.inputs(request['page'],
+                                                  request['order'],
+                                                  request['simple'])
+                elif c_name == 'ports':
+                    details[c_name] = self.ports(request['page'],
+                                                 request['order'])
+                elif c_name == 'children':
+                    pass
+                elif c_name == 'summary':
+                    pass
+                else:
+                    details[c_name] = {"result": "No data source matches request for {0}".format(c_name)}
+        else:
+            details = self.selection_info(request['page'], request['order'], request['simple'])
+
+        return details
+
+    def encode_get_response(self, response):
+        return response
+
+    @staticmethod
+    def nice_ip_address(ip_string):
+        ip_start, ip_end = common.determine_range_string(ip_string)
+        subnet = 33 - (len(bin(ip_end-ip_start)) - 2)
+        return "{0}/{1}".format(common.IPtoString(ip_start), subnet)
+
+    def quick_info(self, address):
         info = {}
-        node_info = dbaccess.get_node_info(self.ds, self.ip_string)
+        node_info = self.detailsModel.get_metadata()
 
-        info['address'] = self.nice_ip_address()
+        info['address'] = self.nice_ip_address(address)
         
         if node_info:
-            tags = dbaccess.get_tags(self.ip_string)
-            envs = dbaccess.get_env(self.ip_string)
-            #node_info has:
+            tags = self.nodesModel.get_tags(address)
+            envs = self.nodesModel.get_env(address)
+            # node_info has:
             # hostname
             # unique_out_ip
             # unique_out_conn
@@ -203,19 +268,9 @@ class Details:
             info['error'] = 'No host found this address'
         return info
 
-    def inputs(self):
-        inputs = dbaccess.get_details_connections(
-            ds=self.ds,
-            ip_start=self.ip_range[0],
-            ip_end=self.ip_range[1],
-            inbound=True,
-            timestamp_range=self.time_range,
-            port=self.port,
-            page=self.page,
-            page_size=self.page_size,
-            order=self.order,
-            simple=self.simple)
-        if self.simple:
+    def inputs(self, page, order, simple):
+        inputs = self.detailsModel.get_details_connections(inbound=True, page=page, order=order, simple=simple)
+        if simple:
             headers = [
                 ['src', "Source IP"],
                 ['port', "Dest. Port"],
@@ -227,15 +282,15 @@ class Details:
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
                 ['links', 'Count / min'],
-                #['protocols', 'Protocols'],
+                # ['protocols', 'Protocols'],
                 ['sum_bytes', 'Sum Bytes'],
-                #['avg_bytes', 'Avg Bytes'],
+                # ['avg_bytes', 'Avg Bytes'],
                 ['sum_packets', 'Sum Packets'],
-                #['avg_packets', 'Avg Packets'],
+                # ['avg_packets', 'Avg Packets'],
                 ['avg_duration', 'Avg Duration'],
             ]
         # convert list of dicts to ordered list of values
-        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
         conn_in = []
         for row in inputs:
             conn_row = []
@@ -246,9 +301,9 @@ class Details:
                     conn_row.append(row[h[0]])
             conn_in.append(conn_row)
         response = {
-            "page": self.page,
-            "page_size": self.page_size,
-            "order": self.order,
+            "page": page,
+            "page_size": self.request['page_size'],
+            "order": order,
             "direction": "desc",
             "component": "inputs",
             "headers": headers,
@@ -256,19 +311,10 @@ class Details:
         }
         return response
 
-    def outputs(self):
-        outputs = dbaccess.get_details_connections(
-            ds=self.ds,
-            ip_start=self.ip_range[0],
-            ip_end=self.ip_range[1],
-            inbound=False,
-            timestamp_range=self.time_range,
-            port=self.port,
-            page=self.page,
-            page_size=self.page_size,
-            order=self.order,
-            simple=self.simple)
-        if self.simple:
+    def outputs(self, page, order, simple):
+        outputs = self.detailsModel.get_details_connections(inbound=False, page=page, order=order, simple=simple)
+
+        if simple:
             headers = [
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
@@ -280,14 +326,14 @@ class Details:
                 ['dst', "Dest. IP"],
                 ['port', "Dest. Port"],
                 ['links', 'Count / min'],
-                #['protocols', 'Protocols'],
+                # ['protocols', 'Protocols'],
                 ['sum_bytes', 'Sum Bytes'],
-                #['avg_bytes', 'Avg Bytes'],
+                # ['avg_bytes', 'Avg Bytes'],
                 ['sum_packets', 'Sum Packets'],
-                #['avg_packets', 'Avg Packets'],
+                # ['avg_packets', 'Avg Packets'],
                 ['avg_duration', 'Avg Duration'],
             ]
-        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
         conn_out = []
         for row in outputs:
             conn_row = []
@@ -298,9 +344,9 @@ class Details:
                     conn_row.append(row[h[0]])
             conn_out.append(conn_row)
         response = {
-            "page": self.page,
-            "page_size": self.page_size,
-            "order": self.order,
+            "page": page,
+            "page_size": self.request['page_size'],
+            "order": order,
             "direction": "desc",
             "component": "outputs",
             "headers": headers,
@@ -308,21 +354,14 @@ class Details:
         }
         return response
 
-    def ports(self):
-        ports = dbaccess.get_details_ports(
-            ds=self.ds,
-            ip_start=self.ip_range[0],
-            ip_end=self.ip_range[1],
-            timestamp_range=self.time_range,
-            port=self.port,
-            page=self.page,
-            page_size=self.page_size,
-            order=self.order)
+    def ports(self, page, order):
+        ports = self.detailsModel.get_details_ports(page, order)
+
         headers = [
             ['port', "Port Accessed"],
             ['links', 'Count / min']
         ]
-        minutes = float(self.time_range[1] - self.time_range[0]) / 60.0
+        minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
         ports_in = []
         for row in ports:
             conn_row = []
@@ -333,27 +372,22 @@ class Details:
                     conn_row.append(row[h[0]])
             ports_in.append(conn_row)
         response = {
-            "page": self.page,
-            "page_size": self.page_size,
-            "order": self.order,
+            "page": page,
+            "page_size": self.request['page_size'],
+            "order": order,
             "component": "ports",
             "headers": headers,
             "rows": ports_in
         }
         return response
 
-    def children(self, simple=False):
-        children = dbaccess.get_details_children(
-            ds=self.ds,
-            ip_start=self.ip_range[0],
-            ip_end=self.ip_range[1],
-            page=self.page,
-            page_size=256,
-            order=self.order)
+    def children(self, page, order):
+        children = self.detailsModel.get_details_children(page, order)
+
         response = {
-            "page": self.page,
-            "page_size": self.page_size,
-            "order": self.order,
+            "page": page,
+            "page_size": self.request['page_size'],
+            "order": order,
             "count": len(children),
             "component": "children",
             "headers": [
@@ -367,50 +401,18 @@ class Details:
         return response
 
     def summary(self):
-        summary = dbaccess.get_details_summary(self.ds, self.ip_range[0], self.ip_range[1], self.time_range, self.port)
+        summary = self.detailsModel.get_details_summary()
         return summary
 
-    def selection_info(self):
+    def selection_info(self, page, order, simple):
         # called for selections in the map pane
         summary = self.summary()
-        details = {}
-        details['unique_out'] = summary.unique_out
-        details['unique_in'] = summary.unique_in
-        details['unique_ports'] = summary.unique_ports
+        details = {'unique_out': summary.unique_out,
+                   'unique_in': summary.unique_in,
+                   'unique_ports': summary.unique_ports,
+                   'inputs': self.inputs(page, order, simple),
+                   'outputs': self.outputs(page, order, simple),
+                   'ports': self.ports(page, order)}
 
-        details['inputs'] = self.inputs()
-        details['outputs'] = self.outputs()
-        details['ports'] = self.ports()
         return details
 
-    def GET(self):
-        """
-        The expected GET data includes:
-            'address': dotted-decimal IP addresses.
-                Each address is only as long as the subnet,
-                    so 12.34.0.0/16 would be written as 12.34
-            'ds': string, specify the data source, ex: "ds_19_"
-            'filter': optional. If included, ignored.
-            'tstart': optional. Used with 'tend'. The start of the time range to report links during.
-            'tend': optional. Used with 'tstart'. The end of the time range to report links during.
-        :return: A JSON-encoded dictionary where
-            the keys are ['conn_in', 'conn_out', 'ports_in', 'unique_in', 'unique_out', 'unique_ports'] and
-            the values are numbers or lists
-        """
-        web.header("Content-Type", "application/json")
-
-        self.parse_request(web.input())
-        details = {}
-
-        if self.ips:
-            if self.requested_components:
-                for c_name in self.requested_components:
-                    if c_name in self.components:
-                        details[c_name] = self.components[c_name]()
-                    else:
-                        details[c_name] = {"result": "No data source matches request for {0}".format(c_name)}
-            else:
-                details = self.selection_info()
-        else:
-            details = {"result": "ERROR: Malformed request. The 'address' key was missing"}
-        return json.dumps(details, default=decimal_default)

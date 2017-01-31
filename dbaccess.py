@@ -2,9 +2,7 @@ import web
 import common
 from datetime import datetime
 import time
-import os
-import re
-
+import models.datasources
 
 def parse_sql_file(path, replacements):
     with open(path, 'r') as f:
@@ -39,9 +37,9 @@ def get_syslog_size(datasource, buffer, _test=False):
 
 
 def get_timerange(ds):
-    dses = common.datasources.dses
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
+    datasources = models.datasources.Datasources()
+    if ds not in datasources.dses:
+        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, datasources.dses))
     prefix = "ds_{0}_".format(ds)
 
     rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
@@ -83,244 +81,13 @@ def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=
     return WHERE
 
 
-def get_details_summary(ds, ip_start, ip_end, timestamp_range=None, port=None):
-    WHERE = build_where_clause(timestamp_range=timestamp_range, port=port)
-    dses = get_ds_list_cached()
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
-    prefix = "ds_{0}_".format(ds)
-
-    # TODO: seconds has a magic number 300 added to account for DB time quantization.
-    query = """
-    SELECT `inputs`.ips AS 'unique_in'
-        , `outputs`.ips AS 'unique_out'
-        , `inputs`.ports AS 'unique_ports'
-    FROM
-      (SELECT COUNT(DISTINCT src) AS 'ips', COUNT(DISTINCT port) AS 'ports'
-        FROM {prefix}Links
-        WHERE dst BETWEEN $start AND $end
-         {where}
-    ) AS `inputs`
-    JOIN (SELECT COUNT(DISTINCT dst) AS 'ips'
-        FROM {prefix}Links
-        WHERE src BETWEEN $start AND $end
-         {where}
-    ) AS `outputs`;""".format(where=WHERE, prefix=prefix)
-
-    qvars = {'start': ip_start, 'end': ip_end}
-    rows = common.db.query(query, vars=qvars)
-    row = rows[0]
-    return row
 
 
-def get_details_connections(ds, ip_start, ip_end, inbound, timestamp_range=None, port=None, page=1, page_size=50, order="-links", simple=False):
-    sort_options = ['links', 'src', 'dst', 'port', 'sum_bytes', 'sum_packets', 'protocols', 'avg_duration']
-    sort_options_simple = ['links', 'src', 'dst', 'port']
-    dses = get_ds_list_cached()
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
-    prefix = "ds_{0}_".format(ds)
-
-    qvars = {
-        'start': ip_start,
-        'end': ip_end,
-        'page': page_size * (page-1),
-        'page_size': page_size,
-        'WHERE': build_where_clause(timestamp_range, port),
-        'prefix': prefix
-    }
-    if inbound:
-        qvars['collected'] = "src"
-        qvars['filtered'] = "dst"
-    else:
-        qvars['filtered'] = "src"
-        qvars['collected'] = "dst"
-
-    # determine the sort direction
-    if order and order[0] == '-':
-        sort_dir = "DESC"
-    else:
-        sort_dir = "ASC"
-    # determine the sort column
-    if simple:
-        if order and order[1:] in sort_options_simple:
-            sort_by = order[1:]
-        else:
-            sort_by = sort_options_simple[0]
-    else:
-        if order and order[1:] in sort_options:
-            sort_by = order[1:]
-        else:
-            sort_by = sort_options[0]
-    # add table prefix for some columns
-    if sort_by in ['port', 'src', 'dst']:
-        sort_by = "`links`." + sort_by
-
-    qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
-
-    if simple:
-        query = """
-SELECT decodeIP({collected}) AS '{collected}'
-    , port AS 'port'
-    , sum(links) AS 'links'
-FROM {prefix}Links AS `links`
-WHERE {filtered} BETWEEN $start AND $end
- {WHERE}
-GROUP BY `links`.src, `links`.dst, `links`.port
-ORDER BY {order}
-LIMIT {page}, {page_size}
-        """.format(**qvars)
-    else:
-        query = """
-SELECT src, dst, port, links, protocols
-    , sum_bytes
-    , (sum_bytes / links) AS 'avg_bytes'
-    , sum_packets
-    , (sum_packets / links) AS 'avg_packets'
-    , (_duration / links) AS 'avg_duration'
-FROM(
-    SELECT decodeIP(src) AS 'src'
-        , decodeIP(dst) AS 'dst'
-        , port AS 'port'
-        , sum(links) AS 'links'
-        , GROUP_CONCAT(DISTINCT protocol SEPARATOR ", ") AS 'protocols'
-        , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
-        , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
-        , SUM(duration*links) AS '_duration'
-    FROM {prefix}Links AS `links`
-    WHERE {filtered} BETWEEN $start AND $end
-     {WHERE}
-    GROUP BY `links`.src, `links`.dst, `links`.port
-    ORDER BY {order}
-    LIMIT {page}, {page_size}
-) AS precalc;
-        """.format(**qvars)
-    return list(common.db.query(query, vars=qvars))
 
 
-def get_details_ports(ds, ip_start, ip_end, timestamp_range=None, port=None, page=1, page_size=50, order="-links"):
-    sort_options = ['links', 'port']
-    first_result = (page - 1) * page_size
-    dses = get_ds_list_cached()
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
-    prefix = "ds_{0}_".format(ds)
-
-    qvars = {
-        'start': ip_start,
-        'end': ip_end,
-        'first': first_result,
-        'size': page_size,
-        'WHERE': build_where_clause(timestamp_range, port),
-        'prefix': prefix
-    }
-
-    if order and order[0] == '-':
-        sort_dir = "DESC"
-    else:
-        sort_dir = "ASC"
-    if order and order[1:] in sort_options:
-        sort_by = order[1:]
-    else:
-        sort_by = sort_options[0]
-    qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
-
-    query = """
-        SELECT port AS 'port', sum(links) AS 'links'
-        FROM {prefix}Links
-        WHERE dst BETWEEN $start AND $end
-         {WHERE}
-        GROUP BY port
-        ORDER BY {order}
-        LIMIT $first, $size;
-    """.format(**qvars)
-    return list(common.db.query(query, vars=qvars))
 
 
-def get_details_children(ds, ip_start, ip_end, page, page_size, order):
-    sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
-    dses = get_ds_list_cached()
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
-    prefix = "ds_{0}_".format(ds)
 
-    ip_diff = ip_end - ip_start
-    if ip_diff == 0:
-        return []
-    elif ip_diff == 255:
-        quotient = 1
-        child_subnet_start = 25
-        child_subnet_end = 32
-    elif ip_diff == 65535:
-        quotient = 256
-        child_subnet_start = 17
-        child_subnet_end = 24
-    elif ip_diff == 16777215:
-        quotient = 65536
-        child_subnet_start = 9
-        child_subnet_end = 16
-    else:
-        quotient = 16777216
-        child_subnet_start = 1
-        child_subnet_end = 8
-    first_result = (page - 1) * page_size
-    qvars = {'ip_start': ip_start,
-             'ip_end': ip_end,
-             's_start': child_subnet_start,
-             's_end': child_subnet_end,
-             'first': first_result,
-             'size': page_size,
-             'quot': quotient,
-             'quot_1': quotient - 1}
-
-    if order and order[0] == '-':
-        sort_dir = "DESC"
-    else:
-        sort_dir = "ASC"
-    if order and order[1:] in sort_options:
-        sort_by = order[1:]
-    else:
-        sort_by = sort_options[0]
-    qvars['order'] = "{0} {1}".format(sort_by, sort_dir)
-
-    query = """
-        SELECT decodeIP(`n`.ipstart) AS 'address'
-          , COALESCE(`n`.alias, '') AS 'hostname'
-          , `n`.subnet AS 'subnet'
-          , `sn`.kids AS 'endpoints'
-          , COALESCE(COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)), 0) AS 'ratio'
-        FROM Nodes AS `n`
-        LEFT JOIN (
-            SELECT dst_start DIV $quot * $quot AS 'low'
-                , dst_end DIV $quot * $quot + $quot_1 AS 'high'
-                , sum(links) AS 'links'
-            FROM {prefix}LinksIn
-            GROUP BY low, high
-            ) AS `l_in`
-        ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
-        LEFT JOIN (
-            SELECT src_start DIV $quot * $quot AS 'low'
-                , src_end DIV $quot * $quot + $quot_1 AS 'high'
-                , sum(links) AS 'links'
-            FROM {prefix}LinksOut
-            GROUP BY low, high
-            ) AS `l_out`
-        ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
-        LEFT JOIN (
-            SELECT ipstart DIV $quot * $quot AS 'low'
-                , ipend DIV $quot * $quot + $quot_1 AS 'high'
-                , COUNT(ipstart) AS 'kids'
-            FROM Nodes
-            WHERE ipstart = ipend
-            GROUP BY low, high
-            ) AS `sn`
-        ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
-        WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
-            AND `n`.subnet BETWEEN $s_start AND $s_end
-        ORDER BY {order}
-        LIMIT $first, $size;
-        """.format(order=qvars['order'], prefix=prefix)
-    return list(common.db.query(query, vars=qvars))
 
 
 def get_protocol_list(ds):

@@ -7,6 +7,8 @@ import json
 import base64
 import importlib
 import base
+from models.datasources import Datasources
+import models.settings
 
 
 def niceName(s):
@@ -199,19 +201,12 @@ class Settings(base.HeadlessPost):
     def GET(self):
         if "headless" in web.input():
             web.header("Content-Type", "application/json")
-            ds_s = web.input().get("ds", None)
-            if ds_s:
-                ds_match = re.search("(\d+)", ds_s)
-                if ds_match:
-                    ds = int(ds_match.group())
-                    settings = dbaccess.get_settings(all=True)
-                    for datasource in settings['datasources']:
-                        if datasource['id'] == ds:
-                            settings['datasource'] = datasource
-                            break
-                    settings.pop("datasources", None)
-                    return json.dumps(settings)
-            return json.dumps(common.settings.copy())
+            settings = models.settings.Settings()
+            datasources = Datasources()
+
+            setting = settings.copy()
+            setting['datasources'] = datasources.datasources
+            return json.dumps(setting)
 
         settings = self.read_settings()
         datasources = settings.pop('datasources')

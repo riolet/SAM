@@ -91,9 +91,9 @@ function init() {
 
     //retrieve config settings
     GET_settings(null, function (settings) {
-        config.update = (settings.datasource.ar_active === 1);
-        config.update_interval = settings.datasource.ar_interval;
-        config.ds = "ds_" + settings.datasource.id + "_";
+        config.update = (settings.datasources[settings.datasource].ar_active === 1);
+        config.update_interval = settings.datasources[settings.datasource].ar_interval;
+        config.ds = "ds_" + settings.datasource + "_";
         setAutoUpdate();
 
         GET_timerange(function (range) {

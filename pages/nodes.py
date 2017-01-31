@@ -1,5 +1,5 @@
-import common
 import base
+import models.nodes
 
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
@@ -28,10 +28,11 @@ class Nodes(base.Headless):
         return {'addresses': addresses}
 
     def perform_get_command(self, request):
+        nodes = models.nodes.Nodes()
         if len(request['addresses']) == 0:
-            response = {'_': common.nodes.get_root_nodes()}
+            response = {'_': nodes.get_root_nodes()}
         else:
-            response = {address: common.nodes.get_children(address) for address in request['addresses']}
+            response = {address: nodes.get_children(address) for address in request['addresses']}
         return response
 
     def encode_get_response(self, response):

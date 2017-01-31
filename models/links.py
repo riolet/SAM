@@ -1,6 +1,5 @@
 import web
 import common
-import dbaccess
 
 
 class Links:
@@ -11,9 +10,9 @@ class Links:
         self.table_name_out = "ds_{}_LinksOut"
 
     def delete_connections(self, ds):
-        common.db.delete(self.table_name.format(ds), "1")
-        common.db.delete(self.table_name_in.format(ds), "1")
-        common.db.delete(self.table_name_out.format(ds), "1")
+        self.db.delete(self.table_name.format(ds), "1")
+        self.db.delete(self.table_name_in.format(ds), "1")
+        self.db.delete(self.table_name_out.format(ds), "1")
 
     def get_links(self, ds, addresses, timerange, port, protocol):
         result = {}
@@ -30,7 +29,8 @@ class Links:
     def get_links_out(self, ds, ip_start, ip_end, timerange, port, protocol):
         return self._get_links(ds, ip_start, ip_end, False, timerange, port, protocol)
 
-    def build_where_clause(self, timestamp_range=None, port=None, protocol=None, rounding=True):
+    @staticmethod
+    def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
         clauses = []
         t_start = 0
         t_end = 0
@@ -87,9 +87,6 @@ class Links:
         """
         ports = (ip_start == ip_end)  # include ports in the results?
         where = self.build_where_clause(timerange, port, protocol)
-        dses = dbaccess.get_ds_list_cached()
-        if ds not in dses:
-            raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
 
         if ports:
             select = "src_start, src_end, dst_start, dst_end, port, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"

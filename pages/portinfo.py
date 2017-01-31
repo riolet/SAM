@@ -1,5 +1,5 @@
 import base
-import common
+import models.ports
 
 # This class is for getting the aliases for a port number
 
@@ -35,7 +35,8 @@ class Portinfo(base.HeadlessPost):
         return {'ports': ports}
 
     def perform_get_command(self, request):
-        ports = common.ports.get(request['ports'])
+        portModel = models.ports.Ports()
+        ports = portModel.get(request['ports'])
         return ports
 
     def encode_get_response(self, response):
@@ -49,8 +50,9 @@ class Portinfo(base.HeadlessPost):
         return dict(data)
 
     def perform_post_command(self, request):
+        portModel = models.ports.Ports()
         port = request.pop('port')
-        common.ports.set(port, request)
+        portModel.set(port, request)
         return 'success'
 
     def encode_post_response(self, response):

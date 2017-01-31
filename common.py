@@ -3,13 +3,6 @@ import os
 import web
 base_path = os.path.dirname(__file__)
 
-from models.links import Links
-from models.nodes import Nodes
-from models.ports import Ports
-from models.settings import Settings
-from models.datasources import Datasources
-
-
 
 def IPtoString(ipNumber):
     # type: (int) -> str
@@ -148,9 +141,3 @@ web.config.debug = False
 db_quiet = web.database(**dbconfig.params)
 web.config.debug = old
 del old
-
-links = Links()
-nodes = Nodes()
-ports = Ports()
-settings = Settings()
-datasources = Datasources()

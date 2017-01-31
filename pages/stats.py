@@ -5,6 +5,7 @@ import web
 import time
 from datetime import datetime
 import re
+from models.settings import Settings
 
 
 class Stats:
@@ -12,7 +13,7 @@ class Stats:
     stats = []
 
     def __init__(self):
-        self.settings = common.settings.copy()
+        self.settings = Settings()
         self.prefix = "ds_{0}_".format(self.settings['datasource'])
 
     def collect_stats(self):
