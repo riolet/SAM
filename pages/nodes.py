@@ -1,50 +1,41 @@
 import json
 import dbaccess
 import web
-import decimal
 import common
+import base
 
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
 
-def decimal_default(obj):
-    if isinstance(obj, decimal.Decimal):
-        return float(obj)
-    raise TypeError
+class Nodes(base.Headless):
+    """
+    The expected GET data includes:
+        'address': comma-seperated list of dotted-decimal IP addresses.
+            Each address is only as long as the subnet,
+                so 12.34.0.0/16 would be written as 12.34
+            A request for 1.2.3.0/24, 192.168.0.0/16, and 21.0.0.0/8
+                would be "1.2.3,192.168,21"
+    :return: A JSON-encoded dictionary where
+        the keys are the supplied addresses (or _ if no address) and
+        the values are a list of child nodes.
+    """
 
-
-class Nodes:
-    def get_children(self, addresses):
-        # should return JSON compatible data...for javascript on the other end.
-        # result = dbaccess.connections()
-        result = {}
-        if not addresses:
-            result["_"] = list(dbaccess.get_nodes(0x00000000, 0xFFFFFFFF))
-        else:
-            for address in addresses:
-                ip_start, ip_end = common.determine_range_string(address)
-                result[address] = list(dbaccess.get_nodes(ip_start, ip_end))
-
-        return json.dumps(result, default=decimal_default)
-
-    def GET(self):
-        """
-        The expected GET data includes:
-            'address': comma-seperated list of dotted-decimal IP addresses.
-                Each address is only as long as the subnet,
-                    so 12.34.0.0/16 would be written as 12.34
-                A request for 1.2.3.0/24, 192.168.0.0/16, and 21.0.0.0/8
-                    would be "1.2.3,192.168,21"
-        :return: A JSON-encoded dictionary where 
-            the keys are the supplied addresses (or _ if no address) and
-            the values are a list of child nodes.
-        """
-        web.header("Content-Type", "application/json")
-        get_data = web.input()
-
+    def decode_get_request(self, data):
         addresses = []
-        address_str = get_data.get('address', None)
-        if address_str is not None:
-            addresses = address_str.split(",")
+        address_str = data.get('address')
+        if address_str:
+            addresses = address_str.split(',')
 
-        return self.get_children(addresses)
+        addresses = filter(lambda x: bool(x), addresses)
+
+        return {'addresses': addresses}
+
+    def perform_get_command(self, request):
+        if len(request['addresses']) == 0:
+            response = {'_': common.nodes.get_root_nodes()}
+        else:
+            response = {address: common.nodes.get_children(address) for address in request['addresses']}
+        return response
+
+    def encode_get_response(self, response):
+        pass

@@ -13,7 +13,7 @@ class Links(base.Headless):
         try:
             addresses = data['address'].split(",")
         except KeyError:
-            raise base.MalformedRequest("No 'address' specified")
+            raise base.RequiredKey('address', 'address')
 
         port = data.get('filter')
         try:
@@ -33,7 +33,7 @@ class Links(base.Headless):
             else:
                 raise base.MalformedRequest("Could not read data source ('ds')")
         else:
-            raise base.MalformedRequest("No data source ('ds') specified")
+            raise base.RequiredKey('data source', 'ds')
 
         return {'ds': ds,
                 'addresses': addresses,

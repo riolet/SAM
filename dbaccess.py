@@ -55,7 +55,7 @@ def remove_datasource(id):
     ids = [ds['id'] for ds in settings['datasources']]
 
     # check id is valid
-    if not id in ids:
+    if id not in ids:
         print("Removal stopped: data source to remove not found")
         return
 
@@ -82,9 +82,9 @@ def remove_datasource(id):
 
 
 def get_syslog_size(datasource, buffer, _test=False):
-    return common.db.select("ds_{0}_Syslog{1}".format(datasource, buffer)
-                            , what="COUNT(1) AS 'rows'"
-                            , _test=_test)[0].rows
+    return common.db.select("ds_{0}_Syslog{1}".format(datasource, buffer),
+                            what="COUNT(1) AS 'rows'",
+                            _test=_test)[0].rows
 
 
 def get_timerange(ds):
@@ -96,7 +96,7 @@ def get_timerange(ds):
     rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
                            "FROM {prefix}Links;".format(prefix=prefix))
     row = rows[0]
-    if row['min'] == None or row['max'] == None:
+    if row['min'] is None or row['max'] is None:
         now = time.mktime(datetime.now().timetuple())
         return {'min': now, 'max': now}
     return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
@@ -150,67 +150,6 @@ def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=
     if WHERE:
         WHERE = "    && " + WHERE
     return WHERE
-
-
-def get_links(ds, ip_start, ip_end, inbound, port_filter=None, timerange=None, protocol=None):
-    """
-    This function returns a list of the connections coming in to a given node from the rest of the graph.
-
-    * The connections are aggregated into groups based on the first diverging ancestor.
-        that means that connections to destination 1.2.3.4
-        that come from source 1.9.*.* will be grouped together as a single connection.
-
-    * for /8, /16, and /24, `IP to IP` is a unique connection.
-    * for /32, `IP to IP on Port` make a unique connection.
-
-    * If filter is provided, only connections over the given port are considered.
-
-    * If timerange is provided, only connections that occur within the given time range are considered.
-
-    :param ipstart:  integer indicating the low end of the IP address range constraint
-    :param ipend:  integer indicating the high end of the IP address range constraint
-    :param inbound:  boolean, the direction of links to consider:
-        If True, only consider links that terminate in the ip_range specified.
-        If False, only consider links that originate in the ip_range specified,
-    :param port_filter:  Only consider connections using this destination port. Default is no filtering.
-    :param timerange:  Tuple of (start, end) timestamps. Only connections happening
-    during this time period are considered.
-    :return: A list of db results formated as web.storage objects (used like dictionaries)
-    """
-    ports = (ip_start == ip_end)  # include ports in the results?
-    where = build_where_clause(timerange, port_filter, protocol)
-    dses = get_ds_list_cached()
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
-    prefix = "ds_{0}_".format(ds)
-
-    if ports:
-        select = "src_start, src_end, dst_start, dst_end, port, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
-        group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
-    else:
-        select = "src_start, src_end, dst_start, dst_end, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
-        group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
-
-    if inbound:
-        query = """
-        SELECT {select}
-        FROM {prefix}LinksIn
-        WHERE dst_start = $start && dst_end = $end
-         {where}
-        {group_by}
-        """.format(where=where, select=select, group_by=group_by, prefix=prefix)
-    else:
-        query = """
-        SELECT {select}
-        FROM {prefix}LinksOut
-        WHERE src_start = $start && src_end = $end
-         {where}
-        {group_by}
-        """.format(where=where, select=select, group_by=group_by, prefix=prefix)
-
-    qvars = {"start": ip_start, "end": ip_end}
-    rows = list(common.db.query(query, vars=qvars))
-    return rows
 
 
 def get_details_summary(ds, ip_start, ip_end, timestamp_range=None, port=None):
@@ -453,102 +392,6 @@ def get_details_children(ds, ip_start, ip_end, page, page_size, order):
     return list(common.db.query(query, vars=qvars))
 
 
-def get_tags(address):
-    """
-    Gets all directly assigned tags and inherited parent tags for a given addresss
-
-    :param address: A string dotted-decimal IP address such as "192.168.2.100" or "21.66" or "1.2.0.0/16"
-    :return: A dict of lists of strings, with keys 'tags' and 'p_tags' where p_tags are inherited tags from parent nodes
-    """
-    ipstart, ipend = common.determine_range_string(address)
-    WHERE = 'ipstart <= $start AND ipend >= $end'
-    qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("Tags", vars=qvars, where=WHERE)
-    parent_tags = []
-    tags = []
-    for row in data:
-        if row.ipend == ipend and row.ipstart == ipstart:
-            tags.append(row.tag)
-        else:
-            parent_tags.append(row.tag)
-    return {"p_tags": parent_tags, "tags": tags}
-
-
-def get_tag_list():
-    return [row.tag for row in common.db.select("Tags", what="DISTINCT tag") if row.tag]
-
-
-def set_tags(address, new_tags):
-    """
-    Assigns a new set of tags to an address overwriting any existing tag assignments.
-
-    :param address: A string dotted-decimal IP address such as "192.168.2.100" or "21.66" or "1.2.0.0/16"
-    :param new_tags: A list of tag strings. e.g. ['tag_one', 'tag_two', 'tag_three']
-    :return: None
-    """
-    table = 'Tags'
-    what = "ipstart, ipend, tag"
-    r = common.determine_range_string(address)
-    row = {"ipstart": r[0], "ipend": r[1]}
-    where = "ipstart = $ipstart AND ipend = $ipend"
-
-    existing = list(common.db.select(table, vars=row, what=what, where=where))
-    old_tags = [x.tag for x in existing]
-    removals = [x for x in old_tags if x not in new_tags]
-    additions = [x for x in new_tags if x not in old_tags]
-
-    # print("-"*70, '\n', '-'*70)
-    # print("TAG FACTORY")
-    # print("old_tags: " + repr(old_tags))
-    # print("new_tags: " + repr(new_tags))
-    # print("additions: " + repr(additions))
-    # print("removals: " + repr(removals))
-    # print("-"*70, '\n', '-'*70)
-
-    for tag in additions:
-        row['tag'] = tag
-        common.db.insert("Tags", **row)
-
-    for tag in removals:
-        row['tag'] = tag
-        where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
-        common.db.delete("Tags", where=where, vars=row)
-
-
-def get_env(address):
-    ipstart, ipend = common.determine_range_string(address)
-    WHERE = 'ipstart <= $start AND ipend >= $end'
-    qvars = {'start': ipstart, 'end': ipend}
-    data = common.db.select("Nodes", vars=qvars, where=WHERE, what="ipstart, ipend, env")
-    parent_env = "production"
-    env = "inherit"
-    nearest_distance = -1
-    for row in data:
-        if row.ipend == ipend and row.ipstart == ipstart:
-            if row.env:
-                env = row.env
-        else:
-            dist = row.ipend - ipend + ipstart - row.ipstart
-            if nearest_distance == -1 or dist < nearest_distance:
-                if row.env and row.env != "inherit":
-                    parent_env = row.env
-    return {"env": env, "p_env": parent_env}
-
-
-def get_env_list():
-    envs = set(row.env for row in common.db.select("Nodes", what="DISTINCT env") if row.env)
-    envs.add("production")
-    envs.add("inherit")
-    envs.add("dev")
-    return envs
-
-
-def set_env(address, env):
-    r = common.determine_range_string(address)
-    where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('Nodes', where, env=env)
-
-
 def get_protocol_list(ds):
     dses = get_ds_list_cached()
     if ds not in dses:
@@ -556,116 +399,6 @@ def get_protocol_list(ds):
     prefix = "ds_{0}_".format(ds)
     table = "{0}Links".format(prefix)
     return [row.protocol for row in common.db.select(table, what="DISTINCT protocol") if row.protocol]
-
-
-def get_node_info(ds, address):
-    ipstart, ipend = common.determine_range_string(address)
-    dses = get_ds_list_cached()
-    if ds not in dses:
-        raise ValueError("Invalid data source specified. ({0} not in {1})".format(ds, dses))
-    prefix = "ds_{0}_".format(ds)
-    qvars = {"start": ipstart, "end": ipend}
-    #TODO: seconds has a magic number 300 added to account for DB time quantization.
-
-    query = """
-        SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
-            , COALESCE(n.hostname, '') AS 'hostname'
-            , COALESCE(l_out.unique_out_ip, 0) AS 'unique_out_ip'
-            , COALESCE(l_out.unique_out_conn, 0) AS 'unique_out_conn'
-            , COALESCE(l_out.total_out, 0) AS 'total_out'
-            , COALESCE(l_out.b_s, 0) AS 'out_bytes_sent'
-            , COALESCE(l_out.b_r, 0) AS 'out_bytes_received'
-            , COALESCE(l_out.max_bps, 0) AS 'out_max_bps'
-            , COALESCE(l_out.sum_b / l_out.sum_duration, 0) AS 'out_avg_bps'
-            , COALESCE(l_out.p_s, 0) AS 'out_packets_sent'
-            , COALESCE(l_out.p_r, 0) AS 'out_packets_received'
-            , COALESCE(l_out.sum_duration / l_out.total_out, 0) AS 'out_duration'
-            , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
-            , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
-            , COALESCE(l_in.total_in, 0) AS 'total_in'
-            , COALESCE(l_in.b_s, 0) AS 'in_bytes_sent'
-            , COALESCE(l_in.b_r, 0) AS 'in_bytes_received'
-            , COALESCE(l_in.max_bps, 0) AS 'in_max_bps'
-            , COALESCE(l_in.sum_b / l_in.sum_duration, 0) AS 'in_avg_bps'
-            , COALESCE(l_in.p_s, 0) AS 'in_packets_sent'
-            , COALESCE(l_in.p_r, 0) AS 'in_packets_received'
-            , COALESCE(l_in.sum_duration / l_in.total_in, 0) AS 'in_duration'
-            , COALESCE(l_in.ports_used, 0) AS 'ports_used'
-            , children.endpoints AS 'endpoints'
-            , COALESCE(t.seconds, 0) + 300 AS 'seconds'
-            , (COALESCE(l_in.sum_b, 0) + COALESCE(l_out.sum_b, 0)) / (COALESCE(t.seconds, 0) + 300) AS 'overall_bps'
-            , COALESCE(l_in.protocol, "") AS 'in_protocols'
-            , COALESCE(l_out.protocol, "") AS 'out_protocols'
-        FROM (
-            SELECT ipstart, subnet, alias AS 'hostname'
-            FROM Nodes
-            WHERE ipstart = $start AND ipend = $end
-        ) AS n
-        LEFT JOIN (
-            SELECT $start AS 's1'
-            , COUNT(DISTINCT dst) AS 'unique_out_ip'
-            , COUNT(DISTINCT src, dst, port) AS 'unique_out_conn'
-            , SUM(links) AS 'total_out'
-            , SUM(bytes_sent) AS 'b_s'
-            , SUM(bytes_received) AS 'b_r'
-            , MAX((bytes_sent + bytes_received) / duration) AS 'max_bps'
-            , SUM(bytes_sent + bytes_received) AS 'sum_b'
-            , SUM(packets_sent) AS 'p_s'
-            , SUM(packets_received) AS 'p_r'
-            , SUM(duration * links) AS 'sum_duration'
-            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
-            FROM {prefix}Links
-            WHERE src BETWEEN $start AND $end
-            GROUP BY 's1'
-        ) AS l_out
-            ON n.ipstart = l_out.s1
-        LEFT JOIN (
-            SELECT $start AS 's1'
-            , COUNT(DISTINCT src) AS 'unique_in_ip'
-            , COUNT(DISTINCT src, dst, port) AS 'unique_in_conn'
-            , SUM(links) AS 'total_in'
-            , SUM(bytes_sent) AS 'b_s'
-            , SUM(bytes_received) AS 'b_r'
-            , MAX((bytes_sent + bytes_received) / duration) AS 'max_bps'
-            , SUM(bytes_sent + bytes_received) AS 'sum_b'
-            , SUM(packets_sent) AS 'p_s'
-            , SUM(packets_received) AS 'p_r'
-            , SUM(duration * links) AS 'sum_duration'
-            , COUNT(DISTINCT port) AS 'ports_used'
-            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
-            FROM {prefix}Links
-            WHERE dst BETWEEN $start AND $end
-            GROUP BY 's1'
-        ) AS l_in
-            ON n.ipstart = l_in.s1
-        LEFT JOIN (
-            SELECT $start AS 's1'
-            , COUNT(ipstart) AS 'endpoints'
-            FROM Nodes
-            WHERE ipstart = ipend AND ipstart BETWEEN $start AND $end
-        ) AS children
-            ON n.ipstart = children.s1
-        LEFT JOIN (
-            SELECT $start AS 's1'
-                , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
-            FROM {prefix}Links
-            GROUP BY 's1'
-        ) AS t
-            ON n.ipstart = t.s1
-        LIMIT 1;
-    """.format(prefix=prefix)
-    results = common.db.query(query, vars=qvars)
-
-    if len(results) == 1:
-        return results[0]
-    else:
-        return {}
-
-
-def set_node_info(address, data):
-    r = common.determine_range_string(address)
-    where = {"ipstart": r[0], "ipend": r[1]}
-    common.db.update('Nodes', where, **data)
 
 
 def get_port_info(port):
@@ -905,14 +638,6 @@ def get_datasource(id):
     if len(rows) == 1:
         return rows[0]
     return None
-
-
-def delete_custom_tags():
-    common.db.delete("Tags", "1")
-
-
-def delete_custom_envs():
-    common.db.update("Nodes", "1", env=common.web.sqlliteral("NULL"))
 
 
 def delete_custom_hostnames():

@@ -12,6 +12,12 @@ def decimal_default(obj):
 class MalformedRequest(Exception): pass
 
 
+class RequiredKey(MalformedRequest):
+    def __init__(self, name, key, *args, **kwargs):
+        MalformedRequest.__init__(self, args, kwargs)
+        self.message = "Missing key: {name} ('{key}') not specified."
+
+
 class Headless:
     def __init__(self):
         self.inbound = web.input()

@@ -1,57 +1,88 @@
 import json
 import dbaccess
 import web
+import base
+import common
 
 # This class is for getting and setting node metadata
 
 
-class Nodeinfo:
-    def GET(self):
-        web.header("Content-Type", "application/json")
+class Nodeinfo(base.HeadlessPost):
+    """
+    POST Expects a query string including:
+        node: ip address
+            like "189.179.4.0/24"
+            or "189.179" ( == 189.179.0.0/16)
+            or "189.2.3/8" ( == 189.0.0.0/8)
+        alias: (optional) new alias string for the node
+        tags: (optional) comma separated string of tags to associate with this node
+        env: (optional) string, this host's environment category
 
-        get_data = web.input()
-        if "node" not in get_data:
-            return json.dumps({})
+    :return:
+    """
+    def decode_get_request(self, data):
+        node = data.get('node')
+        if not node:
+            raise base.RequiredKey('node', 'node')
 
-        node = get_data.get('node')
+        return common.IPStringtoInt(node)
 
-        node = node.split(".")
-        node = [int(i) for i in node]
+    def perform_get_command(self, request):
+        raise NotImplementedError
 
-        result = dbaccess.get_node_info(*node)
+    def encode_get_response(self, response):
+        return response
 
-        return json.dumps(list(result))
+    def decode_post_request(self, data):
+        node = data.get('node')
+        if not node:
+            raise base.RequiredKey('node', 'node')
 
-    def POST(self):
-        """
-        Expects a query string including:
-            node: ip address
-                like "189.179.4.0/24"
-                or "189.179" ( == 189.179.0.0/16)
-                or "189.2.3/8" ( == 189.0.0.0/8)
-            alias: (optional) new alias string for the node
-            tags: (optional) comma separated string of tags to associate with this node
+        alias = data.get('alias')
+        tags = data.get('tags')
+        env = data.get('env')
 
-        :return:
-        """
-        web.header("Content-Type", "application/json")
+        request = {'node': node}
+        if alias is not None:
+            request['alias'] = alias
+        if tags is not None:
+            request['tags'] = tags
+        if env is not None:
+            request['env'] = env
 
-        get_data = web.input()
-        if "node" not in get_data:
-            return json.dumps({"result": "ERROR: 'node' and 'alias' fields are required."})
+        return request
 
-        if 'alias' in get_data:
-            dbaccess.set_node_info(get_data.node, {"alias": get_data.alias})
+    def perform_post_command(self, request):
+        node = request.pop('node')
+        for key, value in request.iteritems():
+            if key == 'alias':
+                common.nodes.set_alias(node, value)
+            elif key == 'tags':
+                tags = filter(lambda x: x, value.split(','))
+                common.nodes.set_tags(node, tags)
+            elif key == 'env':
+                if value:
+                    common.nodes.set_env(node, value)
+                else:
+                    common.nodes.set_env(node, None)
+            else:
+                print("Error in nodeinfo, unrecognized assignment {0} = {1}".format(key, value))
+        return 0, "Success"
 
-        if 'tags' in get_data:
-            tags = get_data.tags.split(',')
-            tags = [i for i in tags if i]
-            dbaccess.set_tags(get_data.node, tags)
+    def encode_post_response(self, response):
+        return {'code': response[0], 'message': response[1]}
 
-        if 'env' in get_data:
-            env = get_data.env
-            if env == "":
-                env = None
-            dbaccess.set_env(get_data.node, env)
-
-        return json.dumps({"code": 0, "message": ""})
+#    def GET(self):
+#
+#        get_data = web.input()
+#        if "node" not in get_data:
+#            return json.dumps({})
+#
+#        node = get_data.get('node')
+#
+#        node = node.split(".")
+#        node = [int(i) for i in node]
+#
+#        result = dbaccess.get_node_info(*node)
+#
+#        return json.dumps(list(result))

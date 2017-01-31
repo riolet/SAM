@@ -2,6 +2,7 @@ import sys
 import os
 import web
 import models.links
+import models.nodes
 
 base_path = os.path.dirname(__file__)
 
@@ -147,3 +148,4 @@ web.config.debug = old
 del old
 
 links = models.links.Links()
+nodes = models.nodes.Nodes()
