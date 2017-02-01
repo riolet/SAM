@@ -724,7 +724,7 @@ function hostname_edit_callback(event) {
             input.dataset.content = new_name;
             var request = {"node": ip, "alias": new_name};
             $.ajax({
-                url: "/nodeinfo",
+                url: "/nodes",
                 type: "POST",
                 data: request,
                 error: ajax_error,
@@ -744,7 +744,7 @@ function tag_change_callback(new_tags) {
     var ip = getIP_Subnet().normal;
     var request = {"node": ip, "tags": new_tags};
     $.ajax({
-        url: "/nodeinfo",
+        url: "/nodes",
         type: "POST",
         data: request,
         error: ajax_error,
@@ -763,7 +763,7 @@ function env_change_callback(new_env) {
     }
     var request = {"node": ip, "env": new_env};
     $.ajax({
-        url: "/nodeinfo",
+        url: "/nodes",
         type: "POST",
         data: request,
         error: ajax_error,

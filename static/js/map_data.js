@@ -97,7 +97,7 @@ function POST_node_alias(address, name) {
       "alias": name
     }
     $.ajax({
-        url: "/nodeinfo",
+        url: "/nodes",
         type: "POST",
         data: request,
         error: onNotLoadData,
