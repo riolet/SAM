@@ -312,7 +312,7 @@ class Table(object):
     def get_dses(self):
         datasourcesModel = models.datasources.Datasources()
         ds = self.request['ds']
-        return datasourcesModel.sorted_list(ds)
+        return datasourcesModel.priority_list(ds)
 
     def next_page(self, rows, page, page_size):
         if len(rows) > page_size:

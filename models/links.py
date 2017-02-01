@@ -1,3 +1,5 @@
+import time
+from datetime import datetime
 import web
 import common
 
@@ -13,6 +15,19 @@ class Links:
         self.db.delete(self.table_name.format(ds), "1")
         self.db.delete(self.table_name_in.format(ds), "1")
         self.db.delete(self.table_name_out.format(ds), "1")
+
+    def get_protocol_list(self, ds):
+        rows = common.db.select(self.table_name.format(ds), what="DISTINCT protocol")
+        return [row.protocol for row in rows if row.protocol]
+
+    def get_timerange(self, ds):
+        rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
+                               "FROM {table_links};".format(table_links=self.table_name.format(ds)))
+        row = rows[0]
+        if row['min'] is None or row['max'] is None:
+            now = time.mktime(datetime.now().timetuple())
+            return {'min': now, 'max': now}
+        return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
 
     def get_links(self, ds, addresses, timerange, port, protocol):
         result = {}

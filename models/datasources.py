@@ -1,4 +1,3 @@
-import re
 import os
 import common
 import dbaccess
@@ -19,18 +18,20 @@ class Datasources:
 
     @property
     def datasources(self):
-        print("Requesting DS cache for {0}".format(id(self)))
         if not self._datasources:
             self.update_cache()
-        print("Returning DS cache for {0}".format(id(self)))
-        print("self._datasources = {0}".format(self._datasources.keys()))
         return self._datasources
 
     @property
-    def dses(self):
-        return self.datasources.keys()
+    def ds_ids(self):
+        return sorted(self.datasources.keys())
 
-    def sorted_list(self, ds):
+    def sorted_list(self):
+        dss = self.datasources.values()
+        dss.sort(key=lambda x: x['id'])
+        return dss
+
+    def priority_list(self, ds):
         dss = self.datasources.copy()
         first = dss.pop(ds)
         rest = dss.values()
@@ -38,11 +39,9 @@ class Datasources:
         return [first] + rest
 
     def update_cache(self):
-        print("Rebuilding DS cache for {0}".format(id(self)))
         self._datasources = {ds['id']: ds for ds in self.db.select(self.table)}
 
     def clear_cache(self):
-        print("Clearing DS cache for {0}".format(id(self)))
         self._datasources = {}
 
     def set(self, ds, **kwargs):
@@ -76,23 +75,23 @@ class Datasources:
     def create_datasource(self, name):
         if not self.validate_ds_name(name):
             return -1
-        id = self.db.insert(self.table, name=name)
-        r = self.create_ds_tables(id)
+        ds_id = self.db.insert(self.table, name=name)
+        r = self.create_ds_tables(ds_id)
         self.clear_cache()
         return r
 
-    def remove_datasource(self, id):
+    def remove_datasource(self, ds_id):
         settingsModel = settings.Settings()
-        ids = self.dses
+        ids = self.ds_ids
 
         # check id is valid
-        if id not in ids:
+        if ds_id not in ids:
             raise KeyError("Invalid ID: {0} given; {1} available".format(id, ids))
 
         # select other data source in Settings
         alt_id = -1
         for n in ids:
-            if n != id:
+            if n != ds_id:
                 alt_id = n
                 break
         if alt_id == -1:
@@ -100,12 +99,12 @@ class Datasources:
         settingsModel['datasource'] = alt_id
 
         # remove from live_dest if selected
-        if settingsModel['live_dest'] == id:
+        if settingsModel['live_dest'] == ds_id:
             settingsModel['live_dest'] = None
 
         # remove from Datasources
-        self.db.delete(self.table, "id={0}".format(int(id)))
+        self.db.delete(self.table, "id={0}".format(int(ds_id)))
         # Drop relevant tables
-        replacements = {"id": int(id)}
+        replacements = {"id": int(ds_id)}
         dbaccess.exec_sql(self.db, self.DROP_SQL, replacements)
         self.clear_cache()

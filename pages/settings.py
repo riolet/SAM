@@ -200,7 +200,7 @@ class Settings(base.HeadlessPost):
     def encode_post_response(self, response):
         return {'result': response,
                 'settings': self.settingsModel.copy(),
-                'datasources': self.dsModel.sorted_list(self.settingsModel['datasource'])}
+                'datasources': self.dsModel.sorted_list()}
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
@@ -208,7 +208,7 @@ class Settings(base.HeadlessPost):
             return base.HeadlessPost.GET(self)
 
         settings = self.settingsModel.copy()
-        datasources = self.dsModel.datasources
+        datasources = self.dsModel.sorted_list()
         importers = self.get_available_importers()
 
         page = str(common.render._head(self.pageTitle,

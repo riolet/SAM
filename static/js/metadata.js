@@ -986,6 +986,7 @@ function requestQuickInfo(event) {
             if (!response.quick_info) {
               console.error("Error requesting quick info:");
               console.log(response);
+              present_quick_info({"message": "Waiting"});
               return;
             }
             // Render into browser

@@ -34,11 +34,9 @@ class Settings:
         return self._settings.keys()
 
     def update_cache(self):
-        print("Rebuilding settings cache for {0}".format(id(self)))
         self._settings = dict(self.db.select(self.table, limit=1).first())
 
     def clear_cache(self):
-        print("Clearing settings cache for {0}".format(id(self)))
         self._settings = {}
 
     def set(self, **kwargs):

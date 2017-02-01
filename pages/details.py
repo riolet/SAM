@@ -4,6 +4,7 @@ import re
 import base
 import models.details
 import models.nodes
+import models.links
 
 
 # This class is for getting the main selection details, such as ins, outs, and ports.
@@ -63,6 +64,7 @@ class Details(base.Headless):
         # self.ip_range = (0, 4294967295)
         self.detailsModel = None
         self.nodesModel = models.nodes.Nodes()
+        self.linksModel = models.links.Links()
 
     def decode_get_request(self, data):
         # data source
@@ -83,9 +85,10 @@ class Details(base.Headless):
             tstart = int(data.get('tstart'))
             tend = int(data.get('tend'))
         except ValueError:
-            raise base.MalformedRequest("Time range cannot be read. Check formatting")
+            raise base.MalformedRequest("Time range ({0} .. {1}) cannot be read. Check formatting"
+                                        .format(data.get('tstart'), data.get('tend')))
         except (KeyError, TypeError):
-            t_range = dbaccess.get_timerange(ds)
+            t_range = self.linksModel.get_timerange(ds)
             tstart = t_range['min']
             tend = t_range['max']
 

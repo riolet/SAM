@@ -2,10 +2,9 @@ import common
 import dbaccess
 import json
 import web
-import time
-from datetime import datetime
 import re
-from models.settings import Settings
+import models.settings
+import models.links
 
 
 class Stats:
@@ -13,22 +12,22 @@ class Stats:
     stats = []
 
     def __init__(self):
-        self.settings = Settings()
-        self.prefix = "ds_{0}_".format(self.settings['datasource'])
+        self.settingsModel = models.settings.Settings()
 
-    def collect_stats(self):
+    def collect_stats(self, ds):
+        table_links = "ds_{ds}_Links".format(ds=ds)
 
         rows = common.db.query("SELECT dst AS 'Address' "
-                               "FROM {prefix}Links GROUP BY Address;".format(prefix=self.prefix))
+                               "FROM {table_links} GROUP BY Address;".format(table_links=table_links))
         destIPs = len(rows)
         self.stats.append(("Unique destination IP addresses:", str(destIPs)))
 
         rows = common.db.query("SELECT src AS 'Address' "
-                               "FROM {prefix}Links GROUP BY Address;".format(prefix=self.prefix))
+                               "FROM {table_links} GROUP BY Address;".format(table_links=table_links))
         self.stats.append(("Unique source IP addresses:", str(len(rows))))
 
         rows = common.db.query("SELECT DISTINCT port AS 'Port' "
-                               "FROM {prefix}Links;".format(prefix=self.prefix))
+                               "FROM {table_links};".format(table_links=table_links))
 
         lrows = rows.list()
         self.stats.append(("Unique destination ports:", str(len(lrows))))
@@ -41,8 +40,8 @@ class Stats:
 
         rows = common.db.query(
             "SELECT dst AS 'Address', COUNT(DISTINCT port) AS 'Ports', COUNT(links) AS 'Connections' "
-            "FROM {prefix}Links GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;"
-                .format(prefix=self.prefix))
+            "FROM {table_links} GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;"
+                .format(table_links=table_links))
         if len(rows) > 0:
             lrows = rows.list()
             self.stats.append(("Max ports for one destination: ", str(lrows[0]['Ports'])))
@@ -53,10 +52,10 @@ class Stats:
                 self.stats.append(("Percent of destinations with fewer than 10 ports: ", "{0:0.3f}%"
                                    .format((destIPs - count) * 100 / float(destIPs))))
 
-        rows = common.db.query("SELECT 1 FROM {prefix}Links GROUP BY src, dst, port;".format(prefix=self.prefix))
+        rows = common.db.query("SELECT 1 FROM {table_links} GROUP BY src, dst, port;".format(table_links=table_links))
         self.stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(rows))))
-        rows = common.db.query("SELECT SUM(links) AS 'links' FROM {prefix}Links "
-                               "GROUP BY src, dst, port HAVING links > 100;".format(prefix=self.prefix))
+        rows = common.db.query("SELECT SUM(links) AS 'links' FROM {table_links} "
+                               "GROUP BY src, dst, port HAVING links > 100;".format(table_links=table_links))
         self.stats.append(("Number of distinct connections occurring more than 100 times:", str(len(rows))))
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
@@ -65,24 +64,31 @@ class Stats:
         if "q" in get_data:
             query = get_data['q']
             if query == "timerange":
-                ds_match = re.search("(\d+)", get_data.get('ds', "0"))
+                linksModel = models.links.Links()
+                ds_match = re.search("(\d+)", get_data.get('ds', ''))
                 if ds_match:
                     ds = int(ds_match.group())
                 else:
-                    ds = 0
+                    ds = self.settingsModel['datasource']
                 web.header("Content-Type", "application/json")
-                return json.dumps(dbaccess.get_timerange(ds))
+                return json.dumps(linksModel.get_timerange(ds))
             elif query == "protocols":
-                ds_match = re.search("(\d+)", get_data.get('ds', "0"))
+                linksModel = models.links.Links()
+                ds_match = re.search("(\d+)", get_data.get('ds', ''))
                 if ds_match:
                     ds = int(ds_match.group())
                 else:
-                    ds = 0
+                    ds = self.settingsModel['datasource']
                 web.header("Content-Type", "application/json")
-                return json.dumps(dbaccess.get_protocol_list(ds))
+                return json.dumps(linksModel.get_protocol_list(ds))
 
         else:
-            self.collect_stats()
+            ds_match = re.search("(\d+)", get_data.get('ds', ''))
+            if ds_match:
+                ds = int(ds_match.group())
+            else:
+                ds = self.settingsModel['datasource']
+            self.collect_stats(ds)
             return str(common.render._head(self.pageTitle)) \
                    + str(common.render._header(common.navbar, self.pageTitle)) \
                    + str(common.render.stats(self.stats)) \
