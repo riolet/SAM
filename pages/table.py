@@ -3,6 +3,11 @@ import web
 import filters
 import dbaccess
 import re
+import base
+import models.tables
+import models.nodes
+import models.datasources
+import models.settings
 
 
 def role_text(ratio):
@@ -179,81 +184,135 @@ class Columns(object):
 
 
 class Table(object):
+    default_page = 1
+    default_page_size = 10
+    default_sort_column = 0
+    default_sort_direction = 'asc'
+    sort_directions = ['asc', 'desc']
+    download_max = 1000000
+
+
     def __init__(self):
         self.pageTitle = "Table View"
+        self.inbound = web.input()
+        self.request = None
+        self.response = None
+        self.outbound = None
+        self.tableModel = None
+        self.nodesModel = models.nodes.Nodes()
         self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
-        self.dses = None
-        self.ds = None
 
-    def filters(self, GET_data):
+    def decode_filters(self, data):
         fs = []
-        if "filters" in GET_data:
-            ds, fs = filters.readEncoded(GET_data["filters"])
-            self.ds = ds
-        return fs
+        ds = None
+        if "filters" in data:
+            ds, fs = filters.readEncoded(data["filters"])
+        return ds, fs
 
-    def page(self, GET_data):
-        page = 1
-        if 'page' in GET_data:
-            try:
-                page = int(GET_data['page'])
-            except:
-                page = 1
-        return page
+    def decode_order(self, data):
+        if 'sort' not in data:
+            return self.default_sort_column, self.default_sort_direction
 
-    def page_size(self, GET_data):
-        page_size = 10
-        if 'page_size' in GET_data:
-            try:
-                page_size = int(GET_data['page_size'])
-            except:
-                page_size = 10
-        return page_size
-
-    def get_ds(self, GET_data):
-        settings = dbaccess.get_settings(all=True)
-
-        if self.ds:
-            ds = self.ds
+        sort = data['sort'].split(",")
+        try:
+            column = int(sort[0])
+        except ValueError:
+            column = self.default_sort_column
+        if len(sort) == 2 and sort[1] in self.sort_directions:
+            direction = sort[1]
         else:
-            ds = settings['datasource']['id']
-            self.ds = ds
+            direction = self.default_sort_direction
+        return column, direction
 
-        # put default datasource at the head of the list
-        self.dses = [datasource for datasource in settings['datasources']]
-        for i in range(len(self.dses)):
-            if self.dses[i]['id'] == ds:
-                self.dses.insert(0, self.dses.pop(i))
-                break
+    def decode_get_request(self, data):
+        ds, filters = self.decode_filters(data)
 
-        return ds
+        # fall back to default data source if not provided in query string.
+        if not ds:
+            settingsModel = models.settings.Settings()
+            ds = settingsModel['datasource']
 
-    def rows(self, ds, filters, page, page_size, order):
+        try:
+            page = int(data.get('page', self.default_page))
+        except (ValueError, TypeError):
+            raise base.MalformedRequest("Page number ('{0}') not understood.".format(data.get('page')))
+
+        try:
+            page_size = int(data.get('page_size', self.default_page_size))
+        except (ValueError, TypeError):
+            raise base.MalformedRequest("Page size ('{0}') not understood.".format(data.get('page')))
+
+        order_by, order_dir = self.decode_order(data)
+
+        download = data.get('download', '0') == 1
+        if download:
+            page = 1
+            page_size = self.download_max
+
+        request = {
+            'download': download,
+            'ds': ds,
+            'filters': filters,
+            'page': page - 1,  # The page-1 is because page 1 should start with result 0
+            'page_size': page_size,
+            'order_by': order_by,
+            'order_dir': order_dir,
+        }
+
+        return request
+
+    def perform_get_command(self, request):
         """
-        :param ds: data source to display results from
-        :param filters:  List of filter objects (see filters.py)
-        :param page: page to return (1 is first page)
-        :param page_size: number of result rows to return
-        :param order: tuple of (column, direction) to sort results by.
+        :param request: has members:
+         'download'
+         'ds'
+         'filters'
+         'page'
+         'page_size'
+         'order'
         :return: a list of lists of tuples.
             return is a list of [rows]
             row is a list of [columns]
             column is a tuple of (name, value)
         """
-        # The page-1 is because page 1 should start with result 0;
-        # Note: get_table_info returns page_size + 1 results,
-        #       so that IF it gets filled I know there's at least 1 more page to display.
-        data = dbaccess.get_table_info(ds, filters, page - 1, page_size, order[0], order[1])
+        self.tableModel = models.tables.Table(self.request['ds'])
+        data = self.tableModel.get_table_info(request['filters'],
+                                              request['page'],
+                                              request['page_size'],
+                                              request['order_by'],
+                                              request['order_dir'])
         rows = []
         for tr in data:
             rows.append(self.columns.translate_row(tr))
         return rows
 
-    def tags(self):
-        return dbaccess.get_tag_list()
+    def encode_get_response(self, response):
+        headers = self.columns.headers()
+        if self.request['download']:
+            headers = [h[1] for h in headers]
+            for row in response:
+                for icol in range(len(row)):
+                    if row[icol][0] == 'tags':
+                        row[icol] = " ".join([" ".join(row[icol][1][0]), " ".join(row[icol][1][1])])
+                    else:
+                        row[icol] = str(row[icol][1])
+            outbound = [headers] + response
+        else:
+            outbound = {
+                'rows': response,
+                'headers': headers,
+                'tags': self.nodesModel.get_tag_list(),
+                'envs': self.nodesModel.get_env_list(),
+                'nextPage': self.next_page(response, self.request['page'], self.request['page_size']),
+                'prevPage': self.prev_page(self.request['page']),
+                'spread': self.spread(response, self.request['page'], self.request['page_size']),
+            }
+        return outbound
 
-    def envs(self):
-        return dbaccess.get_env_list()
+    def get_dses(self):
+        datasourcesModel = models.datasources.Datasources()
+        ds = self.request['ds']
+        return datasourcesModel.sorted_list(ds)
 
     def next_page(self, rows, page, page_size):
         if len(rows) > page_size:
@@ -262,105 +321,69 @@ class Table(object):
             if page_i != -1:
                 ampPos = path.find('&', page_i)
                 if ampPos != -1:
-                    nextPage = "{0}page={1}{2}".format(path[:page_i], page + 1, path[ampPos:])
+                    nextPage = "{0}page={1}{2}".format(path[:page_i], page + 2, path[ampPos:])
                 else:
-                    nextPage = "{0}page={1}".format(path[:page_i], page + 1)
+                    nextPage = "{0}page={1}".format(path[:page_i], page + 2)
             else:
                 if "?" in path:
-                    nextPage = path + "&page={0}".format(page + 1)
+                    nextPage = path + "&page={0}".format(page + 2)
                 else:
-                    nextPage = path + "?page={0}".format(page + 1)
+                    nextPage = path + "?page={0}".format(page + 2)
         else:
             nextPage = False
         return nextPage
 
     def prev_page(self, page):
-        if page > 1:
+        if page >= 1:
             path = web.ctx.fullpath
             page_i = path.find("page=")
             if page_i != -1:
                 ampPos = path.find('&', page_i)
                 if ampPos != -1:
-                    prevPage = "{0}page={1}{2}".format(path[:page_i], page - 1, path[ampPos:])
+                    prevPage = "{0}page={1}{2}".format(path[:page_i], page, path[ampPos:])
                 else:
-                    prevPage = "{0}page={1}".format(path[:page_i], page - 1)
+                    prevPage = "{0}page={1}".format(path[:page_i], page)
             else:
                 if "?" in path:
-                    prevPage = path + "&page={0}".format(page - 1)
+                    prevPage = path + "&page={0}".format(page)
                 else:
-                    prevPage = path + "?page={0}".format(page - 1)
+                    prevPage = path + "?page={0}".format(page)
         else:
             prevPage = False
         return prevPage
 
     def spread(self, rows, page, page_size):
         if rows:
-            start = (page - 1) * page_size + 1
+            start = (page) * page_size + 1
             end = start + len(rows[:page_size]) - 1
             spread = "Results: {0} to {1}".format(start, end)
         else:
             spread = "No matching results."
         return spread
 
-    def order(self, GET_data):
-        if 'sort' not in GET_data:
-            return 0, 'asc'
-
-        sort = GET_data['sort'].split(",")
-        try:
-            i = int(sort[0])
-        except ValueError:
-            i = 0
-        if len(sort) == 2 and sort[1] in ('asc', 'desc'):
-            direction = sort[1]
-        else:
-            direction = 'asc'
-        return i, direction
-
-    def get_csv_download(self, GET_data):
-        filters = self.filters(GET_data)
-        order = self.order(GET_data)
-        headers = self.columns.headers()
-        ds = self.get_ds(GET_data)
-        rows = self.rows(ds, filters, 1, 1000000, order)
-        #stringify rows
-        for row in rows:
-            for icol in range(len(row)):
-                if row[icol][0] == 'tags':
-                    row[icol] = " ".join([" ".join(row[icol][1][0]), " ".join(row[icol][1][1])])
-                else:
-                    row[icol] = str(row[icol][1])
-        headers = [h[1] for h in headers]
-
-        table = [headers] + rows
-        web.header("Content-Type", "application/csv")
-        return csv_encode(table, ',', '\r\n', '\\')
-
     def GET(self):
-        GET_data = web.input()
-        download = bool('download' in GET_data and GET_data['download'] == '1')
-        if download:
-            return self.get_csv_download(GET_data)
+        self.request = self.decode_get_request(self.inbound)
+        self.response = self.perform_get_command(self.request)
+        self.outbound = self.encode_get_response(self.response)
 
-        filters = self.filters(GET_data)
+        if self.request['download']:
+            web.header("Content-Type", "application/csv")
+            return csv_encode(self.outbound, ',', '\r\n', '\\')
 
-        page = self.page(GET_data)
-        page_size = self.page_size(GET_data)
-        order = self.order(GET_data)
-        ds = self.get_ds(GET_data)
-        rows = self.rows(ds, filters, page, page_size, order)
-        tags = self.tags()
-        envs = self.envs()
-        headers = self.columns.headers()
-
-        nextPage = self.next_page(rows, page, page_size)
-        prevPage = self.prev_page(page)
-        spread = self.spread(rows, page, page_size)
-
-        return str(common.render._head(self.pageTitle,
+        html = str(common.render._head(self.pageTitle,
                                        stylesheets=["/static/css/table.css"],
                                        scripts=["/static/js/table.js",
-                                                "/static/js/table_filters.js"])) \
-               + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.table(tags, envs, self.dses, headers, order, rows[:page_size], spread, prevPage, nextPage)) \
-               + str(common.render._tail())
+                                                "/static/js/table_filters.js"]))
+        html += str(common.render._header(common.navbar, self.pageTitle))
+        html += str(common.render.table(
+            self.outbound['tags'],
+            self.outbound['envs'],
+            self.get_dses(),
+            self.outbound['headers'],
+            (self.request['order_by'], self.request['order_dir']),
+            self.outbound['rows'][:self.request['page_size']],
+            self.outbound['spread'],
+            self.outbound['prevPage'],
+            self.outbound['nextPage']))
+        html += str(common.render._tail())
+        return html

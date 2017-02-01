@@ -30,6 +30,13 @@ class Datasources:
     def dses(self):
         return self.datasources.keys()
 
+    def sorted_list(self, ds):
+        dss = self.datasources.copy()
+        first = dss.pop(ds)
+        rest = dss.values()
+        rest.sort(key=lambda x: x['id'])
+        return [first] + rest
+
     def update_cache(self):
         print("Rebuilding DS cache for {0}".format(id(self)))
         self._datasources = {ds['id']: ds for ds in self.db.select(self.table)}

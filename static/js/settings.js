@@ -293,7 +293,7 @@ function rebuild_tabs(settings, datasources) {
 
     //for each ds,
     //   add the ds
-    Object.values(datasources).forEach(addDSTab);
+    datasources.forEach(addDSTab);
 
     //build tabs
     let tabs = $(".tabular.menu .item")
