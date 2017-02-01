@@ -1,4 +1,4 @@
-CREATE TABLE If NOT EXISTS ds_{id}_Syslog
+CREATE TABLE If NOT EXISTS s{acct}_ds{id}_Syslog
 (entry             INT UNSIGNED NOT NULL AUTO_INCREMENT
 ,src               INT UNSIGNED NOT NULL
 ,srcport           INT NOT NULL
@@ -17,7 +17,7 @@ CREATE TABLE If NOT EXISTS ds_{id}_Syslog
 -- -----------------------
 -- Create the Temp Link tables
 -- -----------------------
-CREATE TABLE IF NOT EXISTS ds_{id}_staging_Links
+CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_staging_Links
 (src               INT UNSIGNED NOT NULL
 ,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS ds_{id}_staging_Links
 -- -----------------------
 -- Create the Link tables
 -- -----------------------
-CREATE TABLE IF NOT EXISTS ds_{id}_Links
+CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_Links
 (src               INT UNSIGNED NOT NULL
 ,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS ds_{id}_Links
 ,CONSTRAINT PK{id}Links PRIMARY KEY (src, dst, port, protocol, timestamp)
 );
 
-CREATE TABLE IF NOT EXISTS ds_{id}_LinksIn
+CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_LinksIn
 (src_start         INT UNSIGNED NOT NULL
 ,src_end           INT UNSIGNED NOT NULL
 ,dst_start         INT UNSIGNED NOT NULL
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS ds_{id}_LinksIn
 ,CONSTRAINT FK{id}LinksInDst FOREIGN KEY (dst_start, dst_end) REFERENCES Nodes (ipstart, ipend)
 );
 
-CREATE TABLE IF NOT EXISTS ds_{id}_LinksOut
+CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_LinksOut
 (src_start         INT UNSIGNED NOT NULL
 ,src_end           INT UNSIGNED NOT NULL
 ,dst_start         INT UNSIGNED NOT NULL
