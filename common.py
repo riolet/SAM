@@ -4,21 +4,47 @@ import web
 base_path = os.path.dirname(__file__)
 
 
-def IPtoString(ipNumber):
+def parse_sql_file(path, replacements):
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    # remove comment lines
+    lines = [i for i in lines if not i.startswith("--")]
+    # join into one long string
+    script = " ".join(lines)
+    # do any necessary string replacements
+    if replacements:
+        script = script.format(**replacements)
+    # split string into a list of commands
+    commands = script.split(";")
+    # ignore empty statements (like trailing newlines)
+    commands = filter(lambda x: bool(x.strip()), commands)
+    return commands
+
+
+def exec_sql(connection, path, replacements=None):
+    if not replacements:
+        commands = parse_sql_file(path, {})
+    else:
+        commands = parse_sql_file(path, replacements)
+    for command in commands:
+        connection.query(command)
+
+
+def IPtoString(ip_number):
     # type: (int) -> str
     """
     Converts an IP address from an integer to dotted decimal notation.
     Args:
-        ipNumber: an unsigned 32-bit integer representing an IP address
+        ip_number: an unsigned 32-bit integer representing an IP address
 
     Returns: The IP address as a dotted-decimal string.
 
     """
     return "{0}.{1}.{2}.{3}".format(
-        (ipNumber & 0xFF000000) >> 24,
-        (ipNumber & 0xFF0000) >> 16,
-        (ipNumber & 0xFF00) >> 8,
-        ipNumber & 0xFF)
+        (ip_number & 0xFF000000) >> 24,
+        (ip_number & 0xFF0000) >> 16,
+        (ip_number & 0xFF00) >> 8,
+        ip_number & 0xFF)
 
 
 def IPtoInt(a, b, c, d):
