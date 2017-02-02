@@ -44,8 +44,8 @@ class Preprocessor:
             'table_syslog': 's{acct}_ds{id}_Syslog'.format(acct=self.sub_id, id=self.ds_id),
             'table_staging_links': 's{acct}_ds{id}_StagingLinks'.format(acct=self.sub_id, id=self.ds_id),
             'table_links': 's{acct}_ds{id}_Links'.format(acct=self.sub_id, id=self.ds_id),
-            'table_links_in': 's{acct}_ds{id}_Links'.format(acct=self.sub_id, id=self.ds_id),
-            'table_links_out': 's{acct}_ds{id}_Links'.format(acct=self.sub_id, id=self.ds_id)
+            'table_links_in': 's{acct}_ds{id}_LinksIn'.format(acct=self.sub_id, id=self.ds_id),
+            'table_links_out': 's{acct}_ds{id}_LinksOut'.format(acct=self.sub_id, id=self.ds_id)
         } 
 
     def syslog_to_nodes(self):
@@ -65,7 +65,7 @@ class Preprocessor:
                     SELECT dst DIV 16777216 AS 'ip'
                     FROM {table_syslog}
                 ) AS log
-                LEFT JOIN Nodes AS `filter`
+                LEFT JOIN {table_nodes} AS `filter`
                     ON (log.ip * 16777216) = `filter`.ipstart AND ((log.ip + 1) * 16777216 - 1) = `filter`.ipend
                 WHERE filter.ipstart IS NULL;
             """.format(**self.tables)
@@ -74,7 +74,7 @@ class Preprocessor:
 
         # Get all the /16 nodes. Load these into Nodes16
         query = """
-                INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+                INSERT INTO {table_nodes} (ipstart, ipend, subnet, x, y, radius)
                 SELECT (log.ip * 65536) AS 'ipstart'
                     , ((log.ip + 1) * 65536 - 1) AS 'ipend'
                     , 16 AS 'subnet'
@@ -88,9 +88,9 @@ class Preprocessor:
                     SELECT dst DIV 65536 AS 'ip'
                     FROM {table_syslog}
                 ) AS log
-                JOIN Nodes AS parent
+                JOIN {table_nodes} AS parent
                     ON parent.subnet=8 && parent.ipstart = (log.ip DIV 256 * 16777216)
-                LEFT JOIN Nodes AS `filter`
+                LEFT JOIN {table_nodes} AS `filter`
                     ON (log.ip * 65536) = `filter`.ipstart AND ((log.ip + 1) * 65536 - 1) = `filter`.ipend
                 WHERE filter.ipstart IS NULL;
                 """.format(**self.tables)
@@ -98,7 +98,7 @@ class Preprocessor:
 
         # Get all the /24 nodes. Load these into Nodes24
         query = """
-                INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+                INSERT INTO {table_nodes} (ipstart, ipend, subnet, x, y, radius)
                 SELECT (log.ip * 256) AS 'ipstart'
                     , ((log.ip + 1) * 256 - 1) AS 'ipend'
                     , 24 AS 'subnet'
@@ -112,9 +112,9 @@ class Preprocessor:
                     SELECT dst DIV 256 AS 'ip'
                     FROM {table_syslog}
                 ) AS log
-                JOIN Nodes AS parent
+                JOIN {table_nodes} AS parent
                     ON parent.subnet=16 && parent.ipstart = (log.ip DIV 256 * 65536)
-                LEFT JOIN Nodes AS `filter`
+                LEFT JOIN {table_nodes} AS `filter`
                     ON (log.ip * 256) = `filter`.ipstart AND ((log.ip + 1) * 256 - 1) = `filter`.ipend
                 WHERE filter.ipstart IS NULL;
                 """.format(**self.tables)
@@ -122,7 +122,7 @@ class Preprocessor:
 
         # Get all the /32 nodes. Load these into Nodes32
         query = """
-                INSERT INTO Nodes (ipstart, ipend, subnet, x, y, radius)
+                INSERT INTO {table_nodes} (ipstart, ipend, subnet, x, y, radius)
                 SELECT log.ip AS 'ipstart'
                     , log.ip AS 'ipend'
                     , 32 AS 'subnet'
@@ -136,9 +136,9 @@ class Preprocessor:
                     SELECT dst AS 'ip'
                     FROM {table_syslog}
                 ) AS log
-                JOIN Nodes AS parent
+                JOIN {table_nodes} AS parent
                     ON parent.subnet=24 && parent.ipstart = (log.ip DIV 256 * 256)
-                LEFT JOIN Nodes AS `filter`
+                LEFT JOIN {table_nodes} AS `filter`
                     ON log.ip = `filter`.ipstart AND log.ip = `filter`.ipend
                 WHERE filter.ipstart IS NULL;
                 """.format(**self.tables)

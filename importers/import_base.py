@@ -33,6 +33,7 @@ Usage:
         self.dsModel = None
         self.datasource = None
         self.ds = None
+        self.failed_attempts = 0
 
     @staticmethod
     def ip_to_int(a, b, c, d):
@@ -211,7 +212,7 @@ Usage:
                 print("Cannot connect to database.")
                 sys.exit(4)
 
-        table_name = "ds{ds}_Syslog".format(ds=self.ds)
+        table_name = "s{acct}_ds{ds}_Syslog".format(acct=common.get_subscription(), ds=self.ds)
 
         try:
             truncated_rows = rows[:count]
@@ -228,12 +229,17 @@ Usage:
             # >>> db.multiple_insert(table_name, values=values)
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
+            self.failed_attempts += 1
             print("Error inserting into database:")
             print("\t{0}".format(e))
             import integrity
-            if integrity.check_and_fix_db_access() == 0:
-                print("Resuming...")
-                self.insert_data(rows, count)
+            if self.failed_attempts < 2:
+                if integrity.check_and_fix_db_access() == 0:
+                    print("Resuming...")
+                    self.insert_data(rows, count)
+                else:
+                    print("Aborting...")
+                    sys.exit(2)
             else:
                 print("Critical failure. Aborting.")
                 sys.exit(2)
