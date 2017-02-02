@@ -1,21 +1,25 @@
 import common
-import dbaccess
 import json
 import web
 import re
 import models.settings
 import models.links
+import base
 
 
-class Stats:
+class Stats(base.Headless):
     pageTitle = "Stats"
-    stats = []
 
     def __init__(self):
+        base.Headless.__init__(self)
+        #TODO: restructure this file.
+        self.sub = common.get_subscription()
         self.settingsModel = models.settings.Settings()
+        self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)
+        self.stats = []
 
     def collect_stats(self, ds):
-        table_links = "ds_{ds}_Links".format(ds=ds)
+        table_links = self.table_links.format(id=ds)
 
         rows = common.db.query("SELECT dst AS 'Address' "
                                "FROM {table_links} GROUP BY Address;".format(table_links=table_links))
@@ -58,36 +62,51 @@ class Stats:
                                "GROUP BY src, dst, port HAVING links > 100;".format(table_links=table_links))
         self.stats.append(("Number of distinct connections occurring more than 100 times:", str(len(rows))))
 
+    @staticmethod
+    def decode_ds(data):
+        ds_match = re.search("(\d+)", data.get('ds', ''))
+        settingsModel = models.settings.Settings()
+        default_ds = settingsModel['datasource']
+
+        if ds_match:
+            try:
+                ds = int(ds_match.group())
+            except ValueError:
+                ds = default_ds
+        else:
+            ds = default_ds
+
+        return ds
+
+    def decode_get_request(self, data):
+        query = data.get('q')
+        if not query:
+            raise base.RequiredKey('query', 'q')
+
+        ds = self.decode_ds(data)
+
+        return {'query': query, 'ds': ds}
+
+    def perform_get_command(self, request):
+        if request['query'] == 'timerange':
+            linksModel = models.links.Links(request['ds'])
+            return linksModel.get_protocol_list()
+        elif request['query'] == 'protocols':
+            linksModel = models.links.Links(request['ds'])
+            return linksModel.get_protocol_list()
+        else:
+            raise base.MalformedRequest("Query not recognized.")
+
+    def encode_get_response(self, response):
+        return response
+
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        get_data = web.input()
-        if "q" in get_data:
-            query = get_data['q']
-            if query == "timerange":
-                linksModel = models.links.Links()
-                ds_match = re.search("(\d+)", get_data.get('ds', ''))
-                if ds_match:
-                    ds = int(ds_match.group())
-                else:
-                    ds = self.settingsModel['datasource']
-                web.header("Content-Type", "application/json")
-                return json.dumps(linksModel.get_timerange(ds))
-            elif query == "protocols":
-                linksModel = models.links.Links()
-                ds_match = re.search("(\d+)", get_data.get('ds', ''))
-                if ds_match:
-                    ds = int(ds_match.group())
-                else:
-                    ds = self.settingsModel['datasource']
-                web.header("Content-Type", "application/json")
-                return json.dumps(linksModel.get_protocol_list(ds))
+        if "q" in self.inbound:
+            return base.Headless.GET(self)
 
         else:
-            ds_match = re.search("(\d+)", get_data.get('ds', ''))
-            if ds_match:
-                ds = int(ds_match.group())
-            else:
-                ds = self.settingsModel['datasource']
+            ds = self.decode_ds(self.inbound)
             self.collect_stats(ds)
             return str(common.render._head(self.pageTitle)) \
                    + str(common.render._header(common.navbar, self.pageTitle)) \
