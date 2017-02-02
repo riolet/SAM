@@ -168,6 +168,8 @@ db_quiet = web.database(**dbconfig.params)
 web.config.debug = old
 del old
 
-
 demo_subscription_id = 0
-subscription_id = demo_subscription_id
+
+
+def get_subscription():
+    return demo_subscription_id

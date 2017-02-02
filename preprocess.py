@@ -13,14 +13,18 @@ import models.datasources
 class InvalidDatasource(ValueError):
     pass
 
+
 def determine_datasource(sub, argv):
     dsModel = models.datasources.Datasources(sub)
     ds_id = None
     if len(argv) >= 2:
         requested_ds = argv[1]
-        for ds in dsModel.datasources.values():
-            if ds['name'] == requested_ds:
-                ds_id = ds['id']
+        for datasource in dsModel.datasources.values():
+            if datasource['name'] == requested_ds:
+                ds_id = datasource['id']
+                break
+            if str(datasource['id']) == requested_ds:
+                ds_id = datasource['id']
                 break
 
     if ds_id is not None:
@@ -550,15 +554,15 @@ class Preprocessor:
         db_transaction = self.db.transaction()
         try:
             print("importing nodes...")
-            self.syslog_to_nodes() # import all nodes into the shared Nodes table
+            self.syslog_to_nodes()  # import all nodes into the shared Nodes table
             print("importing links...")
-            self.syslog_to_staging_links() # import all link info into staging tables
+            self.syslog_to_staging_links()  # import all link info into staging tables
             print("copying from staging to master...")
-            self.staging_links_to_links() # copy data from staging to master tables
+            self.staging_links_to_links()  # copy data from staging to master tables
             print("precomputing aggregates...")
-            self.links_to_links_in_out()
+            self.links_to_links_in_out()  # merge new data into the existing aggregates
             print("deleting from staging...")
-            self.staging_to_null() # delete all data from staging tables
+            self.staging_to_null()  # delete all data from staging tables
         except:
             db_transaction.rollback()
             print("Pre-processing rolled back.")
@@ -572,7 +576,7 @@ class Preprocessor:
 if __name__ == "__main__":
     error_number = integrity.check_and_fix_db_access()
     if error_number == 0:
-        subscription = common.subscription_id
+        subscription = common.get_subscription()
         try:
             ds = determine_datasource(subscription, sys.argv)
             processor = Preprocessor(common.db_quiet, subscription, ds)
@@ -582,4 +586,3 @@ if __name__ == "__main__":
             print("please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
     else:
         print("Preprocess aborted. Database check failed.")
-

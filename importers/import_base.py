@@ -1,7 +1,8 @@
 import sys
 import os
-dbaccess = None
 common = None
+Datasources = None
+
 
 class BaseImporter:
     mysql_time_format = '%Y-%m-%d %H:%M:%S'
@@ -29,8 +30,8 @@ Usage:
     python {0} <input-file> <data source>
 
 """.format(sys.argv[0])
+        self.dsModel = None
         self.datasource = None
-        self.settings = None
         self.ds = None
 
     @staticmethod
@@ -184,32 +185,33 @@ Usage:
         if self.datasource is None:
             raise ValueError("No data source specified. Import aborted.")
 
-        global dbaccess
         global common
+        global Datasources
         if not self.ds:
             try:
-                import dbaccess
                 import common
-                self.settings = dbaccess.get_settings(all=True)
-                for datasource in self.settings['datasources']:
+                from models.datasources import Datasources
+                self.dsModel = Datasources(common.get_subscription())
+                for datasource in self.dsModel.datasources.values():
                     if datasource['name'] == self.datasource:
                         self.ds = datasource['id']
                         break
-                    if datasource['id'] == self.datasource:
+                    if str(datasource['id']) == self.datasource:
                         self.ds = datasource['id']
                         break
-                if self.ds == None:
+                if self.ds is None:
                     raise ValueError()
             except ValueError:
                 print("No data source matches name {0}.".format(self.datasource))
-                if self.settings:
-                    print("Data sources include: {0}".format(repr([ds['name'] for ds in self.settings['datasources']])))
+                if self.dsModel:
+                    ds_names = [ds['name'] for ds in self.dsModel.datasources.values()]
+                    print("Data sources include: {0}".format(', '.join(ds_names)))
                 sys.exit(5)
             except:
                 print("Cannot connect to database.")
                 sys.exit(4)
 
-        table_name = "ds_{ds}_Syslog".format(ds=self.ds)
+        table_name = "ds{ds}_Syslog".format(ds=self.ds)
 
         try:
             truncated_rows = rows[:count]
@@ -220,8 +222,10 @@ Usage:
                 print("Received keys: {0}".format(repr(rows[0].keys())))
                 sys.exit(3)
 
+            # multiple_insert example:
+            # >>> table_name = "my_table"
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
-            # >>> db.multiple_insert('person', values=values, _test=True)
+            # >>> db.multiple_insert(table_name, values=values)
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
             print("Error inserting into database:")
