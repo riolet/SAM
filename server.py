@@ -2,6 +2,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 import web
+import common
+import integrity
 
 # web.config.debug = False
 
@@ -18,6 +20,9 @@ urls = (
     '/settings', 'pages.settings.Settings',
     '/table', 'pages.table.Table',
 )
+
+# Validate the database format
+integrity.check_and_fix_integrity()
 
 if __name__ == "__main__":
     app = web.application(urls, globals())

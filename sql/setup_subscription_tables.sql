@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_Nodes
 ,x                 FLOAT(12,3) DEFAULT 0
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
-,CONSTRAINT PKNodes PRIMARY KEY (ipstart, ipend)
+,CONSTRAINT PK{acct}Nodes PRIMARY KEY (ipstart, ipend)
 ,INDEX nenv (env)
 );
 
@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS s{acct}_Tags
 (ipstart           INT UNSIGNED NOT NULL
 ,ipend             INT UNSIGNED NOT NULL
 ,tag               VARCHAR(32)
-,CONSTRAINT PKTags PRIMARY KEY (ipstart, ipend, tag)
-,CONSTRAINT FKTags FOREIGN KEY (ipstart, ipend) REFERENCES Nodes (ipstart, ipend)
+,CONSTRAINT PK{acct}Tags PRIMARY KEY (ipstart, ipend, tag)
+,CONSTRAINT FK{acct}Tags FOREIGN KEY (ipstart, ipend) REFERENCES s{acct}_Nodes (ipstart, ipend)
 );
 
 -- Create the table for port aliases
@@ -27,5 +27,5 @@ CREATE TABLE IF NOT EXISTS s{acct}_PortAliases
 ,active            BOOL NOT NULL DEFAULT TRUE
 ,name              VARCHAR(10) NOT NULL DEFAULT ""
 ,description       VARCHAR(255) NOT NULL DEFAULT ""
-,CONSTRAINT PKPortAliases PRIMARY KEY (port)
+,CONSTRAINT PK{acct}PortAliases PRIMARY KEY (port)
 );

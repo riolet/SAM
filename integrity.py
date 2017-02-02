@@ -1,14 +1,18 @@
 import common
-import dbaccess
 import web
 import os
 import json
 import re
 from MySQLdb import OperationalError
+import models.subscriptions
+import models.datasources
 
-shared_tables = ["Nodes", "Tags", "Datasources", "Ports", "PortAliases", "Settings"]
-tables_per_ds = ["staging_Links", "Links", "LinksIn", "LinksOut", "Syslog"]
-default_datasource_name = "default"
+shared_tables = ['Settings', 'Ports', 'Datasources']
+subscription_tables = ['Nodes', 'Tags', 'PortAliases']
+datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
+template_subscription_tables = map(lambda x: 's{acct}_' + x, subscription_tables)
+template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, datasource_tables)
+
 db = common.db_quiet
 
 
@@ -22,12 +26,10 @@ def check_db_access():
         connection.query("USE samapper")
         print("\tDatabase access confirmed")
     except OperationalError as e:
-        print("\tDatabase access error:")
+        print("\tERROR: Database access error:")
         print("\t\tError {0}: {1}".format(e[0], e[1]))
         errorCode = e[0]
     return errorCode
-
-
 def check_and_fix_db_access():
     print("Checking database access...")
     params = common.dbconfig.params.copy()
@@ -40,7 +42,7 @@ def check_and_fix_db_access():
     except OperationalError as e:
         errorCode = e[0]
         if e[0] == 1049:
-            print("\tDatabase {0} not found. Creating.".format(db))
+            print("\tERROR: Database {0} not found. Creating.".format(db))
             try:
                 connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
                 print("\tDatabase access restored.")
@@ -49,26 +51,12 @@ def check_and_fix_db_access():
                 print("\tError creating database: ")
                 print("\t\tError {0}: {1}".format(e[0], e[1]))
         elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
-            print("\tUnable to continue: invalid username or password")
+            print("\tERROR: Unable to continue: invalid username or password")
             print("\tCheck your config file: dbconfig_local.py")
         else:
-            print("\tUnable to continue: ")
+            print("\tERROR: Unable to continue: ")
             print("\t\tError {0}: {1}".format(e[0], e[1]))
     return errorCode
-
-
-def fill_port_table():
-    db.delete("Ports", "1=1")
-    with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'rb') as f:
-        port_data = json.loads("".join(f.readlines()))
-
-    ports = port_data["ports"].values()
-    for port in ports:
-        if len(port['name']) > 10:
-            port['name'] = port['name'][:10]
-        if len(port['description']) > 255:
-            port['description'] = port['description'][:255]
-    db.multiple_insert('Ports', values=ports)
 
 
 def check_shared_tables():
@@ -83,141 +71,170 @@ def check_shared_tables():
     else:
         print("\tShared tables confirmed")
     return missing_shared_tables
-
-
 def fix_shared_tables(missing_tables):
     print("Fixing shared tables...")
     if not missing_tables:
         print("\tNo tables to fix")
     else:
         print("\tRestoring missing tables: {0}".format(repr(missing_tables)))
-        dbaccess.exec_sql(db, os.path.join(common.base_path, 'sql/setup_shared_tables.sql'))
+        common.exec_sql(db, os.path.join(common.base_path, 'sql/setup_shared_tables.sql'))
         if "Ports" in missing_tables:
             print("\tPopulating port reference table with latest data")
             fill_port_table()
         print("\tShared Tables Fixed")
+def fill_port_table():
+    db.delete("Ports", "1=1")
+    with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'rb') as f:
+        port_data = json.loads("".join(f.readlines()))
 
-
-def fix_data_sources(issues):
-    print("Fixing data sources")
-    for table in issues.get('extra_tables', []):
-        print("\tRemoving extra table {0}".format(table))
-        db.query("DROP TABLE {0}".format(table))
-    for ds in issues.get('known_missing', []):
-        print("\tAdding data source (ds_{0}) known to be missing".format(ds))
-        # add tables for data source
-        dbaccess.create_ds_tables(ds)
-    for ds in issues.get('real_unknown', []):
-        print("\tRecording existing data source ds_{0}".format(ds))
-        # add ds to `Datasources`
-        db.insert("Datasources", id=ds, name="ds_{0}".format(ds))
-    if "need_to_add" in issues:
-        print("\tAdding default data source due to minimum requirement of 1.")
-        dsname = issues['need_to_add']
-        dbaccess.create_datasource(dsname)
-    for ds in issues.get('malformed', []):
-        print("\tRestoring tables for data source ds_{0}".format(ds))
-        dbaccess.create_ds_tables(ds)
-
-    print("\tData sources fixed")
-
-
-def check_data_sources():
-    print("Checking data sources...")
-    issues = {}
-    tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
-    known_datasources = list(db.query("SELECT * FROM Datasources"))
-    known_ds_ids = set([unicode(ds['id']) for ds in known_datasources])
-    real_datasources = set(re.findall(r"\bds_(\d+)_\w+", " ".join(tables)))
-    known_missing = known_ds_ids.difference(real_datasources)
-    real_unknown = real_datasources.difference(known_ds_ids)
-
-    # check each data source to see if it is missing tables
-    all_ds_ids = known_ds_ids.union(real_datasources)
-    incomplete_datasources = set()
-    for id in all_ds_ids:
-        expected = ["ds_{0}_{1}".format(id, table) for table in tables_per_ds]
-        for table in expected:
-            if table not in tables:
-                incomplete_datasources.add(id)
-
-    # check for extra data source tables
-    extra_tables = []
-    for ds in real_datasources:
-        prefix = "ds_{0}_".format(ds)
-        ds_tables = [table[len(prefix):] for table in tables if table.startswith(prefix)]
-        for table in ds_tables:
-            if table not in tables_per_ds:
-                extra_tables.append("{0}{1}".format(prefix, table))
-
-    if known_missing:
-        missing_names = [ds['name'] for ds in known_datasources if ds['id'] in known_missing]
-        print("\tData sources missing: {0}".format(missing_names))
-        issues['known_missing'] = known_missing
-    if real_unknown:
-        print("\tUnknown data sources discovered: {0}".format(real_unknown))
-        issues['real_unknown'] = real_unknown
-    if extra_tables:
-        print("\tUnexpected data source tables: {0}".format(repr(extra_tables)))
-        issues['extra_tables'] = extra_tables
-    if incomplete_datasources:
-        print("\tMalformed data source discovered: {0}".format(repr(incomplete_datasources)))
-        issues['malformed'] = incomplete_datasources
-    if not known_datasources and not real_unknown:
-        print("\tNo data sources found. At least 1 required.")
-        issues['need_to_add'] = default_datasource_name
-    if not issues:
-        print("\tData sources verified")
-    return issues
-
-
-def fix_settings(condition):
-    print("Fixing settings...")
-    if condition == 0:
-        print("\tNo fix needed")
-    else:
-        print("\tCreating settings")
-        db.delete("Settings", "1=1")
-        id = db.select("Datasources", what="id", limit=1)[0]['id']
-        db.insert("Settings", datasource=id)
-        print("\tSettings fixed")
+    ports = port_data["ports"].values()
+    for port in ports:
+        if len(port['name']) > 10:
+            port['name'] = port['name'][:10]
+        if len(port['description']) > 255:
+            port['description'] = port['description'][:255]
+    db.multiple_insert('Ports', values=ports)
 
 
 def check_settings():
     print("Checking settings...")
     settings = db.select("Settings")
     copies = len(settings)
-    errorCode = 0
     if copies == 0:
-        print("\tNo settings detected")
+        print("\tERROR: No settings detected")
         errorCode = -1
-    elif copies == 1:
-        print("\tSettings validated")
-        errorCode = 0
     else:
-        print("\tMultiple settings detected")
-        errorCode = copies
+        print("\tSettings exist")
+        errorCode = 0
     return errorCode
+def fix_settings(errorCode):
+    print("Fixing settings...")
+    if errorCode == 0:
+        print("\tNo fix needed")
+    elif errorCode == -1:
+        print("\tCreating default demo profile.")
+        subModel = models.subscriptions.Subscriptions()
+        subModel.add_subscription(common.demo_subscription_id)
+        print("\tDefault demo profile created.")
+    else:
+        print("ERROR: Cannot fix.")
+        raise NotImplementedError()
+
+
+def check_subscriptions():
+    print("Checking subcription tables")
+    subModel = models.subscriptions.Subscriptions()
+    sub_ids = subModel.get_list()
+    tables = [x.values()[0] for x in db.query("SHOW TABLES;") if re.match(r's\d+_\w+', x.values()[0])]
+
+    # TODO: catch tables that belong to subscriptions that don't exist any more.
+    all_extra_tables = set()
+    subs_missing_tables = set()
+
+    for sid in sub_ids:
+        # find all tables starting s#_*
+        found_tables = set(filter(lambda x: re.match(r's{0}_\w+'.format(sid), x), tables))
+        expected_tables = set([x.format(acct=sid) for x in template_subscription_tables])
+        missing_tables = expected_tables - found_tables
+        extra_tables = found_tables - expected_tables
+        if missing_tables:
+            print("\tERROR: Subscription {sid} missing tables: {tables}".format(sid=sid, tables=", ".join(missing_tables)))
+            subs_missing_tables.add(sid)
+        if extra_tables:
+            print("\tERROR: Subscription {sid} has extra tables: {tables}".format(sid=sid, tables=", ".join(extra_tables)))
+            all_extra_tables |= extra_tables
+    if not all_extra_tables and not subs_missing_tables:
+        print("\tSubscription tables confirmed")
+    return {'extra': all_extra_tables, 'malformed': subs_missing_tables}
+def fix_subscriptions(errors):
+    print("Fixing subscription tables")
+    # remove extra tables
+    if len(errors['extra']) > 0:
+        print("\tRemoving extra tables")
+        for table in errors['extra']:
+            db.query("DROP TABLE {0};".format(table))
+    # create tables for malformed subscriptions
+    subModel = models.subscriptions.Subscriptions()
+    if len(errors['malformed']) > 0:
+        for id in errors['malformed']:
+            print("\tRebuilding malformed tables for subscription {0}".format(id))
+            subModel.create_subscription_tables(id)
+
+
+def check_data_sources():
+    print("Checking data sources...")
+    subModel = models.subscriptions.Subscriptions()
+    issues = {}
+    all_tables = [tab.values()[0] for tab in db.query("SHOW TABLES;")]
+    ds_table_pattern = re.compile(r'^s\d+_ds\d+_\w+$')
+    ds_tables = set(filter(lambda x: re.match(ds_table_pattern, x), all_tables))
+    known_subscriptions = subModel.get_list()
+
+    # issue collections
+    extra_tables = set()
+    malformed_datasources = set()
+
+    for sub_id in known_subscriptions:
+        dsModel = models.datasources.Datasources(sub_id)
+        for ds_id in dsModel.ds_ids:
+            expected_tables = {tab.format(acct=sub_id, id=ds_id) for tab in template_tables_per_ds}
+            if not expected_tables.issubset(ds_tables):
+                print("\tERROR: Missing Tables for sub {0}, ds {1}".format(sub_id, ds_id))
+                malformed_datasources.add((sub_id, ds_id))
+            ds_tables -= expected_tables
+    extra_tables |= ds_tables
+    if len(extra_tables) > 0:
+        print("\tERROR: Unused tables: {0}".format(" ".join(extra_tables)))
+
+    if not malformed_datasources and not extra_tables:
+        print("\tData sources verified")
+
+    return {'malformed': malformed_datasources, 'unused': extra_tables}
+def fix_data_sources(errors):
+    print("Fixing data sources")
+    if len(errors['unused']) > 0:
+        print("\tDropping extra tables")
+        for table in errors['unused']:
+            db.query("DROP TABLE {0};".format(table))
+
+    if len(errors['malformed']) > 0:
+        print("\tRebuilding data source tables")
+        for sub_id, ds_id in errors['malformed']:
+            print("\tRebuilding malformed tables for subscription {0} datasource {1}".format(sub_id, ds_id))
+            dsModel = models.datasources.Datasources(sub_id)
+            dsModel.create_ds_tables(ds_id)
+
+    if len(errors['malformed']) == 0 and len(errors['unused']) == 0:
+        print('\tNo fix needed')
+    else:
+        print('\tData sources fixed')
 
 
 def check_integrity():
     check_db_access()
     check_shared_tables()
-    check_data_sources()
     check_settings()
+    check_subscriptions()
+    check_data_sources()
 
 
 def check_and_fix_integrity():
-    check_and_fix_db_access()
+    errorCode = check_and_fix_db_access()
+    if errorCode != 0:
+        return
 
     errors = check_shared_tables()
     if errors:
         fix_shared_tables(errors)
 
-    errors = check_data_sources()
-    if errors:
-        fix_data_sources(errors)
-
     errors = check_settings()
     if errors:
         fix_settings(errors)
+
+    errors = check_subscriptions()
+    if errors:
+        fix_subscriptions(errors)
+
+    errors = check_data_sources()
+    if errors:
+        fix_data_sources(errors)

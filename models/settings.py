@@ -1,11 +1,14 @@
 import common
+import web
 import models.datasources
 
 
 class Settings:
-    def __init__(self):
+    def __init__(self, subscription):
         self.db = common.db
+        self.sub = subscription
         self.table = "Settings"
+        self.where = web.reparam("subscription=$id", {'id': self.sub})
         # TODO: store in session
         self._settings = {}
 
@@ -34,17 +37,17 @@ class Settings:
         return self._settings.keys()
 
     def update_cache(self):
-        self._settings = dict(self.db.select(self.table, limit=1).first())
+        self._settings = dict(self.db.select(self.table, where=self.where, limit=1).first())
 
     def clear_cache(self):
         self._settings = {}
 
     def set(self, **kwargs):
-        datasources = models.datasources.Datasources()
+        datasources = models.datasources.Datasources(self.sub)
         if 'datasource' in kwargs and kwargs['datasource'] not in datasources.datasources:
             raise ValueError("Invalid DS specified")
         if 'live_dest' in kwargs and kwargs['live_dest'] not in datasources.datasources:
             raise ValueError("Invalid DS specified for live destination")
 
-        common.db.update(self.table, "1", **kwargs)
+        common.db.update(self.table, self.where, **kwargs)
         self.clear_cache()
