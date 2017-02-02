@@ -125,7 +125,7 @@ def check_subscriptions():
     print("Checking subcription tables")
     subModel = models.subscriptions.Subscriptions()
     sub_ids = subModel.get_list()
-    tables = [x.values()[0] for x in db.query("SHOW TABLES;") if re.match(r's\d+_\w+', x.values()[0])]
+    tables = [x.values()[0] for x in db.query("SHOW TABLES;") if re.match(r'^s\d+_[a-zA-Z0-9]+$', x.values()[0])]
 
     # TODO: catch tables that belong to subscriptions that don't exist any more.
     all_extra_tables = set()
@@ -133,7 +133,7 @@ def check_subscriptions():
 
     for sid in sub_ids:
         # find all tables starting s#_*
-        found_tables = set(filter(lambda x: re.match(r's{0}_\w+'.format(sid), x), tables))
+        found_tables = set(filter(lambda x: re.match(r'^s{0}_[a-zA-Z0-9]+$'.format(sid), x), tables))
         expected_tables = set([x.format(acct=sid) for x in template_subscription_tables])
         missing_tables = expected_tables - found_tables
         extra_tables = found_tables - expected_tables
@@ -166,7 +166,7 @@ def check_data_sources():
     subModel = models.subscriptions.Subscriptions()
     issues = {}
     all_tables = [tab.values()[0] for tab in db.query("SHOW TABLES;")]
-    ds_table_pattern = re.compile(r'^s\d+_ds\d+_\w+$')
+    ds_table_pattern = re.compile(r'^s\d+_ds\d+_[a-zA-Z0-9]+$')
     ds_tables = set(filter(lambda x: re.match(ds_table_pattern, x), all_tables))
     known_subscriptions = subModel.get_list()
 
