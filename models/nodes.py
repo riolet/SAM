@@ -1,6 +1,5 @@
 import web
 import common
-import dbaccess
 
 
 class Nodes:
@@ -8,18 +7,19 @@ class Nodes:
 
     def __init__(self):
         self.db = common.db
-        self.table = 'Nodes'
-        self.tags_table = 'Tags'
+        self.sub = common.get_subscription()
+        self.table_nodes = 's{acct}_Nodes'.format(acct=self.sub)
+        self.table_tags = 's{acct}_Tags'.format(acct=self.sub)
 
     def set_alias(self, address, alias):
         r = common.determine_range_string(address)
         where = {"ipstart": r[0], "ipend": r[1]}
-        self.db.update(self.table, where, alias=alias)
+        self.db.update(self.table_nodes, where, alias=alias)
 
     def set_env(self, address, env):
         r = common.determine_range_string(address)
         where = {"ipstart": r[0], "ipend": r[1]}
-        self.db.update(self.table, where, env=env)
+        self.db.update(self.table_nodes, where, env=env)
 
     def set_tags(self, address, new_tags):
         """
@@ -34,7 +34,7 @@ class Nodes:
         row = {"ipstart": r[0], "ipend": r[1]}
         where = "ipstart = $ipstart AND ipend = $ipend"
 
-        existing = list(self.db.select(self.tags_table, vars=row, what=what, where=where))
+        existing = list(self.db.select(self.table_tags, vars=row, what=what, where=where))
         new_tags = set(new_tags)
         old_tags = {x.tag for x in existing}
         removals = old_tags - new_tags
@@ -42,12 +42,12 @@ class Nodes:
 
         for tag in additions:
             row['tag'] = tag
-            self.db.insert("Tags", **row)
+            self.db.insert(self.table_tags, **row)
 
         for tag in removals:
             row['tag'] = tag
             where = "ipstart = $ipstart AND ipend = $ipend AND tag = $tag"
-            self.db.delete(self.tags_table, where=where, vars=row)
+            self.db.delete(self.table_tags, where=where, vars=row)
 
     def get_tags(self, address):
         """
@@ -60,7 +60,7 @@ class Nodes:
         ipstart, ipend = common.determine_range_string(address)
         where = 'ipstart <= $start AND ipend >= $end'
         qvars = {'start': ipstart, 'end': ipend}
-        data = self.db.select(self.tags_table, vars=qvars, where=where)
+        data = self.db.select(self.table_tags, vars=qvars, where=where)
         parent_tags = []
         tags = []
         for row in data:
@@ -71,13 +71,13 @@ class Nodes:
         return {"p_tags": parent_tags, "tags": tags}
     
     def get_tag_list(self):
-        return [row.tag for row in self.db.select(self.tags_table, what="DISTINCT tag") if row.tag]
+        return [row.tag for row in self.db.select(self.table_tags, what="DISTINCT tag") if row.tag]
     
     def get_env(self, address):
         ipstart, ipend = common.determine_range_string(address)
         where = 'ipstart <= $start AND ipend >= $end'
         qvars = {'start': ipstart, 'end': ipend}
-        data = self.db.select(self.table, vars=qvars, where=where, what="ipstart, ipend, env")
+        data = self.db.select(self.table_nodes, vars=qvars, where=where, what="ipstart, ipend, env")
         parent_env = "production"
         env = "inherit"
         nearest_distance = -1
@@ -93,21 +93,21 @@ class Nodes:
         return {"env": env, "p_env": parent_env}
     
     def get_env_list(self):
-        envs = set(row.env for row in self.db.select(self.table, what="DISTINCT env") if row.env)
+        envs = set(row.env for row in self.db.select(self.table_nodes, what="DISTINCT env") if row.env)
         envs |= self.default_environments
         return envs
 
     def delete_custom_tags(self):
-        common.db.delete(self.tags_table, "1")
+        common.db.delete(self.table_tags, "1")
 
     def delete_custom_envs(self):
-        common.db.update(self.table, "1", env=web.sqlliteral("NULL"))
+        common.db.update(self.table_nodes, "1", env=web.sqlliteral("NULL"))
 
-    def delete_custom_hostnames():
-        common.db.update("Nodes", "1", alias=common.web.sqlliteral("NULL"))
+    def delete_custom_hostnames(self):
+        common.db.update(self.table_nodes, "1", alias=common.web.sqlliteral("NULL"))
 
     def get_root_nodes(self):
-        return list(self.db.select(self.table, where="subnet=8"))
+        return list(self.db.select(self.table_nodes, where="subnet=8"))
 
     def get_children(self, address):
         ip_start, ip_end = common.determine_range_string(address)
@@ -124,5 +124,5 @@ class Nodes:
             return []
 
         where = "subnet={2} && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end, subnet)
-        rows = self.db.select(self.table, where=where)
+        rows = self.db.select(self.table_nodes, where=where)
         return list(rows)

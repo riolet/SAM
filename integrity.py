@@ -159,6 +159,8 @@ def fix_subscriptions(errors):
         for id in errors['malformed']:
             print("\tRebuilding malformed tables for subscription {0}".format(id))
             subModel.create_subscription_tables(id)
+    if not errors['extra'] and not errors['malformed']:
+        print("\tNo fix needed")
 
 
 def check_data_sources():

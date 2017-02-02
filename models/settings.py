@@ -4,9 +4,9 @@ import models.datasources
 
 
 class Settings:
-    def __init__(self, subscription):
+    def __init__(self, subscription=None):
         self.db = common.db
-        self.sub = subscription
+        self.sub = subscription or common.get_subscription()
         self.table = "Settings"
         self.where = web.reparam("subscription=$id", {'id': self.sub})
         # TODO: store in session

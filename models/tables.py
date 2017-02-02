@@ -6,13 +6,13 @@ import dbaccess
 class Table:
     def __init__(self, ds):
         self.db = common.db
-        self.table_nodes = "Nodes"
-        self.table_tags = "Tags"
-        self.table_links = "ds_{0}_Links".format(ds)
-        self.table_links_in = "ds_{0}_LinksIn".format(ds)
-        self.table_links_out = "ds_{0}_LinksOut".format(ds)
-
+        self.sub = common.get_subscription()
         self.ds = ds
+        self.table_nodes = "s{acct}_Nodes".format(acct=self.sub)
+        self.table_tags = "s{acct}_Tags".format(acct=self.sub)
+        self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=ds)
+        self.table_links_in = "s{acct}_ds{id}_LinksIn".format(acct=self.sub, id=ds)
+        self.table_links_out = "s{acct}_ds{id}_LinksOut".format(acct=self.sub, id=ds)
 
     def get_table_info(self, clauses, page, page_size, order_by, order_dir):
 

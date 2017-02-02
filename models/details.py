@@ -1,15 +1,16 @@
 import web
 import common
-import dbaccess
+import models.links
 
 
 class Details:
     def __init__(self, ds, address, timestamp_range=None, port=None, page_size=50):
         self.db = common.db
-        self.table_nodes = "Nodes"
-        self.table_links = "ds_{0}_Links".format(ds)
-        self.table_links_in = "ds_{0}_LinksIn".format(ds)
-        self.table_links_out = "ds_{0}_LinksOut".format(ds)
+        self.sub = common.get_subscription()
+        self.table_nodes = "s{acct}_Nodes".format(acct=self.sub)
+        self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=ds)
+        self.table_links_in = "s{acct}_ds{id}_LinksIn".format(acct=self.sub, id=ds)
+        self.table_links_out = "s{acct}_ds{id}_LinksOut".format(acct=self.sub, id=ds)
 
         self.ds = ds
         self.ip_start, self.ip_end = common.determine_range_string(address)
@@ -18,7 +19,8 @@ class Details:
         if timestamp_range:
             self.time_range = timestamp_range
         else:
-            tr = dbaccess.get_timerange(ds)
+            linksModel = models.links.Links()
+            tr = linksModel.get_timerange(ds)
             self.time_range = (tr['min'], tr['max'])
 
     def get_metadata(self):

@@ -9,8 +9,9 @@ class Ports:
 
     def __init__(self):
         self.db = common.db
-        self.table = "Ports"
-        self.table_aliases = "PortAliases"
+        self.sub = common.get_subscription()
+        self.table_ports = "Ports"
+        self.table_aliases = "s{acct}_PortAliases".format(acct=self.sub)
 
     def get(self, ports):
         if isinstance(ports, list):
@@ -23,12 +24,12 @@ class Ports:
                 PortAliases.name AS alias_name,
                 PortAliases.description AS alias_description
             FROM {table}
-            LEFT JOIN {alias_table}
+            OUTER JOIN {alias_table}
                 ON Ports.port=PortAliases.port
             WHERE Ports.port IN {port_list}
-        """.format(table=self.table,
+        """.format(table=self.table_ports,
                    alias_table=self.table_aliases,
-                   port_list=web.reparam(arg, {}))
+                   port_list=web.reparam(arg))
         info = list(self.db.query(query))
         return info
 
@@ -61,6 +62,6 @@ class Ports:
         exists = common.db.select('Ports', what="1", where={"port": port})
         if len(exists) == 1:
             if 'active' in updates:
-                common.db.update(self.table, {"port": port}, active=active)
+                common.db.update(self.table_aliases, {"port": port}, active=active)
         else:
-            common.db.insert(self.table, port=port, active=active, tcp=1, udp=1, name="", description="")
+            common.db.insert(self.table_aliases, port=port, active=active, tcp=1, udp=1, name="", description="")

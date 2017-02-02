@@ -10,9 +10,9 @@ class Datasources:
     MIN_INTERVAL = 5
     MAX_INTERVAL = 1800
 
-    def __init__(self, subscription):
+    def __init__(self, subscription=None):
         self.db = common.db
-        self.sub = subscription
+        self.sub = subscription or common.get_subscription()
         self.table = "Datasources"
         # TODO: store in session
         self._datasources = {}
