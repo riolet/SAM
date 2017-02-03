@@ -156,7 +156,7 @@
             old_info.protocols = new_info.protocols.toLocaleLowerCase().replace(/,/g, ", ");
         }
         // if it had already been loaded, and there are changes, push those changes back to the db.
-        if (ports.loaded(port) && Object.keys(delta).length > 0) {
+        if (Object.keys(delta).length > 0) {
             delta.port = port;
             POST_portinfo(delta);
             ports.private.update_displays();
@@ -218,11 +218,21 @@
     };
     ports.private.GET_response = function (response) {
         Object.keys(response).forEach(function (key) {
-            ports.set(Number(key), response[key]);
+            // response[key]
+            ports.ports[Number(key)] = {
+              "port": Number(key),
+              "protocols": response[key].protocols,
+              "active": response[key].active,
+              "name": response[key].name,
+              "description": response[key].description,
+              "alias_name": response[key].alias_name,
+              "alias_description": response[key].alias_description
+            }
         });
         ports.private.update_displays();
     };
     ports.private.save = function () {
+        console.log("saving");
         var info = {};
         if (document.getElementById("port_active").checked) {
             info.active = 1;
