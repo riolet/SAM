@@ -496,7 +496,6 @@
         var inputs;
         while (walker !== undefined && walker !== null) {
             inputs = walker.getElementsByTagName("input");
-            console.log(inputs);
             if (inputs.length > 0) {
                 params.push([inputs[0].name, inputs[0].value]);
             }
