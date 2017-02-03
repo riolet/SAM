@@ -194,10 +194,11 @@ Usage:
                 from models.datasources import Datasources
                 self.dsModel = Datasources(common.get_subscription())
                 for datasource in self.dsModel.datasources.values():
+                    # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                     if datasource['name'] == self.datasource:
                         self.ds = datasource['id']
                         break
-                    if str(datasource['id']) == self.datasource:
+                    if str(datasource['id']) == str(self.datasource):
                         self.ds = datasource['id']
                         break
                 if self.ds is None:
@@ -207,10 +208,10 @@ Usage:
                 if self.dsModel:
                     ds_names = [ds['name'] for ds in self.dsModel.datasources.values()]
                     print("Data sources include: {0}".format(', '.join(ds_names)))
-                sys.exit(5)
+                raise AssertionError("No data source matches {0}".format(self.datasource))
             except:
                 print("Cannot connect to database.")
-                sys.exit(4)
+                raise AssertionError("Cannot connect to database.")
 
         table_name = "s{acct}_ds{ds}_Syslog".format(acct=common.get_subscription(), ds=self.ds)
 
@@ -221,7 +222,7 @@ Usage:
                       "fills all the dictionary keys in import_base.keys exactly.")
                 print("Expected keys: {0}".format(repr(self.keys)))
                 print("Received keys: {0}".format(repr(rows[0].keys())))
-                sys.exit(3)
+                raise AssertionError("Insertion keys do not match expected keys.")
 
             # multiple_insert example:
             # >>> table_name = "my_table"
@@ -239,10 +240,10 @@ Usage:
                     self.insert_data(rows, count)
                 else:
                     print("Aborting...")
-                    sys.exit(2)
+                    raise AssertionError("Failed to fix database access. ")
             else:
                 print("Critical failure. Aborting.")
-                sys.exit(2)
+                raise AssertionError("Failed to fix problem multiple times. Aborting.")
 
 
 _class = BaseImporter

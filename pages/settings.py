@@ -17,6 +17,7 @@ def nice_name(s):
     return s.title()
 
 
+# TODO: move Uploader to models.
 class Uploader(object):
     def __init__(self, ds, log_format):
         self.ds = ds
@@ -27,16 +28,19 @@ class Uploader(object):
 
     def get_importer(self):
         try:
-            m_importer = importlib.import_module(self.log_format)
+            m_importer = importlib.import_module("importers." + self.log_format)
             classes = filter(lambda x: x.endswith("Importer") and x != "BaseImporter", dir(m_importer))
             class_ = getattr(m_importer, classes[0])
             self.importer = class_()
             self.importer.datasource = self.ds
-        except:
+        except Exception as e:
+            print("Error acquiring importer.")
+            print(e.message)
             self.importer = None
 
     def run_import(self, data):
         if self.importer is None:
+            print("No importer. Can't run it.")
             return
 
         self.importer.import_string(data)
@@ -44,12 +48,13 @@ class Uploader(object):
     def run_prepro(self):
         import preprocess
         print("Running preprocessor..")
-        print("ds: " + str(self.ds))
-
-        preprocess.preprocess_log(self.ds)
+        processor = preprocess.Preprocessor(common.db, common.get_subscription(), self.ds)
+        processor.run_all()
 
     def import_log(self, data):
+        print("Running import script")
         self.run_import(data)
+        print("Running preprocessing script")
         self.run_prepro()
 
 
@@ -108,7 +113,7 @@ class Settings(base.HeadlessPost):
         if command not in self.recognized_commands:
             raise base.MalformedRequest("Unrecognized command: '{0}'".format(command))
 
-        if command in ('ds_rm', 'ds_select', 'rm_conns', 'live_dest', 'ds_name', 'ds_live', 'ds_interval'):
+        if command in ('ds_rm', 'ds_select', 'rm_conns', 'live_dest', 'ds_name', 'ds_live', 'ds_interval', 'upload'):
             ds = self.decode_datasource(data.get('ds'))
             if not ds:
                 raise base.RequiredKey('datasource', 'param1')

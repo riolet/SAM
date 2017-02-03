@@ -1,3 +1,4 @@
+import re
 import os
 import common
 import settings
@@ -64,7 +65,7 @@ class Datasources:
 
     @staticmethod
     def validate_ds_name(name):
-        return name == name.strip() and name[0].isalpha() and name.isalnum()
+        return re.match(r'^(\w[\w ]*\w|\w)$', name)
 
     @staticmethod
     def validate_ds_interval(interval):
