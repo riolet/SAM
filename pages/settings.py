@@ -191,6 +191,7 @@ class Settings(base.HeadlessPost):
             linksModel = models.links.Links()
             linksModel.delete_connections(request['ds'])
         elif command == 'live_dest':
+            print(request)
             self.settingsModel['live_dest'] = request['live_dest']
         elif command == 'upload':
             b64start = request['file'].find(",")

@@ -46,8 +46,6 @@ class Settings:
         datasources = models.datasources.Datasources(self.sub)
         if 'datasource' in kwargs and kwargs['datasource'] not in datasources.datasources:
             raise ValueError("Invalid DS specified")
-        if 'live_dest' in kwargs and kwargs['live_dest'] not in datasources.datasources:
-            raise ValueError("Invalid DS specified for live destination")
 
         common.db.update(self.table, self.where, **kwargs)
         self.clear_cache()

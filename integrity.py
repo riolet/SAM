@@ -7,7 +7,7 @@ from MySQLdb import OperationalError
 import models.subscriptions
 import models.datasources
 
-shared_tables = ['Settings', 'Ports', 'Datasources']
+shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 template_subscription_tables = map(lambda x: 's{acct}_' + x, subscription_tables)

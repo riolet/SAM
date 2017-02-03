@@ -21,9 +21,8 @@ CREATE TABLE IF NOT EXISTS Datasources
 
 -- User Settings
 CREATE TABLE IF NOT EXISTS Settings
-(subscription   INTEGER PRIMARY KEY
+(subscription   INTEGER NOT NULL PRIMARY KEY
 ,datasource     INT NOT NULL
-,live_dest      INT DEFAULT NULL
 ,color_node     INT UNSIGNED NOT NULL DEFAULT 0x5555CC
 ,color_bg       INT UNSIGNED NOT NULL DEFAULT 0xAAFFDD
 ,color_tcp      INT UNSIGNED NOT NULL DEFAULT 0x5555CC
@@ -32,13 +31,22 @@ CREATE TABLE IF NOT EXISTS Settings
 ,color_label_bg INT UNSIGNED NOT NULL DEFAULT 0xFFFFFF
 ,color_error    INT UNSIGNED NOT NULL DEFAULT 0x996666
 ,CONSTRAINT `FK_sds` FOREIGN KEY (`datasource`) REFERENCES `Datasources` (`id`)
-,CONSTRAINT `FK_sld` FOREIGN KEY (`live_dest`) REFERENCES `Datasources` (`id`)
 );
 
--- Look-Up-Table for ports and port aliases
+-- Default Look-Up-Table for ports
 CREATE TABLE IF NOT EXISTS Ports
 (port              INT UNSIGNED NOT NULL PRIMARY KEY
 ,protocols         TEXT
 ,name              VARCHAR(10) NOT NULL DEFAULT ""
 ,description       VARCHAR(255) NOT NULL DEFAULT ""
+);
+
+-- Key table for live updates
+CREATE TABLE IF NOT EXISTS LiveKeys
+(access_key     CHAR(64) PRIMARY KEY
+,subscription   INTEGER NOT NULL
+,datasource     INT NOT NULL
+,created        TIMESTAMP DEFAULT NOW()
+,CONSTRAINT `FK_lks` FOREIGN KEY (`subscription`) REFERENCES `Settings` (`subscription`)
+,CONSTRAINT `FK_lkd` FOREIGN KEY (`datasource`) REFERENCES `Datasources` (`id`)
 );
