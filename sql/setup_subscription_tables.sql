@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_Tags
 -- Create the table for port aliases
 CREATE TABLE IF NOT EXISTS s{acct}_PortAliases
 (port              INT UNSIGNED NOT NULL
+,protocols         TEXT
 ,active            BOOL NOT NULL DEFAULT TRUE
 ,name              VARCHAR(10) NOT NULL DEFAULT ""
 ,description       VARCHAR(255) NOT NULL DEFAULT ""

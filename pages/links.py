@@ -46,8 +46,8 @@ class Links(base.Headless):
     def perform_get_command(self, request):
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
-        links = models.links.Links()
-        return links.get_links(request['ds'], request['addresses'], timerange, request['port'], request['protocol'])
+        links = models.links.Links(request['ds'])
+        return links.get_links(request['addresses'], timerange, request['port'], request['protocol'])
 
     def encode_get_response(self, response):
         seconds = self.duration

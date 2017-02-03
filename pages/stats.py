@@ -90,7 +90,7 @@ class Stats(base.Headless):
     def perform_get_command(self, request):
         if request['query'] == 'timerange':
             linksModel = models.links.Links(request['ds'])
-            return linksModel.get_protocol_list()
+            return linksModel.get_timerange()
         elif request['query'] == 'protocols':
             linksModel = models.links.Links(request['ds'])
             return linksModel.get_protocol_list()

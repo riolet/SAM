@@ -93,7 +93,7 @@ function init() {
     GET_settings(null, function (settings) {
         config.update = (settings.datasources[settings.datasource].ar_active === 1);
         config.update_interval = settings.datasources[settings.datasource].ar_interval;
-        config.ds = "ds_" + settings.datasource + "_";
+        config.ds = "ds" + settings.datasource;
         setAutoUpdate();
 
         GET_timerange(function (range) {
@@ -106,7 +106,6 @@ function init() {
           }
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
-
           slider_init(config);
           GET_nodes(null);
         });

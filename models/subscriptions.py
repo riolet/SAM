@@ -1,6 +1,7 @@
 import os
 import common
 import models.datasources
+import models.ports
 
 
 class Subscriptions:
@@ -18,6 +19,10 @@ class Subscriptions:
     def create_subscription_tables(self, sub_id):
         replacements = {"acct": sub_id}
         common.exec_sql(self.db, self.CREATE_SQL, replacements)
+
+        # replicate port data
+        portsModel = models.ports.Ports(sub_id)
+        portsModel.reset()
 
     def add_subscription(self, sub_id):
         # add subscription tables

@@ -7,11 +7,22 @@ class Ports:
     MAX_NAME_LENGTH = 10
     MAX_DESCRIPTION_LENGTH = 255
 
-    def __init__(self):
+    def __init__(self, subscription=None):
         self.db = common.db
-        self.sub = common.get_subscription()
+        self.sub = subscription or common.get_subscription()
         self.table_ports = "Ports"
         self.table_aliases = "s{acct}_PortAliases".format(acct=self.sub)
+
+    def reset(self):
+        # delete from table
+        query_delete = "DELETE FROM {table_aliases}".format(table_aliases=self.table_aliases)
+        self.db.query(query_delete)
+        # copy from Ports
+        query_insert = "INSERT INTO {table_aliases} (port, protocols, name, description) " \
+                       "SELECT port, protocols, name, description " \
+                       "FROM {table_ports}".format(
+            table_aliases=self.table_aliases, table_ports=self.table_ports)
+        self.db.query(query_insert)
 
     def get(self, ports):
         if isinstance(ports, list):
@@ -19,49 +30,36 @@ class Ports:
         else:
             arg = "({0})".format(ports)
 
-        query = """
-            SELECT Ports.port, Ports.active, Ports.name, Ports.description,
-                PortAliases.name AS alias_name,
-                PortAliases.description AS alias_description
-            FROM {table}
-            OUTER JOIN {alias_table}
-                ON Ports.port=PortAliases.port
-            WHERE Ports.port IN {port_list}
-        """.format(table=self.table_ports,
-                   alias_table=self.table_aliases,
-                   port_list=web.reparam(arg))
-        info = list(self.db.query(query))
-        return info
+        query = """SELECT ports.port, ports.name, ports.protocols, ports.description,
+    aliases.active,
+    aliases.name AS alias_name,
+    aliases.description AS alias_description
+FROM {table_ports} AS `ports`
+RIGHT JOIN {table_aliases} AS `aliases`
+    ON ports.port=aliases.port
+WHERE ports.port IN {port_list}""".format(
+            table_ports=self.table_ports,
+            table_aliases=self.table_aliases,
+            port_list=web.reparam(arg, {}))
+
+        rows = self.db.query(query, vars={'plist': arg})
+        return list(rows)
 
     def set(self, port, updates):
-        alias_name = ''
-        alias_description = ''
-        active = 0
+        formatted_updates = {}
+
         if 'alias_name' in updates:
-            alias_name = updates['alias_name'][:self.MAX_NAME_LENGTH]
+            formatted_updates['name'] = updates['alias_name'][:self.MAX_NAME_LENGTH]
         if 'alias_description' in updates:
-            alias_description = updates['alias_description'][:self.MAX_DESCRIPTION_LENGTH]
+            formatted_updates['description'] = updates['alias_description'][:self.MAX_DESCRIPTION_LENGTH]
         if 'active' in updates:
-            active = 1 if updates['active'] == '1' or updates['active'] == 1 else 0
+            formatted_updates['active'] = 1 if str(updates['active']) == '1' else 0
 
         # update PortAliases database of names to include the new information
         exists = self.db.select(self.table_aliases, what="1", where={"port": port})
 
-        if len(exists) == 1:
-            kwargs = {}
-            if 'alias_name' in updates:
-                kwargs['name'] = alias_name
-            if 'alias_description' in updates:
-                kwargs['description'] = alias_description
-            if kwargs:
-                common.db.update(self.table_aliases, {"port": port}, **kwargs)
-        else:
-            common.db.insert(self.table_aliases, port=port, name=alias_name, description=alias_description)
-
-        # update Ports database of default values to include the missing information
-        exists = common.db.select('Ports', what="1", where={"port": port})
-        if len(exists) == 1:
-            if 'active' in updates:
-                common.db.update(self.table_aliases, {"port": port}, active=active)
-        else:
-            common.db.insert(self.table_aliases, port=port, active=active, tcp=1, udp=1, name="", description="")
+        if formatted_updates:
+            if len(exists) == 1:
+                common.db.update(self.table_aliases, {"port": port}, **formatted_updates)
+            else:
+                common.db.insert(self.table_aliases, port=port, **formatted_updates)

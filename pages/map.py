@@ -8,7 +8,7 @@ class Map:
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
         datasources = models.datasources.Datasources()
-        dses = [("ds_{0}_".format(k), v['name']) for k, v in datasources.datasources.iteritems()]
+        dses = [(k, v['name']) for k, v in datasources.datasources.iteritems()]
         print("datasources: {0}".format(dses))
         return str(common.render._head(self.pageTitle,
                                        stylesheets=['/static/css/map.css',

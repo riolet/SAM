@@ -1,4 +1,3 @@
-import dbaccess
 import common
 import re
 import base
@@ -64,7 +63,7 @@ class Details(base.Headless):
         # self.ip_range = (0, 4294967295)
         self.detailsModel = None
         self.nodesModel = models.nodes.Nodes()
-        self.linksModel = models.links.Links()
+        self.linksModel = None  # set during decode_get_request()
 
     def decode_get_request(self, data):
         # data source
@@ -76,7 +75,7 @@ class Details(base.Headless):
                 raise base.MalformedRequest("Could not read data source ('ds')")
         else:
             raise base.RequiredKey('data source', 'ds')
-
+        self.linksModel = models.links.Links(ds)
         # port filter
         port = data.get('port')
 
@@ -88,7 +87,7 @@ class Details(base.Headless):
             raise base.MalformedRequest("Time range ({0} .. {1}) cannot be read. Check formatting"
                                         .format(data.get('tstart'), data.get('tend')))
         except (KeyError, TypeError):
-            t_range = self.linksModel.get_timerange(ds)
+            t_range = self.linksModel.get_timerange()
             tstart = t_range['min']
             tend = t_range['max']
 
@@ -156,8 +155,8 @@ class Details(base.Headless):
                                                   request['simple'])
                 elif c_name == 'outputs':
                     details[c_name] = self.outputs(request['page'],
-                                                  request['order'],
-                                                  request['simple'])
+                                                   request['order'],
+                                                   request['simple'])
                 elif c_name == 'ports':
                     details[c_name] = self.ports(request['page'],
                                                  request['order'])
@@ -410,4 +409,3 @@ class Details(base.Headless):
                    'ports': self.ports(page, order)}
 
         return details
-
