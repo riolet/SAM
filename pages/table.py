@@ -1,9 +1,7 @@
 import common
 import web
-import filters
-import dbaccess
-import re
 import base
+import models.filters
 import models.tables
 import models.nodes
 import models.datasources
@@ -206,7 +204,7 @@ class Table(object):
         fs = []
         ds = None
         if "filters" in data:
-            ds, fs = filters.readEncoded(data["filters"])
+            ds, fs = models.filters.readEncoded(data["filters"])
         return ds, fs
 
     def decode_order(self, data):
