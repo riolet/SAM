@@ -8,7 +8,8 @@ class LiveKeys:
     def __init__(self, subscription=None):
         self.db = common.db
         self.sub = subscription or common.get_subscription()
-        self.table = "LiveKeys"
+        self.table_livekeys = "LiveKeys"
+        self.table_ds = "Datasources"
 
     @staticmethod
     def b64_url_encode(bytes_string):
@@ -28,20 +29,25 @@ class LiveKeys:
         return encoded[:length]
 
     def create(self, datasource):
-        key = LiveKeys.generate_salt(64)
-        self.db.insert(self.table, subscription=self.sub, datasource=datasource, access_key=key)
+        key = LiveKeys.generate_salt(24)
+        self.db.insert(self.table_livekeys, subscription=self.sub, datasource=datasource, access_key=key)
     
     def read(self):
         qvars = {
             'sub': self.sub,
         }
-        rows = self.db.select(self.table, where='subscription=$sub', vars=qvars)
-        return list(rows)
+        query = """SELECT L.access_key, D.id AS 'ds_id', D.name AS 'datasource', L.subscription
+        FROM {table_livekeys} AS `L`
+        JOIN {table_datasources} AS `D`
+            ON L.subscription = D.subscription AND L.datasource = D.id
+        WHERE L.subscription=$sub""".format(table_livekeys=self.table_livekeys, table_datasources=self.table_ds)
+        rows = self.db.query(query, vars=qvars)
+        return list(map(dict, rows))
         
     def delete(self, key):
         qvars = {
             'sub': self.sub,
             'key': key
         }
-        num_deleted = self.db.delete(self.table, where='subscription=$sub AND access_key=$key', vars=qvars)
+        num_deleted = self.db.delete(self.table_livekeys, where='subscription=$sub AND access_key=$key', vars=qvars)
         return num_deleted

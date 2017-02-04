@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS Ports
 
 -- Key table for live updates
 CREATE TABLE IF NOT EXISTS LiveKeys
-(access_key     CHAR(64) PRIMARY KEY
+(access_key     CHAR(24) PRIMARY KEY
 ,subscription   INTEGER NOT NULL
 ,datasource     INT NOT NULL
 ,created        TIMESTAMP DEFAULT NOW()

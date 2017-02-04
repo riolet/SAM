@@ -419,9 +419,70 @@ function uploadLog() {
     .modal("show");
 }
 
-function updateLiveDest(e) {
-    var newDest = e.target.value;
-    POST_set_livedest(newDest);
+function removeLiveKey(e) {
+  "use strict";
+  let row = e.target.parentElement.parentElement;
+  console.log("row"); console.log(row);
+  let key_collection = row.getElementsByClassName("secret key");
+  console.log("key collection"); console.log(key_collection);
+  let key = key_collection[0].innerText;
+  console.log("key"); console.log(key);
+  POST_del_live_key(key);
+}
+
+function addLiveKey(e) {
+  "use strict";
+  let ds = document.getElementById("live_dest").value;
+  POST_add_live_key(ds);
+}
+
+function rebuildLiveKeys(livekeys) {
+  "use strict";
+  let tbody = document.getElementById("live_update_tbody");
+  tbody.innerHTML = "";
+  livekeys.forEach(function (lk) {
+    let tr = document.createElement("TR");
+    var td = document.createElement("TD");
+
+    let button = document.createElement("BUTTON");
+    let i = document.createElement("I");
+    i.className = "red delete icon";
+    button.appendChild(i);
+    button.className = "remove_live_key ui small icon button";
+    button.onclick = removeLiveKey;
+    td.appendChild(button);
+    td.className = "collapsing";
+    tr.appendChild(td);
+
+    td = document.createElement("TD");
+    td.appendChild(document.createTextNode(lk.access_key))
+    td.className = "secret key";
+    tr.appendChild(td);
+
+    td = document.createElement("TD");
+    td.appendChild(document.createTextNode(lk.datasource))
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  });
+  if (livekeys.length === 0) {
+    let tr = document.createElement("TR");
+    var td = document.createElement("TD");
+
+    let button = document.createElement("BUTTON");
+    let i = document.createElement("I");
+    i.className = "red delete icon";
+    button.appendChild(i);
+    button.className = "disabled ui small icon button";
+    td.appendChild(button);
+    td.className = "collapsing";
+    tr.appendChild(td);
+
+    td = document.createElement("TD");
+    td.appendChild(document.createTextNode("none"));
+    td.colspan = "2";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
 }
 
 function AjaxError(xhr, textStatus, errorThrown) {
@@ -558,9 +619,24 @@ function POST_del_connections() {
     POST_AJAX({"command":"rm_conns", "ds":ds});
 }
 
-function POST_set_livedest(ds) {
-    "use strict";
-    POST_AJAX({"command":"live_dest", "ds":ds});
+function POST_del_live_key(key) {
+  "use strict";
+  POST_AJAX({"command": "del_live_key", "key":key}, function (response) {
+    if (response.result === 'success') {
+      //rebuild live_key list
+      rebuildLiveKeys(response.livekeys);
+    }
+  });
+}
+
+function POST_add_live_key(ds) {
+  "use strict";
+  POST_AJAX({"command":"add_live_key", "ds":ds}, function (response) {
+    if (response.result === 'success') {
+      //rebuild live_key list
+      rebuildLiveKeys(response.livekeys);
+    }
+  });
 }
 
 function foreach(entities, callback) {
@@ -595,7 +671,12 @@ function init() {
     document.getElementById("rm_ds").onclick = deleteDS;
     document.getElementById("add_ds").onclick = addDS;
     document.getElementById("upload_log").onclick = uploadLog;
-    document.getElementById("live_dest").onchange = updateLiveDest;
+
+    foreach(document.getElementsByClassName("remove_live_key"), function(entity) {
+      entity.onclick = removeLiveKey;
+    });
+    document.getElementById("add_live_key").onclick = addLiveKey;
+
     foreach(document.getElementsByClassName("ds_name"), function(entity) {
         entity.onchange = POST_ds_namechange
     });

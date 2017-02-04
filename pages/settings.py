@@ -8,6 +8,7 @@ import models.datasources
 import models.settings
 import models.nodes
 import models.links
+import models.livekeys
 
 
 def nice_name(s):
@@ -62,12 +63,14 @@ class Settings(base.HeadlessPost):
     pageTitle = "Settings"
     recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new",
                            "ds_rm", "ds_select", "rm_hosts", "rm_tags",
-                           "rm_envs", "rm_conns", "upload", "live_dest"]
+                           "rm_envs", "rm_conns", "upload", "del_live_key",
+                           "add_live_key"]
 
     def __init__(self):
         base.HeadlessPost.__init__(self)
         self.settingsModel = models.settings.Settings()
         self.dsModel = models.datasources.Datasources()
+        self.livekeyModel = models.livekeys.LiveKeys()
 
     def decode_get_request(self, data):
         return None
@@ -113,7 +116,7 @@ class Settings(base.HeadlessPost):
         if command not in self.recognized_commands:
             raise base.MalformedRequest("Unrecognized command: '{0}'".format(command))
 
-        if command in ('ds_rm', 'ds_select', 'rm_conns', 'live_dest', 'ds_name', 'ds_live', 'ds_interval', 'upload'):
+        if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval', 'upload', 'add_live_key'):
             ds = self.decode_datasource(data.get('ds'))
             if not ds:
                 raise base.RequiredKey('datasource', 'param1')
@@ -139,6 +142,9 @@ class Settings(base.HeadlessPost):
             request['format'] = data.get('format')
             request['file'] = data.get('file')
 
+        elif command == "del_live_key":
+            request['key'] = data.get('key')
+
         if None in request.values():
             raise base.MalformedRequest("Could not parse arguments for command.")
 
@@ -158,8 +164,9 @@ class Settings(base.HeadlessPost):
         delete tg	"rm_tags"		()
         delete ev	"rm_envs"		()
         delete cn	"rm_conns"		(ds)
-        live dest   "live_dest"     (ds)
         upload lg	"upload"		(ds, format, file)
+        add_liveK   "add_live_key"  (ds)
+        del_liveK   "del_live_key"  (key)
 
         see also: self.recognized_commands
         """
@@ -190,9 +197,6 @@ class Settings(base.HeadlessPost):
         elif command == 'rm_conns':
             linksModel = models.links.Links()
             linksModel.delete_connections(request['ds'])
-        elif command == 'live_dest':
-            print(request)
-            self.settingsModel['live_dest'] = request['live_dest']
         elif command == 'upload':
             b64start = request['file'].find(",")
             if b64start == -1:
@@ -200,13 +204,22 @@ class Settings(base.HeadlessPost):
             log_file = base64.b64decode(request['file'][b64start + 1:])
             uploader = Uploader(request['ds'], request['format'])
             uploader.import_log(log_file)
+        elif command == 'add_live_key':
+            print("adding");
+            self.livekeyModel.create(request['ds'])
+        elif command == 'del_live_key':
+            print("deleting");
+            self.livekeyModel.delete(request['key'])
 
         return "success"
 
     def encode_post_response(self, response):
-        return {'result': response,
+        encoded = {'result': response,
                 'settings': self.settingsModel.copy(),
-                'datasources': self.dsModel.sorted_list()}
+                'datasources': self.dsModel.sorted_list(),
+                'livekeys': self.livekeyModel.read()}
+        print(encoded)
+        return encoded
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
@@ -216,11 +229,12 @@ class Settings(base.HeadlessPost):
         settings = self.settingsModel.copy()
         datasources = self.dsModel.sorted_list()
         importers = self.get_available_importers()
+        livekeys = self.livekeyModel.read()
 
         page = str(common.render._head(self.pageTitle,
                                        stylesheets=["/static/css/general.css"],
                                        scripts=["/static/js/settings.js"]))
         page += str(common.render._header(common.navbar, self.pageTitle))
-        page += str(common.render.settings(settings, datasources, importers))
+        page += str(common.render.settings(settings, datasources, livekeys, importers))
         page += str(common.render._tail())
         return page
