@@ -10,6 +10,18 @@ import ssl
 import sys
 import importlib
 
+"""
+Live Collector
+-----------
+
+* runs client-side.
+* listens on a socket (usually localhost:514) for messages from a gateway or router
+* translates those messages into a standard SAM format
+* periodically opens an SSL connection to live_server to send accumulated messages
+
+"""
+
+
 COLLECTOR_ADDRESS = ('localhost', 514)
 SERVER_ADDRESS = ('localhost', 8081)
 CERTIFICATE_FILE = "cert.pem"
@@ -18,8 +30,8 @@ SOCKET_BUFFER = []
 SOCKET_BUFFER_LOCK = threading.Lock()
 TRANSMIT_BUFFER = []
 TRANSMIT_BUFFER_SIZE = 0
-TRANSMIT_BUFFER_THRESHOLD = 200  # push the transmit buffer to the database server if it reaches this many entries.
-TIME_BETWEEN_IMPORTING = 1  # seconds. Period for translating lines from SOCKET to TRANSMIT
+TRANSMIT_BUFFER_THRESHOLD = 500  # push the transmit buffer to the database server if it reaches this many entries.
+TIME_BETWEEN_IMPORTING = 1  # seconds. Period for translating lines from SOCKET to TRANSMIT buffers
 TIME_BETWEEN_TRANSMISSION = 10  # seconds. Period for transmitting to the database server.
 
 COLLECTOR = None  # collector server object

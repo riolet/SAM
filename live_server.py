@@ -5,9 +5,32 @@ import signal
 import ssl
 import time
 import live_protocol
-import dbaccess
 import preprocess
 import importers.import_base
+
+"""
+Live Server
+-----------
+
+* runs server-side.
+* listens on an SSL-secured socket for messages from live_collector
+* imports log entries from live_client into database
+* validates messages against keys before importing
+
+"""
+
+
+# create MemoryBuffer class to allow storing, counting, and removing lines
+# unique storage comparments, unique per subscription/datasource
+# Must support inter-thread locking based on subscription/datasource.
+# dribble-written by server thread.
+# read/erased by processor/importer thread.
+
+# create processor/importer/something class
+# runs a thread. checks mem buffer for any subscription/datasource combinations that are ripe
+# lock, copy/move, erase, unlock memory buffer
+# if a memory buffer is empty, lock it, remove it entirely, unlock it
+# run importer and preprocessor on lines into appropriate subscription/datasource
 
 
 # Self-signed certificate generation for testing:
@@ -18,14 +41,88 @@ HOST = "localhost"
 PORT = 8081
 SERVER = None
 SERVER_THREAD = None
+IMPORTER = None
+IMPORTER_THREAD = None
 PASSCODE = b'not-so-secret-passcode'
-MEMORY_BUFFER = []
-MEMORY_BUFFER_LOCK = threading.Lock()
+#MEMORY_BUFFER = []
+#MEMORY_BUFFER_LOCK = threading.Lock()
 SYSLOG_SIZE = 0
 SYSLOG_PROCESSING_QUOTE = 1000 # when the syslog has this many entries, process it.
 TIME_BETWEEN_IMPORTING = 1 # seconds. Check for and import lines into the syslog with this period.
 TIME_BETWEEN_PROCESSING = 20 # seconds. Process a partially-filled syslog with this period.
 SHUTDOWN_EVENT = threading.Event()
+
+class Buffer:
+    def __init__(self, sub, ds):
+        self.sub = sub
+        self.ds = ds
+        self.lines = []
+        self.last_empty_time = time.time()
+
+    # todo: ???
+
+class MemoryBuffers:
+    def __init__(self):
+        # each buffer needs a sub, ds, list-of-lines, and last_empty_time
+        buffers = {}
+        locks = {}
+
+    def get_lock(self, sub, ds):
+        # TODO: return threading lock unique for each subscription/datasource
+        pass
+
+    def add(self, sub, ds, lines):
+        with self.get_lock(sub, ds):
+            # TODO: put the lines in the appropriate box.
+            pass
+
+    def count(self, sub, ds):
+        # TODO: return the number of lines currently in the give sub/ds buffer
+        # no lock required. no biggie if data is wrong.
+        pass
+
+    def get_oversize(self):
+        # TODO: check all sub/ds combinations for exceeded threshhold
+        # return a lit of pairs [(sub, ds), (sub, ds)]
+        pass
+
+    def get_expired(self):
+        # TODO: check all sub/ds combinations for exceeded time limit
+        # return a lit of pairs [(sub, ds), (sub, ds)]
+        pass
+
+    def remove(self, sub, ds):
+        # TODO: remove that buffer box
+        pass
+
+    def get_all(self):
+        # TODO: return all boxes as a list of pairs [(sub,ds), (sub,ds)]
+        pass
+
+    def yank(self, sub, ds):
+        with self.get_lock(sub, ds):
+            # TODO: take the appropriate sub/ds box
+            # put an empty box in it's place
+            pass
+        # return the taken box
+
+class BackLoader:
+    def __init__(self, buffer):
+        self.buffer = buffer
+        self.alive = True
+
+    def run(self):
+        # while alive
+        #  check for any oversize buffers
+        #       process those
+        #  check if the time is expired
+        #       remove if empty
+        #       else process everything
+        #  sleep a duration
+        pass
+
+    def shutdown(self):
+        self.alive = False
 
 
 class SSL_TCPServer(SocketServer.TCPServer):
@@ -60,7 +157,7 @@ class SSL_TCPServer(SocketServer.TCPServer):
 class SSL_ThreadingTCPServer(SocketServer.ThreadingMixIn, SSL_TCPServer): pass
 
 
-class testHandler(SocketServer.StreamRequestHandler):
+class ConnectionHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         print("SERVER: Handling input!")
         translator = live_protocol.LiveProtocol(self.connection)
@@ -185,7 +282,7 @@ def main():
 
     # Start the daemon listening on the port in an infinite loop that exits when the program is killed
     SSL_TCPServer.allow_reuse_address = True
-    SERVER = SSL_ThreadingTCPServer((HOST, PORT), testHandler, CERTIFICATE_FILE)
+    SERVER = SSL_ThreadingTCPServer((HOST, PORT), ConnectionHandler, CERTIFICATE_FILE)
     SERVER_THREAD = threading.Thread(target=SERVER.serve_forever)
     SERVER_THREAD.start()
 
