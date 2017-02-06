@@ -21,19 +21,6 @@ Live Server
 
 """
 
-# create MemoryBuffer class to allow storing, counting, and removing lines
-# unique storage comparments, unique per subscription/datasource
-# Must support inter-thread locking based on subscription/datasource.
-# dribble-written by server thread.
-# read/erased by processor/importer thread.
-
-# create processor/importer/something class
-# runs a thread. checks mem buffer for any subscription/datasource combinations that are ripe
-# lock, copy/move, erase, unlock memory buffer
-# if a memory buffer is empty, lock it, remove it entirely, unlock it
-# run importer and preprocessor on lines into appropriate subscription/datasource
-
-
 # Self-signed certificate generation for testing:
 # openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout cert.pem
 
@@ -46,13 +33,6 @@ SERVER_THREAD = None
 IMPORTER = None
 IMPORTER_THREAD = None
 BUFFERS = None
-# MEMORY_BUFFER = []
-# MEMORY_BUFFER_LOCK = threading.Lock()
-# SYSLOG_SIZE = 0
-# SYSLOG_PROCESSING_QUOTE = 1000  # when the syslog has this many entries, process it.
-# TIME_BETWEEN_IMPORTING = 1  # seconds. Check for and import lines into the syslog with this period.
-# TIME_BETWEEN_PROCESSING = 20  # seconds. Process a partially-filled syslog with this period.
-# SHUTDOWN_EVENT = threading.Event()
 
 
 class Buffer:
