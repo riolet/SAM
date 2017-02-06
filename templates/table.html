@@ -66,7 +66,7 @@ $def with (tags, envs, dses, columns, sorting, rows, spread, prev, next)
           $for item in row:
             <td class="td_$item[0]">
             $if item[0] == "address":
-              <a href="/metadata#ip=$item[1]&ds=ds_$dses[0]['id']_"><i class="tasks icon"></i>$item[1]</a>
+              <a href="/metadata#ip=$item[1]&ds=ds$dses[0]['id']"><i class="tasks icon"></i>$item[1]</a>
             $elif item[0] == "alias":
               <div class="ui transparent left icon input"><input data-content="$item[1]" placeholder="-" type="text" value="$item[1]"><i class="write icon"></i></div>
             $elif item[0] == "tags":
@@ -121,5 +121,5 @@ $def with (tags, envs, dses, columns, sorting, rows, spread, prev, next)
     g_known_envs.push("$env");
   var g_dses = {}
   $for ds in dses:
-    g_dses["$ds['name']"] = "ds_$ds['id']_";
+    g_dses["$ds['name']"] = "ds$ds['id']";
 </script>

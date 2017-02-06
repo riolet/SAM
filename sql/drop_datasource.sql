@@ -1,5 +1,5 @@
-DROP TABLE ds_{id}_staging_Links;
-DROP TABLE ds_{id}_LinksIn;
-DROP TABLE ds_{id}_LinksOut;
-DROP TABLE ds_{id}_Links;
-DROP TABLE ds_{id}_Syslog;
+DROP TABLE s{acct}_ds{id}_StagingLinks;
+DROP TABLE s{acct}_ds{id}_LinksIn;
+DROP TABLE s{acct}_ds{id}_LinksOut;
+DROP TABLE s{acct}_ds{id}_Links;
+DROP TABLE s{acct}_ds{id}_Syslog;

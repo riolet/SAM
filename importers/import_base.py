@@ -1,7 +1,8 @@
 import sys
 import os
-dbaccess = None
 common = None
+Datasources = None
+
 
 class BaseImporter:
     mysql_time_format = '%Y-%m-%d %H:%M:%S'
@@ -29,9 +30,11 @@ Usage:
     python {0} <input-file> <data source>
 
 """.format(sys.argv[0])
+        self.dsModel = None
+        self.subscription = None
         self.datasource = None
-        self.settings = None
         self.ds = None
+        self.failed_attempts = 0
 
     @staticmethod
     def ip_to_int(a, b, c, d):
@@ -169,6 +172,12 @@ Usage:
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
         return lines_inserted
 
+    def set_subscription(self, sub):
+        self.subscription = sub
+
+    def set_datasource(self, ds):
+        self.datasource = ds
+
     def insert_data(self, rows, count):
         """
         Attempt to insert the first 'count' items in 'rows' into the database table `samapper`.`Syslog`.
@@ -184,32 +193,35 @@ Usage:
         if self.datasource is None:
             raise ValueError("No data source specified. Import aborted.")
 
-        global dbaccess
         global common
+        global Datasources
         if not self.ds:
             try:
-                import dbaccess
                 import common
-                self.settings = dbaccess.get_settings(all=True)
-                for datasource in self.settings['datasources']:
+                from models.datasources import Datasources
+                self.subscription = self.subscription or common.get_subscription()
+                self.dsModel = Datasources(self.subscription)
+                for datasource in self.dsModel.datasources.values():
+                    # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                     if datasource['name'] == self.datasource:
                         self.ds = datasource['id']
                         break
-                    if datasource['id'] == self.datasource:
+                    if unicode(datasource['id']) == unicode(self.datasource):
                         self.ds = datasource['id']
                         break
-                if self.ds == None:
+                if self.ds is None:
                     raise ValueError()
             except ValueError:
                 print("No data source matches name {0}.".format(self.datasource))
-                if self.settings:
-                    print("Data sources include: {0}".format(repr([ds['name'] for ds in self.settings['datasources']])))
-                sys.exit(5)
+                if self.dsModel:
+                    ds_names = [ds['name'] for ds in self.dsModel.datasources.values()]
+                    print("Data sources include: {0}".format(', '.join(ds_names)))
+                raise AssertionError("No data source matches {0}".format(self.datasource))
             except:
                 print("Cannot connect to database.")
-                sys.exit(4)
+                raise AssertionError("Cannot connect to database.")
 
-        table_name = "ds_{ds}_Syslog".format(ds=self.ds)
+        table_name = "s{acct}_ds{ds}_Syslog".format(acct=self.subscription, ds=self.ds)
 
         try:
             truncated_rows = rows[:count]
@@ -218,21 +230,28 @@ Usage:
                       "fills all the dictionary keys in import_base.keys exactly.")
                 print("Expected keys: {0}".format(repr(self.keys)))
                 print("Received keys: {0}".format(repr(rows[0].keys())))
-                sys.exit(3)
+                raise AssertionError("Insertion keys do not match expected keys.")
 
+            # multiple_insert example:
+            # >>> table_name = "my_table"
             # >>> values = [{"name": "foo", "email": "foo@example.com"}, {"name": "bar", "email": "bar@example.com"}]
-            # >>> db.multiple_insert('person', values=values, _test=True)
+            # >>> db.multiple_insert(table_name, values=values)
             common.db_quiet.multiple_insert(table_name, values=truncated_rows)
         except Exception as e:
+            self.failed_attempts += 1
             print("Error inserting into database:")
             print("\t{0}".format(e))
             import integrity
-            if integrity.check_and_fix_db_access() == 0:
-                print("Resuming...")
-                self.insert_data(rows, count)
+            if self.failed_attempts < 2:
+                if integrity.check_and_fix_db_access() == 0:
+                    print("Resuming...")
+                    self.insert_data(rows, count)
+                else:
+                    print("Aborting...")
+                    raise AssertionError("Failed to fix database access. ")
             else:
                 print("Critical failure. Aborting.")
-                sys.exit(2)
+                raise AssertionError("Failed to fix problem multiple times. Aborting.")
 
 
 _class = BaseImporter

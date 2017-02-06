@@ -8,7 +8,7 @@ $def with (tags, envs, dses)
   $for env in envs:
     g_known_envs.push("$env");
 
-  g_ds = "ds_$dses[0]['id']_";
+  g_ds = "ds$dses[0]['id']";
 </script>
 <style type="text/css">
 .ui.tab.segment {
@@ -28,7 +28,7 @@ $def with (tags, envs, dses)
     <span class="text">Data source</span>
     <div class="menu">
       $for ds in dses:
-        <div class="item" data-value="ds_$ds['id']_">$ds['name']</div>
+        <div class="item" data-value="ds$ds['id']">$ds['name']</div>
     </div>
   </div>
 <!--
@@ -165,6 +165,7 @@ $def with (tags, envs, dses)
             <tr><td class="right aligned">Use Name Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
             <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
             <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+            <tr><td class="right aligned">Expected Protocols:</td><td id="port_protocols"></td></tr>
             <tr>
               <td class="right aligned">Alias Name:</td>
               <td>

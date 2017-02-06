@@ -250,9 +250,10 @@ function updateDsSelection() {
     config.ds = newDS;
     links_reset();
     GET_settings(newDS, function (settings) {
-      config.update = (settings.datasource.ar_active === 1);
-      config.update_interval = settings.datasource.ar_interval;
-      config.ds = "ds_" + settings.datasource.id + "_";
+      let newDS_num = /^[^\d]+(\d+).*$/.exec(newDS)[1];
+      let datasource = settings.datasources[newDS_num]
+      config.update = (datasource.ar_active === 1);
+      config.update_interval = datasource.ar_interval;
       init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
 
       setAutoUpdate();

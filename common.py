@@ -1,71 +1,50 @@
 import sys
 import os
 import web
-
 base_path = os.path.dirname(__file__)
 
-navbar = [
-    {
-        "name": "Map",
-        "icon": "sitemap",
-        "link": "/map"
-    },
-    {
-        "name": "Stats",
-        "icon": "filter",
-        "link": "/stats"
-    },
-    {
-        "name": "Table View",
-        "icon": "table",
-        "link": "/table"
-    },
-    {
-        "name": "Host Details",
-        "icon": "tasks",
-        "link": "/metadata"
-    },
-    {
-        "name": "Settings",
-        "icon": "settings",
-        "link": "/settings"
-    }
-]
 
-# tell renderer where to look for templates
-render = web.template.render(os.path.join(base_path, 'templates/'))
+def parse_sql_file(path, replacements):
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    # remove comment lines
+    lines = [i for i in lines if not i.startswith("--")]
+    # join into one long string
+    script = " ".join(lines)
+    # do any necessary string replacements
+    if replacements:
+        script = script.format(**replacements)
+    # split string into a list of commands
+    commands = script.split(";")
+    # ignore empty statements (like trailing newlines)
+    commands = filter(lambda x: bool(x.strip()), commands)
+    return commands
 
-try:
-    sys.dont_write_bytecode = True
-    import dbconfig_local as dbconfig
-except Exception as e:
-    print e
-    import dbconfig
-finally:
-    sys.dont_write_bytecode = False
 
-db = web.database(**dbconfig.params)
-old = web.config.debug
-web.config.debug = False
-db_quiet = web.database(**dbconfig.params)
-web.config.debug = old
-del old
+def exec_sql(connection, path, replacements=None):
+    if not replacements:
+        commands = parse_sql_file(path, {})
+    else:
+        commands = parse_sql_file(path, replacements)
+    for command in commands:
+        connection.query(command)
 
-def IPtoString(ipNumber):
+
+def IPtoString(ip_number):
     # type: (int) -> str
     """
     Converts an IP address from an integer to dotted decimal notation.
     Args:
-        ipNumber: an unsigned 32-bit integer representing an IP address
+        ip_number: an unsigned 32-bit integer representing an IP address
 
     Returns: The IP address as a dotted-decimal string.
 
     """
     return "{0}.{1}.{2}.{3}".format(
-        (ipNumber & 0xFF000000) >> 24,
-        (ipNumber & 0xFF0000) >> 16,
-        (ipNumber & 0xFF00) >> 8,
-        ipNumber & 0xFF)
+        (ip_number & 0xFF000000) >> 24,
+        (ip_number & 0xFF0000) >> 16,
+        (ip_number & 0xFF00) >> 8,
+        ip_number & 0xFF)
 
 
 def IPtoInt(a, b, c, d):
@@ -140,3 +119,57 @@ def determine_range_string(ip="0/0"):
     low = address & mask
     high = address | (0xffffffff ^ mask)
     return low, high
+
+
+navbar = [
+    {
+        "name": "Map",
+        "icon": "sitemap",
+        "link": "/map"
+    },
+    {
+        "name": "Stats",
+        "icon": "filter",
+        "link": "/stats"
+    },
+    {
+        "name": "Table View",
+        "icon": "table",
+        "link": "/table"
+    },
+    {
+        "name": "Host Details",
+        "icon": "tasks",
+        "link": "/metadata"
+    },
+    {
+        "name": "Settings",
+        "icon": "settings",
+        "link": "/settings"
+    }
+]
+
+# tell renderer where to look for templates
+render = web.template.render(os.path.join(base_path, 'templates/'))
+
+try:
+    sys.dont_write_bytecode = True
+    import dbconfig_local as dbconfig
+except Exception as e:
+    print e
+    import dbconfig
+finally:
+    sys.dont_write_bytecode = False
+
+db = web.database(**dbconfig.params)
+old = web.config.debug
+web.config.debug = False
+db_quiet = web.database(**dbconfig.params)
+web.config.debug = old
+del old
+
+demo_subscription_id = 0
+
+
+def get_subscription():
+    return demo_subscription_id
