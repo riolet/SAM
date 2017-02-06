@@ -4,6 +4,10 @@ import threading
 import sys
 import signal
 
+# run file from project root as:
+# python -m spec.python.mock_router
+TEST_LOG_FILE = './data/syslog_test'
+
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -39,7 +43,7 @@ def playback_data(path, speed):
 
 def send_data():
     counter = 0
-    player = playback_data("./data/syslog_test", 1.0)
+    player = playback_data(TEST_LOG_FILE, 1.0)
     for message in player:
         counter += 1
         sock.sendall(message)

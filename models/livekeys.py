@@ -58,3 +58,10 @@ class LiveKeys:
         }
         num_deleted = self.db.delete(self.table_livekeys, where='subscription=$sub AND access_key=$key', vars=qvars)
         return num_deleted
+
+    def delete_ds(self, ds_id):
+        qvars = {
+            'id': ds_id
+        }
+        num_deleted = self.db.delete(self.table_livekeys, where='datasource = $id', vars = qvars)
+        return num_deleted

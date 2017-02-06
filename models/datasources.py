@@ -2,6 +2,7 @@ import re
 import os
 import common
 import settings
+import livekeys
 
 
 class Datasources:
@@ -85,6 +86,7 @@ class Datasources:
 
     def remove_datasource(self, ds_id):
         settingsModel = settings.Settings(self.sub)
+        livekeysModel = livekeys.LiveKeys(self.sub)
         ids = self.ds_ids
 
         # check id is valid
@@ -102,8 +104,7 @@ class Datasources:
         settingsModel['datasource'] = alt_id
 
         # remove from live_dest if selected
-        if settingsModel['live_dest'] == ds_id:
-            settingsModel['live_dest'] = None
+        livekeysModel.delete_ds(ds_id)
 
         # remove from Datasources
         # Subscription is not needed to be specified in the WHERE clause because `id` is primary key.

@@ -540,6 +540,7 @@ function POST_ds_delete(id) {
             //successfully deleted the data source
             rebuild_tabs(response.settings, response.datasources);
             populateLiveDestDSList(getDSs());
+            rebuildLiveKeys(response.livekeys)
         }
     });
 }

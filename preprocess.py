@@ -50,7 +50,7 @@ class Preprocessor:
         } 
 
     def count_syslog(self):
-        rows = self.db.select(self.tables['table_syslog'], what=web.SQLLiteral("COUNT(1) AS 'cnt'"))
+        rows = self.db.select(self.tables['table_syslog'], what="COUNT(1) AS 'cnt'")
         row = rows.first()
         return row.cnt
 

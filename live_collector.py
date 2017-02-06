@@ -22,8 +22,9 @@ Live Collector
 """
 
 
-COLLECTOR_ADDRESS = ('localhost', 514)
+LISTEN_ADDRESS = ('localhost', 514)
 SERVER_ADDRESS = ('localhost', 8081)
+ACCESS_KEY = 'lLbEAWT6fpbXIogTRTh_qKyW'
 CERTIFICATE_FILE = "cert.pem"
 
 SOCKET_BUFFER = []
@@ -145,15 +146,16 @@ def transmit_lines():
     global TRANSMIT_BUFFER_SIZE
     global CERTIFICATE_FILE
     global SERVER_ADDRESS
+    global ACCESS_KEY
     address = ("localhost", 8081)
-    password = "not-so-secret-passcode"
+    access_key = ACCESS_KEY
     version = "1.0"
     headers = base_importer.BaseImporter.keys
     lines = TRANSMIT_BUFFER
     TRANSMIT_BUFFER = []
     TRANSMIT_BUFFER_SIZE = 0
     package = {
-        'password': password,
+        'access_key': access_key,
         'version': version,
         'headers': headers,
         'lines': lines
@@ -181,6 +183,24 @@ def transmit_lines():
         print("SOCKET: Could not connect to socket {0}:{1}".format(*address))
         print("SOCKET: Error {0}: {1}".format(e.errno, e.strerror))
 
+
+def test_connection():
+    print "Testing connection...",
+    try:
+        plain_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ssl_sock = ssl.wrap_socket(plain_sock,
+                                   ca_certs="cert.pem",
+                                   cert_reqs=ssl.CERT_REQUIRED,
+                                   ssl_version=ssl.PROTOCOL_TLSv1_2)
+        translator = live_protocol.LiveProtocol(ssl_sock)
+
+        translator.send("hello")
+        response = translator.receive()
+    except:
+        print("Failed.")
+        return False
+    print("Succeeded.")
+    return True
 
 def store_data(lines):
     global SOCKET_BUFFER
@@ -227,15 +247,18 @@ if __name__ == "__main__":
         print("Aborting.")
         sys.exit(1)
 
+    # test the connection
+
+
     # register signals for safe shut down
     signal.signal(signal.SIGINT, signal_handler)
-    COLLECTOR = SocketServer.UDPServer(COLLECTOR_ADDRESS, UDPRequestHandler)
+    COLLECTOR = SocketServer.UDPServer(LISTEN_ADDRESS, UDPRequestHandler)
 
     # Start the daemon listening on the port in an infinite loop that exits when the program is killed
     COLLECTOR_THREAD = threading.Thread(target=COLLECTOR.serve_forever)
     COLLECTOR_THREAD.start()
 
-    print("Live Collector listening on {0}:{1}.".format(*COLLECTOR_ADDRESS))
+    print("Live Collector listening on {0}:{1}.".format(*LISTEN_ADDRESS))
 
 
     try:

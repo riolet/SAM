@@ -41,19 +41,18 @@ class Buffer:
         self.sub = sub
         self.ds = ds
         self.messages = []
-        self.last_pop_time = time.time()
+        self.last_proc_time = time.time()
         self.expiring = False
         self.lock = threading.Lock()
 
     def pop_all(self):
         messages = self.messages
         self.messages = []
-        self.last_pop_time = time.time()
         return messages
 
     def add(self, message):
         self.messages.append(message)
-        self.expiring = len(self.messages) > 0
+        self.expiring = False
 
     def __str__(self):
         return "{0}-{1}-{2}".format(self.sub, self.ds, len(self.messages))
@@ -133,18 +132,22 @@ class DatabaseInserter(threading.Thread):
                 rows = processor.count_syslog()
 
                 if rows >= self.SIZE_QUOTA:
+                    print("PREPROCESSOR: exceeded size quota")
                     # process the buffer
                     self.syslog_to_tables(buffer)
-                elif time.time() > buffer.last_pop_time + self.TIME_QUOTA:
+                elif time.time() > buffer.last_proc_time + self.TIME_QUOTA:
+                    print("PREPROCESSOR: exceeded time quota")
                     if rows > 0:
                         # process the buffer
                         self.syslog_to_tables(buffer)
                     else:
                         if buffer.expiring:
+                            print("PREPROCESSOR: removing {0}: {1}".format(buffer.sub, buffer.ds))
                             # remove the buffer from the buffer list
                             self.buffers.remove(buffer.sub, buffer.ds)
                         else:
                             # flag the buffer as inactive for future removal
+                            print("PREPROCESSOR: flagging for removal {0}: {1}".format(buffer.sub, buffer.ds))
                             buffer.flag_expired()
                 else:
                     # rows are under quota, and time is not up. Move on
@@ -170,12 +173,7 @@ class DatabaseInserter(threading.Thread):
     def run_preprocessor(self, sub, ds):
         print("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub, ds))
         processor = preprocess.Preprocessor(common.db_quiet, sub, ds)
-        rows = processor.count_syslog()
-        if rows > 0:
-            print("Processing {0} rows".format(rows))
-            processor.run_all()
-        else:
-            print("Not processing. {0} rows".format(rows))
+        processor.run_all()
 
     def buffer_to_syslog(self, buffer):
         sub = buffer.sub
@@ -186,6 +184,8 @@ class DatabaseInserter(threading.Thread):
     def syslog_to_tables(self, buffer):
         sub = buffer.sub
         ds = buffer.ds
+        buffer.last_proc_time = time.time()
+
         self.run_preprocessor(sub, ds)
 
 
@@ -244,26 +244,41 @@ class ConnectionHandler(SocketServer.StreamRequestHandler):
         else:
             translator.send("Failed: Error processing data.")
 
+    def validate_data(self, data):
+        print("SERVER: validating...")
+        access_key = data.pop('access_key', None)
+        if not access_key:
+            print("No access key. Denied")
+            return None
+
+        version = data.pop('version', None)
+        if not version:
+            print("No version specified. Denied")
+            return None
+        if version != "1.0":
+            print("Version does not match. Denied")
+            return None
+
+        key_model = models.livekeys.LiveKeys()
+        access = key_model.validate(access_key)
+        return access
+
+
     def socket_to_buffer(self, data):
         global BUFFERS
-        # read code
-        code = data.pop('code', None)
-        if not code:
-            print("No access code. Denied")
+
+        access = self.validate_data(data)
+        if not access:
             return False
 
-        # translate/validate code in database
-        key_model = models.livekeys.LiveKeys()
-        access = key_model.validate(code)
-        if not access:
-            print("Access code not valid. Denied")
-            return False
         sub = access['subscription']
         ds = access['datasource']
 
         # read lines/etc
         # insert lines into buffer
+        print("SERVER: Received input.")
         BUFFERS.add(sub, ds, data)
+        return True
 
 
 def signal_handler(signal_number, stack_frame):
