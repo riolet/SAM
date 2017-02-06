@@ -43,7 +43,14 @@ class LiveKeys:
         WHERE L.subscription=$sub""".format(table_livekeys=self.table_livekeys, table_datasources=self.table_ds)
         rows = self.db.query(query, vars=qvars)
         return list(map(dict, rows))
-        
+
+    def validate(self, key):
+        qvars = {
+            'key': key
+        }
+        rows = self.db.select(self.table_livekeys, where="access_key = $key", vars=qvars)
+        return rows.first()
+
     def delete(self, key):
         qvars = {
             'sub': self.sub,

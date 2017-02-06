@@ -8,6 +8,7 @@ import live_protocol
 import preprocess
 import common
 import importers.import_base
+import models.livekeys
 
 """
 Live Server
@@ -39,10 +40,12 @@ Live Server
 CERTIFICATE_FILE = "cert.pem"
 HOST = "localhost"
 PORT = 8081
+
 SERVER = None
 SERVER_THREAD = None
 IMPORTER = None
 IMPORTER_THREAD = None
+BUFFERS = None
 # MEMORY_BUFFER = []
 # MEMORY_BUFFER_LOCK = threading.Lock()
 # SYSLOG_SIZE = 0
@@ -53,58 +56,34 @@ IMPORTER_THREAD = None
 
 
 class Buffer:
-    EMPTY = 0
-    PARTIAL = 1
-    FULL = 2
-
-    EXPIRED = 4
-    NOT_EXPIRED = 0
-
-    TIMEOUT = 8
-
-    SIZE_QUOTA = 1000  # log lines.  When the syslog has this many entries, process it.
-    TIME_QUOTA = 20  # seconds. Process a partially-filled syslog with this period.
-
 
     def __init__(self, sub, ds):
         self.sub = sub
         self.ds = ds
-        self.lines = []
+        self.messages = []
         self.last_pop_time = time.time()
-        self.expiring = self.NOT_EXPIRED
+        self.expiring = False
         self.lock = threading.Lock()
 
-    def visit(self):
-        code = (len(self.lines) + self.SIZE_QUOTA - 1) // self.SIZE_QUOTA
-        code = code ^ ((2 ^ code) & -(2 < code))
-        # code is now 0, 1, or 2 if the number of lines is 0, 1..SIZE_QUOTE, or >SIZE_QUOTA
-
-        code |= self.expiring
-        # sets the 3rd bit (EXPIRED) if the buffer is old.
-
-        code |= int(time.time() > self.last_pop_time + self.TIME_QUOTA) << 3
-        # sets the 4th bit (TIMEOUT) if the time quota is up
-
-        return code
-
     def pop_all(self):
-        lines = self.lines
-        self.lines = []
+        messages = self.messages
+        self.messages = []
         self.last_pop_time = time.time()
-        return lines
+        return messages
 
-    def add(self, lines):
-        self.lines.extend(lines)
-        self.expiring = self.EXPIRED * int(len(lines) != 0)
+    def add(self, message):
+        self.messages.append(message)
+        self.expiring = len(self.messages) > 0
 
     def __str__(self):
-        return "{0}-{1}-{2}".format(self.sub, self.ds, len(self.lines))
+        return "{0}-{1}-{2}".format(self.sub, self.ds, len(self.messages))
 
     def __repr__(self):
         return str(self)
 
 
 class MemoryBuffers:
+
     def __init__(self):
         # each buffer needs a sub, ds, list-of-lines, and last_empty_time
         self.buffers = {}
@@ -115,14 +94,14 @@ class MemoryBuffers:
         sub_buffers[ds] = Buffer(sub, ds)
         self.buffers[sub] = sub_buffers
 
-    def add(self, sub, ds, lines):
+    def add(self, sub, ds, message):
         # type: (int, int, [str]) -> None
         buffer = self.buffers.get(sub, {}).get(ds)
         if not buffer:
             self.create(sub, ds)
             buffer = self.buffers.get(sub, {}).get(ds)
         with buffer.lock:
-            buffer.add(lines)
+            buffer.add(message)
 
     def remove(self, sub, ds):
         # type: (int, int) -> None
@@ -146,7 +125,9 @@ class MemoryBuffers:
 
 
 class DatabaseInserter(threading.Thread):
-    CYCLE_SLEEP = 1  # sleep period between buffer-checking cycles
+    SIZE_QUOTA = 1000  # log lines.  When the syslog has this many entries, process it.
+    TIME_QUOTA = 20  # seconds. Process a partially-filled syslog with this period.
+    CYCLE_SLEEP = 1  # seconds. sleep period between buffer-checking cycles
 
     def __init__(self, buffers):
         threading.Thread.__init__(self)
@@ -165,21 +146,29 @@ class DatabaseInserter(threading.Thread):
 
             buffers = self.buffers.get_all()
             for buffer in buffers:
-                state = buffer.visit()
-
                 # import any lines into Syslog
-                if state & (Buffer.FULL | Buffer.PARTIAL):
-                    self.buffer_to_syslog(buffer)
+                self.buffer_to_syslog(buffer)
 
-                if state & Buffer.FULL:
+                processor = preprocess.Preprocessor(common.db_quiet, buffer.sub, buffer.ds)
+                rows = processor.count_syslog()
+
+                if rows >= self.SIZE_QUOTA:
                     # process the buffer
                     self.syslog_to_tables(buffer)
-                elif state & Buffer.TIMEOUT:
-                    # process the buffer
-                    self.syslog_to_tables(buffer)
-                elif state & Buffer.EXPIRED:
-                    # remove the buffer from the buffer list
-                    self.buffers.remove(buffer.sub, buffer.ds)
+                elif time.time() > buffer.last_pop_time + self.TIME_QUOTA:
+                    if rows > 0:
+                        # process the buffer
+                        self.syslog_to_tables(buffer)
+                    else:
+                        if buffer.expiring:
+                            # remove the buffer from the buffer list
+                            self.buffers.remove(buffer.sub, buffer.ds)
+                        else:
+                            # flag the buffer as inactive for future removal
+                            buffer.flag_expired()
+                else:
+                    # rows are under quota, and time is not up. Move on
+                    pass
 
     def shutdown(self):
         self.e_shutdown.set()
@@ -261,13 +250,40 @@ class ConnectionHandler(SocketServer.StreamRequestHandler):
             self.data = translator.receive()
         except:
             traceback.print_exc()
-            translator.send("Error processing request")
+            translator.send("Failed: Error processing request.")
+            return
 
         if self.data:
-            with MEMORY_BUFFER_LOCK:
-                MEMORY_BUFFER.append(self.data)
+            success = self.socket_to_buffer(self.data)
+        else:
+            translator.send("Failed: No data.")
+            return
 
-        translator.send("Received {0}".format(repr(self.data)[:50]))
+        if success:
+            translator.send("Success")
+        else:
+            translator.send("Failed: Error processing data.")
+
+    def socket_to_buffer(self, data):
+        global BUFFERS
+        # read code
+        code = data.pop('code', None)
+        if not code:
+            print("No access code. Denied")
+            return False
+
+        # translate/validate code in database
+        key_model = models.livekeys.LiveKeys()
+        access = key_model.validate(code)
+        if not access:
+            print("Access code not valid. Denied")
+            return False
+        sub = access['subscription']
+        ds = access['datasource']
+
+        # read lines/etc
+        # insert lines into buffer
+        BUFFERS.add(sub, ds, data)
 
 
 def signal_handler(signal_number, stack_frame):
@@ -277,6 +293,7 @@ def signal_handler(signal_number, stack_frame):
 
 def shutdown():
     global SERVER
+    global IMPORTER
     global SERVER_THREAD
 
     print("Shutting down server.")
@@ -284,62 +301,24 @@ def shutdown():
     if SERVER_THREAD:
         SERVER_THREAD.join()
         print("Handler stopped.")
-    SHUTDOWN_EVENT.set()
-
-
-def thread_batch_processor():
-    # loop:
-    #    wait for event, with timeout
-    #    check bufferSize
-    #       conditionally swap buffers and do processing.
-    global SYSLOG_SIZE
-    global SHUTDOWN_EVENT
-    global MEMORY_BUFFER
-    global TIME_BETWEEN_IMPORTING
-    global TIME_BETWEEN_PROCESSING
-
-    last_processing = time.time()  # time.time() is in floating point seconds
-    alive = True
-    while alive:
-        triggered = SHUTDOWN_EVENT.wait(TIME_BETWEEN_IMPORTING)
-        if triggered:
-            alive = False
-
-        deltatime = time.time() - last_processing
-        if SYSLOG_SIZE > 1000:
-            print("CHRON: process server running batch (due to buffer cap reached)")
-            preprocess_lines()
-            last_processing = time.time()
-        elif deltatime > TIME_BETWEEN_PROCESSING and SYSLOG_SIZE > 0:
-            print("CHRON: process server running batch (due to time)")
-            preprocess_lines()
-            last_processing = time.time()
-        elif SYSLOG_SIZE > 0:
-            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime,
-                                                                                                         SYSLOG_SIZE))
-        else:
-            # don't let time accumulate while the buffer is empty.
-            last_processing = time.time()
-
-        # import lines in memory buffer:
-        if len(MEMORY_BUFFER) > 0:
-            with MEMORY_BUFFER_LOCK:
-                messages = MEMORY_BUFFER
-                MEMORY_BUFFER = []
-            import_messages(messages)
-
-    print("CHRON: process server shutting down")
+    IMPORTER.shutdown()
 
 
 def main():
-    global SERVER
-    global SERVER_THREAD
+    global CERTIFICATE_FILE
     global HOST
     global PORT
-    global CERTIFICATE_FILE
+    global SERVER
+    global SERVER_THREAD
+    global IMPORTER
+    global IMPORTER_THREAD
+    global BUFFERS
 
     # register signals for safe shut down
     signal.signal(signal.SIGINT, signal_handler)
+
+    # Create the buffers object
+    BUFFERS = MemoryBuffers()
 
     # Start the daemon listening on the port in an infinite loop that exits when the program is killed
     SSL_TCPServer.allow_reuse_address = True
@@ -347,10 +326,14 @@ def main():
     SERVER_THREAD = threading.Thread(target=SERVER.serve_forever)
     SERVER_THREAD.start()
 
+    # set up the importer
+    IMPORTER = DatabaseInserter(BUFFERS)
+    IMPORTER_THREAD = threading.currentThread()
+
     print("Live Server listening on {0}:{1}.".format(HOST, PORT))
 
     try:
-        thread_batch_processor()
+        IMPORTER.run()
     except:
         traceback.print_exc()
         print("==>--<" * 10)
