@@ -6,6 +6,7 @@ import ssl
 import time
 import live_protocol
 import preprocess
+import common
 import importers.import_base
 
 """
@@ -18,7 +19,6 @@ Live Server
 * validates messages against keys before importing
 
 """
-
 
 # create MemoryBuffer class to allow storing, counting, and removing lines
 # unique storage comparments, unique per subscription/datasource
@@ -43,86 +43,181 @@ SERVER = None
 SERVER_THREAD = None
 IMPORTER = None
 IMPORTER_THREAD = None
-PASSCODE = b'not-so-secret-passcode'
-#MEMORY_BUFFER = []
-#MEMORY_BUFFER_LOCK = threading.Lock()
-SYSLOG_SIZE = 0
-SYSLOG_PROCESSING_QUOTE = 1000 # when the syslog has this many entries, process it.
-TIME_BETWEEN_IMPORTING = 1 # seconds. Check for and import lines into the syslog with this period.
-TIME_BETWEEN_PROCESSING = 20 # seconds. Process a partially-filled syslog with this period.
-SHUTDOWN_EVENT = threading.Event()
+# MEMORY_BUFFER = []
+# MEMORY_BUFFER_LOCK = threading.Lock()
+# SYSLOG_SIZE = 0
+# SYSLOG_PROCESSING_QUOTE = 1000  # when the syslog has this many entries, process it.
+# TIME_BETWEEN_IMPORTING = 1  # seconds. Check for and import lines into the syslog with this period.
+# TIME_BETWEEN_PROCESSING = 20  # seconds. Process a partially-filled syslog with this period.
+# SHUTDOWN_EVENT = threading.Event()
+
 
 class Buffer:
+    EMPTY = 0
+    PARTIAL = 1
+    FULL = 2
+
+    EXPIRED = 4
+    NOT_EXPIRED = 0
+
+    TIMEOUT = 8
+
+    SIZE_QUOTA = 1000  # log lines.  When the syslog has this many entries, process it.
+    TIME_QUOTA = 20  # seconds. Process a partially-filled syslog with this period.
+
+
     def __init__(self, sub, ds):
         self.sub = sub
         self.ds = ds
         self.lines = []
-        self.last_empty_time = time.time()
+        self.last_pop_time = time.time()
+        self.expiring = self.NOT_EXPIRED
+        self.lock = threading.Lock()
 
-    # todo: ???
+    def visit(self):
+        code = (len(self.lines) + self.SIZE_QUOTA - 1) // self.SIZE_QUOTA
+        code = code ^ ((2 ^ code) & -(2 < code))
+        # code is now 0, 1, or 2 if the number of lines is 0, 1..SIZE_QUOTE, or >SIZE_QUOTA
+
+        code |= self.expiring
+        # sets the 3rd bit (EXPIRED) if the buffer is old.
+
+        code |= int(time.time() > self.last_pop_time + self.TIME_QUOTA) << 3
+        # sets the 4th bit (TIMEOUT) if the time quota is up
+
+        return code
+
+    def pop_all(self):
+        lines = self.lines
+        self.lines = []
+        self.last_pop_time = time.time()
+        return lines
+
+    def add(self, lines):
+        self.lines.extend(lines)
+        self.expiring = self.EXPIRED * int(len(lines) != 0)
+
+    def __str__(self):
+        return "{0}-{1}-{2}".format(self.sub, self.ds, len(self.lines))
+
+    def __repr__(self):
+        return str(self)
+
 
 class MemoryBuffers:
     def __init__(self):
         # each buffer needs a sub, ds, list-of-lines, and last_empty_time
-        buffers = {}
-        locks = {}
+        self.buffers = {}
+        """:type : {int: {int: Buffer}}"""
 
-    def get_lock(self, sub, ds):
-        # TODO: return threading lock unique for each subscription/datasource
-        pass
+    def create(self, sub, ds):
+        sub_buffers = self.buffers.get(sub, {})
+        sub_buffers[ds] = Buffer(sub, ds)
+        self.buffers[sub] = sub_buffers
 
     def add(self, sub, ds, lines):
-        with self.get_lock(sub, ds):
-            # TODO: put the lines in the appropriate box.
-            pass
-
-    def count(self, sub, ds):
-        # TODO: return the number of lines currently in the give sub/ds buffer
-        # no lock required. no biggie if data is wrong.
-        pass
-
-    def get_oversize(self):
-        # TODO: check all sub/ds combinations for exceeded threshhold
-        # return a lit of pairs [(sub, ds), (sub, ds)]
-        pass
-
-    def get_expired(self):
-        # TODO: check all sub/ds combinations for exceeded time limit
-        # return a lit of pairs [(sub, ds), (sub, ds)]
-        pass
+        # type: (int, int, [str]) -> None
+        buffer = self.buffers.get(sub, {}).get(ds)
+        if not buffer:
+            self.create(sub, ds)
+            buffer = self.buffers.get(sub, {}).get(ds)
+        with buffer.lock:
+            buffer.add(lines)
 
     def remove(self, sub, ds):
-        # TODO: remove that buffer box
-        pass
+        # type: (int, int) -> None
+        sub_buffer = self.buffers.get(sub)
+        if sub_buffer:
+            if ds in sub_buffer:
+                del sub_buffer[ds]
+            if not sub_buffer:
+                del self.buffers[sub]
 
     def get_all(self):
-        # TODO: return all boxes as a list of pairs [(sub,ds), (sub,ds)]
-        pass
+        # type: () -> [Buffer]
+        buffers = [v for sub in self.buffers.keys() for v in self.buffers[sub].values()]
+        return buffers
 
     def yank(self, sub, ds):
-        with self.get_lock(sub, ds):
-            # TODO: take the appropriate sub/ds box
-            # put an empty box in it's place
-            pass
-        # return the taken box
+        buffer = self.buffers.get(sub, {})[ds]
+        with buffer.lock:
+            lines = buffer.pop_all()
+        return lines
 
-class BackLoader:
-    def __init__(self, buffer):
-        self.buffer = buffer
+
+class DatabaseInserter(threading.Thread):
+    CYCLE_SLEEP = 1  # sleep period between buffer-checking cycles
+
+    def __init__(self, buffers):
+        threading.Thread.__init__(self)
+        # type: (MemoryBuffers) -> None
+        self.buffers = buffers
         self.alive = True
+        self.e_shutdown = threading.Event()
 
     def run(self):
-        # while alive
-        #  check for any oversize buffers
-        #       process those
-        #  check if the time is expired
-        #       remove if empty
-        #       else process everything
-        #  sleep a duration
-        pass
+        while self.alive:
+
+            # sleep, but watch for shutdown requests
+            triggered = self.e_shutdown.wait(self.CYCLE_SLEEP)
+            if triggered:
+                self.alive = False
+
+            buffers = self.buffers.get_all()
+            for buffer in buffers:
+                state = buffer.visit()
+
+                # import any lines into Syslog
+                if state & (Buffer.FULL | Buffer.PARTIAL):
+                    self.buffer_to_syslog(buffer)
+
+                if state & Buffer.FULL:
+                    # process the buffer
+                    self.syslog_to_tables(buffer)
+                elif state & Buffer.TIMEOUT:
+                    # process the buffer
+                    self.syslog_to_tables(buffer)
+                elif state & Buffer.EXPIRED:
+                    # remove the buffer from the buffer list
+                    self.buffers.remove(buffer.sub, buffer.ds)
 
     def shutdown(self):
-        self.alive = False
+        self.e_shutdown.set()
+
+    def run_importer(self, sub, ds, messages):
+        importer = importers.import_base.BaseImporter()
+        importer.set_subscription(sub)
+        importer.set_datasource(ds)
+
+        for msg in messages:
+            lines = msg['lines']
+            headers = msg['headers']
+            # lines is a list of rows, where each row is a list of values
+            # headers is a list of column names
+            # rows is a list of dictionaries where each dictionary is the headers applied to that row of data
+            rows = [{headers[i]: v for i, v in enumerate(row)} for row in lines]
+            importer.insert_data(rows, len(lines))
+
+    def run_preprocessor(self, sub, ds):
+        print("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub, ds))
+        processor = preprocess.Preprocessor(common.db_quiet, sub, ds)
+        rows = processor.count_syslog()
+        if rows > 0:
+            print("Processing {0} rows".format(rows))
+            processor.run_all()
+        else:
+            print("Not processing. {0} rows".format(rows))
+
+    def buffer_to_syslog(self, buffer):
+        sub = buffer.sub
+        ds = buffer.ds
+        lines = self.buffers.yank(sub, ds)
+        self.run_importer(sub, ds, lines)
+
+    def syslog_to_tables(self, buffer):
+        sub = buffer.sub
+        ds = buffer.ds
+        self.run_preprocessor(sub, ds)
 
 
 class SSL_TCPServer(SocketServer.TCPServer):
@@ -148,9 +243,9 @@ class SSL_TCPServer(SocketServer.TCPServer):
                                          ssl_version=self.ssl_version)
         else:
             connstream = ssl.wrap_socket(newsocket,
-                                     server_side=True,
-                                     certfile=self.certfile,
-                                     ssl_version=self.ssl_version)
+                                         server_side=True,
+                                         certfile=self.certfile,
+                                         ssl_version=self.ssl_version)
         return connstream, fromaddr
 
 
@@ -192,41 +287,6 @@ def shutdown():
     SHUTDOWN_EVENT.set()
 
 
-def import_messages(messages):
-    global SYSLOG_SIZE
-    settings = dbaccess.get_settings()
-    importer = importers.import_base.BaseImporter()
-    importer.datasource = settings['live_dest']
-    if importer.datasource is None:
-        print("IMPORTER: No destination specified for live data")
-        return
-
-    for msg in messages:
-        # TODO: check password
-        # TODO: check message version
-
-        lines = msg['lines']
-        headers = msg['headers']
-        # lines is a list of rows, where each row is a list of values
-        # headers is a list of column names
-        # rows is a list of dictionaries where each dictionary is the headers applied to that row of data
-        rows = [{headers[i]: v for i, v in enumerate(row)} for row in lines]
-        print("IMPORTER: importing {0} lines to the Syslog. Syslog is now {1}".format(len(lines), SYSLOG_SIZE + len(lines)))
-        importer.insert_data(rows, len(lines))
-        SYSLOG_SIZE += len(lines)
-
-
-def preprocess_lines():
-    global SYSLOG_SIZE
-    print("PREPROCESSOR: preprocessing the syslog. ({0} lines)".format(SYSLOG_SIZE))
-    settings = dbaccess.get_settings()
-    if settings['live_dest'] is None:
-        print("PREPROCESSOR: No live data source specified. Check settings.")
-    else:
-        preprocess.preprocess_log(ds=settings['live_dest'])
-    SYSLOG_SIZE = 0
-
-
 def thread_batch_processor():
     # loop:
     #    wait for event, with timeout
@@ -255,7 +315,8 @@ def thread_batch_processor():
             preprocess_lines()
             last_processing = time.time()
         elif SYSLOG_SIZE > 0:
-            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime, SYSLOG_SIZE))
+            print("CHRON: waiting for time limit or a full buffer.  Time at {0:.1f}, Size at {1}".format(deltatime,
+                                                                                                         SYSLOG_SIZE))
         else:
             # don't let time accumulate while the buffer is empty.
             last_processing = time.time()

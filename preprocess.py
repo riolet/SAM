@@ -6,6 +6,7 @@ import sys
 import common
 import integrity
 import models.datasources
+import web
 
 # DB connection to use. `common.db` echos every statement to stderr, `common.db_quiet` does not.
 
@@ -47,6 +48,11 @@ class Preprocessor:
             'table_links_in': 's{acct}_ds{id}_LinksIn'.format(acct=self.sub_id, id=self.ds_id),
             'table_links_out': 's{acct}_ds{id}_LinksOut'.format(acct=self.sub_id, id=self.ds_id)
         } 
+
+    def count_syslog(self):
+        rows = self.db.select(self.tables['table_syslog'], what=web.SQLLiteral("COUNT(1) AS 'cnt'"))
+        row = rows.first()
+        return row.cnt
 
     def syslog_to_nodes(self):
         # Get all /8 nodes. Load them into Nodes8

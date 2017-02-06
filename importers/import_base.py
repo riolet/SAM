@@ -31,6 +31,7 @@ Usage:
 
 """.format(sys.argv[0])
         self.dsModel = None
+        self.subscription = None
         self.datasource = None
         self.ds = None
         self.failed_attempts = 0
@@ -171,6 +172,12 @@ Usage:
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
         return lines_inserted
 
+    def set_subscription(self, sub):
+        self.subscription = sub
+
+    def set_datasource(self, ds):
+        self.datasource = ds
+
     def insert_data(self, rows, count):
         """
         Attempt to insert the first 'count' items in 'rows' into the database table `samapper`.`Syslog`.
@@ -192,13 +199,14 @@ Usage:
             try:
                 import common
                 from models.datasources import Datasources
-                self.dsModel = Datasources(common.get_subscription())
+                self.subscription = self.subscription or common.get_subscription()
+                self.dsModel = Datasources(self.subscription)
                 for datasource in self.dsModel.datasources.values():
                     # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                     if datasource['name'] == self.datasource:
                         self.ds = datasource['id']
                         break
-                    if str(datasource['id']) == str(self.datasource):
+                    if unicode(datasource['id']) == unicode(self.datasource):
                         self.ds = datasource['id']
                         break
                 if self.ds is None:
@@ -213,7 +221,7 @@ Usage:
                 print("Cannot connect to database.")
                 raise AssertionError("Cannot connect to database.")
 
-        table_name = "s{acct}_ds{ds}_Syslog".format(acct=common.get_subscription(), ds=self.ds)
+        table_name = "s{acct}_ds{ds}_Syslog".format(acct=self.subscription, ds=self.ds)
 
         try:
             truncated_rows = rows[:count]
