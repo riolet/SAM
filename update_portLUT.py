@@ -1,8 +1,8 @@
 import csv
 import common
 import os
-import dbaccess
 import urllib2
+import integrity
 
 
 def get_raw_data():
@@ -53,20 +53,12 @@ def filter_lines(rows):
             continue
         name = i[key_name]
         desc = escape(i[key_description])
-        protocol = i[key_protocol]
-        if protocol == "tcp":
-            tcp = 1
-            udp = 0
-        elif protocol == "udp":
-            tcp = 0
-            udp = 1
-        else:
-            continue
+        protocol = {i[key_protocol]}
         if name == "" or i[key_portnumber] == "" or desc == "":
             continue
         try:
             number = int(i[key_portnumber])
-            filtered_rows.append([name, number, tcp, udp, desc])
+            filtered_rows.append([name, number, protocol, desc])
         except ValueError:
             # expand the number range
             try:
@@ -76,7 +68,7 @@ def filter_lines(rows):
                 print("row is: " + str(i))
                 raise e
             for n in number:
-                filtered_rows.append([name, n, tcp, udp, desc])
+                filtered_rows.append([name, n, protocol, desc])
     print("rows filtered")
     return filtered_rows
 
@@ -84,8 +76,7 @@ def filter_lines(rows):
 def combine_duplicates(rows):
     key_name = 0
     key_portnumber = 1
-    key_tcp = 2
-    key_udp = 3
+    key_protocol = 2
 
     rows.sort(key=lambda p: p[key_portnumber])
 
@@ -99,8 +90,8 @@ def combine_duplicates(rows):
             last_index += 1
         else:
             if i[key_name] == ports[last_index][key_name]:
-                ports[last_index][key_tcp] |= i[key_tcp]
-                ports[last_index][key_udp] |= i[key_udp]
+
+                ports[last_index][key_protocol] |= i[key_protocol]
     print("rows made unique; duplicates combined")
     return ports
 
@@ -108,33 +99,35 @@ def combine_duplicates(rows):
 def write_default_port_data(ports):
     key_name = 0
     key_portnumber = 1
-    key_tcp = 2
-    key_udp = 3
-    key_description = 4
+    key_protocol = 2
+    key_description = 3
     with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'wb') as f:
         f.write("""{
   "ports": {
 """)
         for port in ports[:-1]:
             text = \
-                """    \"{0}\": {{
-    \"port\": {0},
-    \"tcp\": {1},
-    \"udp\": {2},
-    \"name\": \"{3}\",
-    \"description\": \"{4}\"
+                """    \"{port}\": {{
+    \"port\": {port},
+    \"protocols\": \"{protocol}\",
+    \"name\": \"{name}\",
+    \"description\": \"{desc}\"
   }},
- """.format(port[key_portnumber], port[key_tcp], port[key_udp], port[key_name], port[key_description])
+""".format(port=port[key_portnumber],
+            protocol=",".join(port[key_protocol]).upper().strip(','),
+            name=port[key_name],
+            desc=port[key_description])
             f.write(text)
-        text = """    \"{0}\": {{
-    \"port\": {0},
-    \"tcp\": {1},
-    \"udp\": {2},
-    \"name\": \"{3}\",
-    \"description\": \"{4}\"
+        text = """    \"{port}\": {{
+    \"port\": {port},
+    \"protocols\": \"{protocols}\",
+    \"name\": \"{name}\",
+    \"description\": \"{desc}\"
   }}
-""".format(ports[-1][key_portnumber], ports[-1][key_tcp], ports[-1][key_udp],
-           ports[-1][key_name], ports[-1][key_description])
+""".format(port=ports[-1][key_portnumber],
+           protocols=",".join(ports[-1][key_protocol]).upper().strip(','),
+           name=ports[-1][key_name],
+           desc=ports[-1][key_description])
         f.write(text)
         f.write("""  }
 }""")
@@ -149,7 +142,7 @@ def rebuild_lut():
     write_default_port_data(ports)
 
     # 2.  rebuild database with new port information
-    dbaccess.reset_port_names()
+    integrity.fill_port_table()
 
 
 if __name__ == '__main__':

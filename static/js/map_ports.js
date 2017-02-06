@@ -90,6 +90,12 @@
         }
         return "";
     };
+    ports.get_protocols = function (port) {
+        if (!ports.loaded(port)){
+            return ""
+        }
+        return ports.ports[port].protocols
+    };
     ports.get_presentation = function (port) {
         var link = document.createElement('a');
         link.onclick = ports.private.click;
@@ -115,12 +121,13 @@
             old_info = ports.ports[port];
         } else {
             old_info = {
-                'port': port,
-                'active': 1,
-                'name': '',
-                'description': '',
-                'alias_name': '',
-                'alias_description': ''
+                "port": port,
+                "protocols": "",
+                "active": 1,
+                "name": "",
+                "description": "",
+                "alias_name": "",
+                "alias_description": ""
             };
         }
 
@@ -145,6 +152,10 @@
         if (new_info.hasOwnProperty("description") && new_info.description !== old_info.description) {
             old_info.description = new_info.description;
         }
+        if (new_info.hasOwnProperty("protocols")) {
+            old_info.protocols = new_info.protocols.toLocaleLowerCase().replace(/,/g, ", ");
+        }
+        // if it had already been loaded, and there are changes, push those changes back to the db.
         if (Object.keys(delta).length > 0) {
             delta.port = port;
             POST_portinfo(delta);
@@ -177,6 +188,7 @@
         document.getElementById("port_number").innerHTML = port;
         document.getElementById("port_name").innerHTML = "loading...";
         document.getElementById("port_description").innerHTML = "loading...";
+        document.getElementById("port_protocols").innerHTML = "";
         document.getElementById("port_alias_name").value = "";
         document.getElementById("port_alias_description").value = "";
 
@@ -206,11 +218,21 @@
     };
     ports.private.GET_response = function (response) {
         Object.keys(response).forEach(function (key) {
-            ports.set(Number(key), response[key]);
+            // response[key]
+            ports.ports[Number(key)] = {
+              "port": Number(key),
+              "protocols": response[key].protocols,
+              "active": response[key].active,
+              "name": response[key].name,
+              "description": response[key].description,
+              "alias_name": response[key].alias_name,
+              "alias_description": response[key].alias_description
+            }
         });
         ports.private.update_displays();
     };
     ports.private.save = function () {
+        console.log("saving");
         var info = {};
         if (document.getElementById("port_active").checked) {
             info.active = 1;
@@ -229,6 +251,11 @@
             document.getElementById("port_active").checked = true;
         } else {
             document.getElementById("port_active").checked = (portinfo.active === 1);
+        }
+        if (portinfo === undefined || portinfo.protocols === undefined || portinfo.protocols === null) {
+            document.getElementById("port_protocols").innerHTML = "(none)";
+        } else {
+            document.getElementById("port_protocols").innerHTML = portinfo.protocols;
         }
         if (portinfo === undefined || portinfo.name === undefined || portinfo.name === null || portinfo.name === "") {
             document.getElementById("port_name").innerHTML = "none";

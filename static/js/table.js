@@ -176,7 +176,7 @@ function hostname_edit_callback(event) {
             input.dataset.content = new_name;
             var request = {"node": address, "alias": new_name};
             $.ajax({
-                url: "/nodeinfo",
+                url: "/nodes",
                 type: "POST",
                 data: request,
                 error: function (x, s, e) {

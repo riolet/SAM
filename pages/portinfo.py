@@ -1,52 +1,59 @@
-import json
-import dbaccess
-import web
+import base
+import models.ports
 
 # This class is for getting the aliases for a port number
 
 
-class Portinfo:
-    def GET(self):
-        """
-        The expected GET data includes:
-            'port': comma-seperated list of port numbers
-                A request for ports 80, 443, and 8080
-                would look like: "80,443,8080"
-        :return: A JSON-encoded dictionary where
-            the keys are the requested ports and
-            the values are dictionaries describing the port's attributes
-        """
-        web.header("Content-Type", "application/json")
+class Portinfo(base.HeadlessPost):
+    """
+    The expected GET data includes:
+        'port': comma-seperated list of port numbers
+            A request for ports 80, 443, and 8080
+            would look like: "80,443,8080"
+    :return: A JSON-encoded dictionary where
+        the keys are the requested ports and
+        the values are dictionaries describing the port's attributes
 
-        get_data = web.input()
-        if "port" not in get_data:
-            return json.dumps({'result': 'ERROR: "port" not specified.'})
+    The expected POST data includes:
+        'port': The port to set data upon
+        'alias_name': optional, the new short name to give that port
+        'alias_description': optional, the new long name to give that port
+        'active': optional, (1 or 0) where 1 means use the name and 0 means use the number for display.
+    :return: A JSON-encoded dictionary with one key "result" and a value of success or error.
+    """
 
-        portstring = get_data.get('port', "-1")
-        ports = portstring.split(",")
-        ports = [int(i) for i in ports]
+    def decode_get_request(self, data):
+        port_string = data.get('port')
+        if not port_string:
+            raise base.RequiredKey('port', 'port')
 
-        port_data = dbaccess.get_port_info(ports)
-        result = {str(i.port): i for i in port_data}
+        try:
+            ports = [int(port) for port in port_string.split(',') if port]
+        except ValueError:
+            raise base.MalformedRequest("Could not read port ('port') number. Use comma delimited list.")
 
-        return json.dumps(result)
+        return {'ports': ports}
 
-    def POST(self):
-        """
-        The expected POST data includes:
-            'port': The port to set data upon
-            'alias_name': optional, the new short name to give that port
-            'alias_description': optional, the new long name to give that port
-            'active': optional, (1 or 0) where 1 means use the name and 0 means use the number for display.
-        :return: A JSON-encoded dictionary with one key "result" and a value of success or error.
-        """
-        web.header("Content-Type", "application/json")
+    def perform_get_command(self, request):
+        portModel = models.ports.Ports()
+        ports = portModel.get(request['ports'])
+        return ports
 
-        get_data = web.input()
-        if 'port' in get_data:
-            dbaccess.set_port_info(get_data)
-            result = "Success!"
-        else:
-            result = "ERROR: 'port' missing from request."
+    def encode_get_response(self, response):
+        return {str(i.port): i for i in response}
 
-        return json.dumps({"result": result})
+    def decode_post_request(self, data):
+        port_string = data.get('port')
+        if not port_string:
+            raise base.RequiredKey('port', 'port')
+
+        return dict(data)
+
+    def perform_post_command(self, request):
+        portModel = models.ports.Ports()
+        port = request.pop('port')
+        portModel.set(port, request)
+        return 'success'
+
+    def encode_post_response(self, response):
+        return {'result': response}

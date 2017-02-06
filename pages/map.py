@@ -1,5 +1,5 @@
 import common
-import dbaccess
+import models.datasources
 
 
 class Map:
@@ -7,9 +7,9 @@ class Map:
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        settings = dbaccess.get_settings(all=True)
-        datasources = [("ds_{0}_".format(source['id']), source['name']) for source in settings['datasources']]
-
+        datasources = models.datasources.Datasources()
+        dses = [(k, v['name']) for k, v in datasources.datasources.iteritems()]
+        print("datasources: {0}".format(dses))
         return str(common.render._head(self.pageTitle,
                                        stylesheets=['/static/css/map.css',
                                                     '/static/css/timerange.css',
@@ -27,5 +27,5 @@ class Map:
 												'/static/js/liveUpdate.js',
                                                 '/static/nouislider/nouislider.min.js'])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.map(datasources)) \
+               + str(common.render.map(dses)) \
                + str(common.render._tail())

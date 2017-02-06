@@ -101,7 +101,7 @@ function readHash() {
   }
 
   if (hash.length === 0) {
-    return;
+    return -1;
   }
 
   // grab the ip object
@@ -124,6 +124,7 @@ function readHash() {
     type: "input",
     newState: requestQuickInfo
   });
+  return 0;
 }
 
 /**************************
@@ -496,7 +497,6 @@ function present_quick_info(info) {
             segment = document.getElementById("out_col");
             segment.innerHTML = "";
             let avg_denom = info.out.duration ? info.out.duration : 1;
-            console.log(info.out);
 
             //Add Header
             td = document.createElement("H3");
@@ -724,7 +724,7 @@ function hostname_edit_callback(event) {
             input.dataset.content = new_name;
             var request = {"node": ip, "alias": new_name};
             $.ajax({
-                url: "/nodeinfo",
+                url: "/nodes",
                 type: "POST",
                 data: request,
                 error: ajax_error,
@@ -744,7 +744,7 @@ function tag_change_callback(new_tags) {
     var ip = getIP_Subnet().normal;
     var request = {"node": ip, "tags": new_tags};
     $.ajax({
-        url: "/nodeinfo",
+        url: "/nodes",
         type: "POST",
         data: request,
         error: ajax_error,
@@ -763,7 +763,7 @@ function env_change_callback(new_env) {
     }
     var request = {"node": ip, "env": new_env};
     $.ajax({
-        url: "/nodeinfo",
+        url: "/nodes",
         type: "POST",
         data: request,
         error: ajax_error,
@@ -986,6 +986,7 @@ function requestQuickInfo(event) {
             if (!response.quick_info) {
               console.error("Error requesting quick info:");
               console.log(response);
+              present_quick_info({"message": "Waiting"});
               return;
             }
             // Render into browser
@@ -1040,9 +1041,10 @@ function init() {
 
     dispatcher(new StateChangeEvent(restartTypingTimer));
 
-
     //determine ds and ip from hash
-    readHash();
+    if (readHash() !== 0) {
+      $(".dropdown.button").dropdown('set selected', g_ds);
+    }
     window.onhashchange = readHash;
 }
 

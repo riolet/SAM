@@ -1,7 +1,7 @@
 import common
-import web
-import dbaccess
-
+import models.nodes
+import models.settings
+import models.datasources
 
 class Metadata(object):
     def __init__(self):
@@ -9,18 +9,18 @@ class Metadata(object):
         self.dses = None
 
     def require_dses(self):
-        settings = dbaccess.get_settings(all=True)
+        datasourceModel = models.datasources.Datasources()
+        settingsModel = models.settings.Settings()
+        datasources = datasourceModel.datasources.copy()
+        default_ds = datasources.pop(settingsModel['datasource'])
 
-        default_ds = settings['datasource']['id']
-        # put default datasource at the head of the list
-        self.dses = [datasource for datasource in settings['datasources']]
-        for i in range(len(self.dses)):
-            if self.dses[i]['id'] == default_ds:
-                self.dses.insert(0, self.dses.pop(i))
-                break
+        # a list of data sources, with the default at the head
+        self.datasources = [default_ds] + datasources.values()
 
     def GET(self):
-        get_data = web.input()
+        nodesModel = models.nodes.Nodes()
+        tag_list = nodesModel.get_tag_list()
+        env_list = nodesModel.get_env_list()
 
         self.require_dses()
 
@@ -31,5 +31,5 @@ class Metadata(object):
                                                 "/static/js/map_selection.js",
                                                 "/static/js/map_data.js"])) \
                + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.metadata(dbaccess.get_tag_list(), dbaccess.get_env_list(), self.dses)) \
+               + str(common.render.metadata(tag_list, env_list, self.datasources)) \
                + str(common.render._tail())
