@@ -1,3 +1,4 @@
+import constants
 import common
 import web
 import os
@@ -18,7 +19,7 @@ db = common.db_quiet
 
 def check_db_access():
     print("Checking database access...")
-    params = common.dbconfig.params.copy()
+    params = constants.dbconfig.params.copy()
     params.pop('db')
     errorCode = 0
     try:
@@ -32,7 +33,7 @@ def check_db_access():
     return errorCode
 def check_and_fix_db_access():
     print("Checking database access...")
-    params = common.dbconfig.params.copy()
+    params = constants.dbconfig.params.copy()
     db = params.pop('db')
     errorCode = 0
     connection = web.database(**params)
@@ -77,14 +78,14 @@ def fix_shared_tables(missing_tables):
         print("\tNo tables to fix")
     else:
         print("\tRestoring missing tables: {0}".format(repr(missing_tables)))
-        common.exec_sql(db, os.path.join(common.base_path, 'sql/setup_shared_tables.sql'))
+        common.exec_sql(db, os.path.join(constants.base_path, 'sql/setup_shared_tables.sql'))
         if "Ports" in missing_tables:
             print("\tPopulating port reference table with latest data")
             fill_port_table()
         print("\tShared Tables Fixed")
 def fill_port_table():
     db.delete("Ports", "1=1")
-    with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'rb') as f:
+    with open(os.path.join(constants.base_path, 'sql/default_port_data.json'), 'rb') as f:
         port_data = json.loads("".join(f.readlines()))
 
     ports = port_data["ports"].values()

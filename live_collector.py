@@ -3,12 +3,12 @@ import threading
 import signal
 import time
 import traceback
-import importers.import_base as base_importer
-import live_protocol
-import socket
-import ssl
 import sys
 import importlib
+import importers.import_base as base_importer
+import constants
+import requests
+import cPickle
 
 """
 Live Collector
@@ -21,11 +21,10 @@ Live Collector
 
 """
 
-
-LISTEN_ADDRESS = ('localhost', 514)
-SERVER_ADDRESS = ('localhost', 8081)
-ACCESS_KEY = 'lLbEAWT6fpbXIogTRTh_qKyW'
-CERTIFICATE_FILE = "cert.pem"
+LISTEN_ADDRESS = (constants.config.get('live', 'listen_hostname'), int(constants.config.get('live', 'listen_port')))
+SERVER = constants.config.get('live', 'server')
+ACCESS_KEY = constants.config.get('live', 'upload_key')
+FORMAT = constants.config.get('live', 'format')
 
 SOCKET_BUFFER = []
 SOCKET_BUFFER_LOCK = threading.Lock()
@@ -43,17 +42,16 @@ IMPORTER = None
 
 def get_importer(argv):
     global IMPORTER
-    if len(argv) != 2:
-        print("Please specify the format when running the collector. \nFor example:")
-        print("\t{0} nfdump".format(argv[0]))
-
-    # strip the extras of the name
-    importer_name = argv[1]
-    if importer_name.startswith("import_"):
-        importer_name = importer_name[7:]
-    i = importer_name.rfind(".py")
-    if i != -1:
-        importer_name = importer_name[:i]
+    if len(argv) == 2:
+        # strip the extras of the name
+        importer_name = argv[1]
+        if importer_name.startswith("import_"):
+            importer_name = importer_name[7:]
+        i = importer_name.rfind(".py")
+        if i != -1:
+            importer_name = importer_name[:i]
+    else:
+        importer_name = FORMAT
 
     # attempt to import the module
     fullname = "importers.import_{0}".format(importer_name)
@@ -122,7 +120,7 @@ def import_lines():
     with SOCKET_BUFFER_LOCK:
         lines = SOCKET_BUFFER
         SOCKET_BUFFER = []
-    
+
     # translate lines
     translated = []
     for line in lines:
@@ -144,8 +142,7 @@ def import_lines():
 def transmit_lines():
     global TRANSMIT_BUFFER
     global TRANSMIT_BUFFER_SIZE
-    global CERTIFICATE_FILE
-    global SERVER_ADDRESS
+    global SERVER
     global ACCESS_KEY
     address = ("localhost", 8081)
     access_key = ACCESS_KEY
@@ -161,46 +158,42 @@ def transmit_lines():
         'lines': lines
     }
 
-    # Send data on the socket!
-    plain_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssl_sock = ssl.wrap_socket(plain_sock,
-                               ca_certs="cert.pem",
-                               cert_reqs=ssl.CERT_REQUIRED,
-                               ssl_version=ssl.PROTOCOL_TLSv1_2)
-    translator = live_protocol.LiveProtocol(ssl_sock)
-
+    print("Sending package...")
     try:
-        print("SOCKET: Opening...")
-        ssl_sock.connect(SERVER_ADDRESS)
-
-        print("SOCKET: Sending {0} lines.".format(len(package['lines'])))
-        translator.send(package)
-
-        response = translator.receive()
-        print("SOCKET: Receiving: {0} chars. {1}...".format(len(response), repr(response[:50])))
-        ssl_sock.close()
-    except socket.error as e:
-        print("SOCKET: Could not connect to socket {0}:{1}".format(*address))
-        print("SOCKET: Error {0}: {1}".format(e.errno, e.strerror))
+        response = requests.request('POST', SERVER, data=cPickle.dumps(package))
+        reply = response.content
+        print("Received reply: {0}".format(reply))
+    except Exception as e:
+        print("Error sending package: {0}".format(e))
 
 
 def test_connection():
+    global SERVER
+    global ACCESS_KEY
     print "Testing connection...",
-    try:
-        plain_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ssl_sock = ssl.wrap_socket(plain_sock,
-                                   ca_certs="cert.pem",
-                                   cert_reqs=ssl.CERT_REQUIRED,
-                                   ssl_version=ssl.PROTOCOL_TLSv1_2)
-        translator = live_protocol.LiveProtocol(ssl_sock)
 
-        translator.send("hello")
-        response = translator.receive()
-    except:
+    package = {
+        'access_key': ACCESS_KEY,
+        'version': '1.0',
+        'headers': base_importer.BaseImporter.keys,
+        'msg': 'handshake',
+        'lines': []
+    }
+    try:
+        response = requests.request('POST', SERVER, data=cPickle.dumps(package))
+        reply = response.content
+    except Exception as e:
         print("Failed.")
+        print(e)
         return False
-    print("Succeeded.")
-    return True
+    if reply == 'handshake':
+        print("Succeeded.")
+        return True
+    else:
+        print("Bad reply.")
+        print('  "{}"'.format(reply))
+        return False
+
 
 def store_data(lines):
     global SOCKET_BUFFER
@@ -210,7 +203,7 @@ def store_data(lines):
     with SOCKET_BUFFER_LOCK:
         # append line
         SOCKET_BUFFER.append(lines)
-    # release lock
+        # release lock
 
 
 # Request handler used to listen on the port
@@ -240,7 +233,10 @@ def shutdown():
     SHUTDOWN_EVENT.set()
 
 
-if __name__ == "__main__":
+def collector():
+    global COLLECTOR
+    global COLLECTOR_THREAD
+    global IMPORTER
     # set up the importer
     IMPORTER = get_importer(sys.argv)
     if not IMPORTER:
@@ -248,9 +244,11 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # test the connection
+    if test_connection() is False:
+        return
 
 
-    # register signals for safe shut down
+        # register signals for safe shut down
     signal.signal(signal.SIGINT, signal_handler)
     COLLECTOR = SocketServer.UDPServer(LISTEN_ADDRESS, UDPRequestHandler)
 
@@ -260,7 +258,6 @@ if __name__ == "__main__":
 
     print("Live Collector listening on {0}:{1}.".format(*LISTEN_ADDRESS))
 
-
     try:
         thread_batch_processor()
     except:
@@ -269,3 +266,7 @@ if __name__ == "__main__":
         shutdown()
 
     print("Server shut down successfully.")
+
+
+if __name__ == "__main__":
+    collector()
