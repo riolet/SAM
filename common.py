@@ -1,7 +1,6 @@
-import sys
 import os
 import web
-base_path = os.path.dirname(__file__)
+import constants
 
 
 def parse_sql_file(path, replacements):
@@ -150,24 +149,14 @@ navbar = [
 ]
 
 # tell renderer where to look for templates
-render = web.template.render(os.path.join(base_path, 'templates/'))
+render = web.template.render(os.path.join(constants.base_path, 'templates/'))
 
-try:
-    sys.dont_write_bytecode = True
-    import dbconfig_local as dbconfig
-except Exception as e:
-    print e
-    import dbconfig
-finally:
-    sys.dont_write_bytecode = False
-
-db = web.database(**dbconfig.params)
+db = web.database(**constants.dbconfig)
 old = web.config.debug
 web.config.debug = False
-db_quiet = web.database(**dbconfig.params)
+db_quiet = web.database(**constants.dbconfig)
 web.config.debug = old
 del old
-
 demo_subscription_id = 0
 
 
