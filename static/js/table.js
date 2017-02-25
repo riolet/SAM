@@ -139,7 +139,11 @@ function applyFilter() {
         searchString += "&" + term.join("=");
     });
     //window.location.search = "?" + searchString.substr(1);
-    window.location.assign("/table?" + searchString.substr(1));
+    var link = "/table?" + searchString.substr(1);
+    if (window.location.pathname.substr(1,4) === "demo") {
+      link = "/demo" + link
+    }
+    window.location.assign(link);
 }
 
 function btn_pagesize_callback(e) {
@@ -279,6 +283,9 @@ function initiateDownload(event) {
         //download all
         console.log("Downloading ALL the data");
         var download_string = "/table?download=1&" + location.search.substr(1)
+        if (window.location.pathname.substr(1,4) === "demo") {
+          download_string = "/demo" + download_string
+        }
         download(download_string, "table_" + get_stamp() + ".csv")
     }
 }
@@ -289,14 +296,6 @@ function init() {
     // For opening the "filters" accordion
     //$(".ui.accordion").accordion("open", 0);
     $(".ui.accordion").accordion();
-
-    //toggle buttons
-    $(".ui.swapper.button").state({
-        text: {
-            inactive: "Vote",
-            active: "Voted"
-        }
-    });
 
     $(".dropdown.button").dropdown({
         action: 'combo'
@@ -330,6 +329,19 @@ function init() {
         sorters[j].onclick = btn_header_callback;
     }
 
+    //"demo" message box
+    if (window.location.pathname.substr(1,4) === "demo") {
+      let msgbox = document.getElementById("demo_msg");
+      $(msgbox).transition("fade");
+    }
+    $('.message .close')
+      .on('click', function() {
+        $(this)
+          .closest('.message')
+          .transition('fade');
+    });
+
+
     //Create name inputs
     var targets = $(".td_alias").find("input");
     targets.keyup(hostname_edit_callback);
@@ -338,8 +350,3 @@ function init() {
     //Interpret URL
     importURL();
 }
-
-window.onload = function () {
-    "use strict";
-    init();
-};

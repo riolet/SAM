@@ -2,9 +2,9 @@ import common
 
 
 class Table:
-    def __init__(self, ds):
+    def __init__(self, subscription, ds):
         self.db = common.db
-        self.sub = common.get_subscription()
+        self.sub = subscription
         self.ds = ds
         self.table_nodes = "s{acct}_Nodes".format(acct=self.sub)
         self.table_tags = "s{acct}_Tags".format(acct=self.sub)

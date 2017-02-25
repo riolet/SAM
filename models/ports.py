@@ -7,9 +7,9 @@ class Ports:
     MAX_NAME_LENGTH = 10
     MAX_DESCRIPTION_LENGTH = 255
 
-    def __init__(self, subscription=None):
+    def __init__(self, subscription):
         self.db = common.db
-        self.sub = subscription or common.get_subscription()
+        self.sub = subscription
         self.table_ports = "Ports"
         self.table_aliases = "s{acct}_PortAliases".format(acct=self.sub)
 

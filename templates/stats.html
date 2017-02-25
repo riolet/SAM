@@ -1,18 +1,39 @@
-$def with (stats)
+$def with (segments)
 $# "$def with (arg1, ...)" MUST be the first line. See template.py for details
-<h3 class="ui center aligned header">Stats</h3>
+<h1 class="ui center aligned header">Usage Stats</h1>
+
 <div class="ui container">
-    <table class="ui celled table">
-        <thead>
-            <th>Query</th>
-            <th>Rows</th>
-        </thead>
-        <tbody>
-        $for desc, value in stats:
-            <tr>
-            <td>$desc</td>
-            <td>$value</td>
-            </tr>
-        </tbody>
+  $for segment, stats in segments:
+  <div class="ui stacked segment">
+    <h2 class="header">$segment</h2>
+    <table class="ui very compact collapsing striped definition table">
+      <tbody>
+      $for k, v in stats:
+        <tr>
+          <td>$k</td>
+          <td>$v</td>
+        </tr>
+      </tbody>
     </table>
+  </div>
 </div>
+
+<!-- Demo data warning -->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Demonstration
+  </div>
+  <p>This is a subset of real network data, anonymized for privacy. The database is read-only and changes will not be saved.</p>
+</div>
+
+<script type="text/javascript">
+function init() {
+  console.log("init called");
+  // for "demo data" message box
+  if (window.location.pathname.substr(1,4) === "demo") {
+    let msgbox = document.getElementById("demo_msg");
+    $$(msgbox).transition("fade");
+  }
+}
+</script>

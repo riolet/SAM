@@ -21,11 +21,8 @@ body {
 #ds_tabs .active.item i.off{
     display: none;
 }
-#ds_tabs .active.item i.off{
-    display: none;
-}
 #ds_tabs .active.item::after{
-    content: " (Mapped)";
+    content: " (default)";
     display: inline;
 }
 
@@ -38,4 +35,21 @@ body {
 
 .ui.modal .form {
     margin-left: 1em;
+}
+
+/* excluded features */
+.disabled.item {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.ui.footer.segment {
+    margin: 5em 0em 0em;
+    padding: 5em 0em;
+}
+
+div.ui.message.transition {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10;
 }

@@ -29,9 +29,11 @@ Pip - for installing python packages
 
 ## Usage
 
-1. Create a Data source to receive your data in the settings page, or use the default.
+1. Edit your defaults.cfg (or export environment variables) to provide your database password to the server. 
 
-2. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
+2. Create a data source to use in the settings page, or use the default empty data source provided.
+
+3. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
 
       `python -m importers.import_* <log_file> <destination>`
       
@@ -45,15 +47,21 @@ Pip - for installing python packages
    5. tcpdump: Partial support.
    6. TShark: Partial support.
 
-   Import from all files before going to step 4
+   Import from all files before moving on.
 
-3. For live analysis, 
-   1. configure your server settings (generate a key for secure upload)
-   2. configure your local live_collector (default.cfg) to use the secret code and format, and listen on a host:port.
-   3. run `python live_collector.py` to start your collector listening to a socket
-   4. direct your router log files to write lines to that socket. (e.g. localhost:514)
+4. For live analysis, 
+   1. On the settings page, choose a data source for your live data to be funneled into then create a Access Key.
+   2. Edit default.cfg: Enter your access key into default.cfg in the [live] section.
+      also in the live section, choose your format and ports to use.
+   3. Start the live update server 
+      * The command is `python live_wsgiserver 8081`
+      * It should print "http://0.0.0.0:8081/" or similar
+   4. Start the collector
+      * The command is `python live_collector`
+      * You will need priviledges to bind to system port 514.
+      * It should print "Testing connection... Succeeded.  Live Collector listening on localhost:514." or similar
+   5. Tell your router to output it's log files to that freshly opened socket.
    
+5. Start the server locally by running: `python server.py`  For a more robust deployment, SAM supports the WSGI interface (`wsgiserver.py`) and can be run through a different web server.
 
-4. Start the server locally by running: `python server.py`
-
-5. Navigate your browser to localhost:8080/map and use your mouse to explore the network map
+6. Navigate your browser to localhost:8080 and explore your network!

@@ -1,5 +1,6 @@
 import base
 import models.nodes
+import errors
 
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
@@ -31,7 +32,7 @@ class Nodes(base.HeadlessPost):
     """
     def __init__(self):
         base.HeadlessPost.__init__(self)
-        self.nodesModel = models.nodes.Nodes()
+        self.nodesModel = models.nodes.Nodes(self.user.viewing)
 
     def decode_get_request(self, data):
         addresses = []
@@ -56,7 +57,7 @@ class Nodes(base.HeadlessPost):
     def decode_post_request(self, data):
         node = data.get('node')
         if not node:
-            raise base.RequiredKey('node', 'node')
+            raise errors.RequiredKey('node', 'node')
 
         alias = data.get('alias')
         tags = data.get('tags')

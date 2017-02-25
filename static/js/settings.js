@@ -361,11 +361,6 @@ function populateLiveDestDSList(options) {
 
     //set options
     var div;
-    div = document.createElement("DIV");
-    div.className = "item"
-    div.dataset['value'] = "ds_";
-    div.appendChild(document.createTextNode("Discard live data"));
-    live_dest_list.appendChild(div);
 
     options.forEach(function (option) {
         div = document.createElement("DIV");
@@ -514,12 +509,22 @@ function POST_AJAX(command, successCallback) {
 }
 
 function POST_upload_log(ds, format, file) {
-    POST_AJAX({
-        "command": "upload",
-        "ds": ds,
-        "format": format,
-        "file": file
-    });
+  "use strict";
+  POST_AJAX({
+    "command": "upload",
+    "ds": ds,
+    "format": format,
+    "file": file
+  }, function (response) {
+    if (response.result === "success") {
+      document.getElementById("upload_results").innerHTML = "Your log file was uploaded successfully.";
+      document.getElementById("upload_results_title").innerHTML = "Success";
+    } else {
+      document.getElementById("upload_results").innerHTML = "There was an error uploading your log file.";
+      document.getElementById("upload_results_title").innerHTML = "Error";
+    }
+    $('.ui.response.modal').modal('show');
+  });
 }
 
 function POST_ds_new(name) {
@@ -688,5 +693,3 @@ function init() {
         entity.onchange = POST_ds_intervalchange
     });
 }
-
-window.onload = init;

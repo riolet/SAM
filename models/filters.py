@@ -1,5 +1,7 @@
 import common
 import re
+import models.settings
+from models.user import User
 
 
 class Filter (object):
@@ -245,7 +247,9 @@ def readEncoded(filterString):
     if ds_match:
         ds = int(ds_match.group())
     else:
-        ds = dbaccess.get_settings_cached()['datasource']['id']
+        user = User()
+        settings_model = models.settings.Settings({}, user.viewing)
+        ds = settings_model['datasource']
 
     for encodedFilter in fstrings[1:]:
         try:
