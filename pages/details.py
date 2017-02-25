@@ -1,5 +1,6 @@
 import common
 import re
+import errors
 import base
 import models.details
 import models.nodes
@@ -62,7 +63,7 @@ class Details(base.Headless):
         base.Headless.__init__(self)
         # self.ip_range = (0, 4294967295)
         self.detailsModel = None
-        self.nodesModel = models.nodes.Nodes()
+        self.nodesModel = models.nodes.Nodes(self.user.viewing)
         self.linksModel = None  # set during decode_get_request()
 
     def decode_get_request(self, data):
@@ -72,10 +73,10 @@ class Details(base.Headless):
             if ds_match:
                 ds = int(ds_match.group())
             else:
-                raise base.MalformedRequest("Could not read data source ('ds')")
+                raise errors.MalformedRequest("Could not read data source ('ds')")
         else:
-            raise base.RequiredKey('data source', 'ds')
-        self.linksModel = models.links.Links(ds)
+            raise errors.RequiredKey('data source', 'ds')
+        self.linksModel = models.links.Links(self.user.viewing, ds)
         # port filter
         port = data.get('port')
 
@@ -84,8 +85,8 @@ class Details(base.Headless):
             tstart = int(data.get('tstart'))
             tend = int(data.get('tend'))
         except ValueError:
-            raise base.MalformedRequest("Time range ({0} .. {1}) cannot be read. Check formatting"
-                                        .format(data.get('tstart'), data.get('tend')))
+            raise errors.MalformedRequest("Time range ({0} .. {1}) cannot be read. Check formatting"
+                                          .format(data.get('tstart'), data.get('tend')))
         except (KeyError, TypeError):
             t_range = self.linksModel.get_timerange()
             tstart = t_range['min']
@@ -94,17 +95,17 @@ class Details(base.Headless):
         # address
         address = data.get('address')
         if not address:
-            raise base.RequiredKey('address', 'address')
+            raise errors.RequiredKey('address', 'address')
 
         # pagination
         try:
             page = int(data.get('page', self.default_page))
         except ValueError:
-            raise base.MalformedRequest("Could not read page number: {0}".format(data.get('page')))
+            raise errors.MalformedRequest("Could not read page number: {0}".format(data.get('page')))
         try:
             page_size = int(data.get('page_size', self.default_page_size))
         except ValueError:
-            raise base.MalformedRequest("Could not read page size: {0}".format(data.get('page_size')))
+            raise errors.MalformedRequest("Could not read page size: {0}".format(data.get('page_size')))
 
         order = data.get('order')
         simple = data.get('simple', False) == "true"
@@ -112,7 +113,7 @@ class Details(base.Headless):
         if components:
             components = components.split(',')
 
-        self.detailsModel = models.details.Details(ds, address, (tstart, tend), port, page_size)
+        self.detailsModel = models.details.Details(self.user.viewing, ds, address, (tstart, tend), port, page_size)
 
         request = {
             'ds': ds,

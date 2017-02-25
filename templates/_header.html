@@ -1,4 +1,4 @@
-$def with (menuItems, selected)
+$def with (menuItems, selected, user, debug)
 <div class="ui inverted main menu" id="navbar">
     <div class="header item">
         <a href="/"><img class="logo ui middle aligned spaced image" width="32px" height="32px" src="/static/img/logo_light.png">Systems Architecture Mapper</a>
@@ -7,8 +7,9 @@ $def with (menuItems, selected)
         $ active = ''
         $if menuItem['name']==selected:
             $ active = 'active'
-        <a class="item $active" href="$menuItem['link']">
-            <i class="$menuItem['icon'] icon"></i>
-            $menuItem['name']
-        </a>
+        $if user.any_group(set(menuItem['group'].split())):
+            <a class="item $active" href="$menuItem['link']">
+                <i class="$menuItem['icon'] icon"></i>
+                $menuItem['name']
+            </a>
 </div>

@@ -80,8 +80,19 @@ function init() {
     $("#settings_menu").dropdown({
         action: updateConfig
     });
-
     $(".input.icon").popup();
+
+    // for "demo data" message box
+    if (window.location.pathname.substr(1,4) === "demo") {
+      let msgbox = document.getElementById("demo_msg");
+      $(msgbox).transition("fade");
+    }
+    $('.message .close')
+      .on('click', function() {
+        $(this)
+          .closest('.message')
+          .transition('fade');
+    });
 
     //configure ports
     ports.display_callback = function() {

@@ -4,9 +4,9 @@ import models.links
 
 
 class Details:
-    def __init__(self, ds, address, timestamp_range=None, port=None, page_size=50):
+    def __init__(self, subscription, ds, address, timestamp_range=None, port=None, page_size=50):
         self.db = common.db
-        self.sub = common.get_subscription()
+        self.sub = subscription
         self.table_nodes = "s{acct}_Nodes".format(acct=self.sub)
         self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=ds)
         self.table_links_in = "s{acct}_ds{id}_LinksIn".format(acct=self.sub, id=ds)

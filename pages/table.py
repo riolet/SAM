@@ -1,3 +1,4 @@
+import errors
 import common
 import web
 import base
@@ -181,7 +182,7 @@ class Columns(object):
         return headers
 
 
-class Table(object):
+class Table(base.Headed):
     default_page = 1
     default_page_size = 10
     default_sort_column = 0
@@ -189,18 +190,23 @@ class Table(object):
     sort_directions = ['asc', 'desc']
     download_max = 1000000
 
-
     def __init__(self):
-        self.pageTitle = "Table View"
+        super(Table, self).__init__("Table View", True, False)
+        self.scripts = ["/static/js/table.js",
+                        "/static/js/table_filters.js"]
+        self.styles = ["/static/css/table.css",
+                       "/static/css/general.css"]
+        self.isdemo = False
         self.inbound = web.input()
         self.request = None
         self.response = None
         self.outbound = None
         self.tableModel = None
-        self.nodesModel = models.nodes.Nodes()
+        self.nodesModel = None
         self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
-    def decode_filters(self, data):
+    @staticmethod
+    def decode_filters(data):
         fs = []
         ds = None
         if "filters" in data:
@@ -226,23 +232,23 @@ class Table(object):
         ds, filters = self.decode_filters(data)
 
         # fall back to default data source if not provided in query string.
-        if not ds:
-            settingsModel = models.settings.Settings()
-            ds = settingsModel['datasource']
+        if ds is None:
+            settings_model = models.settings.Settings(self.session, self.user.viewing)
+            ds = settings_model['datasource']
 
         try:
             page = int(data.get('page', self.default_page))
         except (ValueError, TypeError):
-            raise base.MalformedRequest("Page number ('{0}') not understood.".format(data.get('page')))
+            raise errors.MalformedRequest("Page number ('{0}') not understood.".format(data.get('page')))
 
         try:
             page_size = int(data.get('page_size', self.default_page_size))
         except (ValueError, TypeError):
-            raise base.MalformedRequest("Page size ('{0}') not understood.".format(data.get('page')))
+            raise errors.MalformedRequest("Page size ('{0}') not understood.".format(data.get('page')))
 
         order_by, order_dir = self.decode_order(data)
 
-        download = data.get('download', '0') == 1
+        download = str(data.get('download', '0')) == '1'
         if download:
             page = 1
             page_size = self.download_max
@@ -273,7 +279,7 @@ class Table(object):
             row is a list of [columns]
             column is a tuple of (name, value)
         """
-        self.tableModel = models.tables.Table(self.request['ds'])
+        self.tableModel = models.tables.Table(self.user.viewing, self.request['ds'])
         data = self.tableModel.get_table_info(request['filters'],
                                               request['page'],
                                               request['page_size'],
@@ -284,75 +290,80 @@ class Table(object):
             rows.append(self.columns.translate_row(tr))
         return rows
 
+    def encode_get_response_for_download(self, response):
+        headers = self.columns.headers()
+        headers = [h[1] for h in headers]
+        for row in response:
+            for icol in range(len(row)):
+                if row[icol][0] == 'tags':
+                    row[icol] = " ".join([" ".join(row[icol][1][0]), " ".join(row[icol][1][1])])
+                else:
+                    row[icol] = str(row[icol][1])
+        outbound = [headers] + response
+        return outbound
+
     def encode_get_response(self, response):
         headers = self.columns.headers()
-        if self.request['download']:
-            headers = [h[1] for h in headers]
-            for row in response:
-                for icol in range(len(row)):
-                    if row[icol][0] == 'tags':
-                        row[icol] = " ".join([" ".join(row[icol][1][0]), " ".join(row[icol][1][1])])
-                    else:
-                        row[icol] = str(row[icol][1])
-            outbound = [headers] + response
-        else:
-            outbound = {
-                'rows': response,
-                'headers': headers,
-                'tags': self.nodesModel.get_tag_list(),
-                'envs': self.nodesModel.get_env_list(),
-                'nextPage': self.next_page(response, self.request['page'], self.request['page_size']),
-                'prevPage': self.prev_page(self.request['page']),
-                'spread': self.spread(response, self.request['page'], self.request['page_size']),
-            }
+        outbound = {
+            'rows': response,
+            'headers': headers,
+            'tags': self.nodesModel.get_tag_list(),
+            'envs': self.nodesModel.get_env_list(),
+            'nextPage': self.next_page(response, self.request['page'], self.request['page_size']),
+            'prevPage': self.prev_page(self.request['page']),
+            'spread': self.spread(response, self.request['page'], self.request['page_size']),
+        }
         return outbound
 
     def get_dses(self):
-        datasourcesModel = models.datasources.Datasources()
+        datasources_model = models.datasources.Datasources(self.session, self.user.viewing)
         ds = self.request['ds']
-        return datasourcesModel.priority_list(ds)
+        return datasources_model.priority_list(ds)
 
-    def next_page(self, rows, page, page_size):
+    @staticmethod
+    def next_page(rows, page, page_size):
         if len(rows) > page_size:
             path = web.ctx.fullpath
             page_i = path.find("page=")
             if page_i != -1:
-                ampPos = path.find('&', page_i)
-                if ampPos != -1:
-                    nextPage = "{0}page={1}{2}".format(path[:page_i], page + 2, path[ampPos:])
+                amp_pos = path.find('&', page_i)
+                if amp_pos != -1:
+                    p_next = "{0}page={1}{2}".format(path[:page_i], page + 2, path[amp_pos:])
                 else:
-                    nextPage = "{0}page={1}".format(path[:page_i], page + 2)
+                    p_next = "{0}page={1}".format(path[:page_i], page + 2)
             else:
                 if "?" in path:
-                    nextPage = path + "&page={0}".format(page + 2)
+                    p_next = path + "&page={0}".format(page + 2)
                 else:
-                    nextPage = path + "?page={0}".format(page + 2)
+                    p_next = path + "?page={0}".format(page + 2)
         else:
-            nextPage = False
-        return nextPage
+            p_next = False
+        return p_next
 
-    def prev_page(self, page):
+    @staticmethod
+    def prev_page(page):
         if page >= 1:
             path = web.ctx.fullpath
             page_i = path.find("page=")
             if page_i != -1:
-                ampPos = path.find('&', page_i)
-                if ampPos != -1:
-                    prevPage = "{0}page={1}{2}".format(path[:page_i], page, path[ampPos:])
+                amp_pos = path.find('&', page_i)
+                if amp_pos != -1:
+                    p_prev = "{0}page={1}{2}".format(path[:page_i], page, path[amp_pos:])
                 else:
-                    prevPage = "{0}page={1}".format(path[:page_i], page)
+                    p_prev = "{0}page={1}".format(path[:page_i], page)
             else:
                 if "?" in path:
-                    prevPage = path + "&page={0}".format(page)
+                    p_prev = path + "&page={0}".format(page)
                 else:
-                    prevPage = path + "?page={0}".format(page)
+                    p_prev = path + "?page={0}".format(page)
         else:
-            prevPage = False
-        return prevPage
+            p_prev = False
+        return p_prev
 
-    def spread(self, rows, page, page_size):
+    @staticmethod
+    def spread(rows, page, page_size):
         if rows:
-            start = (page) * page_size + 1
+            start = page * page_size + 1
             end = start + len(rows[:page_size]) - 1
             spread = "Results: {0} to {1}".format(start, end)
         else:
@@ -360,28 +371,27 @@ class Table(object):
         return spread
 
     def GET(self):
+        self.nodesModel = models.nodes.Nodes(self.user.viewing)
+
         self.request = self.decode_get_request(self.inbound)
         self.response = self.perform_get_command(self.request)
-        self.outbound = self.encode_get_response(self.response)
 
         if self.request['download']:
+            self.outbound = self.encode_get_response_for_download(self.response)
             web.header("Content-Type", "application/csv")
             return csv_encode(self.outbound, ',', '\r\n', '\\')
 
-        html = str(common.render._head(self.pageTitle,
-                                       stylesheets=["/static/css/table.css"],
-                                       scripts=["/static/js/table.js",
-                                                "/static/js/table_filters.js"]))
-        html += str(common.render._header(common.navbar, self.pageTitle))
-        html += str(common.render.table(
-            self.outbound['tags'],
-            self.outbound['envs'],
-            self.get_dses(),
-            self.outbound['headers'],
-            (self.request['order_by'], self.request['order_dir']),
-            self.outbound['rows'][:self.request['page_size']],
-            self.outbound['spread'],
-            self.outbound['prevPage'],
-            self.outbound['nextPage']))
-        html += str(common.render._tail())
+        self.outbound = self.encode_get_response(self.response)
+
+        html = self.render('table',
+                           self.outbound['tags'],
+                           self.outbound['envs'],
+                           self.get_dses(),
+                           self.outbound['headers'],
+                           (self.request['order_by'], self.request['order_dir']),
+                           self.outbound['rows'][:self.request['page_size']],
+                           self.outbound['spread'],
+                           self.outbound['prevPage'],
+                           self.outbound['nextPage'],
+                           self.isdemo)
         return html

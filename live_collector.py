@@ -21,6 +21,7 @@ Live Collector
 
 """
 
+
 LISTEN_ADDRESS = (constants.config.get('live', 'listen_hostname'), int(constants.config.get('live', 'listen_port')))
 SERVER = constants.config.get('live', 'server')
 ACCESS_KEY = constants.config.get('live', 'upload_key')
@@ -120,7 +121,7 @@ def import_lines():
     with SOCKET_BUFFER_LOCK:
         lines = SOCKET_BUFFER
         SOCKET_BUFFER = []
-
+    
     # translate lines
     translated = []
     for line in lines:
@@ -194,7 +195,6 @@ def test_connection():
         print('  "{}"'.format(reply))
         return False
 
-
 def store_data(lines):
     global SOCKET_BUFFER
     global SOCKET_BUFFER_LOCK
@@ -203,7 +203,7 @@ def store_data(lines):
     with SOCKET_BUFFER_LOCK:
         # append line
         SOCKET_BUFFER.append(lines)
-        # release lock
+    # release lock
 
 
 # Request handler used to listen on the port

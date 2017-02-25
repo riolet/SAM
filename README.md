@@ -31,7 +31,7 @@ Pip - for installing python packages
 
 1. Create Data source
 
-1. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
+2. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
 
       `python -m importers.import_* <log_file> <destination>`
       
@@ -45,15 +45,15 @@ Pip - for installing python packages
    5. tcpdump: Partial support.
    6. TShark: Partial support.
 
-   Import from all files before going to step 2
+   Import from all files before going to step 4
 
-2. For live analysis, 
+3. For live analysis, 
    1. configure your server settings (data source and live dest)
    2. configure your local live_collector to use the server and port and secret code
    3. run `python live_collector.py <format>` where format is which importer to use. e.g. "paloalto"
    4. direct your log files to write lines to that socket. (e.g. localhost:514)
    
 
-3. Start the server locally by running: `python server.py`
+4. Start the server locally by running: `python server.py`
 
-4. Navigate your browser to localhost:8080 and use your mouse to explore the network map
+5. Navigate your browser to localhost:8080 and use your mouse to explore the network map

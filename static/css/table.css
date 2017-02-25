@@ -34,3 +34,9 @@
     margin:  -0.7857em;
     padding: 0.7857em;
 }
+
+div.ui.message.transition {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}

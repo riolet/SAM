@@ -3,10 +3,10 @@ Preprocess the data in the database's upload table Syslog
 """
 import os
 import sys
+import constants
 import common
 import integrity
 import models.datasources
-import web
 
 # DB connection to use. `common.db` echos every statement to stderr, `common.db_quiet` does not.
 
@@ -16,7 +16,7 @@ class InvalidDatasource(ValueError):
 
 
 def determine_datasource(sub, argv):
-    dsModel = models.datasources.Datasources(sub)
+    dsModel = models.datasources.Datasources({}, sub)
     ds_id = None
     if len(argv) >= 2:
         requested_ds = argv[1]
@@ -553,7 +553,7 @@ class Preprocessor:
             'acct': self.sub_id,
             'id': self.ds_id
         }
-        common.exec_sql(self.db, os.path.join(common.base_path, "sql", "delete_staging_data.sql"), replacements)
+        common.exec_sql(self.db, os.path.join(constants.base_path, "sql", "delete_staging_data.sql"), replacements)
 
     def run_all(self):
         print("Beginning preprocessing...")
@@ -582,7 +582,7 @@ class Preprocessor:
 if __name__ == "__main__":
     error_number = integrity.check_and_fix_db_access()
     if error_number == 0:
-        subscription = common.get_subscription()
+        subscription = constants.demo['id']
         try:
             ds = determine_datasource(subscription, sys.argv)
             processor = Preprocessor(common.db_quiet, subscription, ds)
