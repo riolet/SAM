@@ -1,5 +1,6 @@
 import sys
 import os
+import constants
 common = None
 Datasources = None
 
@@ -199,8 +200,8 @@ Usage:
             try:
                 import common
                 from models.datasources import Datasources
-                self.subscription = self.subscription or common.get_subscription()
-                self.dsModel = Datasources(self.subscription)
+                self.subscription = self.subscription or constants.demo['id']
+                self.dsModel = Datasources({}, self.subscription)
                 for datasource in self.dsModel.datasources.values():
                     # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                     if datasource['name'] == self.datasource:
@@ -217,8 +218,8 @@ Usage:
                     ds_names = [ds['name'] for ds in self.dsModel.datasources.values()]
                     print("Data sources include: {0}".format(', '.join(ds_names)))
                 raise AssertionError("No data source matches {0}".format(self.datasource))
-            except:
-                print("Cannot connect to database.")
+            except Exception as e:
+                print(e)
                 raise AssertionError("Cannot connect to database.")
 
         table_name = "s{acct}_ds{ds}_Syslog".format(acct=self.subscription, ds=self.ds)

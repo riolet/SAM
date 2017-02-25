@@ -83,3 +83,9 @@ h5 {
   padding-top: 0.4em;
   padding-bottom: 0.4em;
 }
+
+div.ui.message.transition {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}

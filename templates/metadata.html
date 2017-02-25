@@ -15,6 +15,11 @@ $def with (tags, envs, dses)
   min-height: 30em;
   margin-bottom: 2em;
 }
+div.ui.message.transition {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}
 </style>
 <div class="ui container">
   <h3 class="ui center aligned header">
@@ -51,12 +56,12 @@ $def with (tags, envs, dses)
     <div class="row">
       <div class="column">
         <div id="in_col" class="ui segment">
-          <h3 class="ui centered header">Inbound connections</h3>
+          <h3 class="ui centered header">Inbound Connections</h3>
         </div>
       </div>
       <div class="column">
         <div id="out_col" class="ui segment">
-          <h3 class="ui centered header">Outbound connections</h3>
+          <h3 class="ui centered header">Outbound Connections</h3>
         </div>
       </div>
     </div>
@@ -76,7 +81,7 @@ $def with (tags, envs, dses)
   <div class="ui active tab segment" data-tab="inputs" id="tab-input">
     <div id="in_pagination">
       <button class="ui button disabled">prev</button>
-      <span>showing 0-0 of 0</span>
+      <span>No records to show</span>
       <button class="ui button disabled">next</button>
     </div>
     <table class="ui very compact sortable celled structured table">
@@ -97,7 +102,7 @@ $def with (tags, envs, dses)
   <div class="ui tab segment" data-tab="outputs" id="tab-output">
     <div id="out_pagination">
       <button class="ui button disabled">prev</button>
-      <span>showing 0-0 of 0</span>
+      <span>No records to show</span>
       <button class="ui button disabled">next</button>
     </div>
     <table class="ui very compact sortable celled structured table">
@@ -118,7 +123,7 @@ $def with (tags, envs, dses)
   <div class="ui tab segment" data-tab="ports" id="tab-ports">
     <div id="port_pagination">
       <button class="ui button disabled">prev</button>
-      <span>showing 0-0 of 0</span>
+      <span>No records to show</span>
       <button class="ui button disabled">next</button>
     </div>
     <table class="ui very compact sortable celled structured table">
@@ -138,7 +143,7 @@ $def with (tags, envs, dses)
   <div class="ui tab segment" data-tab="children" id="tab-children">
     <div id="child_pagination">
       <button class="ui button disabled">prev</button>
-      <span>showing 0-0 of 0</span>
+      <span>No records to show</span>
       <button class="ui button disabled">next</button>
     </div>
     <table class="ui very compact sortable celled structured table">
@@ -194,4 +199,13 @@ $def with (tags, envs, dses)
             Cancel
         </div>
     </div>
+</div>
+
+<!-- Demo data warning -->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Demonstration
+  </div>
+  <p>This is a subset of real network data, anonymized for privacy. The database is read-only and changes will not be saved.</p>
 </div>

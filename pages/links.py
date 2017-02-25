@@ -1,6 +1,7 @@
 import re
 import base
 import models.links
+import errors
 
 
 class Links(base.Headless):
@@ -14,14 +15,14 @@ class Links(base.Headless):
         try:
             addresses = data['address'].split(",")
         except KeyError:
-            raise base.RequiredKey('address', 'address')
+            raise errors.RequiredKey('address', 'address')
 
         port = data.get('filter')
         try:
             tstart = int(data.get('tstart', self.default_tstart))
             tend = int(data.get('tend', self.default_tstart))
         except ValueError:
-            raise base.MalformedRequest("Could not read time range ('tstart', 'tend')")
+            raise errors.MalformedRequest("Could not read time range ('tstart', 'tend')")
 
         protocol = data.get('protocol', 'ALL')
         if protocol == 'ALL':
@@ -32,9 +33,9 @@ class Links(base.Headless):
             if ds_match:
                 ds = int(ds_match.group())
             else:
-                raise base.MalformedRequest("Could not read data source ('ds')")
+                raise errors.MalformedRequest("Could not read data source ('ds')")
         else:
-            raise base.RequiredKey('data source', 'ds')
+            raise errors.RequiredKey('data source', 'ds')
 
         return {'ds': ds,
                 'addresses': addresses,
@@ -46,7 +47,7 @@ class Links(base.Headless):
     def perform_get_command(self, request):
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
-        links = models.links.Links(request['ds'])
+        links = models.links.Links(self.user.viewing, request['ds'])
         return links.get_links(request['addresses'], timerange, request['port'], request['protocol'])
 
     def encode_get_response(self, response):

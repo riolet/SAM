@@ -4,7 +4,12 @@ from ConfigEnvy import ConfigEnvy
 
 config = ConfigEnvy('SAM')
 debug = config.get('debug', 'debug', default='False').lower() == 'true'
-use_tls = config.get('ssl', 'use_ssl', default='False').lower() == 'true'
+
+shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
+subscription_tables = ['Nodes', 'Tags', 'PortAliases']
+datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
+
+demo = {'id': 1}
 
 dbconfig = {
     'dbn': config.get('database', 'dbn'),
@@ -26,33 +31,41 @@ urls = (
     '/nodeinfo', 'pages.nodeinfo.Nodeinfo',
     '/metadata', 'pages.metadata.Metadata',
     '/settings', 'pages.settings.Settings',
+    '/settings_page', 'pages.settings_page.SettingsPage',
     '/table', 'pages.table.Table',
+    '/about', 'pages.about.About',
+    '/starting', 'pages.getting_started.GettingStarted',
 )
 
 navbar = [
     {
         "name": "Map",
         "icon": "sitemap",
-        "link": "/map"
+        "link": "/map",
+        "group": "any"
     },
     {
         "name": "Table View",
         "icon": "table",
-        "link": "/table"
+        "link": "/table",
+        "group": "any"
     },
     {
         "name": "Host Details",
         "icon": "tasks",
-        "link": "/metadata"
+        "link": "/metadata",
+        "group": "any"
     },
     {
         "name": "Stats",
         "icon": "filter",
-        "link": "/stats"
+        "link": "/stats",
+        "group": "any"
     },
     {
         "name": "Settings",
         "icon": "settings",
-        "link": "/settings"
+        "link": "/settings_page",
+        "group": "any"
     }
 ]

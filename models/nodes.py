@@ -2,12 +2,12 @@ import web
 import common
 
 
-class Nodes:
+class Nodes(object):
     default_environments = {'production', 'dev', 'inherit'}
 
-    def __init__(self):
+    def __init__(self, subscription):
         self.db = common.db
-        self.sub = common.get_subscription()
+        self.sub = subscription
         self.table_nodes = 's{acct}_Nodes'.format(acct=self.sub)
         self.table_tags = 's{acct}_Tags'.format(acct=self.sub)
 
@@ -126,3 +126,20 @@ class Nodes:
         where = "subnet={2} && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end, subnet)
         rows = self.db.select(self.table_nodes, where=where)
         return list(rows)
+
+    def get_all_endpoints(self):
+        rows = self.db.select(self.table_nodes, what='ipstart', where='subnet=32')
+        return [row['ipstart'] for row in rows]
+
+    def delete_hosts(self, collection):
+        hostlist = "({})".format(','.join(map(str, map(int, collection))))
+        # int cast is to cause failure if sql injection attacks.
+        # Almost equivalent to:
+        #    hostlist = str(tuple(map(int, collection)))
+        # Which is better?
+        deleted = self.db.delete(self.table_nodes, where='ipstart=ipend and ipstart IN {hostlist}'.format(hostlist=hostlist))
+
+        # the deleted endpoints may have (now childless) aggregate parents
+        # TODO: delete childless parent nodes (e.g. subnets like /24)
+
+        return deleted

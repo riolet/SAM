@@ -5,9 +5,9 @@ import common
 
 
 class Links:
-    def __init__(self, ds):
+    def __init__(self, subscription, ds):
         self.db = common.db
-        self.sub = common.get_subscription()
+        self.sub = subscription
         self.ds = ds
         self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=self.ds)
         self.table_links_in = "s{acct}_ds{id}_LinksIn".format(acct=self.sub, id=self.ds)
@@ -131,4 +131,10 @@ class Links:
         qvars = {"start": ip_start, "end": ip_end}
         rows = list(self.db.query(query, vars=qvars))
         return rows
-        
+
+    def get_all_endpoints(self):
+        query = """SELECT src AS 'ip' from {table_links}
+UNION
+SELECT dst AS 'ip' from {table_links};""".format(table_links=self.table_links)
+        rows = self.db.query(query)
+        return [row['ip'] for row in rows]

@@ -1,70 +1,82 @@
+import os
+import re
+import json
 import constants
 import common
 import web
-import os
-import json
-import re
 from MySQLdb import OperationalError
 import models.subscriptions
 import models.datasources
+import models.settings
 
-shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys']
-subscription_tables = ['Nodes', 'Tags', 'PortAliases']
-datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
-template_subscription_tables = map(lambda x: 's{acct}_' + x, subscription_tables)
-template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, datasource_tables)
+template_subscription_tables = map(lambda x: 's{acct}_' + x, constants.subscription_tables)
+template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, constants.datasource_tables)
 
 db = common.db_quiet
 
 
 def check_db_access():
+    # type: () -> int
+    """
+    Attempt to access the database.
+
+    :return: 0 if successful else MySQL error code
+    """
     print("Checking database access...")
-    params = constants.dbconfig.params.copy()
+    params = constants.dbconfig.copy()
     params.pop('db')
-    errorCode = 0
+    error_code = 0
     try:
         connection = web.database(**params)
-        connection.query("USE samapper")
+        connection.query("USE {0}".format(constants.dbconfig['db']))
         print("\tDatabase access confirmed")
     except OperationalError as e:
         print("\tERROR: Database access error:")
         print("\t\tError {0}: {1}".format(e[0], e[1]))
-        errorCode = e[0]
-    return errorCode
+        error_code = e[0]
+    return error_code
+
+
 def check_and_fix_db_access():
     print("Checking database access...")
-    params = constants.dbconfig.params.copy()
-    db = params.pop('db')
-    errorCode = 0
+    params = constants.dbconfig.copy()
+    db_name = params.pop('db')
+    error_code = 0
     connection = web.database(**params)
     try:
-        connection.query("USE {0}".format(db))
+        connection.query("USE {0}".format(constants.dbconfig['db']))
         print("\tDatabase access confirmed")
     except OperationalError as e:
-        errorCode = e[0]
+        error_code = e[0]
         if e[0] == 1049:
             print("\tERROR: Database {0} not found. Creating.".format(db))
             try:
-                connection.query("CREATE DATABASE IF NOT EXISTS samapper;")
+                connection.query("CREATE DATABASE IF NOT EXISTS {0};".format(constants.dbconfig['db']))
                 print("\tDatabase access restored.")
-                errorCode = 0
+                error_code = 0
             except:
                 print("\tError creating database: ")
                 print("\t\tError {0}: {1}".format(e[0], e[1]))
         elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print("\tERROR: Unable to continue: invalid username or password")
-            print("\tCheck your config file: dbconfig_local.py")
+            print("\tCheck your config file: default.cfg")
         else:
             print("\tERROR: Unable to continue: ")
             print("\t\tError {0}: {1}".format(e[0], e[1]))
-    return errorCode
+    return error_code
 
 
 def check_shared_tables():
+    # type: () -> [str]
+    """
+    Check that all shared tables exist with no regard for contents or structure.
+
+    :return: A list of expected tables that aren't found.
+    """
     print("Checking shared tables...")
     tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
     missing_shared_tables = []
-    for table in shared_tables:
+    for table in constants.shared_tables:
         if table not in tables:
             missing_shared_tables.append(table)
     if missing_shared_tables:
@@ -72,6 +84,8 @@ def check_shared_tables():
     else:
         print("\tShared tables confirmed")
     return missing_shared_tables
+
+
 def fix_shared_tables(missing_tables):
     print("Fixing shared tables...")
     if not missing_tables:
@@ -83,6 +97,8 @@ def fix_shared_tables(missing_tables):
             print("\tPopulating port reference table with latest data")
             fill_port_table()
         print("\tShared Tables Fixed")
+
+
 def fill_port_table():
     db.delete("Ports", "1=1")
     with open(os.path.join(constants.base_path, 'sql/default_port_data.json'), 'rb') as f:
@@ -97,57 +113,86 @@ def fill_port_table():
     db.multiple_insert('Ports', values=ports)
 
 
-def check_settings():
-    print("Checking settings...")
-    settings = db.select("Settings")
-    copies = len(settings)
-    if copies == 0:
-        print("\tERROR: No settings detected")
-        errorCode = -1
-    else:
-        print("\tSettings exist")
-        errorCode = 0
-    return errorCode
-def fix_settings(errorCode):
-    print("Fixing settings...")
-    if errorCode == 0:
+def check_default_subscription():
+    """
+    :return: 0 if no problems, -1 if default subscription is missing, -2 if default subscription id is taken.
+    """
+    print("Checking default subscription")
+    sub_model = models.subscriptions.Subscriptions()
+    subs = sub_model.get_all()
+    errors = -1
+    for sub in subs:
+        if sub['subscription'] == constants.demo['id']:
+            if sub['plan'] == 'admin':
+                errors = 0
+                print("\tDefault subscription confirmed")
+            else:
+                errors = -2
+                print("\tDefault subscription was misappropriated")
+            break
+    if errors == -1:
+        print("\tDefault subscription is missing")
+    return errors
+
+
+def fix_default_subscription(errors):
+    print("Fixing default subscription")
+    if errors == 0:
         print("\tNo fix needed")
-    elif errorCode == -1:
-        print("\tCreating default demo profile.")
-        subModel = models.subscriptions.Subscriptions()
-        subModel.add_subscription(common.demo_subscription_id)
-        print("\tDefault demo profile created.")
+    elif errors == -1:
+        print("\tCreating default subscription")
+        sub_model = models.subscriptions.Subscriptions()
+        sub_model.create_default_subscription()
     else:
-        print("ERROR: Cannot fix.")
-        raise NotImplementedError()
+        raise NotImplementedError("Cannot fix bad default subscription")
 
 
 def check_subscriptions():
-    print("Checking subcription tables")
-    subModel = models.subscriptions.Subscriptions()
-    sub_ids = subModel.get_list()
-    tables = [x.values()[0] for x in db.query("SHOW TABLES;") if re.match(r'^s\d+_[a-zA-Z0-9]+$', x.values()[0])]
+    # type: () -> { str: {str} }
+    """
+    Check that each subscription has appropriate subscription-specific tables.
+
+    :return: a dictionary containing issues identified in the subscriptions. dictionary may contain keys:
+        "extra": a set of all extraneous subscription tables
+        "malformed": a set of all subscriptions that are missing one or more tables.
+    """
+    print("Checking subscription tables")
+    sub_model = models.subscriptions.Subscriptions()
+    sub_ids = sub_model.get_id_list()
+    all_sub_tables = [x.values()[0] for x in db.query("SHOW TABLES;")
+                      if re.match(r'^s\d+_[a-zA-Z0-9]+$', x.values()[0])]
 
     # TODO: catch tables that belong to subscriptions that don't exist any more.
     all_extra_tables = set()
     subs_missing_tables = set()
 
     for sid in sub_ids:
-        # find all tables starting s#_*
-        found_tables = set(filter(lambda x: re.match(r'^s{0}_[a-zA-Z0-9]+$'.format(sid), x), tables))
-        expected_tables = set([x.format(acct=sid) for x in template_subscription_tables])
+        # find all tables starting this subscription's prefix
+        prefix = "s{0}_".format(sid)
+        found_tables = set(filter(lambda s_t: s_t.startswith(prefix), all_sub_tables))
+        expected_tables = set([t_s_t.format(acct=sid) for t_s_t in template_subscription_tables])
         missing_tables = expected_tables - found_tables
         extra_tables = found_tables - expected_tables
         if missing_tables:
-            print("\tERROR: Subscription {sid} missing tables: {tables}".format(sid=sid, tables=", ".join(missing_tables)))
+            print("\tERROR: Subscription {sid} missing tables: {tables}"
+                  .format(sid=sid, tables=", ".join(missing_tables)))
             subs_missing_tables.add(sid)
         if extra_tables:
-            print("\tERROR: Subscription {sid} has extra tables: {tables}".format(sid=sid, tables=", ".join(extra_tables)))
+            print("\tERROR: Subscription {sid} has extra tables: {tables}"
+                  .format(sid=sid, tables=", ".join(extra_tables)))
             all_extra_tables |= extra_tables
     if not all_extra_tables and not subs_missing_tables:
         print("\tSubscription tables confirmed")
+        return {}
     return {'extra': all_extra_tables, 'malformed': subs_missing_tables}
+
+
 def fix_subscriptions(errors):
+    """
+    :param errors: a dictionary containing issues identified in the subscriptions. dictionary may contain keys:
+        "extra": a set of all extraneous subscription tables
+        "malformed": a set of all subscriptions that are missing one or more tables.
+    """
     print("Fixing subscription tables")
     # remove extra tables
     if len(errors['extra']) > 0:
@@ -155,31 +200,94 @@ def fix_subscriptions(errors):
         for table in errors['extra']:
             db.query("DROP TABLE {0};".format(table))
     # create tables for malformed subscriptions
-    subModel = models.subscriptions.Subscriptions()
+    sub_model = models.subscriptions.Subscriptions()
     if len(errors['malformed']) > 0:
-        for id in errors['malformed']:
-            print("\tRebuilding malformed tables for subscription {0}".format(id))
-            subModel.create_subscription_tables(id)
-    if not errors['extra'] and not errors['malformed']:
+        for sid in errors['malformed']:
+            print("\tRebuilding malformed tables for subscription {0}".format(sid))
+            sub_model.create_subscription_tables(sid)
+    if not any(map(len, errors.values())):
         print("\tNo fix needed")
+    else:
+        print("\tSubscriptions fixed")
+
+
+def check_settings():
+    # type: () -> { str: {str} }
+    """
+    Ensure that each subscription has a settings row to go along with it and at least 1 default data source
+
+    :return: a dictionary containing issues identified in the settings. Dictionary may contain keys:
+        "extra": a set of all extraneous settings rows
+        "missing": a set of all subscriptions that are missing their settings row
+    """
+    print("Checking settings...")
+    sub_model = models.subscriptions.Subscriptions()
+    expected = set(sub_model.get_id_list())
+
+    settings_rows = list(db.select("Settings"))
+    found = set([s['subscription'] for s in settings_rows])
+
+    missing = expected - found
+    extra = found - expected
+
+    issues = {}
+    if missing:
+        print("\tERROR: Settings missing for subscriptions: {0}".format(missing))
+        issues['missing'] = missing
+    if extra:
+        print("\tERROR: Settings discovered for subscriptions that don't exist: {0}".format(extra))
+        issues['extra'] = extra
+    if not extra and not missing:
+        print("\tSettings confirmed")
+    return issues
+
+
+def fix_settings(errors):
+    """
+    :param errors: a dictionary containing issues identified in the settings. Dictionary may contain keys:
+        "extra": a set of all extraneous settings rows
+        "missing": a set of all subscriptions that are missing their settings row
+    """
+    print("Fixing settings...")
+    if 'extra' in errors and len(errors['extra']) > 0:
+        print("\tDeleting unused settings")
+        for table in errors['extra']:
+            db.query("DROP TABLE {0};".format(table))
+    if 'missing' in errors and len(errors['missing']) > 0:
+        for sub_id in errors['missing']:
+            print("\tRepairing settings for {0}".format(sub_id))
+            settings_model = models.settings.Settings({}, sub_id)
+            settings_model.create()
+
+    if not any(map(len, errors.values())):
+        print("\tNo fix needed")
+    else:
+        print("\tSettings fixed")
 
 
 def check_data_sources():
+    # type: () -> { str: {str} }
+    """
+    Ensure that each datasource has all the appropriate ds-specific tables
+
+    :return: a dictionary containing issues identified in the settings. Dictionary may contain keys:
+        "unused": a set of all tables without an owner datasource
+        "malformed": a set of all datasources that are missing some of their tables
+    """
     print("Checking data sources...")
-    subModel = models.subscriptions.Subscriptions()
-    issues = {}
+    sub_model = models.subscriptions.Subscriptions()
     all_tables = [tab.values()[0] for tab in db.query("SHOW TABLES;")]
     ds_table_pattern = re.compile(r'^s\d+_ds\d+_[a-zA-Z0-9]+$')
     ds_tables = set(filter(lambda x: re.match(ds_table_pattern, x), all_tables))
-    known_subscriptions = subModel.get_list()
+    known_subscriptions = sub_model.get_id_list()
 
     # issue collections
     extra_tables = set()
     malformed_datasources = set()
 
     for sub_id in known_subscriptions:
-        dsModel = models.datasources.Datasources(sub_id)
-        for ds_id in dsModel.ds_ids:
+        ds_model = models.datasources.Datasources({}, sub_id)
+        for ds_id in ds_model.ds_ids:
             expected_tables = {tab.format(acct=sub_id, id=ds_id) for tab in template_tables_per_ds}
             if not expected_tables.issubset(ds_tables):
                 print("\tERROR: Missing Tables for sub {0}, ds {1}".format(sub_id, ds_id))
@@ -190,10 +298,19 @@ def check_data_sources():
         print("\tERROR: Unused tables: {0}".format(" ".join(extra_tables)))
 
     if not malformed_datasources and not extra_tables:
-        print("\tData sources verified")
+        print("\tData sources confirmed")
+        return {}
 
     return {'malformed': malformed_datasources, 'unused': extra_tables}
+
+
 def fix_data_sources(errors):
+    """
+
+    :param errors: a dictionary containing issues identified in the settings. Dictionary may contain keys:
+        "unused": a set of all tables without an owner datasource
+        "malformed": a set of all datasources that are missing some of their tables
+    """
     print("Fixing data sources")
     if len(errors['unused']) > 0:
         print("\tDropping extra tables")
@@ -204,8 +321,8 @@ def fix_data_sources(errors):
         print("\tRebuilding data source tables")
         for sub_id, ds_id in errors['malformed']:
             print("\tRebuilding malformed tables for subscription {0} datasource {1}".format(sub_id, ds_id))
-            dsModel = models.datasources.Datasources(sub_id)
-            dsModel.create_ds_tables(ds_id)
+            ds_model = models.datasources.Datasources({}, sub_id)
+            ds_model.create_ds_tables(ds_id)
 
     if len(errors['malformed']) == 0 and len(errors['unused']) == 0:
         print('\tNo fix needed')
@@ -214,29 +331,42 @@ def fix_data_sources(errors):
 
 
 def check_integrity():
-    check_db_access()
+    # ensure we can access the database
+    error_code = check_db_access()
+    if error_code != 0:
+        return
+    # check that all shared tables exist. No regard for contents.
     check_shared_tables()
-    check_settings()
+    # check that the default demo subscription exists and is subscription 0
+    check_default_subscription()
+    # make sure the subscription-specific tables exist
     check_subscriptions()
+    # ensure that each subscription has a settings row to go along with it and at least 1 default data source
+    check_settings()
+    # ensure that each datasource has all the appropriate ds-specific tables
     check_data_sources()
 
 
 def check_and_fix_integrity():
-    errorCode = check_and_fix_db_access()
-    if errorCode != 0:
+    error_code = check_and_fix_db_access()
+    if error_code != 0:
         return
 
     errors = check_shared_tables()
     if errors:
         fix_shared_tables(errors)
 
-    errors = check_settings()
+    errors = check_default_subscription()
     if errors:
-        fix_settings(errors)
+        fix_default_subscription(errors)
 
     errors = check_subscriptions()
     if errors:
         fix_subscriptions(errors)
+
+    errors = check_settings()
+    if errors:
+        fix_settings(errors)
 
     errors = check_data_sources()
     if errors:

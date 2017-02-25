@@ -177,6 +177,9 @@ function build_link(address, subnet) {
     "use strict";
     var text = address + "/" + subnet;
     var link = "/metadata#ip=" + text + "&ds=" + g_ds;
+    if (window.location.pathname.substr(1,4) === "demo") {
+      link = "/demo" + link
+    }
 
     var icon = document.createElement("I");
     icon.className = "tasks icon";
@@ -1036,6 +1039,18 @@ function init() {
       onChange: dsCallback
     });
 
+    //"demo" message box
+    if (window.location.pathname.substr(1,4) === "demo") {
+      let msgbox = document.getElementById("demo_msg");
+      $(msgbox).transition("fade");
+    }
+    $('.message .close')
+      .on('click', function() {
+        $(this)
+          .closest('.message')
+          .transition('fade');
+    });
+
     //configure ports
     ports.display_callback = present_detailed_info;
 
@@ -1047,8 +1062,3 @@ function init() {
     }
     window.onhashchange = readHash;
 }
-
-window.onload = function () {
-    "use strict";
-    init();
-};

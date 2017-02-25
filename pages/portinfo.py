@@ -35,7 +35,7 @@ class Portinfo(base.HeadlessPost):
         return {'ports': ports}
 
     def perform_get_command(self, request):
-        portModel = models.ports.Ports()
+        portModel = models.ports.Ports(self.user.viewing)
         ports = portModel.get(request['ports'])
         return ports
 
@@ -50,7 +50,7 @@ class Portinfo(base.HeadlessPost):
         return dict(data)
 
     def perform_post_command(self, request):
-        portModel = models.ports.Ports()
+        portModel = models.ports.Ports(self.user.viewing)
         port = request.pop('port')
         portModel.set(port, request)
         return 'success'

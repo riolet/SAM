@@ -120,34 +120,6 @@ def determine_range_string(ip="0/0"):
     return low, high
 
 
-navbar = [
-    {
-        "name": "Map",
-        "icon": "sitemap",
-        "link": "/map"
-    },
-    {
-        "name": "Stats",
-        "icon": "filter",
-        "link": "/stats"
-    },
-    {
-        "name": "Table View",
-        "icon": "table",
-        "link": "/table"
-    },
-    {
-        "name": "Host Details",
-        "icon": "tasks",
-        "link": "/metadata"
-    },
-    {
-        "name": "Settings",
-        "icon": "settings",
-        "link": "/settings"
-    }
-]
-
 # tell renderer where to look for templates
 render = web.template.render(os.path.join(constants.base_path, 'templates/'))
 
@@ -157,8 +129,3 @@ web.config.debug = False
 db_quiet = web.database(**constants.dbconfig)
 web.config.debug = old
 del old
-demo_subscription_id = 0
-
-
-def get_subscription():
-    return demo_subscription_id

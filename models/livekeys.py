@@ -5,9 +5,9 @@ import common
 
 
 class LiveKeys:
-    def __init__(self, subscription=None):
+    def __init__(self, subscription):
         self.db = common.db
-        self.sub = subscription or common.get_subscription()
+        self.sub = subscription
         self.table_livekeys = "LiveKeys"
         self.table_ds = "Datasources"
 

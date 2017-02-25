@@ -1,29 +1,30 @@
 import re
 import os
+import constants
 import common
 import settings
 import livekeys
 
 
 class Datasources:
-    DS_TABLES = ["staging_Links", "Links", "LinksIn", "LinksOut", "Syslog"]
-    CREATE_SQL = os.path.join(common.base_path, 'sql/setup_datasource.sql')
-    DROP_SQL = os.path.join(common.base_path, 'sql/drop_datasource.sql')
+    DS_TABLES = ["StagingLinks", "Links", "LinksIn", "LinksOut", "Syslog"]
+    CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_datasource.sql')
+    DROP_SQL = os.path.join(constants.base_path, 'sql/drop_datasource.sql')
     MIN_INTERVAL = 5
     MAX_INTERVAL = 1800
+    SESSION_KEY = "_datasources"
+    TABLE = "Datasources"
 
-    def __init__(self, subscription=None):
+    def __init__(self, session, subscription):
         self.db = common.db
-        self.sub = subscription or common.get_subscription()
-        self.table = "Datasources"
-        # TODO: store in session
-        self._datasources = {}
+        self.sub = subscription
+        self.storage = session
 
     @property
     def datasources(self):
-        if not self._datasources:
+        if not self.storage.get(Datasources.SESSION_KEY):
             self.update_cache()
-        return self._datasources
+        return self.storage[Datasources.SESSION_KEY]
 
     @property
     def ds_ids(self):
@@ -42,11 +43,11 @@ class Datasources:
         return [first] + rest
 
     def update_cache(self):
-        rows = self.db.select(self.table, where='subscription=$sub', vars={'sub': self.sub})
-        self._datasources = {ds['id']: ds for ds in rows}
+        rows = self.db.select(Datasources.TABLE, where='subscription=$sub', vars={'sub': self.sub})
+        self.storage[Datasources.SESSION_KEY] = {ds['id']: ds for ds in rows}
 
     def clear_cache(self):
-        self._datasources = {}
+        self.storage[Datasources.SESSION_KEY] = {}
 
     def set(self, ds, **kwargs):
         qvars = {
@@ -60,7 +61,7 @@ class Datasources:
             if not self.validate_ds_interval(kwargs['ar_interval']):
                 raise ValueError("Invalid Interval. Must be between ({0} and {1})"
                                  .format(self.MIN_INTERVAL, self.MAX_INTERVAL))
-        rows_updated = self.db.update(self.table, "subscription=$sub AND id=$dsid", vars=qvars, **kwargs)
+        rows_updated = self.db.update(Datasources.TABLE, "subscription=$sub AND id=$dsid", vars=qvars, **kwargs)
         self.clear_cache()
         return rows_updated == 1
 
@@ -76,17 +77,17 @@ class Datasources:
         replacements = {'acct': self.sub, 'id': dsid}
         common.exec_sql(self.db, self.CREATE_SQL, replacements)
 
-    def create_datasource(self, name):
+    def create_datasource(self, name='default'):
         if not self.validate_ds_name(name):
             return -1
-        ds_id = self.db.insert(self.table, subscription=self.sub, name=name)
+        ds_id = self.db.insert(Datasources.TABLE, subscription=self.sub, name=name)
         self.create_ds_tables(ds_id)
         self.clear_cache()
         return ds_id
 
     def remove_datasource(self, ds_id):
-        settingsModel = settings.Settings(self.sub)
-        livekeysModel = livekeys.LiveKeys(self.sub)
+        settings_model = settings.Settings(self.storage, self.sub)
+        livekeys_model = livekeys.LiveKeys(self.sub)
         ids = self.ds_ids
 
         # check id is valid
@@ -101,14 +102,14 @@ class Datasources:
                 break
         if alt_id == -1:
             raise IndexError("Cannot remove the last data source")
-        settingsModel['datasource'] = alt_id
+        settings_model['datasource'] = alt_id
 
         # remove from live_dest if selected
-        livekeysModel.delete_ds(ds_id)
+        livekeys_model.delete_ds(ds_id)
 
         # remove from Datasources
         # Subscription is not needed to be specified in the WHERE clause because `id` is primary key.
-        self.db.delete(self.table, "id={0}".format(int(ds_id)))
+        self.db.delete(Datasources.TABLE, "id={0}".format(int(ds_id)))
         # Drop relevant tables
         replacements = {'acct': self.sub, 'id': int(ds_id)}
         common.exec_sql(self.db, self.DROP_SQL, replacements)

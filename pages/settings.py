@@ -1,14 +1,16 @@
 import os
-import common
+import constants
+import errors
 import re
 import base64
-import importlib
 import base
 import models.datasources
 import models.settings
 import models.nodes
 import models.links
 import models.livekeys
+import models.upload
+import models.subscriptions
 
 
 def nice_name(s):
@@ -18,59 +20,17 @@ def nice_name(s):
     return s.title()
 
 
-# TODO: move Uploader to models.
-class Uploader(object):
-    def __init__(self, ds, log_format):
-        self.ds = ds
-        self.importer = None
-        self.log_format = log_format
-        self.get_importer()
-        self.preprocessor = None
-
-    def get_importer(self):
-        try:
-            m_importer = importlib.import_module("importers." + self.log_format)
-            classes = filter(lambda x: x.endswith("Importer") and x != "BaseImporter", dir(m_importer))
-            class_ = getattr(m_importer, classes[0])
-            self.importer = class_()
-            self.importer.datasource = self.ds
-        except Exception as e:
-            print("Error acquiring importer.")
-            print(e.message)
-            self.importer = None
-
-    def run_import(self, data):
-        if self.importer is None:
-            print("No importer. Can't run it.")
-            return
-
-        self.importer.import_string(data)
-
-    def run_prepro(self):
-        import preprocess
-        print("Running preprocessor..")
-        processor = preprocess.Preprocessor(common.db, common.get_subscription(), self.ds)
-        processor.run_all()
-
-    def import_log(self, data):
-        print("Running import script")
-        self.run_import(data)
-        print("Running preprocessing script")
-        self.run_prepro()
-
-
 class Settings(base.HeadlessPost):
-    pageTitle = "Settings"
     recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new",
                            "ds_rm", "ds_select", "rm_hosts", "rm_tags",
                            "rm_envs", "rm_conns", "upload", "del_live_key",
-                           "add_live_key"]
+                           "add_live_key", "sub_plan"]
 
     def __init__(self):
-        base.HeadlessPost.__init__(self)
-        self.settingsModel = models.settings.Settings()
-        self.dsModel = models.datasources.Datasources()
-        self.livekeyModel = models.livekeys.LiveKeys()
+        super(Settings, self).__init__()
+        self.settingsModel = models.settings.Settings(self.session, self.user.viewing)
+        self.dsModel = models.datasources.Datasources(self.session, self.user.viewing)
+        self.livekeyModel = models.livekeys.LiveKeys(self.user.viewing)
 
     def decode_get_request(self, data):
         return None
@@ -89,7 +49,7 @@ class Settings(base.HeadlessPost):
 
     @staticmethod
     def get_available_importers():
-        files = os.listdir(os.path.join(common.base_path, "importers"))
+        files = os.listdir(os.path.join(constants.base_path, "importers"))
         files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
         # remove .py extension
         files = [(f[:-3], nice_name(f[7:-3])) for f in files]
@@ -110,16 +70,16 @@ class Settings(base.HeadlessPost):
         request = {}
         command = data.get('command')
         if not command:
-            raise base.RequiredKey('command', 'command')
+            raise errors.RequiredKey('command', 'command')
         request['command'] = command
 
         if command not in self.recognized_commands:
-            raise base.MalformedRequest("Unrecognized command: '{0}'".format(command))
+            raise errors.MalformedRequest("Unrecognized command: '{0}'".format(command))
 
         if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval', 'upload', 'add_live_key'):
             ds = self.decode_datasource(data.get('ds'))
             if not ds:
-                raise base.RequiredKey('datasource', 'param1')
+                raise errors.RequiredKey('datasource', 'param1')
             request['ds'] = ds
 
         if command == 'ds_name':
@@ -132,7 +92,7 @@ class Settings(base.HeadlessPost):
             try:
                 request['interval'] = int(data.get('interval', 'e'))
             except ValueError:
-                raise base.MalformedRequest("Could not interpret auto-refresh interval from '{0}'"
+                raise errors.MalformedRequest("Could not interpret auto-refresh interval from '{0}'"
                                             .format(repr(data.get('interval'))))
 
         elif command == 'ds_new':
@@ -145,8 +105,11 @@ class Settings(base.HeadlessPost):
         elif command == "del_live_key":
             request['key'] = data.get('key')
 
+        elif command == "sub_plan":
+            request['plan'] = data.get('plan')
+
         if None in request.values():
-            raise base.MalformedRequest("Could not parse arguments for command.")
+            raise errors.MalformedRequest("Could not parse arguments for command.")
 
         return request
 
@@ -167,6 +130,7 @@ class Settings(base.HeadlessPost):
         upload lg	"upload"		(ds, format, file)
         add_liveK   "add_live_key"  (ds)
         del_liveK   "del_live_key"  (key)
+        sub_plan    "sub_plan"      (plan)
 
         see also: self.recognized_commands
         """
@@ -186,30 +150,31 @@ class Settings(base.HeadlessPost):
         elif command == 'ds_select':
             self.settingsModel['datasource'] = request['ds']
         elif command == 'rm_hosts':
-            nodesModel = models.nodes.Nodes()
+            nodesModel = models.nodes.Nodes(self.user.viewing)
             nodesModel.delete_custom_hostnames()
         elif command == 'rm_tags':
-            nodesModel = models.nodes.Nodes()
+            nodesModel = models.nodes.Nodes(self.user.viewing)
             nodesModel.delete_custom_tags()
         elif command == 'rm_envs':
-            nodesModel = models.nodes.Nodes()
+            nodesModel = models.nodes.Nodes(self.user.viewing)
             nodesModel.delete_custom_envs()
         elif command == 'rm_conns':
-            linksModel = models.links.Links()
-            linksModel.delete_connections(request['ds'])
+            linksModel = models.links.Links(self.user.viewing, request['ds'])
+            linksModel.delete_connections()
         elif command == 'upload':
             b64start = request['file'].find(",")
             if b64start == -1:
-                raise base.MalformedRequest("Could not decode file")
+                raise errors.MalformedRequest("Could not decode file")
             log_file = base64.b64decode(request['file'][b64start + 1:])
-            uploader = Uploader(request['ds'], request['format'])
+            uploader = models.upload.Uploader(self.user.viewing, request['ds'], request['format'])
             uploader.import_log(log_file)
         elif command == 'add_live_key':
-            print("adding");
             self.livekeyModel.create(request['ds'])
         elif command == 'del_live_key':
-            print("deleting");
             self.livekeyModel.delete(request['key'])
+        elif command == 'sub_plan':
+            sub_model = models.subscriptions.Subscriptions()
+            sub_model.change_plan(self.user.subscription, request['plan'])
 
         return "success"
 
@@ -220,21 +185,3 @@ class Settings(base.HeadlessPost):
                 'livekeys': self.livekeyModel.read()}
         print(encoded)
         return encoded
-
-    # handle HTTP GET requests here.  Name gets value from routing rules above.
-    def GET(self):
-        if "headless" in self.inbound:
-            return base.HeadlessPost.GET(self)
-
-        settings = self.settingsModel.copy()
-        datasources = self.dsModel.sorted_list()
-        importers = self.get_available_importers()
-        livekeys = self.livekeyModel.read()
-
-        page = str(common.render._head(self.pageTitle,
-                                       stylesheets=["/static/css/general.css"],
-                                       scripts=["/static/js/settings.js"]))
-        page += str(common.render._header(common.navbar, self.pageTitle))
-        page += str(common.render.settings(settings, datasources, livekeys, importers))
-        page += str(common.render._tail())
-        return page

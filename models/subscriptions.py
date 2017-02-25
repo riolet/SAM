@@ -1,20 +1,41 @@
 import os
+from datetime import datetime
+import constants
 import common
 import models.datasources
 import models.ports
+import models.settings
+from models.user import User
 
 
 class Subscriptions:
-    CREATE_SQL = os.path.join(common.base_path, 'sql/setup_subscription_tables.sql')
-    default_datasource_name = 'default'
+    CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_subscription_tables.sql')
+    table = "Subscriptions"
 
     def __init__(self):
         self.db = common.db
-        self.table = "Settings"
 
-    def get_list(self):
-        rows = self.db.select(self.table, what="subscription")
+    def get_all(self):
+        rows = self.db.select(Subscriptions.table)
+        return list(rows)
+
+    def get_id_list(self):
+        rows = self.db.select(Subscriptions.table, what="subscription")
         return [row['subscription'] for row in rows]
+
+    def get_by_email(self, email):
+        qvars = {
+            'email': email
+        }
+        rows = self.db.select(Subscriptions.table, where='email=$email', vars=qvars)
+        return rows.first()
+
+    def get(self, sub_id):
+        qvars = {
+            'sid': sub_id
+        }
+        rows = self.db.select(Subscriptions.table, where='subscription=$sid', vars=qvars)
+        return rows.first()
 
     def create_subscription_tables(self, sub_id):
         replacements = {"acct": sub_id}
@@ -24,13 +45,11 @@ class Subscriptions:
         portsModel = models.ports.Ports(sub_id)
         portsModel.reset()
 
-    def add_subscription(self, sub_id):
-        # add subscription tables
-        self.create_subscription_tables(sub_id)
-
-        # add default datasource for subscription
-        dsModel = models.datasources.Datasources(sub_id)
-        ds_id = dsModel.create_datasource(self.default_datasource_name)
-
-        # add settings entry
-        self.db.insert(self.table, subscription=sub_id, datasource=ds_id)
+    def create_default_subscription(self):
+        user = User()
+        email = user.email
+        name = user.name
+        plan = user.plan
+        active = user.plan_active
+        now = datetime.now()
+        self.db.insert(self.table, email=email, name=name, plan=plan, active=active)

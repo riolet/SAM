@@ -1,125 +1,149 @@
-$def with (settings, datasources, livekeys, importers)
+$def with (user, settings, datasources, livekeys, importers)
+$ disabled = "" if user.may_post() else "disabled"
 <div class="ui container">
   <h1 class="ui center aligned header">Settings</h1>
 
-
   <!-- Data Sources -->
-  <h3 class="ui header">Data Sources</h3>
-  <p>Data sources let you store multiple sets of network data</p>
-  <p>Each data source stored their own set of connection history and timeline.  Node information, such as tags, environment, and hostnames, is shared across data sources.</p>
-  <div class="ui datasources grid">
-    <div class="four wide column">
-      <div class="ui vertical fluid tabular menu"  id="ds_tabs">
-        $for ds in datasources:
-          <a class="$('active' if ds['id'] == settings['datasource'] else '') item" data-tab="ds$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
-      </div>
-    </div>
-    <div id="ds_tab_contents" class="twelve wide stretched column">
-      $for ds in datasources:
-        <div class="ui $('active' if ds['id'] == settings['datasource'] else '') tab segment" data-tab="ds$ds['id']">
-          <table class="ui fixed definition table">
-            <tbody>
-            <tr>
-              <td class="right aligned">Name:</td>
-              <td>
-                <div class="ui transparent left icon input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
-              </td>
-            </tr>
-            <tr>
-              <td class="right aligned">Auto-refresh (map view):</td>
-              <td>
-                <div class="ui toggle checkbox">
-                  <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
-                  <label>&nbsp;</label>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="right aligned">Auto-refresh interval (seconds):</td>
-              <td>
-                <div class="ui transparent left icon input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+  $if not disabled:
+    <h3 class="ui header">Data Sources</h3>
+    <p>Data sources let you store multiple sets of network data</p>
+    <p>Each data source stored their own set of connection history and timeline.  Node information, such as tags, environment, and hostnames, is shared across data sources.</p>
+    <div class="ui datasources grid">
+      <div class="four wide column">
+        <div class="ui vertical fluid tabular menu"  id="ds_tabs">
+          $if datasources:
+            $for ds in datasources:
+              <a class="$('active' if ds['id'] == settings['datasource'] else '') item" data-tab="ds$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
+          $else:
+            <a class="item" data-tab="dsnone"><i class="off square outline icon"></i>None</a>
         </div>
-    </div>
-  </div>
-
-  <div class="ui secondary menu">
-    <a class="item" id="add_ds"><i class="blue add icon"></i>New Data Source</a>
-    <div class="item">|</div>
-    <a class="item" id="rm_ds"><i class="red remove icon"></i>Remove Data Source</a>
-    <div class="item">|</div>
-    <div class="ui deletion dropdown item">
-      <span class="text">Delete ...</span>
-      <div class="menu">
-        <a class="item"><i class="red trash icon"></i>Delete hostname information</a>
-        <a class="item"><i class="red trash icon"></i>Delete tag information</a>
-        <a class="item"><i class="red trash icon"></i>Delete environment information</a>
-        <a class="item"><i class="red trash icon"></i>Delete connection information</a>
+      </div>
+      <div id="ds_tab_contents" class="twelve wide stretched column">
+        $if datasources:
+          $for ds in datasources:
+            <div class="ui $('active' if ds['id'] == settings['datasource'] else '') tab segment" data-tab="ds$ds['id']">
+              <table class="ui fixed definition table">
+                <tbody>
+                <tr>
+                  <td class="right aligned">Name:</td>
+                  <td>
+                    <div class="ui transparent left icon $disabled input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="right aligned">Auto-refresh (map view):</td>
+                  <td>
+                    <div class="ui toggle $disabled checkbox">
+                      <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
+                      <label>&nbsp;</label>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="right aligned">Auto-refresh interval (seconds):</td>
+                  <td>
+                    <div class="ui transparent left icon $disabled input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+        $else:
+          <div class="active tab segment" data-tab="dsnone">
+            <table class="ui fixed definition table">
+              <tbody>
+                <tr>
+                  <td class="right aligned">...</td>
+                  <td>...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
       </div>
     </div>
-    <div class="item">|</div>
-    <a class="item" id="upload_log"><i class="blue write icon"></i>Upload log</a>
-  </div>
 
-  <!-- Live Updates -->
-  <h3 class="ui header">Live updates</h3>
-  <p>Live updates are a way to connect your router or gateway directly to the database.</p>
-  <p>To enable this, you need to run a collector on your local network which will translate network data and open a secure connection to our cloud server.</p>
-  <p>The live collector needs to be configured to point at our server and when you run it, you need to supply an access key, and what format to expect.</p>
-  <p>Live collector access keys grant access to upload network data (syslog lines) directly into your database.</p>
-  <div class="field">
-    <table class="ui compact celled collapsing table">
-      <thead>
-        <tr>
-          <th>Remove</th>
-          <th>Access Key</th>
-          <th>Destination</th>
-        </tr>
-      </thead>
-      <tbody id="live_update_tbody">
-        $for lk in livekeys:
+    <div class="ui secondary menu">
+      <a class="$disabled item" id="add_ds"><i class="blue $disabled add icon"></i>New Data Source</a>
+      <div class="item">|</div>
+      <a class="$disabled item" id="rm_ds"><i class="red $disabled remove icon"></i>Remove Data Source</a>
+      <div class="item">|</div>
+      <div class="$disabled ui deletion dropdown item">
+        <span class="text">Delete ...</span>
+        <div class="menu">
+          <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete hostname information</a>
+          <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete tag information</a>
+          <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete environment information</a>
+          <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete connection information</a>
+        </div>
+      </div>
+      <div class="item">|</div>
+      <a class="$disabled item" id="upload_log"><i class="blue write icon"></i>Upload log</a>
+    </div>
+
+    <!-- Live Updates -->
+    <h3 class="ui header">Live Updates</h3>
+    <p>Live updates are a way to connect your router or gateway directly to the database.</p>
+    <p>To enable this, you need to run a collector on your local network which will translate network data and open a secure connection to our cloud server.</p>
+    <p>The live collector needs to be configured to point at our server and when you run it, you need to supply an access key, and what format to expect.</p>
+    <p>Live collector access keys grant access to upload network data (syslog lines) directly into your database.</p>
+    <div class="field">
+      <table class="ui compact celled collapsing table">
+        <thead>
           <tr>
-            <td class="collapsing">
-              <button class="remove_live_key ui small icon button">
-                <i class="red delete icon"></i>
-              </button>
-            </td>
-            <td class="secret key">$lk['access_key']</td>
-            <td>$lk['datasource']</td>
+            <th>Remove</th>
+            <th>Access Key</th>
+            <th>Destination</th>
           </tr>
-        $if not livekeys:
+        </thead>
+        <tbody id="live_update_tbody">
+          $for lk in livekeys:
+            <tr>
+              <td class="collapsing">
+                <button class="remove_live_key $disabled ui small icon button">
+                  <i class="red delete icon"></i>
+                </button>
+              </td>
+              <td class="secret key">$lk['access_key']</td>
+              <td>$lk['datasource']</td>
+            </tr>
+          $if not livekeys:
+            <tr>
+              <td class="collapsing">
+                <button class="disabled ui small icon button">
+                  <i class="red delete icon"></i>
+                </button>
+              </td>
+              <td colspan="2">none</td>
+            </tr>
+        </tbody>
+        <tfoot class="full-width">
           <tr>
-            <td class="collapsing">
-              <button class="disabled ui small icon button">
-                <i class="red delete icon"></i>
-              </button>
-            </td>
-            <td colspan="2">none</td>
-          </tr>
-      </tbody>
-      <tfoot class="full-width">
-        <tr>
-          <th colspan="3">
-            <div id="add_live_key" class="ui small primary labeled icon button">
-              <i class="add icon"></i>Generate
-            </div>
-            <div class="ui selection dropdown">
-              <input id="live_dest" name="live_dest" type="hidden" value="ds$datasources[0]['id']">
-              <i class="dropdown icon"></i>
-              <div class="default text">data source</div>
-              <div class="menu" id="live_dest_list">
-                $for ds in datasources:
-                  <div class="item" data-value="ds$ds['id']">$ds['name']</div>
+            <th colspan="3">
+              <div id="add_live_key" class="ui $disabled small primary labeled icon button">
+                <i class="add icon"></i>Generate
               </div>
-            </div>
-          </th>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
+              <div class="ui selection $disabled dropdown">
+                $if datasources:
+                  <input id="live_dest" name="live_dest" type="hidden" value="ds$datasources[0]['id']">
+                  <i class="dropdown icon"></i>
+                  <div class="default text">data source</div>
+                  <div class="menu" id="live_dest_list">
+                    $for ds in datasources:
+                      <div class="item" data-value="ds$ds['id']">$ds['name']</div>
+                  </div>
+                $else:
+                  <input id="live_dest" name="live_dest" type="hidden" value="dsnone">
+                  <i class="dropdown icon"></i>
+                  <div class="default text">data source</div>
+                  <div class="menu" id="live_dest_list">
+                    <div class="item" data-value="dsnone">None</div>
+                  </div>
+              </div>
+            </th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
 
   <!--
   <div class="field">
@@ -195,7 +219,7 @@ $def with (settings, datasources, livekeys, importers)
 <div id="uploadModal" class="ui small basic modal">
   <i class="close icon"></i>
   <div class="header">
-    New Data Source
+    Upload Log
   </div>
   <div class="image content">
     <div class="image">
@@ -209,25 +233,41 @@ $def with (settings, datasources, livekeys, importers)
       <div class="field">
         <label>Log format</label>
         <div class="ui selection dropdown">
-          <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">
-          <i class="dropdown icon"></i>
-          <div class="default text">File Format</div>
-          <div class="menu">
-            $for imp in importers:
-              <div class="item" data-value="$imp[0]">$imp[1]</div>
-          </div>
+          $if importers:
+            <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">
+            <i class="dropdown icon"></i>
+            <div class="default text">File Format</div>
+            <div class="menu">
+              $for imp in importers:
+                <div class="item" data-value="$imp[0]">$imp[1]</div>
+            </div>
+          $else:
+            <input name="log_format" id="log_format" type="hidden" value="none">
+            <i class="dropdown icon"></i>
+            <div class="default text">File Format</div>
+            <div class="menu">
+              <div class="item" data-value="none">None</div>
+            </div>
         </div>
       </div>
       <div class="field">
         <label>Data source</label>
         <div class="ui selection dropdown">
-          <input name="log_ds" id="log_ds" type="hidden" value="ds$datasources[0]['id']">
-          <i class="dropdown icon"></i>
-          <div class="default text">data source</div>
-          <div class="menu" id="log_ds_list">
-            $for ds in datasources:
-              <div class="item" data-value="ds$ds['id']">$ds['name']</div>
-          </div>
+          $if datasources:
+            <input name="log_ds" id="log_ds" type="hidden" value="ds$datasources[0]['id']">
+            <i class="dropdown icon"></i>
+            <div class="default text">data source</div>
+            <div class="menu" id="log_ds_list">
+              $for ds in datasources:
+                <div class="item" data-value="ds$ds['id']">$ds['name']</div>
+            </div>
+          $else:
+            <input name="log_ds" id="log_ds" type="hidden" value="dsnone">
+            <i class="dropdown icon"></i>
+            <div class="default text">data source</div>
+            <div class="menu" id="log_ds_list">
+              <div class="item" data-value="dsnone">None</div>
+            </div>
         </div>
       </div>
     </div>
@@ -243,5 +283,20 @@ $def with (settings, datasources, livekeys, importers)
         Confirm
       </div>
     </div>
+  </div>
+</div>
+
+<div class="ui response small basic modal">
+  <i class="close icon"></i>
+  <div id="upload_results_title" class="header">
+    Success
+  </div>
+  <div class="content">
+    <div id="upload_results" class="description">
+      Your changes were applied successfully
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel button">OK</div>
   </div>
 </div>

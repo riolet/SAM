@@ -1,4 +1,4 @@
-$def with (tags, envs, dses, columns, sorting, rows, spread, prev, next)
+$def with (tags, envs, dses, columns, sorting, rows, spread, prev, next, demo=False)
 <div class="ui">
 <!--
 ----------------- Filters -----------------
@@ -66,7 +66,7 @@ $def with (tags, envs, dses, columns, sorting, rows, spread, prev, next)
           $for item in row:
             <td class="td_$item[0]">
             $if item[0] == "address":
-              <a href="/metadata#ip=$item[1]&ds=ds$dses[0]['id']"><i class="tasks icon"></i>$item[1]</a>
+              <a href="$("/demo" if demo else "")/metadata#ip=$item[1]&ds=ds$dses[0]['id']"><i class="tasks icon"></i>$item[1]</a>
             $elif item[0] == "alias":
               <div class="ui transparent left icon input"><input data-content="$item[1]" placeholder="-" type="text" value="$item[1]"><i class="write icon"></i></div>
             $elif item[0] == "tags":
@@ -109,6 +109,16 @@ $def with (tags, envs, dses, columns, sorting, rows, spread, prev, next)
     </div>
   </div>
 </div>
+
+<!-- Demo data warning -->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Demonstration
+  </div>
+  <p>This is a subset of real network data, anonymized for privacy. The database is read-only and changes will not be saved.</p>
+</div>
+
 <!--
 ----------------- Javascript transcription -----------------
 -->

@@ -1,16 +1,22 @@
-import common
 import models.nodes
 import models.settings
 import models.datasources
+import base
 
-class Metadata(object):
+
+class Metadata(base.Headed):
     def __init__(self):
-        self.pageTitle = "Host Details"
+        super(Metadata, self).__init__("Host Details", True, False)
+        self.scripts = ["/static/js/metadata.js",
+                        "/static/js/map_ports.js",
+                        "/static/js/map_selection.js",
+                        "/static/js/map_data.js"]
+        self.styles = ["/static/css/general.css"]
         self.dses = None
 
     def require_dses(self):
-        datasourceModel = models.datasources.Datasources()
-        settingsModel = models.settings.Settings()
+        datasourceModel = models.datasources.Datasources(self.session, self.user.viewing)
+        settingsModel = models.settings.Settings(self.session, self.user.viewing)
         datasources = datasourceModel.datasources.copy()
         default_ds = datasources.pop(settingsModel['datasource'])
 
@@ -18,18 +24,10 @@ class Metadata(object):
         self.datasources = [default_ds] + datasources.values()
 
     def GET(self):
-        nodesModel = models.nodes.Nodes()
+        nodesModel = models.nodes.Nodes(self.user.viewing)
         tag_list = nodesModel.get_tag_list()
         env_list = nodesModel.get_env_list()
 
         self.require_dses()
 
-        return str(common.render._head(self.pageTitle,
-                                       stylesheets=[],
-                                       scripts=["/static/js/metadata.js",
-                                                "/static/js/map_ports.js",
-                                                "/static/js/map_selection.js",
-                                                "/static/js/map_data.js"])) \
-               + str(common.render._header(common.navbar, self.pageTitle)) \
-               + str(common.render.metadata(tag_list, env_list, self.datasources)) \
-               + str(common.render._tail())
+        return self.render('metadata', tag_list, env_list, self.datasources)
