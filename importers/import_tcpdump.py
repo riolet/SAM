@@ -43,9 +43,10 @@ class TCPDumpImporter(BaseImporter):
             dictionary['bytes_sent'] = '1'
             dictionary['packets_received'] = '1'
             dictionary['packets_sent'] = '1'
-        except TypeError as type_error:
-            print "Ignoring line because of error : " + type_error.message
-
+        except TypeError as ex:
+            print "Ignoring line because of error : " + ex.message
+        except UnicodeDecodeError as ex:
+            print "Ignoring line because of error : " + ex.message
         return 0
 
 
