@@ -210,7 +210,7 @@ def store_data(lines):
 # Uses synchronous message processing as threading was causing database issues
 class TCPRequestHandler(SocketServer.BaseRequestHandler):
     def handle(self):
-        data = self.request[0].strip()
+        data = self.request.recv(1024).strip()
         store_data(data)
 
 
