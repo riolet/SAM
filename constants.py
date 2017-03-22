@@ -20,7 +20,7 @@ dbconfig = {
     'port': int(config.get('database', 'port'))
 }
 
-urls = (
+urls = [
     '/', 'pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'pages.map.Map',
     '/stats', 'pages.stats.Stats',
@@ -34,8 +34,8 @@ urls = (
     '/settings_page', 'pages.settings_page.SettingsPage',
     '/table', 'pages.table.Table',
     '/about', 'pages.about.About',
-    '/starting', 'pages.getting_started.GettingStarted',
-)
+    '/starting', 'pages.getting_started.GettingStarted'
+]
 
 navbar = [
     {

@@ -61,3 +61,10 @@ class Settings:
         ds_id = dsModel.create_datasource()
 
         self.db.insert(Settings.TABLE, subscription=self.sub, datasource=ds_id)
+
+    def delete_subscription(self):
+        qvars = {
+            'sid': self.sub
+        }
+        num_deleted = self.db.delete(Settings.TABLE, where='subscription=$sid', vars=qvars)
+        return num_deleted

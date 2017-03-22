@@ -17,11 +17,6 @@ def nice_name(s):
 
 
 class SettingsPage(base.Headed):
-    recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new",
-                           "ds_rm", "ds_select", "rm_hosts", "rm_tags",
-                           "rm_envs", "rm_conns", "upload", "del_live_key",
-                           "add_live_key"]
-
     def __init__(self):
         super(SettingsPage, self).__init__("Settings", True, True)
         self.styles = ["/static/css/general.css"]

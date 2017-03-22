@@ -5,11 +5,13 @@ import common
 import models.datasources
 import models.ports
 import models.settings
+import models.livekeys
 from models.user import User
 
 
 class Subscriptions:
     CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_subscription_tables.sql')
+    DROP_SQL = os.path.join(constants.base_path, 'sql/drop_subscription.sql')
     table = "Subscriptions"
 
     def __init__(self):
@@ -51,5 +53,4 @@ class Subscriptions:
         name = user.name
         plan = user.plan
         active = user.plan_active
-        now = datetime.now()
         self.db.insert(self.table, email=email, name=name, plan=plan, active=active)

@@ -28,9 +28,9 @@ class LiveKeys:
         encoded = LiveKeys.b64_url_encode(random_bytes)
         return encoded[:length]
 
-    def create(self, datasource):
+    def create(self, ds_id):
         key = LiveKeys.generate_salt(24)
-        self.db.insert(self.table_livekeys, subscription=self.sub, datasource=datasource, access_key=key)
+        self.db.insert(self.table_livekeys, subscription=self.sub, datasource=ds_id, access_key=key)
     
     def read(self):
         qvars = {
@@ -64,4 +64,11 @@ class LiveKeys:
             'id': ds_id
         }
         num_deleted = self.db.delete(self.table_livekeys, where='datasource = $id', vars = qvars)
+        return num_deleted
+
+    def delete_all(self):
+        qvars = {
+            'sub': self.sub
+        }
+        num_deleted = self.db.delete(self.table_livekeys, where='subscription=$sub', vars=qvars)
         return num_deleted

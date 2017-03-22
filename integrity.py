@@ -59,7 +59,7 @@ def check_and_fix_db_access():
                 print("\t\tError {0}: {1}".format(e[0], e[1]))
         elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print("\tERROR: Unable to continue: invalid username or password")
-            print("\tCheck your config file: default.cfg")
+            print("\tCheck your config file: dbconfig_local.py")
         else:
             print("\tERROR: Unable to continue: ")
             print("\t\tError {0}: {1}".format(e[0], e[1]))
@@ -330,6 +330,32 @@ def fix_data_sources(errors):
         print('\tData sources fixed')
 
 
+def check_sessions_table():
+    # type: () -> bool
+    """
+    Check if the session table is missing.
+
+    :return: True if the session table is missing. False otherwise.
+    """
+    print("Checking session storage...")
+    tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    is_missing = 'sessions' not in tables
+    if is_missing:
+        print("\tSession table missing")
+    else:
+        print("\tSession storage confirmed")
+    return is_missing
+
+
+def fix_sessions_table(is_missing):
+    print("Fixing session storage...")
+    if is_missing:
+        common.exec_sql(db, os.path.join(constants.base_path, 'sql/sessions.sql'))
+        print("\tFixed sessions.")
+    else:
+        print("\tNo fix needed.")
+
+
 def check_integrity():
     # ensure we can access the database
     error_code = check_db_access()
@@ -345,6 +371,8 @@ def check_integrity():
     check_settings()
     # ensure that each datasource has all the appropriate ds-specific tables
     check_data_sources()
+    # make sure the sessions table is there!
+    check_sessions_table()
 
 
 def check_and_fix_integrity():
@@ -371,3 +399,7 @@ def check_and_fix_integrity():
     errors = check_data_sources()
     if errors:
         fix_data_sources(errors)
+
+    errors = check_sessions_table()
+    if errors:
+        fix_sessions_table(errors)

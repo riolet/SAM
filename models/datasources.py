@@ -114,3 +114,15 @@ class Datasources:
         replacements = {'acct': self.sub, 'id': int(ds_id)}
         common.exec_sql(self.db, self.DROP_SQL, replacements)
         self.clear_cache()
+
+    def remove_all(self):
+        # get list of targets for removal
+        victims = self.ds_ids
+
+        for dsid in victims:
+            # remove all datasource table rows
+            self.db.delete(Datasources.TABLE, "id={0}".format(int(dsid)))
+
+            # remove all datasource tables
+            replacements = {'acct': self.sub, 'id': int(dsid)}
+            common.exec_sql(self.db, self.DROP_SQL, replacements)

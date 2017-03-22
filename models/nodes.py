@@ -16,10 +16,11 @@ class Nodes(object):
         where = {"ipstart": r[0], "ipend": r[1]}
         self.db.update(self.table_nodes, where, alias=alias)
 
-    def set_env(self, address, env):
+    def get(self, address):
         r = common.determine_range_string(address)
-        where = {"ipstart": r[0], "ipend": r[1]}
-        self.db.update(self.table_nodes, where, env=env)
+        qvars = {"start": r[0], "end": r[1]}
+        rows = self.db.select(self.table_nodes, where="ipstart=$start and ipend=$end", vars=qvars)
+        return rows.first()
 
     def set_tags(self, address, new_tags):
         """
@@ -72,7 +73,12 @@ class Nodes(object):
     
     def get_tag_list(self):
         return [row.tag for row in self.db.select(self.table_tags, what="DISTINCT tag") if row.tag]
-    
+
+    def set_env(self, address, env):
+        r = common.determine_range_string(address)
+        where = {"ipstart": r[0], "ipend": r[1]}
+        self.db.update(self.table_nodes, where, env=env)
+
     def get_env(self, address):
         ipstart, ipend = common.determine_range_string(address)
         where = 'ipstart <= $start AND ipend >= $end'

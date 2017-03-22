@@ -3,9 +3,9 @@ import web
 import constants
 
 
-def parse_sql_file(path, replacements):
-    with open(path, 'r') as f:
-        lines = f.readlines()
+def parse_sql_string(script, replacements):
+    # break into lines
+    lines = script.splitlines(True)
     # remove comment lines
     lines = [i for i in lines if not i.startswith("--")]
     # join into one long string
@@ -18,6 +18,12 @@ def parse_sql_file(path, replacements):
     # ignore empty statements (like trailing newlines)
     commands = filter(lambda x: bool(x.strip()), commands)
     return commands
+
+
+def parse_sql_file(path, replacements):
+    with open(path, 'r') as f:
+        sql = f.read()
+    return parse_sql_string(sql, replacements)
 
 
 def exec_sql(connection, path, replacements=None):
@@ -129,3 +135,8 @@ web.config.debug = False
 db_quiet = web.database(**constants.dbconfig)
 web.config.debug = old
 del old
+
+# Configure session storage. Session variable is filled in from server.py
+web.config.session_parameters['cookie_path'] = "/"
+session_store = web.session.DBStore(db_quiet, 'sessions')
+session = None
