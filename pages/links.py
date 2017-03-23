@@ -45,6 +45,7 @@ class Links(base.Headless):
                 'protocol': protocol}
 
     def perform_get_command(self, request):
+        self.require_group('read')
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
         links = models.links.Links(self.user.viewing, request['ds'])

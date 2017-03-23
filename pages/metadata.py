@@ -24,6 +24,7 @@ class Metadata(base.Headed):
         self.datasources = [default_ds] + datasources.values()
 
     def GET(self):
+        self.require_group('read')
         nodesModel = models.nodes.Nodes(self.user.viewing)
         tag_list = nodesModel.get_tag_list()
         env_list = nodesModel.get_env_list()

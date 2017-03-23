@@ -14,11 +14,21 @@ def decimal_default(obj):
     raise TypeError
 
 
-class Headed(object):
-    def __init__(self, title, header, footer):
-        self.session = {}
+class Page(object):
+    def __init__(self):
+        self.session = common.session
         self.user = User(self.session)
         self.inbound = web.input()
+
+    def require_group(self, group):
+        if self.user.any_group(group):
+            return True
+        raise web.unauthorized()
+
+
+class Headed(Page):
+    def __init__(self, title, header, footer):
+        super(Headed, self).__init__()
         self.scripts = []
         self.styles = []
         self.page_title = title
@@ -41,11 +51,9 @@ class Headed(object):
         return head+header+page+footer+tail
 
 
-class Headless(object):
+class Headless(Page):
     def __init__(self):
-        self.session = {}
-        self.user = User(self.session)
-        self.inbound = web.input()
+        super(Headless, self).__init__()
         self.request = None
         self.response = None
         self.outbound = None

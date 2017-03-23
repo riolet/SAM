@@ -24,7 +24,7 @@ class Settings(base.HeadlessPost):
     recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new",
                            "ds_rm", "ds_select", "rm_hosts", "rm_tags",
                            "rm_envs", "rm_conns", "upload", "del_live_key",
-                           "add_live_key", "sub_plan"]
+                           "add_live_key"]
 
     def __init__(self):
         super(Settings, self).__init__()
@@ -105,9 +105,6 @@ class Settings(base.HeadlessPost):
         elif command == "del_live_key":
             request['key'] = data.get('key')
 
-        elif command == "sub_plan":
-            request['plan'] = data.get('plan')
-
         if None in request.values():
             raise errors.MalformedRequest("Could not parse arguments for command.")
 
@@ -134,7 +131,7 @@ class Settings(base.HeadlessPost):
 
         see also: self.recognized_commands
         """
-
+        self.require_group('write')
         command = request['command']
         if command == 'ds_name':
             self.dsModel.set(request['ds'], name=request['name'])
@@ -172,9 +169,6 @@ class Settings(base.HeadlessPost):
             self.livekeyModel.create(request['ds'])
         elif command == 'del_live_key':
             self.livekeyModel.delete(request['key'])
-        elif command == 'sub_plan':
-            sub_model = models.subscriptions.Subscriptions()
-            sub_model.change_plan(self.user.subscription, request['plan'])
 
         return "success"
 

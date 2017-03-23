@@ -35,6 +35,7 @@ class SettingsPage(base.Headed):
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
+        self.require_group('read')
         self.settingsModel = models.settings.Settings(self.session, self.user.viewing)
         self.dsModel = models.datasources.Datasources(self.session, self.user.viewing)
         self.livekeyModel = models.livekeys.LiveKeys(self.user.viewing)
