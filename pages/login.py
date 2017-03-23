@@ -1,5 +1,7 @@
 import constants
 import base
+import ldap3
+import errors
 
 
 class Login_LDAP(base.Headed):
@@ -15,13 +17,38 @@ class Login_LDAP(base.Headed):
     # ======== Post
 
     def decode_post_request(self, data):
-        # read provided username and password
+        # read provided user and password
+        password = data.get('password', None)
+        user = data.get('user', None)
         # validate they exist
-        pass
+        if password is None or len(password) == 0:
+            self.errors.append("Password may not be blank.")
+        if user is None or len(user) == 0:
+            self.errors.append("User may not be blank.")
+
+        if self.errors:
+            raise errors.MalformedRequest("Invalid Login information.")
+        return {
+            'user': user,
+            'password': password
+        }
+
+
+    def decode_connection_string(self):
+        cstring = constants.config.get('LDAP', 'connection_string')
+        server_address, _, namespace = cstring.rpartition('/')
+        return server_address, namespace
 
     def perform_post_command(self, request):
+        # prepare server information
+        server_address, namespace = self.decode_connection_string()
+        server = ldap3.Server(server_address)
+
         # submit credentials to LDAP server.
-        # can bind?
+        user = "UID={user},{namespace}".format(user=request['user'], namespace=namespace)  # 'uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org'
+        password = request['password']  # 'Secret123'
+        conn = ldap3.Connection(server, user, password, auto_bind=True)
+
         # do login()
         #    or save errors in session and do redirect
         pass
@@ -42,7 +69,8 @@ class Login_LDAP(base.Headed):
             self.response = self.perform_post_command(self.request)
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:
-            self.errors.append(e.message)
+            print("Error logging in: {}".format(e.message))
+            self.errors.append("Login failed.")
             return self.render('login', constants.access_control['login_url'], self.errors)
 
         return "<h1>Success</h1>\n<p>{}</p>".format(self.outbound)
