@@ -38,7 +38,7 @@ urls = [
     '/settings_page', 'pages.settings_page.SettingsPage',
     '/table', 'pages.table.Table',
     '/about', 'pages.about.About',
-    '/starting', 'pages.getting_started.GettingStarted'
+    '/starting', 'pages.getting_started.GettingStarted',
 ]
 
 navbar = [

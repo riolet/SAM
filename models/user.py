@@ -2,8 +2,28 @@ import constants
 
 
 class User(object):
-    def __init__(self, session=None):
+    def __init__(self, session):
         self.session = session
+
+    def login(self, email, name, subscription, groups, plan, active):
+        self.email = email
+        self.name = name
+        self.logged_in = True
+        self.subscription = subscription
+        self.viewing = subscription
+        self.groups = groups.split()
+        self.plan = plan
+        self.plan_active = active
+
+    def logout(self):
+        self.email = ""
+        self.name = None
+        self.logged_in = False
+        self.subscription = None
+        self.viewing = constants.demo['id']
+        self.groups = set()
+        self.plan = None
+        self.plan_active = False
 
     @property
     def email(self):
@@ -81,7 +101,7 @@ class User(object):
 
     @groups.setter
     def groups(self, value):
-        saved = value.copy()
+        saved = set(value).copy()
         saved.discard('login')
         saved.discard('logout')
         saved.discard('unsubscribed')
