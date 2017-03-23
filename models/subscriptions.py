@@ -48,9 +48,8 @@ class Subscriptions:
         portsModel.reset()
 
     def create_default_subscription(self):
-        user = User()
-        email = user.email
-        name = user.name
-        plan = user.plan
-        active = user.plan_active
-        self.db.insert(self.table, email=email, name=name, plan=plan, active=active)
+        email = constants.demo['email']
+        name = constants.demo['name']
+        plan = 'admin'
+        active = True
+        self.db.insert(self.table, email=email, name=name, plan=plan, groups='read write admin', active=active)

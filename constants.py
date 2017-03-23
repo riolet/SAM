@@ -9,7 +9,11 @@ shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions'
 subscription_tables = ['Nodes', 'Tags', 'PortAliases']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
-demo = {'id': 1}
+demo = {
+    'id': 1,
+    'email': 'sam@example.com',
+    'name': 'SAM',
+}
 
 dbconfig = {
     'dbn': config.get('database', 'dbn'),
