@@ -21,9 +21,12 @@ class Page(object):
         self.inbound = web.input()
 
     def require_group(self, group):
-        if self.user.any_group(group):
+        self.require_groups([group])
+
+    def require_groups(self, groups):
+        if self.user.any_group(groups):
             return True
-        raise web.unauthorized()
+        raise web.seeother(constants.access_control['login_url'])
 
 
 class Headed(Page):

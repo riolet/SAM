@@ -9,6 +9,11 @@ shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions'
 subscription_tables = ['Nodes', 'Tags', 'PortAliases']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
+access_control = {
+    'active': config.get('access control', 'active', default='False').lower() == 'true',
+    'login_url': config.get('access control', 'login_url', default='/login_LDAP')
+}
+
 demo = {
     'id': 1,
     'email': 'sam@example.com',
@@ -37,8 +42,9 @@ urls = [
     '/settings', 'pages.settings.Settings',
     '/settings_page', 'pages.settings_page.SettingsPage',
     '/table', 'pages.table.Table',
-    '/about', 'pages.about.About',
-    '/starting', 'pages.getting_started.GettingStarted',
+
+    '/login_LDAP', 'pages.login.Login_LDAP',
+    '/logout', 'pages.logout.Logout',
 ]
 
 navbar = [
