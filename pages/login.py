@@ -2,6 +2,8 @@ import constants
 import base
 import ldap3
 import errors
+import ldap3.core.exceptions
+import web
 
 
 class Login_LDAP(base.Headed):
@@ -11,7 +13,11 @@ class Login_LDAP(base.Headed):
         self.errors = []
 
     # ======== Get
+
     def GET(self):
+        if self.user.logged_in:
+            raise web.seeother('./map')
+
         return self.render('login', constants.access_control['login_url'])
 
     # ======== Post
@@ -33,7 +39,6 @@ class Login_LDAP(base.Headed):
             'password': password
         }
 
-
     def decode_connection_string(self):
         cstring = constants.config.get('LDAP', 'connection_string')
         server_address, _, namespace = cstring.rpartition('/')
@@ -47,11 +52,17 @@ class Login_LDAP(base.Headed):
         # submit credentials to LDAP server.
         user = "UID={user},{namespace}".format(user=request['user'], namespace=namespace)  # 'uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org'
         password = request['password']  # 'Secret123'
-        conn = ldap3.Connection(server, user, password, auto_bind=True)
+        try:
+            conn = ldap3.Connection(server, user, password, auto_bind=True)
+        except ldap3.core.exceptions.LDAPSocketOpenError as e:
+            self.errors.append("Could not connect to LDAP server: {}. Check configuration.".format(e.message))
+            raise errors.AuthenticationError("Invalid Server information.")
+        except ldap3.core.exceptions.LDAPBindError as e:
+            self.errors.append("Invalid Credentials")
+            raise errors.AuthenticationError("Invalid credentials.")
 
-        # do login()
-        #    or save errors in session and do redirect
-        pass
+        # Assume authenticated at this point.
+        self.user.login_simple(user)
 
     def encode_post_response(self, response):
         # redirect to home page / map
@@ -70,7 +81,8 @@ class Login_LDAP(base.Headed):
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:
             print("Error logging in: {}".format(e.message))
-            self.errors.append("Login failed.")
+            if not self.errors:
+                self.errors.append("Login failed.")
             return self.render('login', constants.access_control['login_url'], self.errors)
 
-        return "<h1>Success</h1>\n<p>{}</p>".format(self.outbound)
+        raise web.seeother('./map')

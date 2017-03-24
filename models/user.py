@@ -5,15 +5,10 @@ class User(object):
     def __init__(self, session):
         self.session = session
 
-        # if access control is disabled, auto-login as default user
-        if not constants.access_control['active']:
-            self.login(
-                constants.demo['email'],
-                constants.demo['name'],
-                constants.demo['id'],
-                'read write admin',
-                'admin',
-                True)
+        # if not already logged in and
+        # access control is disabled, auto-login as a default user
+        if not self.logged_in and not constants.access_control['active']:
+            self.login_simple('SAM')
 
     def login(self, email, name, subscription, groups, plan, active):
         self.email = email
@@ -24,6 +19,9 @@ class User(object):
         self.groups = groups.split()
         self.plan = plan
         self.plan_active = active
+
+    def login_simple(self, name):
+        self.login(name, name, constants.demo['id'], 'read write admin', 'admin', True)
 
     @property
     def email(self):
