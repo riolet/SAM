@@ -12,6 +12,7 @@ import preprocess
 import models.links
 import models.nodes
 from datetime import datetime
+import time
 
 
 def get_test_db_connection():
@@ -62,6 +63,12 @@ def template_sql(path, *args):
     tmpl = web.template.Template(open(path).read())
     commands = common.parse_sql_string(unicode(tmpl(*args)), {})
     return commands
+
+
+def make_timestamp(ts):
+    d = datetime.strptime(ts, "%Y-%m-%d %H:%M")
+    ts = time.mktime(d.timetuple())
+    return int(ts)
 
 
 def clear_network(db, sub, ds):

@@ -35,6 +35,15 @@ class Filter (object):
     def having(self):
         raise NotImplemented("This method must be overridden in the ({0}) class.".format(self.type))
 
+    def __eq__(self, other):
+        if not isinstance(other, Filter):
+            return False
+
+        equal = (other.type == self.type and
+                 other.enabled == self.enabled and
+                 other.params == self.params)
+        return equal
+
 
 class SubnetFilter(Filter):
     def __init__(self, enabled):
@@ -247,7 +256,7 @@ def readEncoded(filterString):
     if ds_match:
         ds = int(ds_match.group())
     else:
-        user = User()
+        user = User(common.session)
         settings_model = models.settings.Settings({}, user.viewing)
         ds = settings_model['datasource']
 
