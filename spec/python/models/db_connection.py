@@ -11,9 +11,8 @@ import importers.import_base
 import preprocess
 import models.links
 import models.nodes
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
-import random
 
 
 def get_test_db_connection():
@@ -468,7 +467,7 @@ def setup_node_extras():
 
 
 # immediately run, to ensure the test db is present.
-get_test_db_connection()
+db = get_test_db_connection()
 default_sub = constants.demo['id']
 ds_model = models.datasources.Datasources({}, default_sub)
 dsid_default = 0

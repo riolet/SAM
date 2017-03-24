@@ -1,7 +1,7 @@
 import db_connection
 import models.details
 
-db = db_connection.get_test_db_connection()
+db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
 ds_empty = db_connection.dsid_short

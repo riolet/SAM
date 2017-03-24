@@ -1,6 +1,5 @@
 import pytest
 import db_connection
-import constants
 import web
 from models.datasources import Datasources
 session = {}

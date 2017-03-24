@@ -4,11 +4,11 @@ import models.links
 from datetime import datetime
 import time
 
-db = db_connection.get_test_db_connection()
+db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
 ds_empty = db_connection.dsid_short
-db_connection.setup_network_links(db, sub_id, ds_full)
+db_connection.setup_links_network(db, sub_id, ds_full)
 
 
 def test_get_protocol_list():
