@@ -22,7 +22,7 @@ def get_test_db_connection():
     except OperationalError as e:
         print("Error establishing db connection.")
         print e
-        integrity.check_and_fix_integrity()
+        create_test_database()
         try:
             # dummy query to test db connection
             tables = db.query("SHOW TABLES")
@@ -42,6 +42,7 @@ def get_test_db_connection():
 def create_test_database():
     # creates all the default tables and profile.
     integrity.check_and_fix_integrity()
+    setup_datasources()
 
 
 def setup_datasources():
@@ -74,31 +75,13 @@ def clear_network(db, sub, ds):
     db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
 
 
-def setup_network():
-    sub_id = constants.demo['id']
-    db = get_test_db_connection()
-    ds_model = models.datasources.Datasources({}, sub_id)
-    ds = ds_model.sorted_list()[0]
-    ds_id = int(ds['id'])
+def setup_network_links(db, sub_id, ds_id):
     clear_network(db, sub_id, ds_id)
     loader = importers.import_base.BaseImporter()
     loader.subscription = sub_id
     loader.datasource = ds_id
     processor = preprocess.Preprocessor(db, sub_id, ds_id)
 
-    # keys = [
-    #    "src",
-    #    "srcport",
-    #    "dst",
-    #    "dstport",
-    #    "timestamp",
-    #    "protocol",
-    #    "bytes_sent",
-    #    "bytes_received",
-    #    "packets_sent",
-    #    "packets_received",
-    #    "duration",
-    # ]
     t = common.IPStringtoInt
     when1 = datetime(2016, 1, 17, 13, 24, 35)
     when2 = datetime(2017, 2, 18, 14, 25, 36)
@@ -139,3 +122,18 @@ def setup_node_extras():
     for command in commands:
         print command
 
+
+# immediately run, to ensure the test db is present.
+get_test_db_connection()
+default_sub = constants.demo['id']
+ds_model = models.datasources.Datasources({}, default_sub)
+dsid_default = 0
+dsid_short = 0
+dsid_live = 0
+for k, v in ds_model.datasources.iteritems():
+    if v['name'] == 'default':
+        dsid_default = k
+    if v['name'] == 'short':
+        dsid_short = k
+    if v['name'] == 'live':
+        dsid_live = k

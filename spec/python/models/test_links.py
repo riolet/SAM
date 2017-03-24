@@ -1,20 +1,14 @@
-import constants
 import db_connection
 import common
 import models.links
-import models.datasources
 from datetime import datetime
 import time
 
-sub_id = constants.demo['id']
-ds_model = models.datasources.Datasources({}, sub_id)
-ds_full = 0
-ds_empty = 0
-for ds in ds_model.datasources.values():
-    if ds['name'] == u'default':
-        ds_full = int(ds['id'])
-    if ds['name'] == u'short':
-        ds_empty = int(ds['id'])
+db = db_connection.get_test_db_connection()
+sub_id = db_connection.default_sub
+ds_full = db_connection.dsid_default
+ds_empty = db_connection.dsid_short
+db_connection.setup_network_links(db, sub_id, ds_full)
 
 
 def test_get_protocol_list():

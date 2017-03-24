@@ -1,10 +1,11 @@
-import constants
 import db_connection
 import models.nodes
-import web.template
 import common
 
-sub_id = constants.demo['id']
+db = db_connection.get_test_db_connection()
+sub_id = db_connection.default_sub
+ds_full = db_connection.dsid_default
+db_connection.setup_network_links(db, sub_id, ds_full)
 
 
 def test_get_all_endpoints():

@@ -1,12 +1,14 @@
-import constants
 # importing db_connection has the side effect of setting the test database.
 import db_connection
 from models.user import User
+
+sub_id = db_connection.default_sub
 session = {}
-sub_id = constants.demo['id']
+
 
 def logout():
     session.clear()
+
 
 def login():
     user = User(session)
@@ -17,6 +19,7 @@ def login():
     user.plan = 'plan100'
     user.plan_active = True
     user.viewing = user.subscription
+
 
 def test_empty_user():
     u = User(session)
@@ -34,6 +37,7 @@ def test_empty_user():
     assert 'subscribed' not in u.groups
     assert 'debug' not in u.groups
 
+
 def test_logged_in_user():
     login()
     u = User(session)
@@ -49,6 +53,7 @@ def test_logged_in_user():
     assert 'logout' not in u.groups
     assert 'unsubscribed' not in u.groups
     assert 'debug' not in u.groups
+
 
 def test_may_post():
     login()
@@ -71,6 +76,7 @@ def test_may_post():
     assert u.may_post() is False
     u.plan_active = True
     assert u.may_post() is True
+
 
 def test_any_all_groups():
     login()

@@ -4,7 +4,7 @@ import constants
 import web
 from models.datasources import Datasources
 session = {}
-sub_id = constants.demo['id']
+sub_id = db_connection.default_sub
 
 
 def test_datasources():
