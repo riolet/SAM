@@ -20,15 +20,10 @@ def test_get_id_list():
 
 
 def test_get_by_email():
-    u = models.user.User()
     s = models.subscriptions.Subscriptions()
-    sub = s.get_by_email(u.email)
+    sub = s.get_by_email(constants.demo['email'])
     assert bool(sub)
     assert sub.plan == 'admin'
-
-    sub = s.get_by_email('test@example.com')
-    assert bool(sub)
-    assert sub.name == 'Test Sub'
 
 
 def test_get():

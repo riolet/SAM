@@ -25,7 +25,7 @@ class User(object):
 
     @property
     def email(self):
-        return self.session.get('user_email', "")
+        return self.session.get('user_email', None)
 
     @email.setter
     def email(self, value):

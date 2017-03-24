@@ -19,8 +19,8 @@ def login():
     user.viewing = user.subscription
 
 def test_empty_user():
-    logout()
     u = User(session)
+    logout()
 
     assert u.email is None
     assert u.name is None
