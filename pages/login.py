@@ -54,6 +54,7 @@ class Login_LDAP(base.Headed):
         password = request['password']  # 'Secret123'
         try:
             conn = ldap3.Connection(server, user, password, auto_bind=True)
+            conn.unbind()
         except ldap3.core.exceptions.LDAPSocketOpenError as e:
             self.errors.append("Could not connect to LDAP server: {}. Check configuration.".format(e.message))
             raise errors.AuthenticationError("Invalid Server information.")
