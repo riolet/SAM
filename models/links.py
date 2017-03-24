@@ -96,9 +96,10 @@ class Links:
         :param inbound:  boolean, the direction of links to consider:
             If True, only consider links that terminate in the ip_range specified.
             If False, only consider links that originate in the ip_range specified,
-        :param port:  Only consider connections using this destination port.
-        :param timerange:  Tuple of (start, end) timestamps. Only connections happening
+        :param port:  int or None; Only consider connections using this destination port.
+        :param timerange:  Tuple of (start, end) unix timestamps. Only connections happening
         during this time period are considered.
+        :param protocol: String or None; filter to only connections using this protocol.
         :return: A list of db results formated as web.storage objects (used like dictionaries)
         """
         ports = (ip_start == ip_end)  # include ports in the results?
