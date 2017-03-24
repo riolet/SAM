@@ -1,5 +1,6 @@
 import base
 import models.ports
+import errors
 
 # This class is for getting the aliases for a port number
 
@@ -25,16 +26,17 @@ class Portinfo(base.HeadlessPost):
     def decode_get_request(self, data):
         port_string = data.get('port')
         if not port_string:
-            raise base.RequiredKey('port', 'port')
+            raise errors.RequiredKey('port', 'port')
 
         try:
             ports = [int(port) for port in port_string.split(',') if port]
         except ValueError:
-            raise base.MalformedRequest("Could not read port ('port') number. Use comma delimited list.")
+            raise errors.MalformedRequest("Could not read port ('port') number. Use comma delimited list.")
 
         return {'ports': ports}
 
     def perform_get_command(self, request):
+        self.require_group('read')
         portModel = models.ports.Ports(self.user.viewing)
         ports = portModel.get(request['ports'])
         return ports
@@ -45,11 +47,12 @@ class Portinfo(base.HeadlessPost):
     def decode_post_request(self, data):
         port_string = data.get('port')
         if not port_string:
-            raise base.RequiredKey('port', 'port')
+            raise errors.RequiredKey('port', 'port')
 
         return dict(data)
 
     def perform_post_command(self, request):
+        self.require_group('write')
         portModel = models.ports.Ports(self.user.viewing)
         port = request.pop('port')
         portModel.set(port, request)

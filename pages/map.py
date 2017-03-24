@@ -23,9 +23,9 @@ class Map(base.Headed):
                        '/static/nouislider/nouislider.css',
                        '/static/nouislider/nouislider.pips.css']
 
-
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
+        self.require_group('read')
         datasources = models.datasources.Datasources(self.session, self.user.viewing)
         dses = [(k, v['name']) for k, v in datasources.datasources.iteritems()]
 

@@ -371,6 +371,7 @@ class Table(base.Headed):
         return spread
 
     def GET(self):
+        self.require_group('read')
         self.nodesModel = models.nodes.Nodes(self.user.viewing)
 
         self.request = self.decode_get_request(self.inbound)

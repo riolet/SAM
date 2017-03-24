@@ -9,7 +9,16 @@ shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions'
 subscription_tables = ['Nodes', 'Tags', 'PortAliases']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
-demo = {'id': 1}
+access_control = {
+    'active': config.get('access control', 'active', default='False').lower() == 'true',
+    'login_url': config.get('access control', 'login_url', default='/login_LDAP')
+}
+
+demo = {
+    'id': 1,
+    'email': 'sam@example.com',
+    'name': 'SAM',
+}
 
 dbconfig = {
     'dbn': config.get('database', 'dbn'),
@@ -20,7 +29,7 @@ dbconfig = {
     'port': int(config.get('database', 'port'))
 }
 
-urls = (
+urls = [
     '/', 'pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'pages.map.Map',
     '/stats', 'pages.stats.Stats',
@@ -33,9 +42,10 @@ urls = (
     '/settings', 'pages.settings.Settings',
     '/settings_page', 'pages.settings_page.SettingsPage',
     '/table', 'pages.table.Table',
-    '/about', 'pages.about.About',
-    '/starting', 'pages.getting_started.GettingStarted',
-)
+
+    '/login_LDAP', 'pages.login.Login_LDAP',
+    '/logout', 'pages.logout.Logout',
+]
 
 navbar = [
     {

@@ -1,0 +1,69 @@
+$def with (login_path, server_errors=None)
+<style>
+body > .grid {
+  height: 100%;
+}
+.header .image {
+  margin-top: -100px;
+}
+.column {
+  max-width: 450px;
+}
+.footer {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  z-order: -1;
+}
+</style>
+<script>
+  let server_errors = [
+    $for error in server_errors or []:
+      "$error",
+  ];
+
+  $$(document)
+  .ready(function() {
+    $$('.ui.form').form();
+    if (server_errors && server_errors.length > 0) {
+      $$('.form').form('add errors', server_errors)
+    }
+  });
+</script>
+<div class="ui middle aligned center aligned grid">
+  <div class="column">
+    <h2 class="ui teal image header">
+      <img src="/static/img/logo_dark.png" class="image">
+      <div class="content">
+        System Architecture Mapper
+      </div>
+    </h2>
+    <form class="ui large attached form" method="POST" action="$login_path">
+      <div class="ui stacked segment">
+        <p>Authorization Required</p>
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="user icon"></i>
+            <input type="text" name="user" placeholder="User">
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="lock icon"></i>
+            <input type="password" name="password" placeholder="Password">
+          </div>
+        </div>
+        <!--
+        <div class="field">
+          <div class="ui checkbox">
+            <input id="remember_me" type="checkbox" name="remember" value="True">
+            <label for="remember_me">Remember me</label>
+          </div>
+        </div>
+        -->
+        <div class="ui fluid large teal submit button">Login</div>
+      </div>
+      <div class="ui error message"></div>
+    </form>
+  </div>
+</div>

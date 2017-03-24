@@ -24,20 +24,40 @@ class Ports:
             table_aliases=self.table_aliases, table_ports=self.table_ports)
         self.db.query(query_insert)
 
+    def unset(self, port):
+        qvars = {
+            'pid': port
+        }
+
+        # delete from table
+        query_delete = "DELETE FROM {table_aliases} WHERE port = $pid".format(table_aliases=self.table_aliases)
+        self.db.query(query_delete, vars=qvars)
+        # copy from Ports
+        query_insert = "INSERT INTO {table_aliases} (port, protocols, name, description) " \
+                       "SELECT port, protocols, name, description " \
+                       "FROM {table_ports} " \
+                       "WHERE port = $pid".format(
+            table_aliases=self.table_aliases, table_ports=self.table_ports)
+        self.db.query(query_insert, vars=qvars)
+
     def get(self, ports):
         if isinstance(ports, list):
             arg = "({0})".format(",".join(map(str, ports)))
         else:
             arg = "({0})".format(ports)
 
-        query = """SELECT ports.port, ports.name, ports.protocols, ports.description,
+        query = """SELECT aliases.port,
+    COALESCE(ports.name, '') AS 'name',
+    COALESCE(ports.protocols, '') AS 'protocols',
+    COALESCE(ports.description, '') AS 'description',
     aliases.active,
     aliases.name AS alias_name,
     aliases.description AS alias_description
 FROM {table_ports} AS `ports`
 RIGHT JOIN {table_aliases} AS `aliases`
     ON ports.port=aliases.port
-WHERE ports.port IN {port_list}""".format(
+WHERE aliases.port IN {port_list}
+ORDER BY aliases.port ASC""".format(
             table_ports=self.table_ports,
             table_aliases=self.table_aliases,
             port_list=web.reparam(arg, {}))

@@ -112,6 +112,7 @@ class Stats(base.Headed):
         return {'query': query, 'ds': ds}
 
     def perform_get_command(self, request):
+        self.require_group('read')
         if request['query'] == 'timerange':
             linksModel = models.links.Links(self.sub, request['ds'])
             return linksModel.get_timerange()
@@ -140,6 +141,7 @@ class Stats(base.Headed):
         return json.dumps(self.outbound, default=decimal_default)
 
     def headed_get(self):
+        self.require_group('read')
         self.sub = self.user.viewing
         self.settingsModel = models.settings.Settings(self.session, self.sub)
         self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)

@@ -145,6 +145,7 @@ class Details(base.Headless):
         :param request:
         :return:
         """
+        self.require_group('read')
         details = {}
         if request['components']:
             for c_name in request['components']:

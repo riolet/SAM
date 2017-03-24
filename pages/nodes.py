@@ -45,6 +45,7 @@ class Nodes(base.HeadlessPost):
         return {'addresses': addresses}
 
     def perform_get_command(self, request):
+        self.require_group('read')
         if len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:
@@ -74,6 +75,7 @@ class Nodes(base.HeadlessPost):
         return request
 
     def perform_post_command(self, request):
+        self.require_group('write')
         node = request.pop('node')
         for key, value in request.iteritems():
             if key == 'alias':

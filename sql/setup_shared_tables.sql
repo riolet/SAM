@@ -13,8 +13,9 @@ RETURN (ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32);
 CREATE TABLE IF NOT EXISTS Subscriptions
 (subscription   INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY
 ,email          VARCHAR(254) NOT NULL UNIQUE
-,name           VARCHAR(255) NOT NULL
+,name           TEXT NOT NULL
 ,plan           TEXT NOT NULL
+,groups         TEXT NOT NULL
 ,active         BOOL NOT NULL DEFAULT FALSE
 );
 
