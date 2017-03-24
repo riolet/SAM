@@ -19,8 +19,8 @@ class Details:
         if timestamp_range:
             self.time_range = timestamp_range
         else:
-            linksModel = models.links.Links()
-            tr = linksModel.get_timerange(ds)
+            linksModel = models.links.Links(self.sub, self.ds)
+            tr = linksModel.get_timerange()
             self.time_range = (tr['min'], tr['max'])
 
     def get_metadata(self):
