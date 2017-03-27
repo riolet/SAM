@@ -265,7 +265,7 @@ class Details:
         """.format(**qvars)
         return list(common.db.query(query, vars=qvars))
 
-    def get_details_children(self, page, order):
+    def get_details_children(self, page=1, order='+ipstart'):
         sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
 
         ip_diff = self.ip_end - self.ip_start
