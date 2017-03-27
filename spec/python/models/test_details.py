@@ -1,11 +1,10 @@
-import db_connection
+from spec.python import db_connection
 import models.details
 
 db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
 ds_empty = db_connection.dsid_short
-db_connection.setup_details_network(db, sub_id, ds_full)
 
 
 def close_to(a, b, epsilon=0.001):

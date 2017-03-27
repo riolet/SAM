@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import constants
 TEST_DATABASE = 'samapper_test'
 constants.dbconfig['db'] = TEST_DATABASE
@@ -82,48 +83,7 @@ def clear_network(db, sub, ds):
     db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
 
 
-def setup_links_network(db, sub_id, ds_id):
-    clear_network(db, sub_id, ds_id)
-    loader = importers.import_base.BaseImporter()
-    loader.subscription = sub_id
-    loader.datasource = ds_id
-    processor = preprocess.Preprocessor(db, sub_id, ds_id)
-
-    t = common.IPStringtoInt
-    when1 = datetime(2016, 1, 17, 13, 24, 35)
-    when2 = datetime(2017, 2, 18, 14, 25, 36)
-    when3 = datetime(2018, 3, 19, 15, 26, 37)
-    #          FROM        PORT          TO         PORT TIME PROTOCOL out in po pi  duration
-    log_lines = [
-        [t('10.20.30.40'), 12345, t('10.20.30.40'), 80,  when1, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.20.30.41'), 80,  when2, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.20.32.42'), 80,  when3, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.20.32.43'), 80,  when3, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.24.34.44'), 443, when1, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.24.34.45'), 443, when2, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.24.36.46'), 443, when3, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('10.24.36.47'), 443, when3, 'TCP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.60.70.80'), 80,  when1, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.60.70.81'), 80,  when2, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.60.72.82'), 80,  when2, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.60.72.83'), 80,  when3, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.64.74.84'), 443, when1, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.64.74.85'), 443, when1, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.64.76.86'), 443, when2, 'UDP', 100, 0, 1, 0, 5],
-        [t('10.20.30.40'), 12345, t('50.64.76.87'), 443, when3, 'UDP', 100, 0, 1, 0, 5],
-
-        [t('59.69.79.89'), 12345, t('10.20.30.40'), 80,  when1,'ICMP', 100, 0, 1, 0, 5],
-        [t('59.69.79.89'), 12345, t('10.20.30.40'), 443, when2,'ICMP', 100, 0, 1, 0, 5],
-        [t('59.69.79.89'), 12345, t('10.20.30.40'), 80,  when3,'ICMP', 100, 0, 1, 0, 5],
-    ]
-
-    rows = [dict(zip(loader.keys, entry)) for entry in log_lines]
-    count = len(rows)
-    loader.insert_data(rows, count)
-    processor.run_all()
-
-
-def setup_details_network(db, sub_id, ds_id):
+def setup_network(db, sub_id, ds_id):
     clear_network(db, sub_id, ds_id)
     loader = importers.import_base.BaseImporter()
     loader.subscription = sub_id
@@ -163,7 +123,32 @@ def setup_details_network(db, sub_id, ds_id):
     # for line in lines:
     #     line[3] = random.randint(10, 50) * 8
     # 169090600 is 10.20.30.40
+
+    when1 = datetime(2016, 1, 17, 13, 24, 35)
+    when2 = datetime(2017, 2, 18, 14, 25, 36)
+    when3 = datetime(2018, 3, 19, 15, 26, 37)
+    t = common.IPStringtoInt
+
     log_lines = [
+        [t('110.20.30.40'), 12345, t('110.20.30.40'), 180, when1, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.20.30.41'), 180, when2, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.20.32.42'), 180, when3, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.20.32.43'), 180, when3, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.24.34.44'), 1443, when1, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.24.34.45'), 1443, when2, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.24.36.46'), 1443, when3, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('110.24.36.47'), 1443, when3, 'TCP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.60.70.80'), 180, when1, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.60.70.81'), 180, when2, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.60.72.82'), 180, when2, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.60.72.83'), 180, when3, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.64.74.84'), 1443, when1, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.64.74.85'), 1443, when1, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.64.76.86'), 1443, when2, 'UDP', 100, 0, 1, 0, 5],
+        [t('110.20.30.40'), 12345, t('150.64.76.87'), 1443, when3, 'UDP', 100, 0, 1, 0, 5],
+        [t('159.69.79.89'), 12345, t('110.20.30.40'), 180, when1, 'ICMP', 100, 0, 1, 0, 5],
+        [t('159.69.79.89'), 12345, t('110.20.30.40'), 1443, when2, 'ICMP', 100, 0, 1, 0, 5],
+        [t('159.69.79.89'), 12345, t('110.20.30.40'), 180, when3, 'ICMP', 100, 0, 1, 0, 5],
         [843074133, 12345, 169090600, 136, datetime(2017, 3, 23, 5, 24, 21), 'UDP', 1000, 500, 4, 1, 60],
         [843074133, 12345, 169090600, 136, datetime(2017, 3, 23, 20, 28, 34), 'TCP', 500, 100, 1, 1, 60],
         [843074132, 12345, 169090600, 511, datetime(2017, 3, 24, 6, 49, 51), 'TCP', 200, 100, 4, 4, 3],
@@ -481,3 +466,5 @@ for k, v in ds_model.datasources.iteritems():
         dsid_short = k
     if v['name'] == 'live':
         dsid_live = k
+clear_network(db, default_sub, dsid_default)
+setup_network(db, default_sub, dsid_default)

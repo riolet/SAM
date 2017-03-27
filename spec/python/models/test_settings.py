@@ -1,5 +1,5 @@
 # importing db_connection has the side effect of setting the test database.
-import db_connection
+from spec.python import db_connection
 from models.settings import Settings
 
 sub_id = db_connection.default_sub

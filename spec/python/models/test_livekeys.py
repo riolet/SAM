@@ -1,6 +1,6 @@
-import db_connection
-import models.livekeys
+from spec.python import db_connection
 import models.datasources
+import models.livekeys
 
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default

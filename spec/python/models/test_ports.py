@@ -1,5 +1,5 @@
 # importing db_connection has the side effect of setting the test database.
-import db_connection
+from spec.python import db_connection
 import models.ports
 
 db = db_connection.get_test_db_connection()

@@ -1,7 +1,9 @@
 import pytest
-import db_connection
 import web
+
+from spec.python import db_connection
 from models.datasources import Datasources
+
 session = {}
 sub_id = db_connection.default_sub
 

@@ -1,8 +1,9 @@
+import numbers
+
 import constants
-import db_connection
+from spec.python import db_connection
 import models.subscriptions
 import models.user
-import numbers
 
 
 def test_get_all():
