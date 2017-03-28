@@ -1,5 +1,7 @@
 from spec.python import db_connection
 import models.details
+from datetime import datetime
+import time
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -203,3 +205,30 @@ def test_get_details_summary():
     assert summary['unique_in'] == 8
     assert summary['unique_out'] == 14
     assert summary['unique_ports'] == 2
+
+
+def test_get_details_summary_timerange():
+    time_wide = (0, 2 ** 31 - 1)
+    time_full = (int(time.mktime(datetime(2017, 3, 21, 6, 13, 05).timetuple())),
+                 int(time.mktime(datetime(2017, 3, 24, 13, 30, 54).timetuple())))
+    time_narrow = (int(time.mktime(datetime(2017, 3, 23, 6, 13, 05).timetuple())),
+                 int(time.mktime(datetime(2017, 3, 23, 13, 30, 54).timetuple())))
+    #    d_start = datetime(2017, 3, 21, 6, 13, 05)
+    #    d_end = datetime(2017, 3, 24, 13, 30, 54)
+    m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_wide)
+    summary = m_details.get_details_summary()
+    assert summary['unique_in'] == 17
+    assert summary['unique_out'] == 17
+    assert summary['unique_ports'] == 40
+
+    m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_full)
+    summary = m_details.get_details_summary()
+    assert summary['unique_in'] == 17
+    assert summary['unique_out'] == 17
+    assert summary['unique_ports'] == 40
+
+    m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_narrow)
+    summary = m_details.get_details_summary()
+    assert summary['unique_in'] == 9
+    assert summary['unique_out'] == 14
+    assert summary['unique_ports'] == 9

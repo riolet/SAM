@@ -123,6 +123,19 @@ class Details:
 
     @staticmethod
     def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
+        """
+        Build a WHERE SQL clause that covers basic timerange, port, and protocol filtering.
+        :param timestamp_range: start and end times as unix timestamps (integers). Default is all time.
+        :type timestamp_range: tuple[int, int]
+        :param port: exclusively report traffic destined for this port, if specified.
+        :type port: int or str
+        :param protocol: exclusively report traffic using this protocol
+        :type protocol: str
+        :param rounding: round each time stamp to the nearest quantization mark. (db records are quantized for consiceness)
+        :type rounding: bool
+        :return: String SQL clause
+        :rtype: str
+        """
         clauses = []
         t_start = 0
         t_end = 0
