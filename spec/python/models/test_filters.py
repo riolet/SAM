@@ -13,8 +13,7 @@ def test_filter_connections():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.ConnectionsFilter(enabled)
-    expected.load(params)
+    expected = models.filters.ConnectionsFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -28,8 +27,7 @@ def test_filter_env():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.EnvFilter(enabled)
-    expected.load(params)
+    expected = models.filters.EnvFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -44,8 +42,7 @@ def test_filter_mask():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.MaskFilter(enabled)
-    expected.load(params)
+    expected = models.filters.MaskFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -60,8 +57,7 @@ def test_filter_port():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.PortFilter(enabled)
-    expected.load(params)
+    expected = models.filters.PortFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -76,8 +72,7 @@ def test_filter_protocol():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.ProtocolFilter(enabled)
-    expected.load(params)
+    expected = models.filters.ProtocolFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -92,8 +87,7 @@ def test_filter_role():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.RoleFilter(enabled)
-    expected.load(params)
+    expected = models.filters.RoleFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -108,8 +102,7 @@ def test_filter_subnet():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.SubnetFilter(enabled)
-    expected.load(params)
+    expected = models.filters.SubnetFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -124,8 +117,7 @@ def test_filter_tags():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.TagsFilter(enabled)
-    expected.load(params)
+    expected = models.filters.TagsFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str
@@ -140,8 +132,7 @@ def test_filter_target():
     dsid, filters = models.filters.readEncoded(encoded)
     filter = filters[0]
 
-    expected = models.filters.TargetFilter(enabled)
-    expected.load(params)
+    expected = models.filters.TargetFilter(enabled, *params)
     assert dsid == ds
     assert type(filter.where()) is str
     assert type(filter.having()) is str

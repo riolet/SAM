@@ -110,5 +110,6 @@ def test_import_log():
         m_links.delete_connections()
 
         m_nodes = models.nodes.Nodes(sub_id)
-        m_nodes.delete_hosts()
+        m_nodes.delete_collection(['6', '7', '8', '9'])
+
 

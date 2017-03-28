@@ -46,9 +46,10 @@ class Filter (object):
 
 
 class SubnetFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "subnet", enabled)
         self.params['subnet'] = ""
+        self.load(args)
 
     def where(self):
         subnet = int(self.params['subnet'])
@@ -63,9 +64,10 @@ class SubnetFilter(Filter):
 
 
 class MaskFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "mask", enabled)
-        self.params['mask'] = ""
+        self.params['mask'] = ''
+        self.load(args)
 
     def where(self):
         r = common.determine_range_string(self.params['mask'])
@@ -76,10 +78,11 @@ class MaskFilter(Filter):
 
 
 class PortFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "port", enabled)
         self.params['connection'] = ""
         self.params['port'] = ""
+        self.load(args)
         # connections: 0, 1, 2, 3
         # 0: connects to port n
         # 1: doesn't connect to port n
@@ -106,11 +109,12 @@ class PortFilter(Filter):
 
 
 class ConnectionsFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "connections", enabled)
         self.params['comparator'] = ""
         self.params['direction'] = ""
         self.params['limit'] = ""
+        self.load(args)
 
     def where(self):
         return ""
@@ -135,10 +139,11 @@ class ConnectionsFilter(Filter):
 
 
 class TargetFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "target", enabled)
         self.params['target'] = ""
         self.params['to'] = ""
+        self.load(args)
         # for variable `to`:
         #   0: hosts connect to target
         #   1: hosts do NOT connect to target
@@ -170,10 +175,11 @@ class TargetFilter(Filter):
 
 
 class TagsFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "tags", enabled)
-        self.params['has'] = ""
+        self.params['has'] = ""  # '1' or not '1'
         self.params['tags'] = ""
+        self.load(args)
 
     def where(self):
         tags = str(self.params['tags']).split(",")
@@ -187,9 +193,10 @@ class TagsFilter(Filter):
 
 
 class EnvFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "env", enabled)
         self.params['env'] = ""
+        self.load(args)
 
     def where(self):
         return ""
@@ -200,10 +207,11 @@ class EnvFilter(Filter):
 
 
 class RoleFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "role", enabled)
         self.params['comparator'] = ""
         self.params['ratio'] = ""
+        self.load(args)
 
     def where(self):
         return ""
@@ -217,10 +225,16 @@ class RoleFilter(Filter):
 
 
 class ProtocolFilter(Filter):
-    def __init__(self, enabled):
+    def __init__(self, enabled=True, *args):
         Filter.__init__(self, "protocol", enabled)
         self.params['handles'] = ""
         self.params['protocol'] = ""
+        self.load(args)
+        # handles:
+        #   0: inbound protocol
+        #   1: NOT inbound protocol
+        #   2: outbound protocol
+        #   3: NOT outbound protocol
 
     def where(self):
         return ""
@@ -266,8 +280,8 @@ def readEncoded(filterString):
             typeIndex, enabled, params = params[0], params[1], params[2:]
             enabled = (enabled == "1") #convert to boolean
             filterClass = filterTypes[int(typeIndex)]
-            f = filterClass(enabled)
-            f.load(params)
+            f = filterClass(enabled, *params)
+            #f.load(params)
             filters.append(f)
         except:
             print("ERROR: unable to decode filter: " + encodedFilter)
