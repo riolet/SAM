@@ -1,4 +1,5 @@
 import importlib
+import preprocess
 import common
 
 
@@ -7,14 +8,17 @@ class Uploader(object):
         self.db = common.db
         self.sub = subscription
         self.ds = ds
-        self.log_format = log_format
+        self.log_format = log_format.lower()
         self.importer = None
         self.preprocessor = None
         self.get_importer()
 
     def get_importer(self):
         try:
-            m_importer = importlib.import_module("importers." + self.log_format)
+            try:
+                m_importer = importlib.import_module("importers." + self.log_format)
+            except ImportError:
+                m_importer = importlib.import_module("importers.import_" + self.log_format)
             classes = filter(lambda x: x.endswith("Importer") and x != "BaseImporter", dir(m_importer))
             class_ = getattr(m_importer, classes[0])
             self.importer = class_()
@@ -28,12 +32,11 @@ class Uploader(object):
     def run_import(self, data):
         if self.importer is None:
             print("No importer. Can't run it.")
-            return
+            return 0
 
-        self.importer.import_string(data)
+        return self.importer.import_string(data)
 
     def run_prepro(self):
-        import preprocess
         print("Running preprocessor")
         processor = preprocess.Preprocessor(self.db, self.sub, self.ds)
         processor.run_all()
