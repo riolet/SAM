@@ -6,56 +6,64 @@ import common
 import pytest
 
 common.session = {}
-web.input = lambda: {}
+web.input_real = web.input
 web.seeother = Exception
 
 
 def test_page():
-    p = pages.base.Page()
-    p.user.groups = {'garbage'}
-    with pytest.raises(Exception):
-        assert p.require_group('write')
+    try:
+        web.input = lambda: {}
+        p = pages.base.Page()
+        p.user.groups = {'garbage'}
+        with pytest.raises(Exception):
+            assert p.require_group('write')
 
-    p.user.groups = {'read', 'write', 'speak'}
-    assert p.require_group('read')
-    assert p.require_group('write')
-    assert p.require_any_group({'read'})
-    assert p.require_any_group({'reduce', 'reuse', 'recycle', 'write'})
-    assert p.require_all_groups({'read', 'write'})
-    with pytest.raises(Exception):
-        assert p.require_all_groups({'read', 'write', 'arithemetic'})
+        p.user.groups = {'read', 'write', 'speak'}
+        assert p.require_group('read')
+        assert p.require_group('write')
+        assert p.require_any_group({'read'})
+        assert p.require_any_group({'reduce', 'reuse', 'recycle', 'write'})
+        assert p.require_all_groups({'read', 'write'})
+        with pytest.raises(Exception):
+            assert p.require_all_groups({'read', 'write', 'arithemetic'})
+    finally:
+        web.input = web.input_real
 
 
 def test_headed():
-    common.render = db_connection.mocker()
-    p = pages.base.Headed('TestTitle', True, True)
-    p.styles = ['1', '2']
-    p.scripts = ['3', '4']
-    page = p.render('testPage', 'arg1', 'arg2', start=12, end=15)
-    calls = common.render.calls
-    assert calls[0] == ('_head', ('TestTitle',), {'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
-    assert calls[1] == ('_header', (constants.navbar, 'TestTitle', p.user, constants.debug), {})
-    assert calls[2] == ('testPage', ('arg1', 'arg2'), {'start': 12, 'end': 15})
-    assert calls[3] == ('_footer', (), {})
-    assert calls[4] == ('_tail', (), {})
+    try:
+        web.input = lambda: {}
+        common.render = db_connection.mocker()
+        p = pages.base.Headed('TestTitle', True, True)
+        p.styles = ['1', '2']
+        p.scripts = ['3', '4']
+        page = p.render('testPage', 'arg1', 'arg2', start=12, end=15)
+        calls = common.render.calls
+        assert calls[0] == ('_head', ('TestTitle',), {'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
+        assert calls[1] == ('_header', (constants.navbar, 'TestTitle', p.user, constants.debug), {})
+        assert calls[2] == ('testPage', ('arg1', 'arg2'), {'start': 12, 'end': 15})
+        assert calls[3] == ('_footer', (), {})
+        assert calls[4] == ('_tail', (), {})
 
-    common.render.clear()
-    p = pages.base.Headed('TestTitle', True, False)
-    page = p.render('testPage')
-    calls = [x[0] for x in common.render.calls]
-    assert calls == ['_head', '_header', 'testPage', '_tail']
+        common.render.clear()
+        p = pages.base.Headed('TestTitle', True, False)
+        page = p.render('testPage')
+        calls = [x[0] for x in common.render.calls]
+        assert calls == ['_head', '_header', 'testPage', '_tail']
 
-    common.render.clear()
-    p = pages.base.Headed('TestTitle', False, False)
-    page = p.render('testPage')
-    calls = [x[0] for x in common.render.calls]
-    assert calls == ['_head', 'testPage', '_tail']
+        common.render.clear()
+        p = pages.base.Headed('TestTitle', False, False)
+        page = p.render('testPage')
+        calls = [x[0] for x in common.render.calls]
+        assert calls == ['_head', 'testPage', '_tail']
 
-    common.render.clear()
-    p = pages.base.Headed('TestTitle', False, True)
-    page = p.render('testPage')
-    calls = [x[0] for x in common.render.calls]
-    assert calls == ['_head', 'testPage', '_footer', '_tail']
+        common.render.clear()
+        p = pages.base.Headed('TestTitle', False, True)
+        page = p.render('testPage')
+        calls = [x[0] for x in common.render.calls]
+        assert calls == ['_head', 'testPage', '_footer', '_tail']
+    finally:
+        web.input = web.input_real
 
 def test_headless():
     decode_calls = []
@@ -72,19 +80,23 @@ def test_headless():
             encode_calls.append(response.copy())
             return ('abc', 123)
 
-    web.ctx['headers'] = []
-    # web.input must be set before instantiating the class
-    web.input = lambda: {'input': True}
-    p = headless_t()
-    response = p.GET()
+    try:
+        web.input = lambda: {}
+        web.ctx['headers'] = []
+        # web.input must be set before instantiating the class
+        web.input = lambda: {'input': True}
+        p = headless_t()
+        response = p.GET()
 
-    assert decode_calls == [{'input': True}]
-    assert perform_calls == [{'a': 1, 'b': 2}]
-    assert encode_calls == [{'x': 8, 'z': 9}]
-    assert response == '["abc", 123]'
+        assert decode_calls == [{'input': True}]
+        assert perform_calls == [{'a': 1, 'b': 2}]
+        assert encode_calls == [{'x': 8, 'z': 9}]
+        assert response == '["abc", 123]'
 
-    with pytest.raises(web.nomethod):
-        p.POST()
+        with pytest.raises(web.nomethod):
+            p.POST()
+    finally:
+        web.input = web.input_real
 
 def test_headlesspost():
     decode_calls = []
@@ -104,13 +116,17 @@ def test_headlesspost():
         def require_ownership(self):
             return True
 
-    # web.input must be set before instantiating the class
-    web.input = lambda: {'postinput': 'test'}
-    web.ctx['headers'] = []
-    p = headless_t()
-    response = p.POST()
+    try:
+        web.input = lambda: {}
+        # web.input must be set before instantiating the class
+        web.input = lambda: {'postinput': 'test'}
+        web.ctx['headers'] = []
+        p = headless_t()
+        response = p.POST()
 
-    assert decode_calls == [{'postinput': 'test'}]
-    assert perform_calls == [{'a': 1, 'b': 2}]
-    assert encode_calls == [{'x': 8, 'z': 9}]
-    assert response == '["abc", 123]'
+        assert decode_calls == [{'postinput': 'test'}]
+        assert perform_calls == [{'a': 1, 'b': 2}]
+        assert encode_calls == [{'x': 8, 'z': 9}]
+        assert response == '["abc", 123]'
+    finally:
+        web.input = web.input_real

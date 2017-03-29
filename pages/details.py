@@ -11,35 +11,53 @@ import models.links
 
 
 def nice_protocol(p_in, p_out):
-    pin = p_in.split(",")
-    pout = p_out.split(",")
-    protocols = set(pin).union(set(pout))
-    if '' in protocols:
-        protocols.remove('')
-    directional_protocols = []
+    """
+    
+    :param p_in: comma-seperated protocol list for inbound connections
+     :type p_in: unicode
+    :param p_out: comma-seperated protocol list for outbound connections
+     :type p_out: unicode
+    :return: user-friendly string describing in-/outbound connections
+     :rtype: unicode
+    """
+    pin = p_in.split(u',') if p_in else []
+    pout = p_out.split(u',') if p_out else []
+    protocols = set(pin) | set(pout)
+    protocols.discard(u'')
+    ins = []
+    outs = []
+    both = []
     for p in protocols:
         if p in pin and p in pout:
-            directional_protocols.append(p + " (i/o)")
+            both.append(u'{} (i/o)'.format(p))
         elif p in pin:
-            directional_protocols.append(p + " (in)")
+            ins.append(u'{} (in)'.format(p))
         else:
-            directional_protocols.append(p + " (out)")
-    return u', '.join(directional_protocols)
+            outs.append(u'{} (out)'.format(p))
+    return u', '.join(ins+both+outs)
 
 
 def si_formatting(f, places=2):
-    format_string = "{{val:.{places}f}}{{prefix}}".format(places=places)
-
+    """
+    :param f: real number, the value to express
+     :type f: float 
+    :param places: number of decimal places to keep
+     :type places: int
+    :return: string with K/M/G postfix
+    :rtype: unicode
+    """
+    format_string = u'{{val:.{places}f}}{{prefix}}'.format(places=places)
+    f = float(f)
     if f < 1000:
-        return format_string.format(val=f, prefix="")
+        return format_string.format(val=f, prefix=u'')
     f /= 1000
     if f < 1000:
-        return format_string.format(val=f, prefix="K")
+        return format_string.format(val=f, prefix=u'K')
     f /= 1000
     if f < 1000:
-        return format_string.format(val=f, prefix="M")
+        return format_string.format(val=f, prefix=u'M')
     f /= 1000
-    return format_string.format(val=f, prefix="G")
+    return format_string.format(val=f, prefix=u'G')
 
 
 class Details(base.Headless):
@@ -49,7 +67,6 @@ class Details(base.Headless):
             Each address is only as long as the subnet,
                 so 12.34.0.0/16 would be written as 12.34
         'ds': string, specify the data source, ex: "ds_19_"
-        'filter': optional. If included, ignored.
         'tstart': optional. Used with 'tend'. The start of the time range to report links during.
         'tend': optional. Used with 'tstart'. The end of the time range to report links during.
     :return: A JSON-encoded dictionary where
@@ -67,6 +84,8 @@ class Details(base.Headless):
         self.linksModel = None  # set during decode_get_request()
 
     def decode_get_request(self, data):
+        print("decoding")
+        print(data)
         # data source
         if "ds" in data:
             ds_match = re.search("(\d+)", data['ds'])
@@ -131,10 +150,7 @@ class Details(base.Headless):
         """
             request = {
                 'ds': ds,
-                'ips': ips,
-                'ip_range': ip_range,
-                'ip_string': ip_string,
-                'subnet': subnet,
+                'address': ips "10.20",
                 'page': page,
                 'page_size': page_size,
                 'order': order,
@@ -180,7 +196,7 @@ class Details(base.Headless):
     @staticmethod
     def nice_ip_address(address):
         ip_start, ip_end = common.determine_range_string(address)
-        subnet = 33 - (len(bin(ip_end-ip_start)) - 2)
+        subnet = 32 - (ip_end - ip_start).bit_length()
         return "{0}/{1}".format(common.IPtoString(ip_start), subnet)
 
     def quick_info(self, address):

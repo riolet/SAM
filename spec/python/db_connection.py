@@ -36,6 +36,12 @@ class mocker(object):
         return False
 
 
+def make_timestamp(timestring):
+    d = datetime.strptime(timestring, "%Y-%m-%d %H:%M")
+    ts = time.mktime(d.timetuple())
+    return int(ts)
+
+
 def get_test_db_connection():
     db = common.db
     try:

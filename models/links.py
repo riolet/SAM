@@ -29,7 +29,7 @@ class Links:
         if row['min'] is None or row['max'] is None:
             now = time.mktime(datetime.now().timetuple())
             return {'min': now, 'max': now}
-        return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
+        return {'min': int(time.mktime(row['min'].timetuple())), 'max': int(time.mktime(row['max'].timetuple()))}
 
     def get_links(self, addresses, timerange, port, protocol):
         result = {}
