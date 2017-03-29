@@ -21,10 +21,15 @@ class Page(object):
         self.inbound = web.input()
 
     def require_group(self, group):
-        self.require_groups([group])
+        return self.require_all_groups([group])
 
-    def require_groups(self, groups):
+    def require_any_group(self, groups):
         if self.user.any_group(groups):
+            return True
+        raise web.seeother(constants.access_control['login_url'])
+
+    def require_all_groups(self, groups):
+        if self.user.all_groups(groups):
             return True
         raise web.seeother(constants.access_control['login_url'])
 
@@ -43,12 +48,12 @@ class Headed(Page):
         if self.header:
             header = str(common.render._header(constants.navbar, self.page_title, self.user, constants.debug))
         else:
-            header = ""
+            header = ''
         page = str(getattr(common.render, page)(*args, **kwargs))
         if self.footer:
             footer = str(common.render._footer())
         else:
-            footer = ""
+            footer = ''
         tail = str(common.render._tail())
 
         return head+header+page+footer+tail

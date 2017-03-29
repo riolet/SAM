@@ -16,6 +16,26 @@ from datetime import datetime
 import time
 
 
+class mocker(object):
+    def __init__(self):
+        self.calls = []
+
+    def __getattr__(self, name):
+        q = self.calls
+        def receiver(*args, **kwargs):
+            q.append((name, args, kwargs))
+        return receiver
+
+    def clear(self):
+        self.calls = []
+
+    def was_called(self, name, *args, **kwargs):
+        for call in self.calls:
+            if call == (name, args, kwargs):
+                return True
+        return False
+
+
 def get_test_db_connection():
     db = common.db
     try:
