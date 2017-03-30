@@ -7,7 +7,7 @@ import errors
 class Links(base.Headless):
     def __init__(self):
         base.Headless.__init__(self)
-        self.default_tstart = 0
+        self.default_tstart = 1
         self.default_tend = 2**31-1
         self.duration = 1
 
@@ -17,10 +17,17 @@ class Links(base.Headless):
         except KeyError:
             raise errors.RequiredKey('address', 'address')
 
-        port = data.get('filter')
+        if 'filter' in data:
+            try:
+                port = int(data['filter'])
+            except:
+                raise errors.MalformedRequest('Could not read filter "{}"'.format(data.get('filter')))
+        else:
+            port = None
+
         try:
             tstart = int(data.get('tstart', self.default_tstart))
-            tend = int(data.get('tend', self.default_tstart))
+            tend = int(data.get('tend', self.default_tend))
         except ValueError:
             raise errors.MalformedRequest("Could not read time range ('tstart', 'tend')")
 
@@ -29,7 +36,7 @@ class Links(base.Headless):
             protocol = None
 
         if 'ds' in data:
-            ds_match = re.search("(\d+)", data['ds'])
+            ds_match = re.search('(\d+)', data['ds'])
             if ds_match:
                 ds = int(ds_match.group())
             else:
