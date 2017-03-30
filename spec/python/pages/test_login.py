@@ -1,22 +1,14 @@
-from spec.python.db_connection import mocker
+from spec.python import db_connection
 
 import pytest
-import web
 import pages.login
 import common
 import constants
 import errors
 
-common.session = {}
-
 
 def test_render():
-    web.input_real = web.input
-    old_active = constants.access_control['active']
-    try:
-        web.input = lambda: {}
-        constants.access_control['active'] = True
-        common.render = mocker()
+    with db_connection.env(mock_input=True, login_active=True, mock_session=True, mock_render=True):
         p = pages.login.Login_LDAP()
         common.session.clear()
         dummy = p.GET()
@@ -26,15 +18,10 @@ def test_render():
         assert calls[2] == ('_footer', (), {})
         assert calls[3] == ('_tail', (), {})
         assert dummy == "NoneNoneNoneNone"
-    finally:
-        web.input = web.input_real
-        constants.access_control['active'] = old_active
 
 
 def test_decode_post():
-    web.input_real = web.input
-    try:
-        web.input = lambda: {}
+    with db_connection.env(mock_input=True, mock_session=True):
         p = pages.login.Login_LDAP()
         common.session.clear()
         with pytest.raises(errors.MalformedRequest):
@@ -52,28 +39,20 @@ def test_decode_post():
         actual = p.decode_post_request({'user': 'bob', 'password': 'bobpass'})
         expected = {'user': 'bob', 'password': 'bobpass'}
         assert actual == expected
-    finally:
-        web.input = web.input_real
 
 
 def test_decode_connection_string():
-    web.input_real = web.input
-    try:
-        web.input = lambda: {}
+    with db_connection.env(mock_input=True, mock_session=True):
         p = pages.login.Login_LDAP()
         cs = 'ldaps://ipa.demo1.freeipa.org/CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
         address, ns = p.decode_connection_string(cs)
         assert address == 'ldaps://ipa.demo1.freeipa.org'
         assert ns == 'CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
-    finally:
-        web.input = web.input_real
 
 
 def test_connect():
-    # TODO: I don't control the test server. This could break.
-    web.input_real = web.input
-    try:
-        web.input = lambda: {}
+    # TODO: I don't control this test server. This could break.
+    with db_connection.env(mock_input=True, mock_session=True):
         p = pages.login.Login_LDAP()
         cs = 'ldaps://ipa.demo1.freeipa.org/CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
         address, ns = p.decode_connection_string(cs)
@@ -94,5 +73,3 @@ def test_connect():
         p.server_address = 'ldaps://ipa.demo1.garbage.org'
         with pytest.raises(errors.AuthenticationError):
             p.perform_post_command(request)
-    finally:
-        web.input = web.input_real

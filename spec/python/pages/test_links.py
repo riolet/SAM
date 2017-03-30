@@ -3,13 +3,11 @@ from spec.python import db_connection
 import pytest
 import web
 import pages.links
-import common
 import constants
 import errors
 import json
 import urllib
 
-common.session = {}
 db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
@@ -19,9 +17,7 @@ keys_p = [u'bytes', u'dst_end', u'dst_start', u'links', u'packets',  u'port', u'
 
 
 def test_decode_get():
-    web.input_real = web.input
-    try:
-        web.input = lambda: {}
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.links.Links()
 
         good_data = {
@@ -71,8 +67,6 @@ def test_decode_get():
         with pytest.raises(errors.MalformedRequest):
             actual = p.decode_get_request(data_no_ds)
             assert actual == expected
-    finally:
-        web.input = web.input_real
 
 
 def test_empty_request():

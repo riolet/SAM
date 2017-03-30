@@ -36,6 +36,46 @@ class mocker(object):
         return False
 
 
+class session(dict):
+    def kill(self):
+        self.clear()
+
+
+class env():
+    def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False):
+        self.input_real = web.input
+        self.active_old = constants.access_control['active']
+        self.session = common.session
+        self.render = common.render
+
+        self.mock_input = mock_input
+        self.mock_login = login_active
+        self.mock_render = mock_render
+        self.mock_session = mock_session
+
+    def __enter__(self):
+        if self.mock_input:
+            web.input = lambda: {}
+        if self.mock_login is True:
+            constants.access_control['active'] = True
+        elif self.mock_login is False:
+            constants.access_control['active'] = False
+        if self.mock_session:
+            common.session = session()
+        if self.mock_render:
+            common.render = mocker()
+
+    def __exit__(self, type, value, traceback):
+        if self.mock_input:
+            web.input = self.input_real
+        if self.mock_login:
+            constants.access_control['active'] = self.active_old
+        if self.mock_session:
+            common.session = self.session
+        if self.mock_render:
+            common.render = self.render
+
+
 def make_timestamp(timestring):
     d = datetime.strptime(timestring, "%Y-%m-%d %H:%M")
     ts = time.mktime(d.timetuple())

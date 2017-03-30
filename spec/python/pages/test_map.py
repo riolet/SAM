@@ -1,20 +1,12 @@
-from spec.python.db_connection import mocker
+from spec.python import db_connection
 
-import web
 import pages.map
 import common
 import constants
 
-common.session = {}
-
 
 def test_render():
-    web.input_real = web.input
-    old_active = constants.access_control['active']
-    try:
-        web.input = lambda: {}
-        constants.access_control['active'] = False
-        common.render = mocker()
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
         p = pages.map.Map()
         common.session.clear()
         dummy = p.GET()
@@ -25,6 +17,3 @@ def test_render():
         assert calls[2] == ('map', ([(1, u'default'), (2, u'short'), (3, u'live')],), {})
         assert calls[3] == ('_tail', (), {})
         assert dummy == "NoneNoneNoneNone"
-    finally:
-        web.input = web.input_real
-        constants.access_control['active'] = old_active

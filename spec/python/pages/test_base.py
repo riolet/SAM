@@ -1,18 +1,15 @@
-from spec.python.db_connection import mocker
+from spec.python import db_connection
 import pages.base
 import web
 import constants
 import common
 import pytest
 
-common.session = {}
-web.input_real = web.input
-web.seeother = Exception
+# web.seeother = Exception
 
 
 def test_page():
-    try:
-        web.input = lambda: {}
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.base.Page()
         p.user.groups = {'garbage'}
         with pytest.raises(Exception):
@@ -26,14 +23,10 @@ def test_page():
         assert p.require_all_groups({'read', 'write'})
         with pytest.raises(Exception):
             assert p.require_all_groups({'read', 'write', 'arithemetic'})
-    finally:
-        web.input = web.input_real
 
 
 def test_headed():
-    try:
-        web.input = lambda: {}
-        common.render = mocker()
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
         p = pages.base.Headed('TestTitle', True, True)
         p.styles = ['1', '2']
         p.scripts = ['3', '4']
@@ -62,8 +55,6 @@ def test_headed():
         page = p.render('testPage')
         calls = [x[0] for x in common.render.calls]
         assert calls == ['_head', 'testPage', '_footer', '_tail']
-    finally:
-        web.input = web.input_real
 
 def test_headless():
     decode_calls = []
@@ -80,11 +71,10 @@ def test_headless():
             encode_calls.append(response.copy())
             return ('abc', 123)
 
-    try:
-        web.input = lambda: {}
-        web.ctx['headers'] = []
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         # web.input must be set before instantiating the class
         web.input = lambda: {'input': True}
+        web.ctx['headers'] = []
         p = headless_t()
         response = p.GET()
 
@@ -95,8 +85,6 @@ def test_headless():
 
         with pytest.raises(web.nomethod):
             p.POST()
-    finally:
-        web.input = web.input_real
 
 def test_headlesspost():
     decode_calls = []
@@ -116,8 +104,7 @@ def test_headlesspost():
         def require_ownership(self):
             return True
 
-    try:
-        web.input = lambda: {}
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         # web.input must be set before instantiating the class
         web.input = lambda: {'postinput': 'test'}
         web.ctx['headers'] = []
@@ -128,5 +115,3 @@ def test_headlesspost():
         assert perform_calls == [{'a': 1, 'b': 2}]
         assert encode_calls == [{'x': 8, 'z': 9}]
         assert response == '["abc", 123]'
-    finally:
-        web.input = web.input_real

@@ -2,12 +2,10 @@ from spec.python import db_connection
 
 import web
 import pages.details
-import common
 import constants
 import json
 import urllib
 
-common.session = {}
 db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
@@ -52,10 +50,7 @@ def test_si_formatting():
 
 
 def test_decode_get():
-    web.ctx['headers'] = []
-    web.input_real = web.input
-    try:
-        web.input = lambda: {}
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         d = pages.details.Details()
         good_data = {
             'ds': 'ds{}'.format(ds_full),
@@ -119,8 +114,6 @@ def test_decode_get():
             'page_size': 1000,
         }
         assert actual == expected
-    finally:
-        web.input = web.input_real
 
 
 def test_nice_ip_address():
