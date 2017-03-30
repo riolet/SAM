@@ -1,4 +1,4 @@
-from spec.python import db_connection
+from spec.python.db_connection import mocker
 
 import pytest
 import web
@@ -6,19 +6,17 @@ import pages.login
 import common
 import constants
 import errors
-import json
-import urllib
 
 common.session = {}
-db = db_connection.db
-sub_id = db_connection.default_sub
-ds_full = db_connection.dsid_default
+
 
 def test_render():
     web.input_real = web.input
+    old_active = constants.access_control['active']
     try:
         web.input = lambda: {}
-        common.render = db_connection.mocker()
+        constants.access_control['active'] = True
+        common.render = mocker()
         p = pages.login.Login_LDAP()
         common.session.clear()
         dummy = p.GET()
@@ -30,6 +28,7 @@ def test_render():
         assert dummy == "NoneNoneNoneNone"
     finally:
         web.input = web.input_real
+        constants.access_control['active'] = old_active
 
 
 def test_decode_post():
@@ -68,6 +67,7 @@ def test_decode_connection_string():
         assert ns == 'CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
     finally:
         web.input = web.input_real
+
 
 def test_connect():
     # TODO: I don't control the test server. This could break.

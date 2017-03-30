@@ -1,4 +1,4 @@
-from spec.python import db_connection
+from spec.python.db_connection import mocker
 import pages.base
 import web
 import constants
@@ -33,7 +33,7 @@ def test_page():
 def test_headed():
     try:
         web.input = lambda: {}
-        common.render = db_connection.mocker()
+        common.render = mocker()
         p = pages.base.Headed('TestTitle', True, True)
         p.styles = ['1', '2']
         p.scripts = ['3', '4']
