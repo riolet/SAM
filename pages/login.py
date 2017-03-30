@@ -39,14 +39,13 @@ class Login_LDAP(base.Headed):
             'password': password
         }
 
-    def decode_connection_string(self):
-        cstring = constants.config.get('LDAP', 'connection_string')
+    def decode_connection_string(self, cstring):
         server_address, _, namespace = cstring.rpartition('/')
         return server_address, namespace
 
     def perform_post_command(self, request):
         # prepare server information
-        server_address, namespace = self.decode_connection_string()
+        server_address, namespace = self.decode_connection_string(constants.config.get('LDAP', 'connection_string'))
         server = ldap3.Server(server_address)
 
         # submit credentials to LDAP server.
