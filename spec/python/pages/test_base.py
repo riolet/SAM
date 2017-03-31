@@ -5,8 +5,6 @@ import constants
 import common
 import pytest
 
-# web.seeother = Exception
-
 
 def test_page():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):

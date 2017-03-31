@@ -81,7 +81,7 @@ class Nodes(base.HeadlessPost):
             if key == 'alias':
                 self.nodesModel.set_alias(node, value)
             elif key == 'tags':
-                tags = filter(lambda x: x, value.split(','))
+                tags = filter(lambda x: bool(x), value.split(','))
                 self.nodesModel.set_tags(node, tags)
             elif key == 'env':
                 if value:

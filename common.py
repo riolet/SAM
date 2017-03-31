@@ -113,9 +113,9 @@ def determine_range(ip8=-1, ip16=-1, ip24=-1, ip32=-1):
     return low, high, quot
 
 
-def determine_range_string(ip="0/0"):
+def determine_range_string(ip=u"0/0"):
     """
-    :type ip: str
+    :type ip: unicode
     :param ip: ip address string in dotted decimal notation with optional trailing subnet mask
     :return: tuple of ip address range start and end as 32-bit unsigned integer
     :rtype: tuple[int, int]

@@ -12,6 +12,13 @@ class Nodes(object):
         self.table_tags = 's{acct}_Tags'.format(acct=self.sub)
 
     def set_alias(self, address, alias):
+        """
+        :param address: node address to edit. e.g. '10.20.30.40', '50.60', '192.0.0.0/24'
+        :type address: unicode
+        :param alias: name to use. string or none
+        :type alias: unicode or None
+        :return: 
+        """
         r = common.determine_range_string(address)
         where = {"ipstart": r[0], "ipend": r[1]}
         self.db.update(self.table_nodes, where, alias=alias)
