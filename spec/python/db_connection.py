@@ -91,7 +91,9 @@ def make_timestamp(timestring):
 
 
 def get_test_db_connection():
-    db = common.db
+    constants.dbconfig['db'] = TEST_DATABASE
+    db = web.database(**constants.dbconfig)
+    common.db = db
     try:
         # dummy query to test db connection
         tables = db.query("SHOW TABLES")
@@ -138,12 +140,6 @@ def template_sql(path, *args):
     tmpl = web.template.Template(open(path).read())
     commands = common.parse_sql_string(unicode(tmpl(*args)), {})
     return commands
-
-
-def make_timestamp(ts):
-    d = datetime.strptime(ts, "%Y-%m-%d %H:%M")
-    ts = time.mktime(d.timetuple())
-    return int(ts)
 
 
 def clear_network(db, sub, ds):
