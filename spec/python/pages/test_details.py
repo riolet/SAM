@@ -150,14 +150,15 @@ def simplify(data):
 
 
 def test_simple_request0():
-    app = web.application(constants.urls)
-    req = app.request('/details', 'GET')
+    with db_connection.env(mock_session=True):
+        app = web.application(constants.urls)
+        req = app.request('/details', 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert 'result' in set(data.keys())
-    assert data['result'] == 'failure'
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert 'result' in set(data.keys())
+        assert data['result'] == 'failure'
 
 
 def test_simple_request8():
@@ -165,70 +166,79 @@ def test_simple_request8():
     test_ip = '10'
     input_data = {'address': test_ip, 'ds': 'ds{}'.format(ds_full)}
     GET_data = urllib.urlencode(input_data)
-    print('/details?{0}'.format(GET_data))
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
-    assert simplify(data) == (17, 17, 40, 50, 50, 40)
+    with db_connection.env(mock_session=True):
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
+        assert simplify(data) == (17, 17, 40, 50, 50, 40)
 
 
 def test_simple_request16():
     app = web.application(constants.urls)
     test_ip = '10.20'
-    input_data = {'address': test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
-    assert simplify(data) == (17, 17, 31, 50, 50, 31)
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
+        assert simplify(data) == (17, 17, 31, 50, 50, 31)
 
 
 def test_simple_request24():
     app = web.application(constants.urls)
     test_ip = '10.20.30'
-    input_data = {"address": test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
-    assert simplify(data) == (14, 17, 13, 23, 29, 13)
+    with db_connection.env(mock_session=True):
+        input_data = {"address": test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
+        assert simplify(data) == (14, 17, 13, 23, 29, 13)
 
 
 def test_simple_request32():
     app = web.application(constants.urls)
     test_ip = '10.20.30.40'
-    input_data = {"address": test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
-    assert simplify(data) == (8, 14, 2, 9, 17, 2)
+    with db_connection.env(mock_session=True):
+        input_data = {"address": test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
+        assert simplify(data) == (8, 14, 2, 9, 17, 2)
 
 
 def test_request_port():
     app = web.application(constants.urls)
     test_ip = '10.20.30.40'
-    input_data = {"address": test_ip, 'ds': ds_full, 'port': '136'}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
-    assert simplify(data) == (5, 7, 1, 5, 7, 1)
+    with db_connection.env(mock_session=True):
+        input_data = {"address": test_ip, 'ds': ds_full, 'port': '136'}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert sorted(data.keys()) == [u'inputs', u'outputs', u'ports', u'unique_in', u'unique_out', u'unique_ports']
+        assert simplify(data) == (5, 7, 1, 5, 7, 1)
 
 
 def test_request_timerange():
@@ -240,43 +250,45 @@ def test_request_timerange():
 
     test_ip = '50.60.70.80'
 
-    input_data = {"address": test_ip, 'ds': ds_full, 'tstart': time_all[0], 'tend': time_all[1]}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert simplify(data) == (9, 12, 11, 14, 17, 11)
-
-    input_data = {"address": test_ip, 'ds': ds_full, 'tstart': time_crop[0], 'tend': time_crop[1]}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert simplify(data) == (9, 12, 11, 14, 17, 11)
-
-    input_data = {"address": test_ip, 'ds': ds_full, 'tstart': time_tiny[0], 'tend': time_tiny[1]}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert simplify(data) == (1, 1, 1, 1, 1, 1)
-
-
-def test_request_component():
-    app = web.application(constants.urls)
-    test_ip = '50.60.70.80'
-    for component in ['quick_info', 'inputs', 'outputs', 'ports', 'children', 'summary']:
-        input_data = {'address': test_ip, 'ds': ds_full, 'component': component}
+    with db_connection.env(mock_session=True):
+        input_data = {"address": test_ip, 'ds': ds_full, 'tstart': time_all[0], 'tend': time_all[1]}
         GET_data = urllib.urlencode(input_data)
         req = app.request('/details?{0}'.format(GET_data), 'GET')
         assert req.status == "200 OK"
         assert req.headers['Content-Type'] == "application/json"
         data = json.loads(req.data)
-        assert data.keys() == [component]
-        assert type(data[component]) == dict
+        assert simplify(data) == (9, 12, 11, 14, 17, 11)
+
+        input_data = {"address": test_ip, 'ds': ds_full, 'tstart': time_crop[0], 'tend': time_crop[1]}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert simplify(data) == (9, 12, 11, 14, 17, 11)
+
+        input_data = {"address": test_ip, 'ds': ds_full, 'tstart': time_tiny[0], 'tend': time_tiny[1]}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert simplify(data) == (1, 1, 1, 1, 1, 1)
+
+
+def test_request_component():
+    app = web.application(constants.urls)
+    test_ip = '50.60.70.80'
+    with db_connection.env(mock_session=True):
+        for component in ['quick_info', 'inputs', 'outputs', 'ports', 'children', 'summary']:
+            input_data = {'address': test_ip, 'ds': ds_full, 'component': component}
+            GET_data = urllib.urlencode(input_data)
+            req = app.request('/details?{0}'.format(GET_data), 'GET')
+            assert req.status == "200 OK"
+            assert req.headers['Content-Type'] == "application/json"
+            data = json.loads(req.data)
+            assert data.keys() == [component]
+            assert type(data[component]) == dict
 
 
 def test_multiple_components():
@@ -284,11 +296,12 @@ def test_multiple_components():
     test_ip = '59.69.79.89'
     input_data = {'address': test_ip, 'ds': ds_full, 'component': 'quick_info,ports,summary'}
     GET_data = urllib.urlencode(input_data)
-    req = app.request('/details?{0}'.format(GET_data), 'GET')
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    keys = sorted(data.keys())
-    assert keys == ['ports', 'quick_info', 'summary']
-    for k in keys:
-        assert type(data[k]) == dict
+    with db_connection.env(mock_session=True):
+        req = app.request('/details?{0}'.format(GET_data), 'GET')
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        keys = sorted(data.keys())
+        assert keys == ['ports', 'quick_info', 'summary']
+        for k in keys:
+            assert type(data[k]) == dict

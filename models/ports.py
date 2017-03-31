@@ -66,6 +66,13 @@ ORDER BY aliases.port ASC""".format(
         return list(rows)
 
     def set(self, port, updates):
+        """
+        :type port: int
+        :param port: the port to alter
+        :type updates: dict[str, str]
+        :param updates: dictionary of key-values to set. May include 'alias_name', 'alias_description', 'active'
+        :return: 
+        """
         formatted_updates = {}
 
         if 'alias_name' in updates:

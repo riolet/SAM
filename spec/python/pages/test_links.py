@@ -70,127 +70,138 @@ def test_decode_get():
 
 
 def test_empty_request():
-    app = web.application(constants.urls)
-    req = app.request('/links', 'GET')
+    with db_connection.env(mock_session=True):
+        app = web.application(constants.urls)
+        req = app.request('/links', 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert 'result' in set(data.keys())
-    assert data['result'] == 'failure'
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert 'result' in set(data.keys())
+        assert data['result'] == 'failure'
 
 
 def test_simple_request8():
     app = web.application(constants.urls)
     test_ip = '110'
-    input_data = {'address': test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert data.keys() == [test_ip]
-    assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    assert sorted(data[test_ip]['inputs'][0].keys()) == keys
-    assert sorted(data[test_ip]['outputs'][0].keys()) == keys
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert data.keys() == [test_ip]
+        assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
+        assert sorted(data[test_ip]['inputs'][0].keys()) == keys
+        assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
 
 def test_simple_request16():
     app = web.application(constants.urls)
     test_ip = '110.20'
-    input_data = {'address': test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert data.keys() == [test_ip]
-    assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    assert sorted(data[test_ip]['inputs'][0].keys()) == keys
-    assert sorted(data[test_ip]['outputs'][0].keys()) == keys
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert data.keys() == [test_ip]
+        assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
+        assert sorted(data[test_ip]['inputs'][0].keys()) == keys
+        assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
 
 def test_simple_request24():
     app = web.application(constants.urls)
     test_ip = '110.20.30'
-    input_data = {'address': test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert data.keys() == [test_ip]
-    assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    assert sorted(data[test_ip]['inputs'][0].keys()) == keys
-    assert sorted(data[test_ip]['outputs'][0].keys()) == keys
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert data.keys() == [test_ip]
+        assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
+        assert sorted(data[test_ip]['inputs'][0].keys()) == keys
+        assert sorted(data[test_ip]['outputs'][0].keys()) == keys
 
 
 def test_simple_request32():
     app = web.application(constants.urls)
     test_ip = '110.20.30.40'
-    input_data = {'address': test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert data.keys() == [test_ip]
-    assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
-    assert sorted(data[test_ip]['inputs'][0].keys()) == keys_p
-    assert sorted(data[test_ip]['outputs'][0].keys()) == keys_p
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert data.keys() == [test_ip]
+        assert sorted(data[test_ip].keys()) == ['inputs', 'outputs']
+        assert sorted(data[test_ip]['inputs'][0].keys()) == keys_p
+        assert sorted(data[test_ip]['outputs'][0].keys()) == keys_p
 
 
 def test_ports():
     app = web.application(constants.urls)
     test_ip = '50.60.70.80'
-    input_data = {'address': test_ip, 'ds': ds_full}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 14
-    assert len(data[test_ip]['outputs']) == 15
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    input_data = {'address': test_ip, 'ds': ds_full, 'filter':'160'}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 14
+        assert len(data[test_ip]['outputs']) == 15
 
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 3
-    assert len(data[test_ip]['outputs']) == 2
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'160'}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    input_data = {'address': test_ip, 'ds': ds_full, 'filter':'128'}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 3
+        assert len(data[test_ip]['outputs']) == 2
 
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 0
-    assert len(data[test_ip]['outputs']) == 2
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'128'}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    input_data = {'address': test_ip, 'ds': ds_full, 'filter':'360'}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 0
+        assert len(data[test_ip]['outputs']) == 2
 
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 2
-    assert len(data[test_ip]['outputs']) == 0
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'360'}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    input_data = {'address': test_ip, 'ds': ds_full, 'filter':'1040'}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 2
+        assert len(data[test_ip]['outputs']) == 0
 
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 0
-    assert len(data[test_ip]['outputs']) == 0
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'1040'}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
+
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 0
+        assert len(data[test_ip]['outputs']) == 0
 
 
 def test_timerange():
@@ -201,34 +212,36 @@ def test_timerange():
     time_tiny = (mkt('2017-3-23 6:13'), mkt('2017-3-23 13:30'))
 
     test_ip = '50.60.70.80'
-    input_data = {'address': test_ip, 'ds': ds_full, 'tstart': time_all[0], 'tend': time_all[1]}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 14
-    assert len(data[test_ip]['outputs']) == 15
+    with db_connection.env(mock_session=True):
+        input_data = {'address': test_ip, 'ds': ds_full, 'tstart': time_all[0], 'tend': time_all[1]}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    test_ip = '50.60.70.80'
-    input_data = {'address': test_ip, 'ds': ds_full, 'tstart': time_crop[0], 'tend': time_crop[1]}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 14
+        assert len(data[test_ip]['outputs']) == 15
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 14
-    assert len(data[test_ip]['outputs']) == 15
+        test_ip = '50.60.70.80'
+        input_data = {'address': test_ip, 'ds': ds_full, 'tstart': time_crop[0], 'tend': time_crop[1]}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
 
-    test_ip = '50.60.70.80'
-    input_data = {'address': test_ip, 'ds': ds_full, 'tstart': time_tiny[0], 'tend': time_tiny[1]}
-    GET_data = urllib.urlencode(input_data)
-    req = app.request('/links?{0}'.format(GET_data), 'GET')
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 14
+        assert len(data[test_ip]['outputs']) == 15
 
-    assert req.status == "200 OK"
-    assert req.headers['Content-Type'] == "application/json"
-    data = json.loads(req.data)
-    assert len(data[test_ip]['inputs']) == 1
-    assert len(data[test_ip]['outputs']) == 1
+        test_ip = '50.60.70.80'
+        input_data = {'address': test_ip, 'ds': ds_full, 'tstart': time_tiny[0], 'tend': time_tiny[1]}
+        GET_data = urllib.urlencode(input_data)
+        req = app.request('/links?{0}'.format(GET_data), 'GET')
+
+        assert req.status == "200 OK"
+        assert req.headers['Content-Type'] == "application/json"
+        data = json.loads(req.data)
+        assert len(data[test_ip]['inputs']) == 1
+        assert len(data[test_ip]['outputs']) == 1
