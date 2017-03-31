@@ -12,6 +12,13 @@ class Nodes(object):
         self.table_tags = 's{acct}_Tags'.format(acct=self.sub)
 
     def set_alias(self, address, alias):
+        """
+        :param address: node address to edit. e.g. '10.20.30.40', '50.60', '192.0.0.0/24'
+        :type address: unicode
+        :param alias: name to use. string or none
+        :type alias: unicode or None
+        :return: 
+        """
         r = common.determine_range_string(address)
         where = {"ipstart": r[0], "ipend": r[1]}
         self.db.update(self.table_nodes, where, alias=alias)
@@ -137,15 +144,33 @@ class Nodes(object):
         rows = self.db.select(self.table_nodes, what='ipstart', where='subnet=32')
         return [row['ipstart'] for row in rows]
 
-    def delete_hosts(self, collection):
-        hostlist = "({})".format(','.join(map(str, map(int, collection))))
+    def delete_hosts(self, hostlist):
+        # type: (Nodes, [str]) -> int
+        collection = "({})".format(','.join(map(str, map(int, hostlist))))
         # int cast is to cause failure if sql injection attacks.
         # Almost equivalent to:
         #    hostlist = str(tuple(map(int, collection)))
         # Which is better?
-        deleted = self.db.delete(self.table_nodes, where='ipstart=ipend and ipstart IN {hostlist}'.format(hostlist=hostlist))
+        deleted = self.db.delete(self.table_nodes, where='ipstart=ipend and ipstart IN {hosts}'.format(hosts=collection))
 
         # the deleted endpoints may have (now childless) aggregate parents
         # TODO: delete childless parent nodes (e.g. subnets like /24)
+
+        return deleted
+
+
+    def delete_collection(self, nodes):
+        """
+        :type self: Nodes
+        :type nodes: list[str]
+        :param nodes: list of nodes to delete, along with their children
+        :return: The number of nodes deleted
+        :rtype: int
+        """
+        deleted = 0
+        for node in nodes:
+            low, high = common.determine_range_string(node)
+            where = 'ipstart={low} and ipend={high}'.format(low=low, high=high)
+            deleted += self.db.delete(self.table_nodes, where=where)
 
         return deleted

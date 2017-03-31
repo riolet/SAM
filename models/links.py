@@ -27,9 +27,9 @@ class Links:
                                "FROM {table_links};".format(table_links=self.table_links))
         row = rows[0]
         if row['min'] is None or row['max'] is None:
-            now = time.mktime(datetime.now().timetuple())
+            now = int(time.mktime(datetime.now().timetuple()))
             return {'min': now, 'max': now}
-        return {'min': time.mktime(row['min'].timetuple()), 'max': time.mktime(row['max'].timetuple())}
+        return {'min': int(time.mktime(row['min'].timetuple())), 'max': int(time.mktime(row['max'].timetuple()))}
 
     def get_links(self, addresses, timerange, port, protocol):
         result = {}
@@ -96,9 +96,10 @@ class Links:
         :param inbound:  boolean, the direction of links to consider:
             If True, only consider links that terminate in the ip_range specified.
             If False, only consider links that originate in the ip_range specified,
-        :param port:  Only consider connections using this destination port.
-        :param timerange:  Tuple of (start, end) timestamps. Only connections happening
+        :param port:  int or None; Only consider connections using this destination port.
+        :param timerange:  Tuple of (start, end) unix timestamps. Only connections happening
         during this time period are considered.
+        :param protocol: String or None; filter to only connections using this protocol.
         :return: A list of db results formated as web.storage objects (used like dictionaries)
         """
         ports = (ip_start == ip_end)  # include ports in the results?

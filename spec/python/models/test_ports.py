@@ -1,9 +1,9 @@
-import constants
 # importing db_connection has the side effect of setting the test database.
-import db_connection
+from spec.python import db_connection
 import models.ports
 
-sub_id = constants.demo['id']
+db = db_connection.get_test_db_connection()
+sub_id = db_connection.default_sub
 
 
 def test_get_port_info_present():

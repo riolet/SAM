@@ -7,7 +7,8 @@ class User(object):
 
         # if not already logged in and
         # access control is disabled, auto-login as a default user
-        if not self.logged_in and not constants.access_control['active']:
+        if not self.logged_in and constants.access_control['active'] is False:
+            self.session = {}
             self.login_simple('SAM')
 
     def login(self, email, name, subscription, groups, plan, active):
@@ -25,7 +26,7 @@ class User(object):
 
     @property
     def email(self):
-        return self.session.get('user_email', "")
+        return self.session.get('user_email', None)
 
     @email.setter
     def email(self, value):

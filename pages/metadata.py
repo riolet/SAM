@@ -12,7 +12,7 @@ class Metadata(base.Headed):
                         "/static/js/map_selection.js",
                         "/static/js/map_data.js"]
         self.styles = ["/static/css/general.css"]
-        self.dses = None
+        self.datasources = None
 
     def require_dses(self):
         datasourceModel = models.datasources.Datasources(self.session, self.user.viewing)

@@ -360,7 +360,7 @@ def check_integrity():
     # ensure we can access the database
     error_code = check_db_access()
     if error_code != 0:
-        return
+        return False
     # check that all shared tables exist. No regard for contents.
     check_shared_tables()
     # check that the default demo subscription exists and is subscription 0
@@ -374,11 +374,13 @@ def check_integrity():
     # make sure the sessions table is there!
     check_sessions_table()
 
+    return True
+
 
 def check_and_fix_integrity():
     error_code = check_and_fix_db_access()
     if error_code != 0:
-        return
+        return False
 
     errors = check_shared_tables()
     if errors:
@@ -403,3 +405,5 @@ def check_and_fix_integrity():
     errors = check_sessions_table()
     if errors:
         fix_sessions_table(errors)
+
+    return True

@@ -13,6 +13,21 @@ class Table:
         self.table_links_out = "s{acct}_ds{id}_LinksOut".format(acct=self.sub, id=ds)
 
     def get_table_info(self, clauses, page, page_size, order_by, order_dir):
+        """
+        
+        :param clauses: list of Filter objects
+        :param page: int; 0-based results page number
+        :param page_size: int; number of results per page. will return page_size + 1. 
+                          If the +1 is returned, you know there's a next page available.
+                          5 results, page size 2 = 
+                            0:(1,2,3), 
+                            1:(3,4,5),
+                            2:(5,)
+        :param order_by: Column index to order by.  list is: 
+                        ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols'] 
+        :param order_dir: 'asc' or 'desc' 
+        :return: list of dictionaries (table rows)
+        """
 
         where_clause = " && ".join(clause.where() for clause in clauses if clause.where())
         if where_clause:
@@ -28,6 +43,7 @@ class Table:
         cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)',
                 '(bytes_in + bytes_out)', '(packets_in + packets_out)', 'CONCAT(proto_in, proto_out)']
         order_clause = ""
+        order_dir = order_dir.lower()
         if 0 <= order_by < len(cols) and order_dir in ['asc', 'desc']:
             order_clause = "ORDER BY {0} {1}".format(cols[order_by], order_dir)
 
@@ -77,7 +93,7 @@ class Table:
              ),0) AS 'packets_in'
             , COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)) + 300)
                 FROM {table_links} AS l
-            ),0) AS 'seconds'
+            ),1) AS 'seconds'
             , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
                 FROM {table_links_in} AS l_in
                 WHERE l_in.dst_start = nodes.ipstart AND l_in.dst_end = nodes.ipend

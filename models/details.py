@@ -19,8 +19,8 @@ class Details:
         if timestamp_range:
             self.time_range = timestamp_range
         else:
-            linksModel = models.links.Links()
-            tr = linksModel.get_timerange(ds)
+            linksModel = models.links.Links(self.sub, self.ds)
+            tr = linksModel.get_timerange()
             self.time_range = (tr['min'], tr['max'])
 
     def get_metadata(self):
@@ -123,6 +123,19 @@ class Details:
 
     @staticmethod
     def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
+        """
+        Build a WHERE SQL clause that covers basic timerange, port, and protocol filtering.
+        :param timestamp_range: start and end times as unix timestamps (integers). Default is all time.
+        :type timestamp_range: tuple[int, int]
+        :param port: exclusively report traffic destined for this port, if specified.
+        :type port: int or str
+        :param protocol: exclusively report traffic using this protocol
+        :type protocol: str
+        :param rounding: round each time stamp to the nearest quantization mark. (db records are quantized for consiceness)
+        :type rounding: bool
+        :return: String SQL clause
+        :rtype: str
+        """
         clauses = []
         t_start = 0
         t_end = 0
@@ -265,7 +278,7 @@ class Details:
         """.format(**qvars)
         return list(common.db.query(query, vars=qvars))
 
-    def get_details_children(self, page, order):
+    def get_details_children(self, page=1, order='+ipstart'):
         sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
 
         ip_diff = self.ip_end - self.ip_start

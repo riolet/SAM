@@ -11,6 +11,7 @@ class Login_LDAP(base.Headed):
         super(Login_LDAP, self).__init__('Login', False, True)
         self.styles = ["/static/css/general.css"]
         self.errors = []
+        self.server_address, self.namespace = self.decode_connection_string(constants.config.get('LDAP', 'connection_string'))
 
     # ======== Get
 
@@ -27,6 +28,8 @@ class Login_LDAP(base.Headed):
         password = data.get('password', None)
         user = data.get('user', None)
         # validate they exist
+        print('password "{}" user "{}"'.format(password, user))
+        print('errors {}'.format(self.errors))
         if password is None or len(password) == 0:
             self.errors.append("Password may not be blank.")
         if user is None or len(user) == 0:
@@ -39,19 +42,15 @@ class Login_LDAP(base.Headed):
             'password': password
         }
 
-    def decode_connection_string(self):
-        cstring = constants.config.get('LDAP', 'connection_string')
+    def decode_connection_string(self, cstring):
         server_address, _, namespace = cstring.rpartition('/')
         return server_address, namespace
 
     def perform_post_command(self, request):
-        # prepare server information
-        server_address, namespace = self.decode_connection_string()
-        server = ldap3.Server(server_address)
-
         # submit credentials to LDAP server.
-        user = "UID={user},{namespace}".format(user=request['user'], namespace=namespace)  # 'uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org'
+        user = "UID={user},{namespace}".format(user=request['user'], namespace=self.namespace)  # 'uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org'
         password = request['password']  # 'Secret123'
+        server = ldap3.Server(self.server_address)
         try:
             conn = ldap3.Connection(server, user, password, auto_bind=True)
             conn.unbind()
@@ -64,10 +63,11 @@ class Login_LDAP(base.Headed):
 
         # Assume authenticated at this point.
         self.user.login_simple(user)
+        return True
 
     def encode_post_response(self, response):
         # redirect to home page / map
-        return "This is a test"
+        return None
 
     def POST(self):
         """

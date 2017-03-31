@@ -11,96 +11,126 @@ import models.settings
 
 def role_text(ratio):
     if ratio <= 0:
-        desc = "client"
+        desc = u"client"
     elif ratio < 0.35:
-        desc = "mostly client"
+        desc = u"mostly client"
     elif ratio < 0.65:
-        desc = "mixed client/server"
+        desc = u"mixed client/server"
     elif ratio < 1:
-        desc = "mostly server"
+        desc = u"mostly server"
     else:
-        desc = "server"
+        desc = u"server"
 
-    return "{0:.2f} ({1})".format(ratio, desc)
+    return u"{0:.2f} ({1})".format(ratio, desc)
 
 
 def bytes_text(bytes):
     if bytes < 10000:
-        return "{0} B".format(int(bytes))
+        return u"{0} B".format(int(bytes))
     bytes /= 1024
     if bytes < 10000:
-        return "{0} KB".format(int(bytes))
+        return u"{0} KB".format(int(bytes))
     bytes /= 1024
     if bytes < 10000:
-        return "{0} MB".format(int(bytes))
+        return u"{0} MB".format(int(bytes))
     bytes /= 1024
     if bytes < 10000:
-        return "{0} GB".format(int(bytes))
+        return u"{0} GB".format(int(bytes))
     bytes /= 1024
-    return "{0} TB".format(int(bytes))
+    return u"{0} TB".format(int(bytes))
 
 
 def byte_rate_text(bytes, time):
     bytes = bytes / time
     if bytes < 2000:
-        return "{0} B/s".format(int(bytes))
+        return u"{0} B/s".format(int(bytes))
     bytes /= 1024
     if bytes < 2000:
-        return "{0} KB/s".format(int(bytes))
+        return u"{0} KB/s".format(int(bytes))
     bytes /= 1024
     if bytes < 2000:
-        return "{0} MB/s".format(int(bytes))
+        return u"{0} MB/s".format(int(bytes))
     bytes /= 1024
     if bytes < 2000:
-        return "{0} GB/s".format(int(bytes))
+        return u"{0} GB/s".format(int(bytes))
     bytes /= 1024
-    return "{0} TB/s".format(int(bytes))
+    return u"{0} TB/s".format(int(bytes))
 
 
 def packet_rate_text(bytes, time):
     bytes = bytes / time
     if bytes < 10000:
-        return "{0} p/s".format(int(bytes))
+        return u"{0} p/s".format(int(bytes))
     bytes /= 1000
     if bytes < 10000:
-        return "{0} Kp/s".format(int(bytes))
+        return u"{0} Kp/s".format(int(bytes))
     bytes /= 1000
     if bytes < 10000:
-        return "{0} Mp/s".format(int(bytes))
+        return u"{0} Mp/s".format(int(bytes))
     bytes /= 1000
     if bytes < 10000:
-        return "{0} Gp/s".format(int(bytes))
+        return u"{0} Gp/s".format(int(bytes))
     bytes /= 1000
-    return "{0} Tp/s".format(int(bytes))
+    return u"{0} Tp/s".format(int(bytes))
 
 
 def nice_protocol(p_in, p_out):
-    pin = p_in.split(",")
-    pout = p_out.split(",")
-    protocols = set(pin).union(set(pout))
-    if '' in protocols:
-        protocols.remove('')
-    directional_protocols = []
+    """
+    :param p_in: comma-seperated protocol list for inbound connections
+     :type p_in: unicode
+    :param p_out: comma-seperated protocol list for outbound connections
+     :type p_out: unicode
+    :return: user-friendly string describing in-/outbound connections
+     :rtype: unicode
+    """
+    pin = p_in.split(u',') if p_in else []
+    pout = p_out.split(u',') if p_out else []
+    protocols = set(pin) | set(pout)
+    protocols.discard(u'')
+    ins = []
+    outs = []
+    both = []
     for p in protocols:
         if p in pin and p in pout:
-            directional_protocols.append(p + " (i/o)")
+            both.append(u'{} (i/o)'.format(p))
         elif p in pin:
-            directional_protocols.append(p + " (in)")
+            ins.append(u'{} (in)'.format(p))
         else:
-            directional_protocols.append(p + " (out)")
-    return u', '.join(directional_protocols)
+            outs.append(u'{} (out)'.format(p))
+    return u', '.join(ins + both + outs)
 
 
 def csv_escape(datum, escape):
-    escaped = datum.replace('"', escape + '"')
-    if escaped.find(",") != -1:
-        return '"{0}"'.format(escaped)
+    """
+    Escapes double quotation marks, and iff there's a comma in the datum, 
+    encloses the whole thing in quotation marks. 
+    :param datum: the string to escape
+    :type datum: unicode
+    :param escape: escape character 
+    :type escape: unicode
+    :return: escaped string
+    :rtype: unicode
+    """
+    escaped = datum.replace(u'"', escape + u'"')
+    if escaped.find(u",") != -1:
+        return u'"{0}"'.format(escaped)
     return escaped
 
 
 def csv_encode_row(ary, colsep, escape):
+    """
+    Encode a row(list) as a string
+    :param ary: the list to encode
+     :type ary: list[ unicode ]
+    :param colsep: item separator. usually ','
+     :type colsep: unicode
+    :param escape: escape char. usually backslash. '\\'
+     :type escape: unicode
+    :return: string encoded list
+    :rtype: unicode
+    """
     if len(ary) == 0:
-        return ""
+        return u""
     first = csv_escape(ary.pop(0), escape)
     if len(ary) == 0:
         return first
@@ -109,6 +139,19 @@ def csv_encode_row(ary, colsep, escape):
 
 
 def csv_encode(data, colsep, rowsep, escape):
+    """
+    Encode a table (list of lists) as a string
+    :param data: 
+    :type data: list[ list[ unicode ] ]
+    :param colsep: column data separator
+    :type colsep: unicode
+    :param rowsep: row data separator
+    :type rowsep: unicode
+    :param escape: 
+    :type escape: unicode
+    :return: data encoded as a csv string
+    :rtype: unicode
+    """
     if len(data) == 0:
         return ""
 
@@ -130,44 +173,44 @@ class Columns(object):
             'address': {
                 'nice_name': "Address",
                 'active': 'address' in kwargs,
-                'get': lambda x: x.address},
+                'get': lambda x: x['address']},
             'alias': {
                 'nice_name': "Hostname",
                 'active': 'alias' in kwargs,
-                'get': lambda x: '' if not x.alias else x.alias},
+                'get': lambda x: '' if not x['alias'] else x['alias']},
             'conn_in': {
                 'nice_name': "Total inbound connections",
                 'active': 'conn_in' in kwargs,
-                'get': lambda x: x.conn_in},
+                'get': lambda x: x['conn_in']},
             'conn_out': {
                 'nice_name': "Total outbound connections",
                 'active': 'conn_out' in kwargs,
-                'get': lambda x: x.conn_out},
+                'get': lambda x: x['conn_out']},
             'role': {
                 'nice_name': "Role (0 = client, 1 = server)",
                 'active': 'role' in kwargs,
-                'get': lambda x: role_text(float(x.conn_in) / max(1.0, float(x.conn_in + x.conn_out)))},
+                'get': lambda x: role_text(float(x['conn_in']) / max(1.0, float(x['conn_in'] + x['conn_out'])))},
             'environment': {
                 'nice_name': "Environment",
                 'active': 'environment' in kwargs,
-                'get': lambda x: x.env},
+                'get': lambda x: x['env']},
             'tags': {
                 'nice_name': "Tags",
                 'active': 'tags' in kwargs,
                 'get': lambda x: [
-                    x.tags.split(", ") if x.tags else [], x.parent_tags.split(", ") if x.parent_tags else []]},
+                    x['tags'].split(",") if x['tags'] else [], x['parent_tags'].split(",") if x['parent_tags'] else []]},
             'bytes': {
                 'nice_name': "Bytes Handled",
                 'active': 'bytes' in kwargs,
-                'get': lambda x: byte_rate_text(x.bytes_in + x.bytes_out, x.seconds)},
+                'get': lambda x: byte_rate_text(x['bytes_in'] + x['bytes_out'], x['seconds'])},
             'packets': {
                 'nice_name': "Packets Handled",
                 'active': 'packets' in kwargs,
-                'get': lambda x: packet_rate_text(x.packets_in + x.packets_out, x.seconds)},
+                'get': lambda x: packet_rate_text(x['packets_in'] + x['packets_out'], x['seconds'])},
             'protocols': {
                 'nice_name': "Protocols used",
-                'active': 'packets' in kwargs,
-                'get': lambda x: nice_protocol(x.proto_in, x.proto_out)},
+                'active': 'protocols' in kwargs,
+                'get': lambda x: nice_protocol(x['proto_in'], x['proto_out'])},
         }
 
     def translate_row(self, data):
@@ -213,19 +256,28 @@ class Table(base.Headed):
             ds, fs = models.filters.readEncoded(data["filters"])
         return ds, fs
 
-    def decode_order(self, data):
+    @staticmethod
+    def decode_order(data):
+        """
+        decode_order takes a dictionary that may have a 'sort' key
+        and determines sort column (number) and direction (asc/desc).
+        For use in the Order By sql clause
+        :param data: 
+        :return: column number and direction of sort
+        :rtype: tuple[int, str]
+        """
         if 'sort' not in data:
-            return self.default_sort_column, self.default_sort_direction
+            return Table.default_sort_column, Table.default_sort_direction
 
         sort = data['sort'].split(",")
         try:
             column = int(sort[0])
         except ValueError:
-            column = self.default_sort_column
-        if len(sort) == 2 and sort[1] in self.sort_directions:
+            column = Table.default_sort_column
+        if len(sort) == 2 and sort[1] in Table.sort_directions:
             direction = sort[1]
         else:
-            direction = self.default_sort_direction
+            direction = Table.default_sort_direction
         return column, direction
 
     def decode_get_request(self, data):
@@ -322,6 +374,18 @@ class Table(base.Headed):
 
     @staticmethod
     def next_page(rows, page, page_size):
+        """
+        
+        :param rows: list of results from current page search, 
+        used to determine if a next page exists (number of items > page_size)
+         :type rows: list[]
+        :param page: 0-based page number
+         :type page: int
+        :param page_size: number of results per page
+         :type page_size: int
+        :return: url to next page, or False
+        :rtype: str or bool
+        """
         if len(rows) > page_size:
             path = web.ctx.fullpath
             page_i = path.find("page=")

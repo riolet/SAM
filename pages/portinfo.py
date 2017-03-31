@@ -23,11 +23,14 @@ class Portinfo(base.HeadlessPost):
     :return: A JSON-encoded dictionary with one key "result" and a value of success or error.
     """
 
+    def __init__(self):
+        super(Portinfo, self).__init__()
+        self.portModel = models.ports.Ports(self.user.viewing)
+
     def decode_get_request(self, data):
         port_string = data.get('port')
         if not port_string:
             raise errors.RequiredKey('port', 'port')
-
         try:
             ports = [int(port) for port in port_string.split(',') if port]
         except ValueError:
@@ -42,20 +45,30 @@ class Portinfo(base.HeadlessPost):
         return ports
 
     def encode_get_response(self, response):
-        return {str(i.port): i for i in response}
+        return {str(i['port']): i for i in response}
 
     def decode_post_request(self, data):
         port_string = data.get('port')
         if not port_string:
             raise errors.RequiredKey('port', 'port')
+        try:
+            request = {'port': int(port_string)}
+        except (ValueError, TypeError):
+            raise errors.MalformedRequest("Could not read port ('port') number.")
 
-        return dict(data)
+        if 'alias_name' in data:
+            request['alias_name'] = data['alias_name']
+        if 'alias_description' in data:
+            request['alias_description'] = data['alias_description']
+        if 'active' in data:
+            request['active'] = data['active']
+
+        return request
 
     def perform_post_command(self, request):
         self.require_group('write')
-        portModel = models.ports.Ports(self.user.viewing)
         port = request.pop('port')
-        portModel.set(port, request)
+        self.portModel.set(port, request)
         return 'success'
 
     def encode_post_response(self, response):

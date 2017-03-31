@@ -124,7 +124,10 @@ Usage:
         for line in all_lines:
             line_num += 1
 
-            if self.translate(line, line_num, rows[counter]) != 0:
+            try:
+                if self.translate(line, line_num, rows[counter]) != 0:
+                    continue
+            except:
                 continue
 
             counter += 1

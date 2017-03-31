@@ -8,7 +8,8 @@ import common
 import integrity
 
 # Validate the database format
-integrity.check_and_fix_integrity()
+if not integrity.check_and_fix_integrity():
+    exit(1)
 
 # Create the session object
 app = web.application(constants.urls, globals())

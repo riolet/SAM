@@ -31,6 +31,10 @@ class Settings(base.HeadlessPost):
         self.settingsModel = models.settings.Settings(self.session, self.user.viewing)
         self.dsModel = models.datasources.Datasources(self.session, self.user.viewing)
         self.livekeyModel = models.livekeys.LiveKeys(self.user.viewing)
+        self.nodesModel = models.nodes.Nodes(self.user.viewing)
+        self.linksModel = None
+        self.uploadModel = None
+
 
     def decode_get_request(self, data):
         return None
@@ -48,16 +52,10 @@ class Settings(base.HeadlessPost):
         return result
 
     @staticmethod
-    def get_available_importers():
-        files = os.listdir(os.path.join(constants.base_path, "importers"))
-        files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
-        # remove .py extension
-        files = [(f[:-3], nice_name(f[7:-3])) for f in files]
-        return files
-
-    @staticmethod
     def decode_datasource(param):
         ds = None
+        if param is None:
+            return None
         ds_match = re.search("(\d+)", param)
         if ds_match:
             try:
@@ -86,7 +84,11 @@ class Settings(base.HeadlessPost):
             request['name'] = data.get('name')
 
         elif command == 'ds_live':
-            request['is_active'] = data.get('is_active') == 'true'
+            active = data.get('is_active')
+            if active is None:
+                request['is_active'] = None
+            else:
+                request['is_active'] = active == 'true'
 
         elif command == 'ds_interval':
             try:
@@ -127,7 +129,6 @@ class Settings(base.HeadlessPost):
         upload lg	"upload"		(ds, format, file)
         add_liveK   "add_live_key"  (ds)
         del_liveK   "del_live_key"  (key)
-        sub_plan    "sub_plan"      (plan)
 
         see also: self.recognized_commands
         """
@@ -147,24 +148,21 @@ class Settings(base.HeadlessPost):
         elif command == 'ds_select':
             self.settingsModel['datasource'] = request['ds']
         elif command == 'rm_hosts':
-            nodesModel = models.nodes.Nodes(self.user.viewing)
-            nodesModel.delete_custom_hostnames()
+            self.nodesModel.delete_custom_hostnames()
         elif command == 'rm_tags':
-            nodesModel = models.nodes.Nodes(self.user.viewing)
-            nodesModel.delete_custom_tags()
+            self.nodesModel.delete_custom_tags()
         elif command == 'rm_envs':
-            nodesModel = models.nodes.Nodes(self.user.viewing)
-            nodesModel.delete_custom_envs()
+            self.nodesModel.delete_custom_envs()
         elif command == 'rm_conns':
-            linksModel = models.links.Links(self.user.viewing, request['ds'])
-            linksModel.delete_connections()
+            self.linksModel = models.links.Links(self.user.viewing, request['ds'])
+            self.linksModel.delete_connections()
         elif command == 'upload':
             b64start = request['file'].find(",")
             if b64start == -1:
                 raise errors.MalformedRequest("Could not decode file")
             log_file = base64.b64decode(request['file'][b64start + 1:])
-            uploader = models.upload.Uploader(self.user.viewing, request['ds'], request['format'])
-            uploader.import_log(log_file)
+            self.uploadModel = models.upload.Uploader(self.user.viewing, request['ds'], request['format'])
+            self.uploadModel.import_log(log_file)
         elif command == 'add_live_key':
             self.livekeyModel.create(request['ds'])
         elif command == 'del_live_key':
@@ -177,5 +175,4 @@ class Settings(base.HeadlessPost):
                 'settings': self.settingsModel.copy(),
                 'datasources': self.dsModel.sorted_list(),
                 'livekeys': self.livekeyModel.read()}
-        print(encoded)
         return encoded
