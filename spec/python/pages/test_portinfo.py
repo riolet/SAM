@@ -30,6 +30,7 @@ def test_decode_get():
         expected = {'ports': [14, 16, 18]}
         assert request == expected
 
+
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.portinfo.Portinfo()

@@ -17,8 +17,16 @@ import time
 
 
 class mocker(object):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        self.constructor = (args, kwargs)
+        self.kvs = {}
         self.calls = []
+
+    def __getitem__(self, k):
+        self.kvs.__getitem__(k)
+
+    def __setitem__(self, k, v):
+        self.kvs.__setitem__(k, v)
 
     def __getattr__(self, name):
         q = self.calls
