@@ -52,14 +52,6 @@ class Settings(base.HeadlessPost):
         return result
 
     @staticmethod
-    def get_available_importers():
-        files = os.listdir(os.path.join(constants.base_path, "importers"))
-        files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
-        # remove .py extension
-        files = [(f[:-3], nice_name(f[7:-3])) for f in files]
-        return files
-
-    @staticmethod
     def decode_datasource(param):
         ds = None
         if param is None:

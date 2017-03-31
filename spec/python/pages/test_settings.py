@@ -48,14 +48,6 @@ def test_encode_get():
         assert outbound['datasource'] in response['datasources']
 
 
-def test_get_importers():
-    importers = pages.settings.Settings.get_available_importers()
-    for importer in importers:
-        assert len(importer) == 2
-        assert isinstance(importer[0], basestring)
-        assert isinstance(importer[1], basestring)
-
-
 def test_decode_datasource():
     decode = pages.settings.Settings.decode_datasource
     assert decode('ds15') == 15
