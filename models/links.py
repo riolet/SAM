@@ -27,7 +27,7 @@ class Links:
                                "FROM {table_links};".format(table_links=self.table_links))
         row = rows[0]
         if row['min'] is None or row['max'] is None:
-            now = time.mktime(datetime.now().timetuple())
+            now = int(time.mktime(datetime.now().timetuple()))
             return {'min': now, 'max': now}
         return {'min': int(time.mktime(row['min'].timetuple())), 'max': int(time.mktime(row['max'].timetuple()))}
 

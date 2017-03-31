@@ -25,9 +25,9 @@ class Stats(base.Headed):
         super(Stats, self).__init__('Stats', True, True)
         # common.demo(on=False)
         #TODO: restructure this file.
-        self.styles = ["/static/css/general.css"]
+        self.styles = ['/static/css/general.css']
         self.sub = None
-        self.table_links = ""
+        self.table_links = ''
         self.settingsModel = None
 
     def ds_stats(self, ds_id):
