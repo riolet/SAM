@@ -22,37 +22,55 @@ def login():
 
 
 def test_empty_user():
-    u = User(session)
-    logout()
+    with db_connection.env(login_active=False):
+        u = User(session)
+        logout()
 
-    assert u.email is None
-    assert u.name is None
-    assert u.logged_in is False
-    assert u.plan_active is False
-    assert u.plan is None
-    assert u.subscription is None
-    assert u.viewing is sub_id
-    assert u.groups.issuperset({'logout', 'unsubscribed'})
-    assert 'login' not in u.groups
-    assert 'subscribed' not in u.groups
-    assert 'debug' not in u.groups
+        assert u.email is 'SAM'
+        assert u.name is 'SAM'
+        assert u.logged_in is True
+        assert u.plan_active is True
+        assert u.plan is 'admin'
+        assert u.subscription is sub_id
+        assert u.viewing is sub_id
+        assert u.groups.issuperset({'login', 'subscribed'})
+        assert 'logout' not in u.groups
+        assert 'unsubscribed' not in u.groups
+        assert 'debug' not in u.groups
+
+    with db_connection.env(login_active=True):
+        u = User(session)
+        logout()
+
+        assert u.email is None
+        assert u.name is None
+        assert u.logged_in is False
+        assert u.plan_active is False
+        assert u.plan is None
+        assert u.subscription is None
+        assert u.viewing is sub_id
+        assert u.groups.issuperset({'logout', 'unsubscribed'})
+        assert 'login' not in u.groups
+        assert 'subscribed' not in u.groups
+        assert 'debug' not in u.groups
 
 
 def test_logged_in_user():
-    login()
-    u = User(session)
+    with db_connection.env(login_active=True):
+        login()
+        u = User(session)
 
-    assert u.email == 'test@email.com'
-    assert u.name == 'Test User'
-    assert u.logged_in == True
-    assert u.plan_active == True
-    assert u.plan == 'plan100'
-    assert u.subscription == 1
-    assert u.viewing == 1
-    assert u.groups.issuperset({'login', 'subscribed'})
-    assert 'logout' not in u.groups
-    assert 'unsubscribed' not in u.groups
-    assert 'debug' not in u.groups
+        assert u.email == 'test@email.com'
+        assert u.name == 'Test User'
+        assert u.logged_in == True
+        assert u.plan_active == True
+        assert u.plan == 'plan100'
+        assert u.subscription == 1
+        assert u.viewing == 1
+        assert u.groups.issuperset({'login', 'subscribed'})
+        assert 'logout' not in u.groups
+        assert 'unsubscribed' not in u.groups
+        assert 'debug' not in u.groups
 
 
 def test_may_post():

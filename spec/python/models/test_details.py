@@ -16,6 +16,7 @@ def close_to(a, b, epsilon=0.001):
 def test_get_metadata():
     m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
     meta = m_details.get_metadata()
+    print(meta)
 
     assert meta['total_out'] == 24
     assert meta['out_packets_sent'] == 69
