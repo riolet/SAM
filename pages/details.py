@@ -79,13 +79,12 @@ class Details(base.Headless):
     def __init__(self):
         base.Headless.__init__(self)
         # self.ip_range = (0, 4294967295)
+        self.page_size = Details.default_page_size
         self.detailsModel = None
         self.nodesModel = models.nodes.Nodes(self.user.viewing)
         self.linksModel = None  # set during decode_get_request()
 
     def decode_get_request(self, data):
-        print("decoding")
-        print(data)
         # data source
         if "ds" in data:
             ds_match = re.search("(\d+)", data['ds'])
@@ -132,6 +131,7 @@ class Details(base.Headless):
         if components:
             components = components.split(',')
 
+        self.page_size = page_size
         self.detailsModel = models.details.Details(self.user.viewing, ds, address, (tstart, tend), port, page_size)
 
         request = {
@@ -394,7 +394,9 @@ class Details(base.Headless):
         return response
 
     def children(self, page, order):
-        children = self.detailsModel.get_details_children(page, order)
+        children = self.detailsModel.get_details_children(order)
+        first = (page - 1) * self.page_size
+        last = first + self.page_size
 
         response = {
             "page": page,
@@ -408,7 +410,7 @@ class Details(base.Headless):
                 ['endpoints', 'Active Endpoints'],
                 ['ratio', 'Role (0=client, 1=server)']
             ],
-            "rows": children
+            "rows": children[first:last]
         }
         return response
 

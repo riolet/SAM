@@ -278,7 +278,7 @@ class Details:
         """.format(**qvars)
         return list(common.db.query(query, vars=qvars))
 
-    def get_details_children(self, page=1, order='+ipstart'):
+    def get_details_children(self, order='+ipstart'):
         sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
 
         ip_diff = self.ip_end - self.ip_start
@@ -300,13 +300,10 @@ class Details:
             quotient = 16777216
             child_subnet_start = 1
             child_subnet_end = 8
-        first_result = (page - 1) * self.page_size
         qvars = {'ip_start': self.ip_start,
                  'ip_end': self.ip_end,
                  's_start': child_subnet_start,
                  's_end': child_subnet_end,
-                 'first': first_result,
-                 'size': self.page_size,
                  'quot': quotient,
                  'quot_1': quotient - 1}
 
@@ -354,8 +351,7 @@ class Details:
         ON `sn`.low = `n`.ipstart AND `sn`.high = `n`.ipend
         WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
             AND `n`.subnet BETWEEN $s_start AND $s_end
-        ORDER BY {order}
-        LIMIT $first, $size;
+        ORDER BY {order};
         """.format(order=qvars['order'],
                    nodes_table=self.table_nodes,
                    links_in_table=self.table_links_in,

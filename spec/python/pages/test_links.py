@@ -19,7 +19,6 @@ keys_p = [u'bytes', u'dst_end', u'dst_start', u'links', u'packets',  u'port', u'
 def test_decode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.links.Links()
-
         good_data = {
             'address': '110,110.20,110.20.30,110.20.30.40',
             'filter': '180',
@@ -67,6 +66,16 @@ def test_decode_get():
         with pytest.raises(errors.MalformedRequest):
             actual = p.decode_get_request(data_no_ds)
             assert actual == expected
+
+
+def test_filter_protocol_blank():
+    qstring = '/links?address=10,50,110,150,59&filter=&protocol=&tstart=1521498000&tend=1521498300&ds=ds1'
+    with db_connection.env(mock_session=True):
+        app = web.application(constants.urls)
+        req = app.request(qstring)
+        assert req.status == "200 OK"
+        data = json.loads(req.data)
+        assert set(data.keys()) == {u'150', u'59', u'110', u'10', u'50'}
 
 
 def test_empty_request():
