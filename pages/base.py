@@ -5,7 +5,7 @@ import errors
 import web
 import common
 from models.user import User
-import models.subscriptions
+import traceback
 
 
 def decimal_default(obj):
@@ -101,6 +101,7 @@ class Headless(Page):
             self.response = self.perform_get_command(self.request)
             self.outbound = self.encode_get_response(self.response)
         except errors.MalformedRequest as e:
+            traceback.print_exc()
             self.outbound = {'result': 'failure', 'message': e.message}
 
         web.header("Content-Type", "application/json")
@@ -156,6 +157,7 @@ class HeadlessPost(Headless):
             self.response = self.perform_post_command(self.request)
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:
+            traceback.print_exc()
             self.outbound = {'result': 'failure', 'message': e.message}
 
         web.header("Content-Type", "application/json")

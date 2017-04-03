@@ -69,6 +69,16 @@ def test_decode_get():
             assert actual == expected
 
 
+def test_filter_protocol_blank():
+    qstring = '/links?address=10,50,110,150,59&filter=&protocol=&tstart=1521498000&tend=1521498300&ds=ds1'
+    with db_connection.env(mock_session=True):
+        app = web.application(constants.urls)
+        req = app.request(qstring)
+        assert req.status == "200 OK"
+        data = json.loads(req.data)
+        assert set(data.keys()) == {u'150', u'59', u'110', u'10', u'50'}
+
+
 def test_empty_request():
     with db_connection.env(mock_session=True):
         app = web.application(constants.urls)

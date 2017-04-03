@@ -19,7 +19,11 @@ class Links(base.Headless):
 
         if 'filter' in data:
             try:
-                port = int(data['filter'])
+                port = data.get('filter')
+                if port == '' or port == None:
+                    port = None
+                else:
+                    port = int()
             except:
                 raise errors.MalformedRequest('Could not read filter "{}"'.format(data.get('filter')))
         else:
@@ -32,7 +36,7 @@ class Links(base.Headless):
             raise errors.MalformedRequest("Could not read time range ('tstart', 'tend')")
 
         protocol = data.get('protocol', 'ALL')
-        if protocol == 'ALL':
+        if protocol == 'ALL' or protocol == '':
             protocol = None
 
         if 'ds' in data:
