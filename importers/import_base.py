@@ -204,7 +204,7 @@ Usage:
                 import common
                 from models.datasources import Datasources
                 self.subscription = self.subscription or constants.demo['id']
-                self.dsModel = Datasources({}, self.subscription)
+                self.dsModel = Datasources(common.db, {}, self.subscription)
                 for datasource in self.dsModel.datasources.values():
                     # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                     if datasource['name'] == self.datasource:

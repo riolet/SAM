@@ -22,12 +22,12 @@ def test_perform_get():
         p = pages.settings.Settings()
         request = {}
         response = p.perform_get_command(request)
-        expected = {'datasources': 
-                        {1: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'}, 
-                         2: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'}, 
-                         3: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 3, 'name': u'live'}}, 
-                    'settings': {'color_udp': 13391189, 'color_error': 10053222, 'color_label_bg': 16777215, 
-                                 'color_bg': 11206621, 'datasource': 1, 'color_node': 5592524, 
+        expected = {'datasources':
+                    {1: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'},
+                     2: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'},
+                     3: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 3, 'name': u'live'}},
+                    'settings': {'color_udp': 13391189, 'color_error': 10053222, 'color_label_bg': 16777215,
+                                 'color_bg': 11206621, 'datasource': 1, 'color_node': 5592524,
                                  'color_label': 0, 'color_tcp': 5592524, 'subscription': 1}}
         assert response == expected
 
@@ -36,14 +36,15 @@ def test_encode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.settings.Settings()
         response = {'datasources':
-                        {1: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'},
-                         2: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'},
-                         3: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 3, 'name': u'live'}},
+                    {1: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'},
+                     2: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'},
+                     3: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 3, 'name': u'live'}},
                     'settings': {'color_udp': 13391189, 'color_error': 10053222, 'color_label_bg': 16777215,
                                  'color_bg': 11206621, 'datasource': 1, 'color_node': 5592524,
                                  'color_label': 0, 'color_tcp': 5592524, 'subscription': 1}}
         outbound = p.encode_get_response(response)
-        assert set(outbound.keys()) == {'color_udp', 'color_error', 'color_label_bg', 'datasources', 'datasource', 'color_node', 'color_bg', 'color_label', 'color_tcp', 'subscription'}
+        assert set(outbound.keys()) == {'color_udp', 'color_error', 'color_label_bg', 'datasources', 'datasource',
+                                        'color_node', 'color_bg', 'color_label', 'color_tcp', 'subscription'}
         assert outbound['datasources'] == response['datasources']
         assert outbound['datasource'] in response['datasources']
 
@@ -53,7 +54,7 @@ def test_decode_datasource():
     assert decode('ds15') == 15
     assert decode('1') == 1
     assert decode('ds_1678') == 1678
-    assert decode('ds') == None
+    assert decode('ds') is None
     assert decode('s5_ds16') == 5
 
 
@@ -70,15 +71,15 @@ def test_post_ds_name():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_name', 'name': 'test_name'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_name', 'ds': 'ds_1'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.dsModel = db_connection.mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
-        assert calls[0] == ('set', (1,), {'name':'test_name'})
+        assert calls[0] == ('set', (1,), {'name': 'test_name'})
 
 
 def test_post_ds_live():
@@ -94,15 +95,15 @@ def test_post_ds_live():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_live', 'is_active': 'true'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_live', 'ds': 'ds_1'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.dsModel = db_connection.mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
-        assert calls[0] == ('set', (1,), {'ar_active':1})
+        assert calls[0] == ('set', (1,), {'ar_active': 1})
 
 
 def test_post_ds_interval():
@@ -118,15 +119,15 @@ def test_post_ds_interval():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_interval', 'interval': '300'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_interval', 'ds': 'ds_1'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.dsModel = db_connection.mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
-        assert calls[0] == ('set', (1,), {'ar_interval':300})
+        assert calls[0] == ('set', (1,), {'ar_interval': 300})
 
 
 def test_post_ds_new():
@@ -141,7 +142,7 @@ def test_post_ds_new():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_new'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.dsModel = db_connection.mocker()
         p.perform_post_command(expected)
@@ -161,7 +162,7 @@ def test_post_ds_rm():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_rm'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.dsModel = db_connection.mocker()
         p.perform_post_command(expected)
@@ -181,7 +182,7 @@ def test_post_ds_select():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'ds_select'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.settingsModel = db_connection.mocker()
         p.perform_post_command(expected)
@@ -250,7 +251,7 @@ def test_post_rm_conns():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'rm_conns'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         old = models.links.Links
         try:
@@ -277,13 +278,13 @@ def test_post_upload():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'upload', 'format': 'paloalto', 'file': 'b64,YWJjMTIz'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'upload', 'ds': 'ds12', 'file': 'b64,YWJjMTIz'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'upload', 'ds': 'ds12', 'format': 'paloalto'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         old = models.upload.Uploader
         try:
@@ -308,7 +309,7 @@ def test_post_add_live_key():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'add_live_key'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.livekeyModel = db_connection.mocker()
         p.perform_post_command(expected)
@@ -328,7 +329,7 @@ def test_post_del_live_key():
         assert request == expected
         with pytest.raises(errors.MalformedRequest):
             data = {'command': 'del_live_key'}
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         p.livekeyModel = db_connection.mocker()
         p.perform_post_command(expected)

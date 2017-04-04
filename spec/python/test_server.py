@@ -1,6 +1,5 @@
 import db_connection
 import constants
-import wsgiserver
 import web
 
 app = web.application(constants.urls, globals())
@@ -77,12 +76,14 @@ def test_exists_table():
         req = app.request('/table', 'POST')
         assert req.status == "405 Method Not Allowed"
 
+
 def test_exists_settings():
     with db_connection.env(login_active=False):
         req = app.request('/settings', 'GET')
         assert req.status == "200 OK"
         req = app.request('/settings', 'POST')
         assert req.status == "200 OK"
+
 
 def test_exists_settings_page():
     with db_connection.env(login_active=False):
@@ -91,12 +92,14 @@ def test_exists_settings_page():
         req = app.request('/settings_page', 'POST')
         assert req.status == "405 Method Not Allowed"
 
+
 def test_exists_login_LDAP():
     with db_connection.env(login_active=True):
         req = app.request('/login_LDAP', 'GET')
         assert req.status == "200 OK"
         req = app.request('/login_LDAP', 'POST')
         assert req.status == "200 OK"
+
 
 def test_exists_logout():
     with db_connection.env(login_active=True, mock_session=True):

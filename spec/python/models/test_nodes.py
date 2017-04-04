@@ -48,6 +48,7 @@ def test_get_all_endpoints():
         '159.69.79.89'])
     assert expected == actual
 
+
 def test_get_children():
     m_nodes = models.nodes.Nodes(sub_id)
     kids = m_nodes.get_children("110.20")
@@ -57,14 +58,16 @@ def test_get_children():
     assert ips[0] == common.IPStringtoInt('110.20.30.0')
     assert ips[1] == common.IPStringtoInt('110.20.32.0')
 
+
 def test_get_root_nodes():
     m_nodes = models.nodes.Nodes(sub_id)
     roots = m_nodes.get_root_nodes()
     ips = [root['ipstart'] for root in roots]
     ips.sort()
     assert len(ips) == 6
-    assert set(ips) == set(map(common.IPStringtoInt,['10.0.0.0', '50.0.0.0', '59.0.0.0',
-                                                     '110.0.0.0', '150.0.0.0', '159.0.0.0']))
+    assert set(ips) == set(map(common.IPStringtoInt, ['10.0.0.0', '50.0.0.0', '59.0.0.0',
+                                                      '110.0.0.0', '150.0.0.0', '159.0.0.0']))
+
 
 def test_tags():
     m_nodes = models.nodes.Nodes(sub_id)
@@ -97,6 +100,7 @@ def test_tags():
     assert set(tags['p_tags']) == set()
     assert set(tags['tags']) == set()
 
+
 def test_env():
     m_nodes = models.nodes.Nodes(sub_id)
     m_nodes.delete_custom_envs()
@@ -124,6 +128,7 @@ def test_env():
     m_nodes.delete_custom_envs()
     assert m_nodes.get_env('110') == {'env': 'inherit', 'p_env': 'production'}
     assert m_nodes.get_env('150') == {'env': 'inherit', 'p_env': 'production'}
+
 
 def test_alias():
     m_nodes = models.nodes.Nodes(sub_id)

@@ -81,8 +81,7 @@ def test_get_table_order():
 
 def test_get_table_filter_subnet():
     m_table = models.tables.Table(sub_id, ds_full)
-    filters = []
-    filters.append(models.filters.SubnetFilter(True, '16'))
+    filters = [models.filters.SubnetFilter(True, '16')]
     rows = m_table.get_table_info(filters, page=0, page_size=10, order_by=0, order_dir='asc')
     addresses = [x['address'].endswith('/16') for x in rows]
     assert len(addresses) == 10
@@ -193,16 +192,16 @@ def test_get_table_filter_tags():
 
     try:
         m_nodes.delete_custom_tags()
-        #m_nodes.set_tags('110', ['tag8'])
+        # m_nodes.set_tags('110', ['tag8'])
         m_nodes.set_tags('110.20', ['tag16'])
         m_nodes.set_tags('110.20.30', ['tag24'])
-        #m_nodes.set_tags('110.20.30.40', ['tag32', 'bonus'])
+        # m_nodes.set_tags('110.20.30.40', ['tag32', 'bonus'])
         m_nodes.set_tags('110.20.30.41', ['tag32b'])
-        #m_nodes.set_tags('110.20.32', ['tag24b'])
-        #m_nodes.set_tags('110.24', ['tag16b'])
-        #m_nodes.set_tags('150', ['tag8b'])
-        #m_nodes.set_tags('150.60', ['tag16b'])
-        #m_nodes.set_tags('150.60.70', ['tag24b'])
+        # m_nodes.set_tags('110.20.32', ['tag24b'])
+        # m_nodes.set_tags('110.24', ['tag16b'])
+        # m_nodes.set_tags('150', ['tag8b'])
+        # m_nodes.set_tags('150.60', ['tag16b'])
+        # m_nodes.set_tags('150.60.70', ['tag24b'])
         m_nodes.set_tags('150.60.70.80', ['tag32b'])
 
         filters = [models.filters.TagsFilter(True, '1', 'tag24')]

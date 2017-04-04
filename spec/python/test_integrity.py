@@ -12,7 +12,7 @@ sqlite_params['dbn'] = 'sqlite'
 sqlite_params['db'] = '/tmp/sam_test.db'
 
 db_mysql, _ = common.get_db(mysql_params)
-db_sqlite, _ = common.get_db(sqlite_params)
+db_sqlite, _2 = common.get_db(sqlite_params)
 
 
 def test_mysql_access():
@@ -65,6 +65,7 @@ def test_mysql_def_subscription():
     except:
         traceback.print_exc()
         assert False
+
 
 def test_sqlite_def_subscription():
     try:

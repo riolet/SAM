@@ -134,8 +134,8 @@ def test_nice_ip_address():
     nice = pages.details.Details.nice_ip_address('11.22.33.44/32')
     assert nice == '11.22.33.44/32'
 
+# ---------------------------------------------------------
 
-#---------------------------------------------------------
 
 def simplify(data):
     tup = (

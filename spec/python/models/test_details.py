@@ -213,7 +213,7 @@ def test_get_details_summary_timerange():
     time_full = (int(time.mktime(datetime(2017, 3, 21, 6, 13, 05).timetuple())),
                  int(time.mktime(datetime(2017, 3, 24, 13, 30, 54).timetuple())))
     time_narrow = (int(time.mktime(datetime(2017, 3, 23, 6, 13, 05).timetuple())),
-                 int(time.mktime(datetime(2017, 3, 23, 13, 30, 54).timetuple())))
+                   int(time.mktime(datetime(2017, 3, 23, 13, 30, 54).timetuple())))
     #    d_start = datetime(2017, 3, 21, 6, 13, 05)
     #    d_end = datetime(2017, 3, 24, 13, 30, 54)
     m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_wide)

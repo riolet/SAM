@@ -62,8 +62,8 @@ def test_logged_in_user():
 
         assert u.email == 'test@email.com'
         assert u.name == 'Test User'
-        assert u.logged_in == True
-        assert u.plan_active == True
+        assert u.logged_in is True
+        assert u.plan_active is True
         assert u.plan == 'plan100'
         assert u.subscription == 1
         assert u.viewing == 1

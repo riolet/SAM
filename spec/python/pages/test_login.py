@@ -54,8 +54,6 @@ def test_connect():
     # TODO: I don't control this test server. This could break.
     with db_connection.env(mock_input=True, mock_session=True):
         p = pages.login.Login_LDAP()
-        cs = 'ldaps://ipa.demo1.freeipa.org/CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
-        address, ns = p.decode_connection_string(cs)
         p.server_address = 'ldaps://ipa.demo1.freeipa.org'
         p.namespace = 'CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
 

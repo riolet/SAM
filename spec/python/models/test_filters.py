@@ -34,7 +34,6 @@ def test_filter_env():
     assert filter == expected
 
 
-
 def test_filter_mask():
     ftype = models.filters.filterTypes.index(models.filters.MaskFilter)
     params = ["21.66.116"]
@@ -96,7 +95,6 @@ def test_filter_role():
 
 def test_filter_subnet():
     ftype = models.filters.filterTypes.index(models.filters.SubnetFilter)
-    enabled = 1
     params = ["24"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
     dsid, filters = models.filters.readEncoded(encoded)

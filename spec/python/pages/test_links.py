@@ -176,7 +176,7 @@ def test_ports():
         assert len(data[test_ip]['inputs']) == 14
         assert len(data[test_ip]['outputs']) == 15
 
-        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'160'}
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter': '160'}
         GET_data = urllib.urlencode(input_data)
         req = app.request('/links?{0}'.format(GET_data), 'GET')
 
@@ -185,7 +185,7 @@ def test_ports():
         assert len(data[test_ip]['inputs']) == 3
         assert len(data[test_ip]['outputs']) == 2
 
-        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'128'}
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter': '128'}
         GET_data = urllib.urlencode(input_data)
         req = app.request('/links?{0}'.format(GET_data), 'GET')
 
@@ -194,7 +194,7 @@ def test_ports():
         assert len(data[test_ip]['inputs']) == 0
         assert len(data[test_ip]['outputs']) == 2
 
-        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'360'}
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter': '360'}
         GET_data = urllib.urlencode(input_data)
         req = app.request('/links?{0}'.format(GET_data), 'GET')
 
@@ -203,7 +203,7 @@ def test_ports():
         assert len(data[test_ip]['inputs']) == 2
         assert len(data[test_ip]['outputs']) == 0
 
-        input_data = {'address': test_ip, 'ds': ds_full, 'filter':'1040'}
+        input_data = {'address': test_ip, 'ds': ds_full, 'filter': '1040'}
         GET_data = urllib.urlencode(input_data)
         req = app.request('/links?{0}'.format(GET_data), 'GET')
 
