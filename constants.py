@@ -20,14 +20,9 @@ demo = {
     'name': 'SAM',
 }
 
-dbconfig = {
-    'dbn': config.get('database', 'dbn'),
-    'host': config.get('database', 'host'),
-    'user': config.get('database', 'user'),
-    'pw': config.get('database', 'pw'),
-    'db': config.get('database', 'db'),
-    'port': int(config.get('database', 'port'))
-}
+dbconfig = dict(config.items('database'))
+if 'port' in dbconfig:
+    dbconfig['port'] = int(dbconfig['port'])
 
 urls = [
     '/', 'pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)

@@ -9,8 +9,9 @@ CREATE TABLE IF NOT EXISTS s{acct}_Nodes
 ,y                 FLOAT(12,3) DEFAULT 0
 ,radius            FLOAT(12,3) DEFAULT 2000
 ,CONSTRAINT PK{acct}Nodes PRIMARY KEY (ipstart, ipend)
-,INDEX nenv (env)
 );
+
+CREATE INDEX IF NOT EXISTS nenv ON s{acct}_Nodes (env);
 
 -- Create the table of tags
 CREATE TABLE IF NOT EXISTS s{acct}_Tags

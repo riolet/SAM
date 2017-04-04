@@ -2,11 +2,18 @@ import os
 import math
 import base64
 import common
+import web
 
 
 class LiveKeys:
-    def __init__(self, subscription):
-        self.db = common.db
+    def __init__(self, db, subscription):
+        """
+        :type db: web.DB
+        :type subscription: int
+        :param db: 
+        :param subscription: 
+        """
+        self.db = db
         self.sub = subscription
         self.table_livekeys = "LiveKeys"
         self.table_ds = "Datasources"

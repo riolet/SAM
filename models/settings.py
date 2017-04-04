@@ -7,8 +7,16 @@ class Settings:
     SESSION_KEY = "_settings"
     TABLE = "Settings"
     
-    def __init__(self, session, subscription):
-        self.db = common.db
+    def __init__(self, db, session, subscription):
+        """
+        :type db: web.DB
+        :type session: dict
+        :type subscription: int
+        :param db: 
+        :param session: 
+        :param subscription: 
+        """
+        self.db = db
         self.sub = subscription
         self.where = web.reparam("subscription=$id", {'id': self.sub})
         self.storage = session
@@ -48,7 +56,7 @@ class Settings:
         self.storage[Settings.SESSION_KEY] = {}
 
     def set(self, **kwargs):
-        datasources = models.datasources.Datasources(self.storage, self.sub)
+        datasources = models.datasources.Datasources(self.db, self.storage, self.sub)
         if 'datasource' in kwargs and kwargs['datasource'] not in datasources.datasources:
             raise ValueError("Invalid DS specified")
 
@@ -57,7 +65,7 @@ class Settings:
 
     def create(self):
         # add default datasource for subscription
-        dsModel = models.datasources.Datasources({}, self.sub)
+        dsModel = models.datasources.Datasources(self.db, {}, self.sub)
         ds_id = dsModel.create_datasource()
 
         self.db.insert(Settings.TABLE, subscription=self.sub, datasource=ds_id)

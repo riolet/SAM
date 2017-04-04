@@ -133,15 +133,32 @@ def determine_range_string(ip=u"0/0"):
     return low, high
 
 
+def get_db(config):
+    db = None
+    db_quiet = None
+    if config['dbn'] == 'mysql':
+        db = web.database(**config)
+        old = web.config.debug
+        web.config.debug = False
+        db_quiet = web.database(**config)
+        web.config.debug = old
+    elif config['dbn'] == 'sqlite':
+        config.pop('host', None)
+        config.pop('port', None)
+        config.pop('user', None)
+        config.pop('pw', None)
+
+        db = web.database(**config)
+        old = web.config.debug
+        web.config.debug = False
+        db_quiet = web.database(**config)
+        web.config.debug = old
+    return db, db_quiet
+
+
 # tell renderer where to look for templates
 render = web.template.render(os.path.join(constants.base_path, 'templates/'))
-
-db = web.database(**constants.dbconfig)
-old = web.config.debug
-web.config.debug = False
-db_quiet = web.database(**constants.dbconfig)
-web.config.debug = old
-del old
+db, db_quiet = get_db(constants.dbconfig.copy())
 
 # Configure session storage. Session variable is filled in from server.py
 web.config.session_parameters['cookie_path'] = "/"

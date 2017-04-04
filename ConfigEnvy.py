@@ -32,4 +32,9 @@ class ConfigEnvy(SafeConfigParser, object):
                     return default
             return super(ConfigEnvy, self).get(section, option, raw, vars)
 
-
+    def items(self, section, raw=False, vars=None):
+        prefix = '{}__{}__'.format(self.namespace, section).upper()
+        overrides = [(k[len(prefix):].lower(), v) for k, v in os.environ.iteritems() if k.startswith(prefix)]
+        pairs = dict(super(ConfigEnvy, self).items(section, raw, vars))
+        pairs.update(overrides)
+        return pairs.items()

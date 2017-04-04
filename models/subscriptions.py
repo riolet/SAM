@@ -1,12 +1,8 @@
 import os
-from datetime import datetime
 import constants
+import web
 import common
-import models.datasources
 import models.ports
-import models.settings
-import models.livekeys
-from models.user import User
 
 
 class Subscriptions:
@@ -14,8 +10,11 @@ class Subscriptions:
     DROP_SQL = os.path.join(constants.base_path, 'sql/drop_subscription.sql')
     table = "Subscriptions"
 
-    def __init__(self):
-        self.db = common.db
+    def __init__(self, db):
+        """
+        :type db: web.DB
+        """
+        self.db = db
 
     def get_all(self):
         rows = self.db.select(Subscriptions.table)
@@ -44,7 +43,7 @@ class Subscriptions:
         common.exec_sql(self.db, self.CREATE_SQL, replacements)
 
         # replicate port data
-        portsModel = models.ports.Ports(sub_id)
+        portsModel = models.ports.Ports(self.db, sub_id)
         portsModel.reset()
 
     def create_default_subscription(self):

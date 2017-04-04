@@ -12,10 +12,26 @@ import models.settings
 template_subscription_tables = map(lambda x: 's{acct}_' + x, constants.subscription_tables)
 template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, constants.datasource_tables)
 
-db = common.db_quiet
+default_db = common.db_quiet
 
 
-def check_db_access():
+def get_table_names(db):
+    """
+    :type db: web.DB
+    :param db: 
+    :return: 
+    """
+    if db.dbname == 'mysql':
+        tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    elif db.dbname == 'sqlite':
+        rows = list(db.select('sqlite_master', what='name', where="type='table'"))
+        tables = [row['name'] for row in rows]
+    else:
+        raise ValueError("Unknown dbn. Cannot determine tables")
+    return tables
+
+
+def check_db_access_MySQL(params):
     # type: () -> int
     """
     Attempt to access the database.
@@ -23,12 +39,11 @@ def check_db_access():
     :return: 0 if successful else MySQL error code
     """
     print("Checking database access...")
-    params = constants.dbconfig.copy()
-    params.pop('db')
+    db_name = params.pop('db')
     error_code = 0
     try:
         connection = web.database(**params)
-        connection.query("USE {0}".format(constants.dbconfig['db']))
+        connection.query("USE {0}".format(db_name))
         print("\tDatabase access confirmed")
     except OperationalError as e:
         print("\tERROR: Database access error:")
@@ -37,21 +52,44 @@ def check_db_access():
     return error_code
 
 
-def check_and_fix_db_access():
+def check_db_access_SQLite(params):
+    # type: () -> int
+    """
+    Attempt to access the database.
+
+    :return: 0 if successful else non-zero error code
+    """
     print("Checking database access...")
-    params = constants.dbconfig.copy()
+    error_code = 0
+    try:
+        params.pop('host', None)
+        params.pop('port', None)
+        params.pop('user', None)
+        params.pop('pw', None)
+        connection = web.database(**params)
+        connection.query('SELECT SQLITE_VERSION()')
+        print("\tDatabase access confirmed")
+    except Exception as e:
+        print("\tERROR: Database access error:")
+        print("\t\tError {0}: {1}".format(e.args, e.message))
+        error_code = 1
+    return error_code
+
+
+def check_and_fix_db_access_MySQL(params):
+    print("Checking database access...")
     db_name = params.pop('db')
     error_code = 0
     connection = web.database(**params)
     try:
-        connection.query("USE {0}".format(constants.dbconfig['db']))
+        connection.query("USE {0}".format(db_name))
         print("\tDatabase access confirmed")
     except OperationalError as e:
         error_code = e[0]
         if e[0] == 1049:
-            print("\tERROR: Database {0} not found. Creating.".format(db))
+            print("\tERROR: Database {0} not found. Creating.".format(db_name))
             try:
-                connection.query("CREATE DATABASE IF NOT EXISTS {0};".format(constants.dbconfig['db']))
+                connection.query("CREATE DATABASE IF NOT EXISTS {0};".format(db_name))
                 print("\tDatabase access restored.")
                 error_code = 0
             except:
@@ -59,22 +97,40 @@ def check_and_fix_db_access():
                 print("\t\tError {0}: {1}".format(e[0], e[1]))
         elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
             print("\tERROR: Unable to continue: invalid username or password")
-            print("\tCheck your config file: dbconfig_local.py")
+            print("\tCheck your config file or environment variables.")
         else:
             print("\tERROR: Unable to continue: ")
             print("\t\tError {0}: {1}".format(e[0], e[1]))
     return error_code
 
 
-def check_shared_tables():
-    # type: () -> [str]
+def check_and_fix_db_access_SQLite(params):
+    print("Checking database access...")
+    error_code = 0
+    try:
+        params.pop('host', None)
+        params.pop('port', None)
+        params.pop('user', None)
+        params.pop('pw', None)
+        connection = web.database(**params)
+        connection.query('SELECT SQLITE_VERSION()')
+        print("\tDatabase access confirmed")
+    except Exception as e:
+        print("\tERROR: Database access error:")
+        print("\t\tError {0}: {1}".format(e.args, e.message))
+        error_code = 1
+    return error_code
+
+
+def check_shared_tables(db):
+    # type: (web.DB) -> [str]
     """
     Check that all shared tables exist with no regard for contents or structure.
 
     :return: A list of expected tables that aren't found.
     """
     print("Checking shared tables...")
-    tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    tables = get_table_names(db)
     missing_shared_tables = []
     for table in constants.shared_tables:
         if table not in tables:
@@ -86,20 +142,53 @@ def check_shared_tables():
     return missing_shared_tables
 
 
-def fix_shared_tables(missing_tables):
+def fix_shared_tables(db, missing_tables):
     print("Fixing shared tables...")
     if not missing_tables:
         print("\tNo tables to fix")
     else:
         print("\tRestoring missing tables: {0}".format(repr(missing_tables)))
-        common.exec_sql(db, os.path.join(constants.base_path, 'sql/setup_shared_tables.sql'))
-        if "Ports" in missing_tables:
-            print("\tPopulating port reference table with latest data")
-            fill_port_table()
+        with db.transaction():
+            if db.dbname == 'sqlite':
+                common.exec_sql(db, os.path.join(constants.base_path, 'sql/setup_shared_tables_sqlite.sql'))
+            else:
+                common.exec_sql(db, os.path.join(constants.base_path, 'sql/setup_shared_tables_mysql.sql'))
+            if "Ports" in missing_tables:
+                print("\tPopulating port reference table with latest data")
+                fill_port_table(db)
         print("\tShared Tables Fixed")
 
 
-def fill_port_table():
+def fix_UDF_MySQL(db):
+    query1 = "DROP FUNCTION IF EXISTS decodeIP;"
+    query2 = \
+"""CREATE FUNCTION decodeIP (ip INT UNSIGNED)
+RETURNS CHAR(15) DETERMINISTIC
+RETURN CONCAT_WS(".", ip DIV 16777216, ip DIV 65536 MOD 256, ip DIV 256 MOD 256, ip MOD 256);
+"""
+    query3 = "DROP FUNCTION IF EXISTS encodeIP;"
+    query4 = \
+"""CREATE FUNCTION encodeIP (ip8 INT, ip16 INT, ip24 INT, ip32 INT)
+RETURNS INT UNSIGNED DETERMINISTIC
+RETURN (ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32);"""
+
+    db.query(query1)
+    db.query(query2)
+    db.query(query3)
+    db.query(query4)
+
+
+def fix_UDF_SQLite(db):
+    db._db_cursor().connection.create_function("decodeIP", 1,
+                                               lambda ip: "{}.{}.{}.{}".format(ip >> 24,
+                                                                               ip >> 16 & 0xff,
+                                                                               ip >> 8 & 0xff,
+                                                                               ip & 0xff))
+    db._db_cursor().connection.create_function("encodeIP", 4,
+                                               lambda a,b,c,d: a << 24 | b << 16 | c << 8 | d)
+
+
+def fill_port_table(db):
     db.delete("Ports", "1=1")
     with open(os.path.join(constants.base_path, 'sql/default_port_data.json'), 'rb') as f:
         port_data = json.loads("".join(f.readlines()))
@@ -110,15 +199,19 @@ def fill_port_table():
             port['name'] = port['name'][:10]
         if len(port['description']) > 255:
             port['description'] = port['description'][:255]
-    db.multiple_insert('Ports', values=ports)
+    if db.supports_multiple_insert:
+        db.multiple_insert('Ports', values=ports)
+    else:
+        for port in ports:
+            db.insert('Ports', **port)
 
 
-def check_default_subscription():
+def check_default_subscription(db):
     """
     :return: 0 if no problems, -1 if default subscription is missing, -2 if default subscription id is taken.
     """
     print("Checking default subscription")
-    sub_model = models.subscriptions.Subscriptions()
+    sub_model = models.subscriptions.Subscriptions(db)
     subs = sub_model.get_all()
     errors = -1
     for sub in subs:
@@ -135,32 +228,33 @@ def check_default_subscription():
     return errors
 
 
-def fix_default_subscription(errors):
+def fix_default_subscription(db, errors):
     print("Fixing default subscription")
     if errors == 0:
         print("\tNo fix needed")
     elif errors == -1:
         print("\tCreating default subscription")
-        sub_model = models.subscriptions.Subscriptions()
+        sub_model = models.subscriptions.Subscriptions(db)
         sub_model.create_default_subscription()
     else:
         raise NotImplementedError("Cannot fix bad default subscription")
 
 
-def check_subscriptions():
-    # type: () -> { str: {str} }
+def check_subscriptions(db):
     """
     Check that each subscription has appropriate subscription-specific tables.
-
+    :param db: the database to use
+    :type db: web.DB
     :return: a dictionary containing issues identified in the subscriptions. dictionary may contain keys:
         "extra": a set of all extraneous subscription tables
         "malformed": a set of all subscriptions that are missing one or more tables.
+    :rtype: dict[str, set[str]]
     """
     print("Checking subscription tables")
-    sub_model = models.subscriptions.Subscriptions()
+    sub_model = models.subscriptions.Subscriptions(db)
     sub_ids = sub_model.get_id_list()
-    all_sub_tables = [x.values()[0] for x in db.query("SHOW TABLES;")
-                      if re.match(r'^s\d+_[a-zA-Z0-9]+$', x.values()[0])]
+    all_sub_tables = get_table_names(db)
+    all_sub_tables = filter(lambda x: re.match(r'^s\d+_[a-zA-Z0-9]+$', x), all_sub_tables)
 
     # TODO: catch tables that belong to subscriptions that don't exist any more.
     all_extra_tables = set()
@@ -187,7 +281,7 @@ def check_subscriptions():
     return {'extra': all_extra_tables, 'malformed': subs_missing_tables}
 
 
-def fix_subscriptions(errors):
+def fix_subscriptions(db, errors):
     """
     :param errors: a dictionary containing issues identified in the subscriptions. dictionary may contain keys:
         "extra": a set of all extraneous subscription tables
@@ -195,13 +289,13 @@ def fix_subscriptions(errors):
     """
     print("Fixing subscription tables")
     # remove extra tables
-    if len(errors['extra']) > 0:
+    if 'extra' in errors and len(errors['extra']) > 0:
         print("\tRemoving extra tables")
         for table in errors['extra']:
             db.query("DROP TABLE {0};".format(table))
     # create tables for malformed subscriptions
-    sub_model = models.subscriptions.Subscriptions()
-    if len(errors['malformed']) > 0:
+    sub_model = models.subscriptions.Subscriptions(db)
+    if 'malformed' in errors and len(errors['malformed']) > 0:
         for sid in errors['malformed']:
             print("\tRebuilding malformed tables for subscription {0}".format(sid))
             sub_model.create_subscription_tables(sid)
@@ -211,17 +305,16 @@ def fix_subscriptions(errors):
         print("\tSubscriptions fixed")
 
 
-def check_settings():
-    # type: () -> { str: {str} }
+def check_settings(db):
     """
     Ensure that each subscription has a settings row to go along with it and at least 1 default data source
-
+    :type db: web.DB
     :return: a dictionary containing issues identified in the settings. Dictionary may contain keys:
         "extra": a set of all extraneous settings rows
         "missing": a set of all subscriptions that are missing their settings row
     """
     print("Checking settings...")
-    sub_model = models.subscriptions.Subscriptions()
+    sub_model = models.subscriptions.Subscriptions(db)
     expected = set(sub_model.get_id_list())
 
     settings_rows = list(db.select("Settings"))
@@ -242,7 +335,7 @@ def check_settings():
     return issues
 
 
-def fix_settings(errors):
+def fix_settings(db, errors):
     """
     :param errors: a dictionary containing issues identified in the settings. Dictionary may contain keys:
         "extra": a set of all extraneous settings rows
@@ -256,7 +349,7 @@ def fix_settings(errors):
     if 'missing' in errors and len(errors['missing']) > 0:
         for sub_id in errors['missing']:
             print("\tRepairing settings for {0}".format(sub_id))
-            settings_model = models.settings.Settings({}, sub_id)
+            settings_model = models.settings.Settings(db, {}, sub_id)
             settings_model.create()
 
     if not any(map(len, errors.values())):
@@ -265,18 +358,17 @@ def fix_settings(errors):
         print("\tSettings fixed")
 
 
-def check_data_sources():
-    # type: () -> { str: {str} }
+def check_data_sources(db):
     """
     Ensure that each datasource has all the appropriate ds-specific tables
-
+    :type db: web.DB
     :return: a dictionary containing issues identified in the settings. Dictionary may contain keys:
         "unused": a set of all tables without an owner datasource
         "malformed": a set of all datasources that are missing some of their tables
     """
     print("Checking data sources...")
-    sub_model = models.subscriptions.Subscriptions()
-    all_tables = [tab.values()[0] for tab in db.query("SHOW TABLES;")]
+    sub_model = models.subscriptions.Subscriptions(db)
+    all_tables = get_table_names(db)
     ds_table_pattern = re.compile(r'^s\d+_ds\d+_[a-zA-Z0-9]+$')
     ds_tables = set(filter(lambda x: re.match(ds_table_pattern, x), all_tables))
     known_subscriptions = sub_model.get_id_list()
@@ -286,7 +378,7 @@ def check_data_sources():
     malformed_datasources = set()
 
     for sub_id in known_subscriptions:
-        ds_model = models.datasources.Datasources({}, sub_id)
+        ds_model = models.datasources.Datasources(db, {}, sub_id)
         for ds_id in ds_model.ds_ids:
             expected_tables = {tab.format(acct=sub_id, id=ds_id) for tab in template_tables_per_ds}
             if not expected_tables.issubset(ds_tables):
@@ -304,41 +396,43 @@ def check_data_sources():
     return {'malformed': malformed_datasources, 'unused': extra_tables}
 
 
-def fix_data_sources(errors):
+def fix_data_sources(db, errors):
     """
-
+    :type db: web.DB
+    :type errors: dict[str, list[str]]
     :param errors: a dictionary containing issues identified in the settings. Dictionary may contain keys:
         "unused": a set of all tables without an owner datasource
         "malformed": a set of all datasources that are missing some of their tables
     """
     print("Fixing data sources")
-    if len(errors['unused']) > 0:
+    if 'unused' in errors and len(errors['unused']) > 0:
         print("\tDropping extra tables")
         for table in errors['unused']:
             db.query("DROP TABLE {0};".format(table))
 
-    if len(errors['malformed']) > 0:
+    if 'malformed' in errors and len(errors['malformed']) > 0:
         print("\tRebuilding data source tables")
         for sub_id, ds_id in errors['malformed']:
             print("\tRebuilding malformed tables for subscription {0} datasource {1}".format(sub_id, ds_id))
-            ds_model = models.datasources.Datasources({}, sub_id)
+            ds_model = models.datasources.Datasources(db, {}, sub_id)
             ds_model.create_ds_tables(ds_id)
 
-    if len(errors['malformed']) == 0 and len(errors['unused']) == 0:
+    if not any(map(len, errors.values())):
         print('\tNo fix needed')
     else:
         print('\tData sources fixed')
 
 
-def check_sessions_table():
+def check_sessions_table(db):
     # type: () -> bool
     """
     Check if the session table is missing.
-
+    :type db: web.DB
     :return: True if the session table is missing. False otherwise.
+    :rtype: bool
     """
     print("Checking session storage...")
-    tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    tables = get_table_names(db)
     is_missing = 'sessions' not in tables
     if is_missing:
         print("\tSession table missing")
@@ -347,7 +441,7 @@ def check_sessions_table():
     return is_missing
 
 
-def fix_sessions_table(is_missing):
+def fix_sessions_table(db, is_missing):
     print("Fixing session storage...")
     if is_missing:
         common.exec_sql(db, os.path.join(constants.base_path, 'sql/sessions.sql'))
@@ -356,54 +450,74 @@ def fix_sessions_table(is_missing):
         print("\tNo fix needed.")
 
 
-def check_integrity():
+def check_integrity(db=default_db):
     # ensure we can access the database
-    error_code = check_db_access()
+    if db.dbname == 'mysql':
+        check_db_access = check_db_access_MySQL
+    elif db.dbname == 'sqlite':
+        check_db_access = check_db_access_SQLite
+    else:
+        raise ValueError("Unknown database chosen: {}".format(db.dbname))
+    error_code = check_db_access(constants.dbconfig.copy())
     if error_code != 0:
         return False
     # check that all shared tables exist. No regard for contents.
-    check_shared_tables()
+    check_shared_tables(db)
     # check that the default demo subscription exists and is subscription 0
-    check_default_subscription()
+    check_default_subscription(db)
     # make sure the subscription-specific tables exist
-    check_subscriptions()
+    check_subscriptions(db)
     # ensure that each subscription has a settings row to go along with it and at least 1 default data source
-    check_settings()
+    check_settings(db)
     # ensure that each datasource has all the appropriate ds-specific tables
-    check_data_sources()
+    check_data_sources(db)
     # make sure the sessions table is there!
-    check_sessions_table()
+    check_sessions_table(db)
 
     return True
 
 
-def check_and_fix_integrity():
-    error_code = check_and_fix_db_access()
+def check_and_fix_integrity(db=default_db):
+    if db.dbname == 'mysql':
+        check_and_fix_db_access = check_and_fix_db_access_MySQL
+    elif db.dbname == 'sqlite':
+        check_and_fix_db_access = check_and_fix_db_access_SQLite
+    else:
+        raise ValueError("Unknown database chosen: {}".format(db.dbname))
+
+    error_code = check_and_fix_db_access(constants.dbconfig.copy())
     if error_code != 0:
         return False
 
-    errors = check_shared_tables()
+    errors = check_shared_tables(db)
     if errors:
-        fix_shared_tables(errors)
+        fix_shared_tables(db, errors)
 
-    errors = check_default_subscription()
-    if errors:
-        fix_default_subscription(errors)
+    if db.dbname == 'mysql':
+        fix_UDF_MySQL(db)
+    elif db.dbname == 'sqlite':
+        fix_UDF_SQLite(db)
+    else:
+        raise ValueError("Unknown database chosen: {}".format(db.dbname))
 
-    errors = check_subscriptions()
+    errors = check_default_subscription(db)
     if errors:
-        fix_subscriptions(errors)
+        fix_default_subscription(db, errors)
 
-    errors = check_settings()
+    errors = check_subscriptions(db)
     if errors:
-        fix_settings(errors)
+        fix_subscriptions(db, errors)
 
-    errors = check_data_sources()
+    errors = check_settings(db)
     if errors:
-        fix_data_sources(errors)
+        fix_settings(db, errors)
 
-    errors = check_sessions_table()
+    errors = check_data_sources(db)
     if errors:
-        fix_sessions_table(errors)
+        fix_data_sources(db, errors)
+
+    errors = check_sessions_table(db)
+    if errors:
+        fix_sessions_table(db, errors)
 
     return True
