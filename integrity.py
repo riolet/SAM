@@ -1,4 +1,5 @@
 import os
+import math
 import re
 import json
 import constants
@@ -188,6 +189,16 @@ def fix_UDF_SQLite(db):
                                                lambda a,b,c,d: a << 24 | b << 16 | c << 8 | d)
 
 
+def chunk(list_, chunk_size):
+    start = 0
+    end = chunk_size
+    max = len(list_)
+    while start <= max:
+        yield list_[start:end]
+        start += chunk_size
+        end += chunk_size
+
+
 def fill_port_table(db):
     db.delete("Ports", "1=1")
     with open(os.path.join(constants.base_path, 'sql/default_port_data.json'), 'rb') as f:
@@ -200,6 +211,8 @@ def fill_port_table(db):
         if len(port['description']) > 255:
             port['description'] = port['description'][:255]
     if db.supports_multiple_insert:
+        db.multiple_insert('Ports', values=ports)
+    elif db.dbname == 'sqlite':
         db.multiple_insert('Ports', values=ports)
     else:
         for port in ports:
