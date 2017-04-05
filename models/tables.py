@@ -130,15 +130,13 @@ class Table:
                 FROM {table_links_out} AS l_out
                 WHERE l_out.src_start = nodes.ipstart AND l_out.src_end = nodes.ipend
              ),"") AS 'proto_out'
-            , COALESCE((SELECT GROUP_CONCAT(tag)
+            , COALESCE((SELECT GROUP_CONCAT(DISTINCT tag)
                 FROM {table_tags} AS `t`
                 WHERE t.ipstart = nodes.ipstart AND t.ipend = nodes.ipend
-                GROUP BY t.ipstart, t.ipend
              ),"") AS 'tags'
-            , COALESCE((SELECT GROUP_CONCAT(tag)
+            , COALESCE((SELECT GROUP_CONCAT(DISTINCT tag)
                 FROM {table_tags} AS `t`
                 WHERE (t.ipstart <= nodes.ipstart AND t.ipend > nodes.ipend) OR (t.ipstart < nodes.ipstart AND t.ipend >= nodes.ipend)
-                GROUP BY t.ipstart, t.ipend
              ),"") AS 'parent_tags'
         FROM {table_nodes} AS nodes
         {WHERE}

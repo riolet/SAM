@@ -91,14 +91,14 @@ class PortFilter(Filter):
 
     def where(self):
         if self.params['connection'] == '0':
-            return "EXISTS (SELECT port FROM {{table_links_out}} AS `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM {{table_links_out}} AS `lo` WHERE lo.port = '{0}' AND lo.src_start = nodes.ipstart AND lo.src_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '1':
-            return "NOT EXISTS (SELECT port FROM {{table_links_out}} AS `lo` WHERE lo.port = '{0}' && lo.src_start = nodes.ipstart && lo.src_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM {{table_links_out}} AS `lo` WHERE lo.port = '{0}' AND lo.src_start = nodes.ipstart AND lo.src_end = nodes.ipend)".format(int(self.params['port']))
 
         elif self.params['connection'] == '2':
-            return "EXISTS (SELECT port FROM {{table_links_in}} AS `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "EXISTS (SELECT port FROM {{table_links_in}} AS `li` WHERE li.port = '{0}' AND li.dst_start = nodes.ipstart AND li.dst_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '3':
-            return "NOT EXISTS (SELECT port FROM {{table_links_in}} AS `li` WHERE li.port = '{0}' && li.dst_start = nodes.ipstart && li.dst_end = nodes.ipend)".format(int(self.params['port']))
+            return "NOT EXISTS (SELECT port FROM {{table_links_in}} AS `li` WHERE li.port = '{0}' AND li.dst_start = nodes.ipstart AND li.dst_end = nodes.ipend)".format(int(self.params['port']))
         else:
             print ("Warning: no match for connection parameter of PortFilter when building WHERE clause. "
                    "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
