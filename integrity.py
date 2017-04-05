@@ -68,6 +68,7 @@ def check_db_access_SQLite(params):
         params.pop('user', None)
         params.pop('pw', None)
         connection = web.database(**params)
+        common.sqlite_udf(connection)
         connection.query('SELECT SQLITE_VERSION()')
         print("\tDatabase access confirmed")
     except Exception as e:
@@ -82,6 +83,7 @@ def check_and_fix_db_access(params):
         return check_and_fix_db_access_SQLite(params)
     else:
         return check_and_fix_db_access_MySQL(params)
+
 
 def check_and_fix_db_access_MySQL(params):
     print("Checking database access...")
@@ -120,6 +122,7 @@ def check_and_fix_db_access_SQLite(params):
         params.pop('user', None)
         params.pop('pw', None)
         connection = web.database(**params)
+        common.sqlite_udf(connection)
         connection.query('SELECT SQLITE_VERSION()')
         print("\tDatabase access confirmed")
     except Exception as e:
@@ -186,13 +189,7 @@ RETURN (ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32);"""
 
 
 def fix_UDF_SQLite(db):
-    db._db_cursor().connection.create_function("decodeIP", 1,
-                                               lambda ip: "{}.{}.{}.{}".format(ip >> 24,
-                                                                               ip >> 16 & 0xff,
-                                                                               ip >> 8 & 0xff,
-                                                                               ip & 0xff))
-    db._db_cursor().connection.create_function("encodeIP", 4,
-                                               lambda a,b,c,d: a << 24 | b << 16 | c << 8 | d)
+    common.sqlite_udf(db)
 
 
 def chunk(list_, chunk_size):

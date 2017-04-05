@@ -1,4 +1,5 @@
 import web
+import common
 
 
 class Table:
@@ -19,6 +20,12 @@ class Table:
         self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=ds)
         self.table_links_in = "s{acct}_ds{id}_LinksIn".format(acct=self.sub, id=ds)
         self.table_links_out = "s{acct}_ds{id}_LinksOut".format(acct=self.sub, id=ds)
+        if self.db.dbname == 'mysql':
+            self.elapsed = "COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) " \
+                           "- MIN(TIME_TO_SEC(timestamp)) + 300) FROM {table_links} AS l),1)"
+        else:
+            self.elapsed = "COALESCE((SELECT (MAX(timestamp) - MIN(timestamp) + 300) FROM {table_links} AS l),1)"
+        self.elapsed.format(table_links=self.table_links)
 
     def get_table_info(self, clauses, page, page_size, order_by, order_dir):
         """
@@ -37,15 +44,27 @@ class Table:
         :return: list of dictionaries (table rows)
         """
 
-        where_clause = " && ".join(clause.where() for clause in clauses if clause.where())
-        if where_clause:
-            where_clause = "WHERE " + where_clause
-
-        having_clause = " && ".join(clause.having() for clause in clauses if clause.having())
-        if having_clause:
-            having_clause = "HAVING (conn_out + conn_in != 0) && " + having_clause
+        where_clause = " AND ".join(clause.where() for clause in clauses if clause.where())
+        if self.db.dbname == 'sqlite':
+            if where_clause:
+                where_clause = "WHERE (conn_out + conn_in != 0) AND " + where_clause
+            else:
+                where_clause = "WHERE (conn_out + conn_in != 0)"
         else:
-            having_clause = "HAVING (conn_out + conn_in != 0)"
+            if where_clause:
+                where_clause = "WHERE " + where_clause
+
+
+        having_clause = " AND ".join(clause.having() for clause in clauses if clause.having())
+        if self.db.dbname == 'mysql':
+            if having_clause:
+                having_clause = "HAVING (conn_out + conn_in != 0) AND " + having_clause
+            else:
+                having_clause = "HAVING (conn_out + conn_in != 0)"
+        else:
+            if having_clause:
+                having_clause = "HAVING " + having_clause
+
 
         # ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols']
         cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)',
@@ -59,14 +78,17 @@ class Table:
         # note: group concat max length is default at 1024.
         # if any data is lost due to max length, try:
         # SET group_concat_max_len = 2048
+        if self.db.dbname == 'sqlite':
+            common.sqlite_udf(self.db)
+
         query = """
-        SELECT CONCAT(decodeIP(ipstart), CONCAT('/', subnet)) AS 'address'
+        SELECT {address} AS 'address'
             , COALESCE(nodes.alias, '') AS 'alias'
             , COALESCE((
                 SELECT env
                 FROM {table_nodes} nz
                 WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
-                ORDER BY (nodes.ipstart - nz.ipstart + nz.ipend - nodes.ipend) ASC
+                ORDER BY subnet DESC
                 LIMIT 1
             ), 'production') AS "env"
             , COALESCE((SELECT SUM(links)
@@ -99,26 +121,24 @@ class Table:
                 WHERE l_in.dst_start = nodes.ipstart
                   AND l_in.dst_end = nodes.ipend
              ),0) AS 'packets_in'
-            , COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)) + 300)
-                FROM {table_links} AS l
-            ),1) AS 'seconds'
-            , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
+            , {elapsed} AS 'seconds'
+            , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols)
                 FROM {table_links_in} AS l_in
                 WHERE l_in.dst_start = nodes.ipstart AND l_in.dst_end = nodes.ipend
              ),"") AS 'proto_in'
-            , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols SEPARATOR ',')
+            , COALESCE((SELECT GROUP_CONCAT(DISTINCT protocols)
                 FROM {table_links_out} AS l_out
                 WHERE l_out.src_start = nodes.ipstart AND l_out.src_end = nodes.ipend
              ),"") AS 'proto_out'
-            , COALESCE((SELECT GROUP_CONCAT(tag SEPARATOR ', ')
+            , COALESCE((SELECT GROUP_CONCAT(tag)
                 FROM {table_tags} AS `t`
                 WHERE t.ipstart = nodes.ipstart AND t.ipend = nodes.ipend
-                GROUP BY nodes.ipstart, nodes.ipend
+                GROUP BY t.ipstart, t.ipend
              ),"") AS 'tags'
-            , COALESCE((SELECT GROUP_CONCAT(tag SEPARATOR ', ')
+            , COALESCE((SELECT GROUP_CONCAT(tag)
                 FROM {table_tags} AS `t`
                 WHERE (t.ipstart <= nodes.ipstart AND t.ipend > nodes.ipend) OR (t.ipstart < nodes.ipstart AND t.ipend >= nodes.ipend)
-                GROUP BY nodes.ipstart, nodes.ipend
+                GROUP BY t.ipstart, t.ipend
              ),"") AS 'parent_tags'
         FROM {table_nodes} AS nodes
         {WHERE}
@@ -126,6 +146,8 @@ class Table:
         {ORDER}
         LIMIT {START},{RANGE};
         """.format(
+            address=common.db_concat(self.db, 'decodeIP(ipstart)', "'/'", 'subnet'),
+            elapsed=self.elapsed,
             WHERE=where_clause,
             HAVING=having_clause,
             ORDER=order_clause,

@@ -1,10 +1,11 @@
-import db_connection
+from spec.python import db_connection
 import common
 import constants
 import web
 
 app = web.application(constants.urls, globals())
 common.session = web.session.Session(app, common.session_store)
+
 
 def test_404():
     with db_connection.env(login_active=False):

@@ -61,8 +61,8 @@ class Stats(base.Headed):
             "SELECT dst AS 'Address', COUNT(DISTINCT port) AS 'Ports', COUNT(links) AS 'Connections' "
             "FROM {table_links} GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;"
                 .format(table_links=table_links))
-        if len(rows) > 0:
-            lrows = rows.list()
+        lrows = list(rows)
+        if len(lrows) > 0:
             stats.append(("Max ports for one destination: ", str(lrows[0]['Ports'])))
             count = 0
             while count < len(lrows) and lrows[count]['Ports'] > 10:
@@ -71,12 +71,13 @@ class Stats(base.Headed):
                 stats.append(("Percent of destinations with fewer than 10 ports: ", "{0:0.3f}%"
                                    .format((len(dstIPs) - count) * 100 / float(len(dstIPs)))))
 
-
         rows = common.db.query("SELECT 1 FROM {table_links} GROUP BY src, dst, port;".format(table_links=table_links))
-        stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(rows))))
+        lrows = list(rows)
+        stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(lrows))))
         rows = common.db.query("SELECT SUM(links) AS 'links' FROM {table_links} "
                                "GROUP BY src, dst, port HAVING links > 100;".format(table_links=table_links))
-        stats.append(("Number of distinct connections occurring more than 100 times:", str(len(rows))))
+        lrows = list(rows)
+        stats.append(("Number of distinct connections occurring more than 100 times:", str(len(lrows))))
 
         return stats
 
