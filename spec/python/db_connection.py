@@ -97,6 +97,7 @@ def get_test_db_connection():
     else:
         params['db'] = TEST_DATABASE_MYSQL
     db, dbq = common.get_db(params)
+    print('Database acquired: {}'.format(db.dbname))
     common.db = db
     common.db_quiet = dbq
     return db

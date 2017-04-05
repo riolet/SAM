@@ -77,6 +77,12 @@ def check_db_access_SQLite(params):
     return error_code
 
 
+def check_and_fix_db_access(params):
+    if params['dbn'] == 'sqlite':
+        return check_and_fix_db_access_SQLite(params)
+    else:
+        return check_and_fix_db_access_MySQL(params)
+
 def check_and_fix_db_access_MySQL(params):
     print("Checking database access...")
     db_name = params.pop('db')
@@ -491,13 +497,6 @@ def check_integrity(db=default_db):
 
 
 def check_and_fix_integrity(db=default_db):
-    if db.dbname == 'mysql':
-        check_and_fix_db_access = check_and_fix_db_access_MySQL
-    elif db.dbname == 'sqlite':
-        check_and_fix_db_access = check_and_fix_db_access_SQLite
-    else:
-        raise ValueError("Unknown database chosen: {}".format(db.dbname))
-
     error_code = check_and_fix_db_access(constants.dbconfig.copy())
     if error_code != 0:
         return False
