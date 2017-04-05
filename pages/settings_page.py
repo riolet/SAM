@@ -2,11 +2,10 @@ import os
 import re
 import constants
 import base
-import models.datasources
 import models.settings
-import models.nodes
-import models.links
+import models.datasources
 import models.livekeys
+import common
 
 
 def nice_name(s):
@@ -36,9 +35,9 @@ class SettingsPage(base.Headed):
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
         self.require_group('read')
-        self.settingsModel = models.settings.Settings(self.session, self.user.viewing)
-        self.dsModel = models.datasources.Datasources(self.session, self.user.viewing)
-        self.livekeyModel = models.livekeys.LiveKeys(self.user.viewing)
+        self.settingsModel = models.settings.Settings(common.db, self.session, self.user.viewing)
+        self.dsModel = models.datasources.Datasources(common.db, self.session, self.user.viewing)
+        self.livekeyModel = models.livekeys.LiveKeys(common.db, self.user.viewing)
 
         settings = self.settingsModel.copy()
         datasources = self.dsModel.sorted_list()

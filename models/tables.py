@@ -1,9 +1,17 @@
-import common
+import web
 
 
 class Table:
-    def __init__(self, subscription, ds):
-        self.db = common.db
+    def __init__(self, db, subscription, ds):
+        """
+        :type db: web.DB
+        :type subscription: int
+        :type ds: int
+        :param db: 
+        :param subscription: 
+        :param ds: 
+        """
+        self.db = db
         self.sub = subscription
         self.ds = ds
         self.table_nodes = "s{acct}_Nodes".format(acct=self.sub)

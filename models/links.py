@@ -5,8 +5,13 @@ import common
 
 
 class Links:
-    def __init__(self, subscription, ds):
-        self.db = common.db
+    def __init__(self, db, subscription, ds):
+        """
+        :type db: web.DB
+        :type subscription: int
+        :type ds: int
+        """
+        self.db = db
         self.sub = subscription
         self.ds = ds
         self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=self.ds)

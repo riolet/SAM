@@ -4,8 +4,8 @@ import models.links
 
 
 class Details:
-    def __init__(self, subscription, ds, address, timestamp_range=None, port=None, page_size=50):
-        self.db = common.db
+    def __init__(self, db, subscription, ds, address, timestamp_range=None, port=None, page_size=50):
+        self.db = db
         self.sub = subscription
         self.table_nodes = "s{acct}_Nodes".format(acct=self.sub)
         self.table_links = "s{acct}_ds{id}_Links".format(acct=self.sub, id=ds)
@@ -19,7 +19,7 @@ class Details:
         if timestamp_range:
             self.time_range = timestamp_range
         else:
-            linksModel = models.links.Links(self.sub, self.ds)
+            linksModel = models.links.Links(db, self.sub, self.ds)
             tr = linksModel.get_timerange()
             self.time_range = (tr['min'], tr['max'])
 

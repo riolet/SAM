@@ -187,7 +187,24 @@ class Preprocessor:
       , `{table_links}`.packets_sent=`{table_links}`.packets_sent+VALUES(packets_sent)
       , `{table_links}`.packets_received=`{table_links}`.packets_received+VALUES(packets_received);
         """.format(div=self.divop, **self.tables)
-        self.db.query(query)
+        query2 = """
+        REPLACE INTO {table_links} (src, dst, port, protocol, timestamp, links, bytes_sent, bytes_received, packets_sent, packets_received, duration)
+        SELECT `SL`.src, `SL`.dst, `SL`.port, `SL`.protocol, `SL`.timestamp
+            , `SL`.links + COALESCE(`L`.links, 0) AS 'links'
+            , `SL`.bytes_sent + COALESCE(`L`.bytes_sent, 0) AS 'bytesIn'
+            , `SL`.bytes_received + COALESCE(`L`.bytes_received, 0) AS 'bytesOut'
+            , `SL`.packets_sent + COALESCE(`L`.packets_sent, 0) AS 'packetsIn'
+            , `SL`.packets_received + COALESCE(`L`.packets_received, 0) AS 'packetsOut'
+            , (`SL`.duration * `SL`.links + COALESCE(`L`.duration * `L`.links, 0)) / (COALESCE(`L`.links, 0) + `SL`.links) AS 'durationAvg'
+        FROM {table_staging_links} AS `SL`
+        LEFT JOIN {table_links} AS `L`
+        ON `L`.src = `SL`.src
+         AND `L`.dst = `SL`.dst
+         AND `L`.port = `SL`.port
+         AND `L`.protocol = `SL`.protocol
+         AND `L`.timestamp = `SL`.timestamp;
+        """.format(**self.tables)
+        self.db.query(query2)
 
     def links_to_links_in_out(self):
         rows = self.db.select(self.tables['table_staging_links'], what="MIN(timestamp) AS 'start', MAX(timestamp) AS 'end'")

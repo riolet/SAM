@@ -2,7 +2,7 @@
 from spec.python import db_connection
 import models.ports
 
-db = db_connection.get_test_db_connection()
+db = db_connection.db
 sub_id = db_connection.default_sub
 
 

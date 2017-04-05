@@ -8,7 +8,7 @@ ds_full = db_connection.dsid_default
 
 
 def test_get_all_endpoints():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     actual = m_nodes.get_all_endpoints()
     actual.sort()
     expected = map(common.IPStringtoInt, [
@@ -50,7 +50,7 @@ def test_get_all_endpoints():
 
 
 def test_get_children():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     kids = m_nodes.get_children("110.20")
     ips = [kid['ipstart'] for kid in kids]
     ips.sort()
@@ -60,7 +60,7 @@ def test_get_children():
 
 
 def test_get_root_nodes():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     roots = m_nodes.get_root_nodes()
     ips = [root['ipstart'] for root in roots]
     ips.sort()
@@ -70,7 +70,7 @@ def test_get_root_nodes():
 
 
 def test_tags():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     m_nodes.delete_custom_tags()
     m_nodes.set_tags('110', ['tag8'])
     m_nodes.set_tags('110.20', ['tag16'])
@@ -102,7 +102,7 @@ def test_tags():
 
 
 def test_env():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     m_nodes.delete_custom_envs()
     m_nodes.set_env('110', 'inherit')
     m_nodes.set_env('110.20', 'dev')
@@ -131,7 +131,7 @@ def test_env():
 
 
 def test_alias():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     m_nodes.set_alias('110', 'hero')
     m_nodes.set_alias('110.20', 'side-kick')
     m_nodes.set_alias('110.20.30', 'henchman')

@@ -1,16 +1,14 @@
-import os
-import constants
 import errors
 import re
 import base64
 import base
-import models.datasources
 import models.settings
+import models.datasources
+import models.livekeys
 import models.nodes
 import models.links
-import models.livekeys
 import models.upload
-import models.subscriptions
+import common
 
 
 def nice_name(s):
@@ -28,13 +26,12 @@ class Settings(base.HeadlessPost):
 
     def __init__(self):
         super(Settings, self).__init__()
-        self.settingsModel = models.settings.Settings(self.session, self.user.viewing)
-        self.dsModel = models.datasources.Datasources(self.session, self.user.viewing)
-        self.livekeyModel = models.livekeys.LiveKeys(self.user.viewing)
-        self.nodesModel = models.nodes.Nodes(self.user.viewing)
+        self.settingsModel = models.settings.Settings(common.db, self.session, self.user.viewing)
+        self.dsModel = models.datasources.Datasources(common.db, self.session, self.user.viewing)
+        self.livekeyModel = models.livekeys.LiveKeys(common.db, self.user.viewing)
+        self.nodesModel = models.nodes.Nodes(common.db, self.user.viewing)
         self.linksModel = None
         self.uploadModel = None
-
 
     def decode_get_request(self, data):
         return None
@@ -95,7 +92,7 @@ class Settings(base.HeadlessPost):
                 request['interval'] = int(data.get('interval', 'e'))
             except ValueError:
                 raise errors.MalformedRequest("Could not interpret auto-refresh interval from '{0}'"
-                                            .format(repr(data.get('interval'))))
+                                              .format(repr(data.get('interval'))))
 
         elif command == 'ds_new':
             request['name'] = data.get('name')
@@ -154,14 +151,14 @@ class Settings(base.HeadlessPost):
         elif command == 'rm_envs':
             self.nodesModel.delete_custom_envs()
         elif command == 'rm_conns':
-            self.linksModel = models.links.Links(self.user.viewing, request['ds'])
+            self.linksModel = models.links.Links(common.db, self.user.viewing, request['ds'])
             self.linksModel.delete_connections()
         elif command == 'upload':
             b64start = request['file'].find(",")
             if b64start == -1:
                 raise errors.MalformedRequest("Could not decode file")
             log_file = base64.b64decode(request['file'][b64start + 1:])
-            self.uploadModel = models.upload.Uploader(self.user.viewing, request['ds'], request['format'])
+            self.uploadModel = models.upload.Uploader(common.db, self.user.viewing, request['ds'], request['format'])
             self.uploadModel.import_log(log_file)
         elif command == 'add_live_key':
             self.livekeyModel.create(request['ds'])
@@ -172,7 +169,7 @@ class Settings(base.HeadlessPost):
 
     def encode_post_response(self, response):
         encoded = {'result': response,
-                'settings': self.settingsModel.copy(),
-                'datasources': self.dsModel.sorted_list(),
-                'livekeys': self.livekeyModel.read()}
+                   'settings': self.settingsModel.copy(),
+                   'datasources': self.dsModel.sorted_list(),
+                   'livekeys': self.livekeyModel.read()}
         return encoded

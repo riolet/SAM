@@ -1,18 +1,17 @@
 from __future__ import absolute_import
+import time
 import constants
-TEST_DATABASE_MYSQL = 'samapper_test'
-TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 import common
 import integrity
 import models.datasources
-import models.subscriptions
 import web.template
 import importers.import_base
 import preprocess
 import models.links
 import models.nodes
 from datetime import datetime
-import time
+TEST_DATABASE_MYSQL = 'samapper_test'
+TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
 
 class mocker(object):
@@ -96,11 +95,11 @@ def get_test_db_connection():
         params['db'] = TEST_DATABASE_SQLITE
     else:
         params['db'] = TEST_DATABASE_MYSQL
-    db, dbq = common.get_db(params)
-    print('Database acquired: {}'.format(db.dbname))
-    common.db = db
-    common.db_quiet = dbq
-    return db
+    tdb, tdbq = common.get_db(params)
+    print('Database acquired: {}'.format(tdb.dbname))
+    common.db = tdb
+    common.db_quiet = tdbq
+    return tdb
 
 
 def create_test_database(db):
@@ -129,14 +128,16 @@ def template_sql(path, *args):
 
 
 def clear_network(db, sub, ds):
-    l_model = models.links.Links(sub, ds)
+    l_model = models.links.Links(db, sub, ds)
     l_model.delete_connections()
 
-    n_model = models.nodes.Nodes(sub)
+    n_model = models.nodes.Nodes(db, sub)
     n_model.delete_custom_tags()
     n_model.delete_custom_envs()
     n_model.delete_custom_hostnames()
     db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
+    db.query("DELETE FROM {table}".format(table="s{}_ds{}_StagingLinks".format(sub, ds)))
+    db.query("DELETE FROM {table}".format(table="s{}_ds{}_Syslog".format(sub, ds)))
 
 
 def setup_network(db, sub_id, ds_id):

@@ -5,8 +5,14 @@ import common
 class Nodes(object):
     default_environments = {'production', 'dev', 'inherit'}
 
-    def __init__(self, subscription):
-        self.db = common.db
+    def __init__(self, db, subscription):
+        """
+        :type db: web.DB
+        :type subscription: int
+        :param db: 
+        :param subscription: 
+        """
+        self.db = db
         self.sub = subscription
         self.table_nodes = 's{acct}_Nodes'.format(acct=self.sub)
         self.table_tags = 's{acct}_Tags'.format(acct=self.sub)

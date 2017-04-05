@@ -2,6 +2,7 @@ import re
 import base
 import models.links
 import errors
+import common
 
 
 class Links(base.Headless):
@@ -56,7 +57,7 @@ class Links(base.Headless):
         self.require_group('read')
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
-        links = models.links.Links(self.user.viewing, request['ds'])
+        links = models.links.Links(common.db, self.user.viewing, request['ds'])
         return links.get_links(request['addresses'], timerange, request['port'], request['protocol'])
 
     def encode_get_response(self, response):

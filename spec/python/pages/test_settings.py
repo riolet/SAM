@@ -240,6 +240,7 @@ def test_post_rm_envs():
 
 
 def test_post_rm_conns():
+
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.settings.Settings()
         data = {'command': 'rm_conns', 'ds': 'ds12'}
@@ -258,7 +259,7 @@ def test_post_rm_conns():
             models.links.Links = db_connection.mocker
             p.perform_post_command(expected)
             calls = p.linksModel.calls
-            assert p.linksModel.constructor == ((sub_id, 12), {})
+            assert p.linksModel.constructor == ((db, sub_id, 12), {})
             assert calls[0] == ('delete_connections', (), {})
         finally:
             models.links.Links = old
@@ -291,7 +292,7 @@ def test_post_upload():
             models.upload.Uploader = db_connection.mocker
             p.perform_post_command(expected)
             calls = p.uploadModel.calls
-            assert p.uploadModel.constructor == ((sub_id, 12, 'paloalto'), {})
+            assert p.uploadModel.constructor == ((db, sub_id, 12, 'paloalto'), {})
             assert calls[0] == ('import_log', ('abc123',), {})
         finally:
             models.upload.Uploader = old

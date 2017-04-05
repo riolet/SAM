@@ -3,10 +3,10 @@ import common
 import web
 import base
 import models.filters
-import models.tables
-import models.nodes
-import models.datasources
 import models.settings
+import models.tables
+import models.datasources
+import models.nodes
 
 
 def role_text(ratio):
@@ -285,7 +285,7 @@ class Table(base.Headed):
 
         # fall back to default data source if not provided in query string.
         if ds is None:
-            settings_model = models.settings.Settings(self.session, self.user.viewing)
+            settings_model = models.settings.Settings(common.db, self.session, self.user.viewing)
             ds = settings_model['datasource']
 
         try:
@@ -331,7 +331,7 @@ class Table(base.Headed):
             row is a list of [columns]
             column is a tuple of (name, value)
         """
-        self.tableModel = models.tables.Table(self.user.viewing, self.request['ds'])
+        self.tableModel = models.tables.Table(common.db, self.user.viewing, self.request['ds'])
         data = self.tableModel.get_table_info(request['filters'],
                                               request['page'],
                                               request['page_size'],
@@ -368,7 +368,7 @@ class Table(base.Headed):
         return outbound
 
     def get_dses(self):
-        datasources_model = models.datasources.Datasources(self.session, self.user.viewing)
+        datasources_model = models.datasources.Datasources(common.db, self.session, self.user.viewing)
         ds = self.request['ds']
         return datasources_model.priority_list(ds)
 
@@ -436,7 +436,7 @@ class Table(base.Headed):
 
     def GET(self):
         self.require_group('read')
-        self.nodesModel = models.nodes.Nodes(self.user.viewing)
+        self.nodesModel = models.nodes.Nodes(common.db, self.user.viewing)
 
         self.request = self.decode_get_request(self.inbound)
         self.response = self.perform_get_command(self.request)
