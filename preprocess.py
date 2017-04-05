@@ -42,7 +42,7 @@ class Preprocessor:
             self.timeround = 'SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) % 5), Timestamp), 1, 16)'
         else:
             self.divop = '/'
-            self.timeround = 'timestamp - timestamp % 300'
+            self.timeround = "(strftime('%s', timestamp) - (strftime('%s', timestamp) % 300))"
 
 
         self.tables = {
@@ -177,17 +177,6 @@ class Preprocessor:
 
     def staging_links_to_links(self):
         query = """
-    INSERT INTO {table_links} SELECT * FROM {table_staging_links}
-      ON DUPLICATE KEY UPDATE
-        `{table_links}`.duration=(`{table_links}`.duration*`{table_links}`.links+VALUES(links)*VALUES(duration)) / GREATEST(1, `{table_links}`.duration + VALUES(duration))
-      , `{table_links}`.timestamp=VALUES(timestamp)
-      , `{table_links}`.links=`{table_links}`.links+VALUES(links)
-      , `{table_links}`.bytes_sent=`{table_links}`.bytes_sent+VALUES(bytes_sent)
-      , `{table_links}`.bytes_received=`{table_links}`.bytes_received+VALUES(bytes_received)
-      , `{table_links}`.packets_sent=`{table_links}`.packets_sent+VALUES(packets_sent)
-      , `{table_links}`.packets_received=`{table_links}`.packets_received+VALUES(packets_received);
-        """.format(div=self.divop, **self.tables)
-        query2 = """
         REPLACE INTO {table_links} (src, dst, port, protocol, timestamp, links, bytes_sent, bytes_received, packets_sent, packets_received, duration)
         SELECT `SL`.src, `SL`.dst, `SL`.port, `SL`.protocol, `SL`.timestamp
             , `SL`.links + COALESCE(`L`.links, 0) AS 'links'
@@ -204,7 +193,7 @@ class Preprocessor:
          AND `L`.protocol = `SL`.protocol
          AND `L`.timestamp = `SL`.timestamp;
         """.format(**self.tables)
-        self.db.query(query2)
+        self.db.query(query)
 
     def links_to_links_in_out(self):
         rows = self.db.select(self.tables['table_staging_links'], what="MIN(timestamp) AS 'start', MAX(timestamp) AS 'end'")
@@ -228,7 +217,7 @@ class Preprocessor:
                 , src {div} 16777216 * 16777216 + 16777215 AS 'src_end'
                 , dst {div} 16777216 * 16777216 AS 'dst_start'
                 , dst {div} 16777216 * 16777216 + 16777215 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -247,7 +236,7 @@ class Preprocessor:
                 , src {div} 65536 * 65536 + 65535 AS 'src_end'
                 , dst {div} 65536 * 65536 AS 'dst_start'
                 , dst {div} 65536 * 65536 + 65535 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -262,7 +251,7 @@ class Preprocessor:
                 , src {div} 16777216 * 16777216 + 16777215 AS 'src_end'
                 , dst {div} 65536 * 65536 AS 'dst_start'
                 , dst {div} 65536 * 65536 + 65535 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -282,7 +271,7 @@ class Preprocessor:
                 , src {div} 256 * 256 + 255 AS 'src_end'
                 , dst {div} 256 * 256 AS 'dst_start'
                 , dst {div} 256 * 256 + 255 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -297,7 +286,7 @@ class Preprocessor:
                 , src {div} 65536 * 65536 + 65535 AS 'src_end'
                 , dst {div} 256 * 256 AS 'dst_start'
                 , dst {div} 256 * 256 + 255 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -313,7 +302,7 @@ class Preprocessor:
                 , src {div} 16777216 * 16777216 + 16777215 AS 'src_end'
                 , dst {div} 256 * 256 AS 'dst_start'
                 , dst {div} 256 * 256 + 255 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -334,7 +323,7 @@ class Preprocessor:
                 , src AS 'src_end'
                 , dst AS 'dst_start'
                 , dst AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -349,7 +338,7 @@ class Preprocessor:
                 , src {div} 256 * 256 + 255 AS 'src_end'
                 , dst AS 'dst_start'
                 , dst AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -365,7 +354,7 @@ class Preprocessor:
                 , src {div} 65536 * 65536 + 65535 AS 'src_end'
                 , dst AS 'dst_start'
                 , dst AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -381,7 +370,7 @@ class Preprocessor:
                 , src {div} 16777216 * 16777216 + 16777215 AS 'src_end'
                 , dst AS 'dst_start'
                 , dst AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -406,7 +395,7 @@ class Preprocessor:
                 , src {div} 16777216 * 16777216 + 16777215 AS 'src_end'
                 , dst {div} 16777216 * 16777216 AS 'dst_start'
                 , dst {div} 16777216 * 16777216 + 16777215 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -425,7 +414,7 @@ class Preprocessor:
                 , src {div} 65536 * 65536 + 65535 AS 'src_end'
                 , dst {div} 65536 * 65536 AS 'dst_start'
                 , dst {div} 65536 * 65536 + 65535 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -440,7 +429,7 @@ class Preprocessor:
                 , src {div} 65536 * 65536 + 65535 AS 'src_end'
                 , dst {div} 16777216 * 16777216 AS 'dst_start'
                 , dst {div} 16777216 * 16777216 + 16777215 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -460,7 +449,7 @@ class Preprocessor:
                 , src {div} 256 * 256 + 255 AS 'src_end'
                 , dst {div} 256 * 256 AS 'dst_start'
                 , dst {div} 256 * 256 + 255 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -475,7 +464,7 @@ class Preprocessor:
                 , src {div} 256 * 256 + 255 AS 'src_end'
                 , dst {div} 65536 * 65536 AS 'dst_start'
                 , dst {div} 65536 * 65536 + 65535 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -491,7 +480,7 @@ class Preprocessor:
                 , src {div} 256 * 256 + 255 AS 'src_end'
                 , dst {div} 16777216 * 16777216 AS 'dst_start'
                 , dst {div} 16777216 * 16777216 + 16777215 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -511,7 +500,7 @@ class Preprocessor:
                 , src AS 'src_end'
                 , dst AS 'dst_start'
                 , dst AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -526,7 +515,7 @@ class Preprocessor:
                 , src AS 'src_end'
                 , dst {div} 256 * 256 AS 'dst_start'
                 , dst {div} 256 * 256 + 255 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -542,7 +531,7 @@ class Preprocessor:
                 , src AS 'src_end'
                 , dst {div} 65536 * 65536 AS 'dst_start'
                 , dst {div} 65536 * 65536 + 65535 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
@@ -558,7 +547,7 @@ class Preprocessor:
                 , src AS 'src_end'
                 , dst {div} 16777216 * 16777216 AS 'dst_start'
                 , dst {div} 16777216 * 16777216 + 16777215 AS 'dst_end'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",")
+                , GROUP_CONCAT(DISTINCT protocol)
                 , port
                 , timestamp
                 , SUM(links)
