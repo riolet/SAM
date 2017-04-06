@@ -165,4 +165,6 @@ class Table:
                     table_tags=self.table_tags)
 
         info = list(self.db.query(query))
+        for row in info:
+            row['env'] = row.pop('computed_env')
         return info

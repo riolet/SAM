@@ -29,6 +29,7 @@ class Details:
         else:
             self.elapsed = '(MAX(timestamp) - MIN(timestamp))'
             self.divop = '/'
+            common.sqlite_udf(self.db)
 
     def get_metadata(self):
         qvars = {"start": self.ip_start, "end": self.ip_end}
