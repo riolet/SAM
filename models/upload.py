@@ -1,11 +1,21 @@
 import importlib
 import preprocess
-import common
+import web
 
 
 class Uploader(object):
-    def __init__(self, subscription, ds, log_format):
-        self.db = common.db
+    def __init__(self, db, subscription, ds, log_format):
+        """
+        :type db: web.DB
+        :type subscription: int
+        :type ds: int
+        :type log_format: unicode
+        :param db: 
+        :param subscription: 
+        :param ds: 
+        :param log_format: 
+        """
+        self.db = db
         self.sub = subscription
         self.ds = ds
         self.log_format = log_format.lower()

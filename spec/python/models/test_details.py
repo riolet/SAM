@@ -14,42 +14,44 @@ def close_to(a, b, epsilon=0.001):
 
 
 def test_get_metadata():
-    m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
+    m_details = models.details.Details(db, sub_id, ds_full, "10.20.30.40")
     meta = m_details.get_metadata()
     print(meta)
 
-    assert meta['total_out'] == 24
-    assert meta['out_packets_sent'] == 69
-    assert meta['out_packets_received'] == 63
-    assert meta['unique_out_conn'] == 17
-    assert meta['in_packets_sent'] == 34
-    assert meta['seconds'] == 85200
-    assert meta['in_bytes_sent'] == 8400
-    assert meta['unique_out_ip'] == 14
-    assert meta['unique_in_ip'] == 8
-    assert close_to(meta['overall_bps'], 0.3404)
+    assert meta['seconds'] == 68433000
+    assert close_to(meta['overall_bps'], 0)
     assert meta['endpoints'] == 1
-    assert meta['total_in'] == 13
-    assert close_to(meta['in_avg_bps'], 25.4566)
     assert meta['address'] == '10.20.30.40/32'
-    assert close_to(meta['out_max_bps'], 500.0000)
-    assert meta['out_bytes_sent'] == 13800
-    assert meta['unique_in_conn'] == 9
-    assert close_to(meta['in_max_bps'], 500.0000)
-    assert set(meta['in_protocols'].split(',')) == {'TCP', 'UDP'}
-    assert meta['in_bytes_received'] == 2750
-    assert close_to(meta['out_duration'], 22.0000)
     assert meta['ports_used'] == 2
     assert meta['hostname'] == ''
-    assert set(meta['out_protocols'].split(',')) == {'TCP', 'UDP'}
+    assert meta['unique_in_conn'] == 9
+    assert meta['unique_in_ip'] == 8
+    assert meta['unique_out_conn'] == 17
+    assert meta['unique_out_ip'] == 14
+    assert meta['total_out'] == 24
+    assert meta['total_in'] == 13
+
+    assert meta['in_bytes_sent'] == 8400
+    assert meta['in_bytes_received'] == 2750
+    assert meta['in_packets_sent'] == 34
     assert meta['in_packets_received'] == 37
-    assert meta['out_bytes_received'] == 4050
+    assert close_to(meta['in_avg_bps'], 25.4566)
+    assert close_to(meta['in_max_bps'], 500.0000)
+    assert set(meta['in_protocols'].split(',')) == {'TCP', 'UDP'}
     assert close_to(meta['in_duration'], 33.6923)
+
+    assert meta['out_bytes_sent'] == 13800
+    assert meta['out_bytes_received'] == 4050
+    assert meta['out_packets_sent'] == 69
+    assert meta['out_packets_received'] == 63
+    assert close_to(meta['out_max_bps'], 500.0000)
     assert close_to(meta['out_avg_bps'], 33.8068)
+    assert set(meta['out_protocols'].split(',')) == {'TCP', 'UDP'}
+    assert close_to(meta['out_duration'], 22.0000)
 
 
 def test_get_details_connections_in_out():
-    m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
+    m_details = models.details.Details(db, sub_id, ds_full, "10.20.30.40")
     details = m_details.get_details_connections(inbound=True, page=1, simple=True)
     assert len(details) == 9
     assert sum([x['links'] for x in details]) == 13
@@ -82,7 +84,7 @@ def test_get_details_connections_in_out():
 
 
 def test_get_details_connections_simple():
-    m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
+    m_details = models.details.Details(db, sub_id, ds_full, "10.20.30.40")
     simple = m_details.get_details_connections(inbound=True, page=1, simple=True)
     complx = m_details.get_details_connections(inbound=True, page=1, simple=False)
 
@@ -93,7 +95,7 @@ def test_get_details_connections_simple():
 
 
 def test_get_details_connections_sort_dir():
-    m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
+    m_details = models.details.Details(db, sub_id, ds_full, "10.20.30.40")
     ascending = m_details.get_details_connections(inbound=True, page=1, order='+src', simple=True)
     descending = m_details.get_details_connections(inbound=True, page=1, order='-src', simple=True)
 
@@ -107,7 +109,7 @@ def test_get_details_connections_sort_dir():
 
 
 def test_get_details_connections_sort_col():
-    m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
+    m_details = models.details.Details(db, sub_id, ds_full, "10.20.30.40")
     ordered = m_details.get_details_connections(inbound=True, page=1, order='-sum_bytes', simple=False)
     expected = [2100, 1650, 1650, 1500, 1050, 1000, 1000, 900, 300]
     assert [int(x['sum_bytes']) for x in ordered] == expected
@@ -118,7 +120,7 @@ def test_get_details_connections_sort_col():
 
 
 def test_get_details_connections_page():
-    m_details = models.details.Details(sub_id, ds_full, "10.20.30.40")
+    m_details = models.details.Details(db, sub_id, ds_full, "10.20.30.40")
     m_details.page_size = 4
     p1 = m_details.get_details_connections(inbound=True, page=1, order='-src', simple=True)
     assert len(p1) == 4
@@ -134,7 +136,7 @@ def test_get_details_connections_page():
 
 
 def test_get_details_ports():
-    m_details = models.details.Details(sub_id, ds_full, "50.60.70.80")
+    m_details = models.details.Details(db, sub_id, ds_full, "50.60.70.80")
     ports = m_details.get_details_ports()
     assert len(ports) == 11
     assert sum([x['links'] for x in ports]) == 14
@@ -159,49 +161,49 @@ def test_get_details_ports():
 
 
 def test_get_details_children():
-    m_details = models.details.Details(sub_id, ds_full, "50")
+    m_details = models.details.Details(db, sub_id, ds_full, "50")
     kids = m_details.get_details_children()
     assert len(kids) == 2
     assert kids[0]['subnet'] == 16
     assert set([x['address'] for x in kids]) == {u'50.60.0.0', u'50.64.0.0'}
 
-    m_details = models.details.Details(sub_id, ds_full, "50.60")
+    m_details = models.details.Details(db, sub_id, ds_full, "50.60")
     kids = m_details.get_details_children()
     assert len(kids) == 2
     assert kids[0]['subnet'] == 24
     assert set([x['address'] for x in kids]) == {u'50.60.70.0', u'50.60.72.0'}
 
-    m_details = models.details.Details(sub_id, ds_full, "50.60.70")
+    m_details = models.details.Details(db, sub_id, ds_full, "50.60.70")
     kids = m_details.get_details_children()
     assert len(kids) == 2
     assert kids[0]['subnet'] == 32
     assert set([x['address'] for x in kids]) == {u'50.60.70.80', u'50.60.70.81'}
 
-    m_details = models.details.Details(sub_id, ds_full, "50.60.70.80")
+    m_details = models.details.Details(db, sub_id, ds_full, "50.60.70.80")
     kids = m_details.get_details_children()
     assert len(kids) == 0
 
 
 def test_get_details_summary():
-    m_details = models.details.Details(sub_id, ds_full, '10')
+    m_details = models.details.Details(db, sub_id, ds_full, '10')
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 17
     assert summary['unique_out'] == 17
     assert summary['unique_ports'] == 40
 
-    m_details = models.details.Details(sub_id, ds_full, '10.20')
+    m_details = models.details.Details(db, sub_id, ds_full, '10.20')
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 17
     assert summary['unique_out'] == 17
     assert summary['unique_ports'] == 31
 
-    m_details = models.details.Details(sub_id, ds_full, '10.20.30')
+    m_details = models.details.Details(db, sub_id, ds_full, '10.20.30')
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 14
     assert summary['unique_out'] == 17
     assert summary['unique_ports'] == 13
 
-    m_details = models.details.Details(sub_id, ds_full, '10.20.30.40')
+    m_details = models.details.Details(db, sub_id, ds_full, '10.20.30.40')
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 8
     assert summary['unique_out'] == 14
@@ -213,22 +215,22 @@ def test_get_details_summary_timerange():
     time_full = (int(time.mktime(datetime(2017, 3, 21, 6, 13, 05).timetuple())),
                  int(time.mktime(datetime(2017, 3, 24, 13, 30, 54).timetuple())))
     time_narrow = (int(time.mktime(datetime(2017, 3, 23, 6, 13, 05).timetuple())),
-                 int(time.mktime(datetime(2017, 3, 23, 13, 30, 54).timetuple())))
+                   int(time.mktime(datetime(2017, 3, 23, 13, 30, 54).timetuple())))
     #    d_start = datetime(2017, 3, 21, 6, 13, 05)
     #    d_end = datetime(2017, 3, 24, 13, 30, 54)
-    m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_wide)
+    m_details = models.details.Details(db, sub_id, ds_full, '10', timestamp_range=time_wide)
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 17
     assert summary['unique_out'] == 17
     assert summary['unique_ports'] == 40
 
-    m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_full)
+    m_details = models.details.Details(db, sub_id, ds_full, '10', timestamp_range=time_full)
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 17
     assert summary['unique_out'] == 17
     assert summary['unique_ports'] == 40
 
-    m_details = models.details.Details(sub_id, ds_full, '10', timestamp_range=time_narrow)
+    m_details = models.details.Details(db, sub_id, ds_full, '10', timestamp_range=time_narrow)
     summary = m_details.get_details_summary()
     assert summary['unique_in'] == 9
     assert summary['unique_out'] == 14

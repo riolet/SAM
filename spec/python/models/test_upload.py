@@ -32,21 +32,22 @@ short_log = """
 {"message":"1,2011/06/21 18:06:27,0009C100218,TRAFFIC,end,1,2011/06/21 18:06:27,7.66.36.6,6.146.197.148,0.0.0.0,0.0.0.0,Allow export to Syslog,,,netbios-ns,vsys1,TAP-T0000R022,TAP-T0000R022,ethernet1/4,ethernet1/4,Copy Traffic Logs to Syslog,2011/06/21 18:06:27,34555638,1,137,137,0,0,0x19,udp,allow,184,184,0,3,2011/06/21 18:05:51,33,any,0,945788,0x0,US,6.16.0.0-6.119.255.255,0,3,0,aged-out,0,0,0,0,,Palo-Alto-Networks,from-policy","@version":"1","@timestamp":"2011-06-22T01:06:27.000Z","host":"9.8.7.6","priority":14,"timestamp":"Jun 21 18:06:27","logsource":"Palo-Alto-Networks","severity":6,"facility":1,"facility_label":"user-level","severity_label":"Informational"}
 """
 
+
 def test_get_importer():
-    m_upload = models.upload.Uploader(sub_id, ds_empty, 'paloalto')
+    m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
     assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
 
-    m_upload = models.upload.Uploader(sub_id, ds_empty, 'import_paloalto')
+    m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'import_paloalto')
     assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
 
-    m_upload = models.upload.Uploader(sub_id, ds_empty, 'PaloAlto')
+    m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'PaloAlto')
     assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
 
     for i in importer_names:
-        m_upload = models.upload.Uploader(sub_id, ds_empty, i)
+        m_upload = models.upload.Uploader(db, sub_id, ds_empty, i)
         assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
 
-    m_upload = models.upload.Uploader(sub_id, ds_empty, '')
+    m_upload = models.upload.Uploader(db, sub_id, ds_empty, '')
     assert m_upload.importer is None
 
 
@@ -54,17 +55,17 @@ def test_run_import():
     table_name = "s{s}_ds{ds}_Syslog".format(s=sub_id, ds=ds_empty)
     db.query("DELETE FROM {table}".format(table=table_name))
     try:
-        m_upload = models.upload.Uploader(sub_id, ds_empty, '')
+        m_upload = models.upload.Uploader(db, sub_id, ds_empty, '')
         inserted = m_upload.run_import(short_log)
         assert inserted == 0
 
-        m_upload = models.upload.Uploader(sub_id, ds_empty, 'paloalto')
+        m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
         inserted = m_upload.run_import(short_log)
         assert inserted == 10
         rows = list(db.query("SELECT * FROM {table}".format(table=table_name)))
         t = common.IPtoString
         paths = [(t(x['src']), t(x['dst']), x['dstport']) for x in rows]
-        paths.sort(key=lambda x: x[0] + x[1] + str(x[2]))
+        paths.sort(key=lambda row: row[0] + row[1] + str(row[2]))
         expected = [('6.229.180.169', '7.66.81.57', 137),
                     ('7.66.133.39', '6.146.175.209', 137),
                     ('7.66.182.193', '6.35.64.27', 0),
@@ -79,11 +80,12 @@ def test_run_import():
     finally:
         db.query("DELETE FROM {table}".format(table=table_name))
 
+
 def test_import_log():
     syslog_table_name = "s{s}_ds{ds}_Syslog".format(s=sub_id, ds=ds_empty)
     links_table_name = "s{s}_ds{ds}_Links".format(s=sub_id, ds=ds_empty)
     try:
-        m_upload = models.upload.Uploader(sub_id, ds_empty, 'paloalto')
+        m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
         m_upload.import_log(short_log)
         rows = list(db.query("SELECT src, dst, port FROM {table} WHERE src < 167772160 "
                              "ORDER BY src ASC, dst ASC, port ASC"
@@ -91,7 +93,7 @@ def test_import_log():
         rows = list(rows)
         t = common.IPtoString
         paths = [(t(x['src']), t(x['dst']), x['port']) for x in rows]
-        paths.sort(key=lambda x: x[0] + x[1] + str(x[2]))
+        paths.sort(key=lambda row: row[0] + row[1] + str(row[2]))
         expected = [('6.229.180.169', '7.66.81.57', 137),
                     ('7.66.133.39', '6.146.175.209', 137),
                     ('7.66.182.193', '6.35.64.27', 0),
@@ -106,10 +108,10 @@ def test_import_log():
     finally:
         db.query("DELETE FROM {table}".format(table=syslog_table_name))
 
-        m_links = models.links.Links(sub_id, ds_empty)
+        m_links = models.links.Links(db, sub_id, ds_empty)
         m_links.delete_connections()
 
-        m_nodes = models.nodes.Nodes(sub_id)
+        m_nodes = models.nodes.Nodes(db, sub_id)
         m_nodes.delete_collection(['6', '7', '8', '9'])
 
 

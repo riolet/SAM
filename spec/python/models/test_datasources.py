@@ -5,11 +5,28 @@ from spec.python import db_connection
 from models.datasources import Datasources
 
 session = {}
+db = db_connection.db
 sub_id = db_connection.default_sub
 
 
+def get_table_names(db):
+    """
+    :type db: web.DB
+    :param db: 
+    :return: 
+    """
+    if db.dbname == 'mysql':
+        tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    elif db.dbname == 'sqlite':
+        rows = list(db.select('sqlite_master', what='name', where="type='table'"))
+        tables = [row['name'] for row in rows]
+    else:
+        raise ValueError("Unknown dbn. Cannot determine tables")
+    return tables
+
+
 def test_datasources():
-    ds = Datasources(session, sub_id)
+    ds = Datasources(db, session, sub_id)
     assert bool(ds.storage.get(Datasources.SESSION_KEY)) is False
     sources = ds.datasources
     assert ds.storage.get(Datasources.SESSION_KEY) == sources
@@ -17,14 +34,14 @@ def test_datasources():
 
 
 def test_ds_ids():
-    ds = Datasources(session, sub_id)
+    ds = Datasources(db, session, sub_id)
     ids = ds.ds_ids
     assert type(ids) is list
     assert type(ids[0]) is long or type(ids[0]) is int
 
 
 def test_sorted_list():
-    ds = Datasources(session, sub_id)
+    ds = Datasources(db, session, sub_id)
     dss = ds.sorted_list()
     assert type(dss) is list
     assert type(dss[0]) is web.Storage
@@ -35,7 +52,7 @@ def test_sorted_list():
 
 
 def test_priority_list():
-    ds = Datasources(session, sub_id)
+    ds = Datasources(db, session, sub_id)
     target = ds.ds_ids[-1]
     dss = ds.priority_list(target)
     assert type(dss) is list
@@ -48,7 +65,7 @@ def test_priority_list():
 
 
 def test_update_clear_cache():
-    ds = Datasources(session, sub_id)
+    ds = Datasources(db, session, sub_id)
     sources = ds.datasources
     ds.clear_cache()
     assert bool(ds.storage.get(Datasources.SESSION_KEY)) is False
@@ -58,7 +75,7 @@ def test_update_clear_cache():
 
 
 def test_set():
-    ds = Datasources(session, sub_id)
+    ds = Datasources(db, session, sub_id)
     dsid = ds.ds_ids[0]
     old_name = ds.datasources[dsid].name
     new_name = "temp_new_name"
@@ -98,19 +115,18 @@ def test_validate_ds_interval():
 
 
 def test_create_remove_datasource():
-    db = db_connection.get_test_db_connection()
-    ds = Datasources(session, sub_id)
-    old_tables = [row.values()[0] for row in db.query("SHOW TABLES")]
+    ds = Datasources(db, session, sub_id)
+    old_tables = get_table_names(db)
 
     dsid = ds.create_datasource('temp_ds')
 
     # new table exists
-    new_tables = [row.values()[0] for row in db.query("SHOW TABLES")]
+    new_tables = get_table_names(db)
     assert len(new_tables) - len(old_tables) > 0
     assert ds.datasources[dsid].name == 'temp_ds'
 
     ds.remove_datasource(dsid)
-    new_tables = [row.values()[0] for row in db.query("SHOW TABLES")]
+    new_tables = get_table_names(db)
     assert len(new_tables) - len(old_tables) == 0
     with pytest.raises(KeyError):
         assert ds.datasources[dsid].name == 'temp_ds'

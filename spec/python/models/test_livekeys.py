@@ -2,6 +2,7 @@ from spec.python import db_connection
 import models.datasources
 import models.livekeys
 
+db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
 ds_empty = db_connection.dsid_short
@@ -10,7 +11,7 @@ session = {}
 
 
 def test_create():
-    lk_model = models.livekeys.LiveKeys(sub_id)
+    lk_model = models.livekeys.LiveKeys(db, sub_id)
     ds_ids = (ds_full, ds_empty, ds_other)
     lk_model.delete_all()
     for id in ds_ids:
@@ -24,7 +25,7 @@ def test_create():
 
 
 def test_validate():
-    lk_model = models.livekeys.LiveKeys(sub_id)
+    lk_model = models.livekeys.LiveKeys(db, sub_id)
     lk_model.delete_all()
     lk_model.create(ds_full)
     key = lk_model.read()[0]
@@ -42,7 +43,7 @@ def test_validate():
 
 
 def test_delete():
-    lk_model = models.livekeys.LiveKeys(sub_id)
+    lk_model = models.livekeys.LiveKeys(db, sub_id)
     lk_model.delete_all()
     lk_model.create(ds_full)
     lk_model.create(ds_full)
@@ -56,7 +57,7 @@ def test_delete():
 
 
 def test_delete_ds():
-    lk_model = models.livekeys.LiveKeys(sub_id)
+    lk_model = models.livekeys.LiveKeys(db, sub_id)
     lk_model.delete_all()
     lk_model.create(ds_full)
     lk_model.create(ds_full)

@@ -8,7 +8,7 @@ ds_full = db_connection.dsid_default
 
 
 def test_get_all_endpoints():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     actual = m_nodes.get_all_endpoints()
     actual.sort()
     expected = map(common.IPStringtoInt, [
@@ -48,8 +48,9 @@ def test_get_all_endpoints():
         '159.69.79.89'])
     assert expected == actual
 
+
 def test_get_children():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     kids = m_nodes.get_children("110.20")
     ips = [kid['ipstart'] for kid in kids]
     ips.sort()
@@ -57,17 +58,19 @@ def test_get_children():
     assert ips[0] == common.IPStringtoInt('110.20.30.0')
     assert ips[1] == common.IPStringtoInt('110.20.32.0')
 
+
 def test_get_root_nodes():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     roots = m_nodes.get_root_nodes()
     ips = [root['ipstart'] for root in roots]
     ips.sort()
     assert len(ips) == 6
-    assert set(ips) == set(map(common.IPStringtoInt,['10.0.0.0', '50.0.0.0', '59.0.0.0',
-                                                     '110.0.0.0', '150.0.0.0', '159.0.0.0']))
+    assert set(ips) == set(map(common.IPStringtoInt, ['10.0.0.0', '50.0.0.0', '59.0.0.0',
+                                                      '110.0.0.0', '150.0.0.0', '159.0.0.0']))
+
 
 def test_tags():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     m_nodes.delete_custom_tags()
     m_nodes.set_tags('110', ['tag8'])
     m_nodes.set_tags('110.20', ['tag16'])
@@ -97,8 +100,9 @@ def test_tags():
     assert set(tags['p_tags']) == set()
     assert set(tags['tags']) == set()
 
+
 def test_env():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     m_nodes.delete_custom_envs()
     m_nodes.set_env('110', 'inherit')
     m_nodes.set_env('110.20', 'dev')
@@ -125,8 +129,9 @@ def test_env():
     assert m_nodes.get_env('110') == {'env': 'inherit', 'p_env': 'production'}
     assert m_nodes.get_env('150') == {'env': 'inherit', 'p_env': 'production'}
 
+
 def test_alias():
-    m_nodes = models.nodes.Nodes(sub_id)
+    m_nodes = models.nodes.Nodes(db, sub_id)
     m_nodes.set_alias('110', 'hero')
     m_nodes.set_alias('110.20', 'side-kick')
     m_nodes.set_alias('110.20.30', 'henchman')

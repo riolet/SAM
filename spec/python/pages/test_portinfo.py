@@ -79,11 +79,11 @@ def test_decode_post():
 
         data = {'xport': '80', 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}
         with pytest.raises(errors.RequiredKey):
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
         data = {'port': 'frog', 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}
         with pytest.raises(errors.MalformedRequest):
-            request = p.decode_post_request(data)
+            p.decode_post_request(data)
 
 
 def test_perform_post():
@@ -92,12 +92,14 @@ def test_perform_post():
         p.portModel = db_connection.mocker()
 
         request = {'port': 80, 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}
-        response = p.perform_post_command(request)
+        p.perform_post_command(request)
         calls = p.portModel.calls
-        assert calls[0] == ('set', (80, {'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}), {})
+        assert calls[0] == ('set',
+                            (80, {'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}),
+                            {})
 
         request = {'port': 160}
         p.portModel.clear()
-        response = p.perform_post_command(request)
+        p.perform_post_command(request)
         calls = p.portModel.calls
         assert calls[0] == ('set', (160, {}), {})

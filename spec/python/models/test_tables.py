@@ -22,14 +22,14 @@ def correct_format(data):
 
 
 def test_get_table_info():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=100, order_by=0, order_dir='asc')
     assert len(rows) == 68
     assert correct_format(rows)
 
 
 def test_get_table_pages():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=0, order_dir='asc')
     assert len(rows) == 11
     rows = m_table.get_table_info([], page=1, page_size=50, order_by=0, order_dir='asc')
@@ -51,7 +51,7 @@ def test_get_table_pages():
 
 
 def test_get_table_order():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=0, order_dir='asc')
     actual = [x['address'] for x in rows]
     expected = [u'10.0.0.0/8', u'10.20.0.0/16', u'10.20.30.0/24',
@@ -80,9 +80,8 @@ def test_get_table_order():
 
 
 def test_get_table_filter_subnet():
-    m_table = models.tables.Table(sub_id, ds_full)
-    filters = []
-    filters.append(models.filters.SubnetFilter(True, '16'))
+    m_table = models.tables.Table(db, sub_id, ds_full)
+    filters = [models.filters.SubnetFilter(True, '16')]
     rows = m_table.get_table_info(filters, page=0, page_size=10, order_by=0, order_dir='asc')
     addresses = [x['address'].endswith('/16') for x in rows]
     assert len(addresses) == 10
@@ -90,7 +89,7 @@ def test_get_table_filter_subnet():
 
 
 def test_get_table_filter_mask():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
     filters = [models.filters.MaskFilter(True, '10.20')]
     rows = m_table.get_table_info(filters, page=0, page_size=10, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
@@ -100,7 +99,7 @@ def test_get_table_filter_mask():
 
 
 def test_get_table_filter_port():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     # nodes that start '110.' and connect to another on port 180
     filters = [models.filters.MaskFilter(True, '110'), models.filters.PortFilter(True, '0', '180')]
@@ -136,31 +135,31 @@ def test_get_table_filter_port():
 
 
 def test_get_table_filter_conn():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     # fewer than 0.0002 inbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '<', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 46
+    assert len(rows) == 68
 
     # more than 0.0002 inbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '>', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 22
+    assert len(rows) == 0
 
     # more than 0.0002 outbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '>', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 20
+    assert len(rows) == 0
 
     # fewer than 0.0002 outbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '<', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 48
+    assert len(rows) == 68
 
 
 def test_get_table_filter_target():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     # nodes that connect to 10.20.30
     filters = [models.filters.TargetFilter(True, '10.20.30', '0')]
@@ -188,21 +187,21 @@ def test_get_table_filter_target():
 
 
 def test_get_table_filter_tags():
-    m_nodes = models.nodes.Nodes(sub_id)
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_nodes = models.nodes.Nodes(db, sub_id)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     try:
         m_nodes.delete_custom_tags()
-        #m_nodes.set_tags('110', ['tag8'])
+        # m_nodes.set_tags('110', ['tag8'])
         m_nodes.set_tags('110.20', ['tag16'])
         m_nodes.set_tags('110.20.30', ['tag24'])
-        #m_nodes.set_tags('110.20.30.40', ['tag32', 'bonus'])
+        # m_nodes.set_tags('110.20.30.40', ['tag32', 'bonus'])
         m_nodes.set_tags('110.20.30.41', ['tag32b'])
-        #m_nodes.set_tags('110.20.32', ['tag24b'])
-        #m_nodes.set_tags('110.24', ['tag16b'])
-        #m_nodes.set_tags('150', ['tag8b'])
-        #m_nodes.set_tags('150.60', ['tag16b'])
-        #m_nodes.set_tags('150.60.70', ['tag24b'])
+        # m_nodes.set_tags('110.20.32', ['tag24b'])
+        # m_nodes.set_tags('110.24', ['tag16b'])
+        # m_nodes.set_tags('150', ['tag8b'])
+        # m_nodes.set_tags('150.60', ['tag16b'])
+        # m_nodes.set_tags('150.60.70', ['tag24b'])
         m_nodes.set_tags('150.60.70.80', ['tag32b'])
 
         filters = [models.filters.TagsFilter(True, '1', 'tag24')]
@@ -229,8 +228,8 @@ def test_get_table_filter_tags():
 
 
 def test_get_table_filter_env():
-    m_nodes = models.nodes.Nodes(sub_id)
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_nodes = models.nodes.Nodes(db, sub_id)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     try:
         m_nodes.delete_custom_envs()
@@ -259,7 +258,7 @@ def test_get_table_filter_env():
 
 
 def test_get_table_filter_role():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     filters = [models.filters.MaskFilter(True, '10'), models.filters.RoleFilter(True, '>', '0.4999')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
@@ -274,7 +273,7 @@ def test_get_table_filter_role():
 
 
 def test_get_table_filter_protocol():
-    m_table = models.tables.Table(sub_id, ds_full)
+    m_table = models.tables.Table(db, sub_id, ds_full)
 
     # receives $protocol traffic
     filters = [models.filters.MaskFilter(True, '10'), models.filters.ProtocolFilter(True, '0', 'TCP')]

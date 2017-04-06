@@ -1,6 +1,7 @@
 import re
 import os
 import constants
+import web
 import common
 import settings
 import livekeys
@@ -8,17 +9,28 @@ import livekeys
 
 class Datasources:
     DS_TABLES = ["StagingLinks", "Links", "LinksIn", "LinksOut", "Syslog"]
-    CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_datasource.sql')
     DROP_SQL = os.path.join(constants.base_path, 'sql/drop_datasource.sql')
     MIN_INTERVAL = 5
     MAX_INTERVAL = 1800
     SESSION_KEY = "_datasources"
     TABLE = "Datasources"
 
-    def __init__(self, session, subscription):
-        self.db = common.db
+    def __init__(self, db, session, subscription):
+        """
+        :type db: web.DB
+        :type session: dict
+        :type subscription: int
+        :param db: 
+        :param session: 
+        :param subscription: 
+        """
+        self.db = db
         self.sub = subscription
         self.storage = session
+        if self.db.dbname == 'sqlite':
+            self.CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_datasource_sqlite.sql')
+        else:
+            self.CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_datasource_mysql.sql')
 
     @property
     def datasources(self):
@@ -86,8 +98,8 @@ class Datasources:
         return ds_id
 
     def remove_datasource(self, ds_id):
-        settings_model = settings.Settings(self.storage, self.sub)
-        livekeys_model = livekeys.LiveKeys(self.sub)
+        settings_model = settings.Settings(self.db, self.storage, self.sub)
+        livekeys_model = livekeys.LiveKeys(self.db, self.sub)
         ids = self.ds_ids
 
         # check id is valid
@@ -112,7 +124,7 @@ class Datasources:
         self.db.delete(Datasources.TABLE, "id={0}".format(int(ds_id)))
         # Drop relevant tables
         replacements = {'acct': self.sub, 'id': int(ds_id)}
-        common.exec_sql(self.db, self.DROP_SQL, replacements)
+        common.exec_sql(self.db, Datasources.DROP_SQL, replacements)
         self.clear_cache()
 
     def remove_all(self):
@@ -125,4 +137,4 @@ class Datasources:
 
             # remove all datasource tables
             replacements = {'acct': self.sub, 'id': int(dsid)}
-            common.exec_sql(self.db, self.DROP_SQL, replacements)
+            common.exec_sql(self.db, Datasources.DROP_SQL, replacements)

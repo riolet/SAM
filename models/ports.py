@@ -7,8 +7,12 @@ class Ports:
     MAX_NAME_LENGTH = 10
     MAX_DESCRIPTION_LENGTH = 255
 
-    def __init__(self, subscription):
-        self.db = common.db
+    def __init__(self, db, subscription):
+        """
+        :type db: web.DB
+        :type subscription: int
+        """
+        self.db = db
         self.sub = subscription
         self.table_ports = "Ports"
         self.table_aliases = "s{acct}_PortAliases".format(acct=self.sub)
@@ -53,8 +57,8 @@ class Ports:
     aliases.active,
     aliases.name AS alias_name,
     aliases.description AS alias_description
-FROM {table_ports} AS `ports`
-RIGHT JOIN {table_aliases} AS `aliases`
+FROM {table_aliases} AS `aliases`
+LEFT JOIN {table_ports} AS `ports`
     ON ports.port=aliases.port
 WHERE aliases.port IN {port_list}
 ORDER BY aliases.port ASC""".format(
@@ -83,7 +87,7 @@ ORDER BY aliases.port ASC""".format(
             formatted_updates['active'] = 1 if str(updates['active']) == '1' else 0
 
         # update PortAliases database of names to include the new information
-        exists = self.db.select(self.table_aliases, what="1", where={"port": port})
+        exists = list(self.db.select(self.table_aliases, what="1", where={"port": port}))
 
         if formatted_updates:
             if len(exists) == 1:

@@ -29,6 +29,7 @@ def test_decode_get():
         expected = {'addresses': []}
         assert request == expected
 
+
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = pages.nodes.Nodes()
@@ -85,7 +86,7 @@ def test_perform_post():
         p.nodesModel = db_connection.mocker()
 
         request = {'node': '10.20.30.40', 'alias': 'test_alias', 'tags': 'tag1,tag2,,', 'env': 'dev_2'}
-        response = p.perform_post_command(request)
+        p.perform_post_command(request)
         calls = p.nodesModel.calls
         assert ('set_alias', ('10.20.30.40', 'test_alias'), {}) in calls
         assert ('set_env', ('10.20.30.40', 'dev_2'), {}) in calls
@@ -93,6 +94,6 @@ def test_perform_post():
 
         p.nodesModel.clear()
         request = {'node': '10.20.30.40'}
-        response = p.perform_post_command(request)
+        p.perform_post_command(request)
         calls = p.nodesModel.calls
         assert len(calls) == 0

@@ -61,8 +61,8 @@ class Stats(base.Headed):
             "SELECT dst AS 'Address', COUNT(DISTINCT port) AS 'Ports', COUNT(links) AS 'Connections' "
             "FROM {table_links} GROUP BY Address ORDER BY Ports DESC, Connections DESC LIMIT 100;"
                 .format(table_links=table_links))
-        if len(rows) > 0:
-            lrows = rows.list()
+        lrows = list(rows)
+        if len(lrows) > 0:
             stats.append(("Max ports for one destination: ", str(lrows[0]['Ports'])))
             count = 0
             while count < len(lrows) and lrows[count]['Ports'] > 10:
@@ -71,18 +71,19 @@ class Stats(base.Headed):
                 stats.append(("Percent of destinations with fewer than 10 ports: ", "{0:0.3f}%"
                                    .format((len(dstIPs) - count) * 100 / float(len(dstIPs)))))
 
-
         rows = common.db.query("SELECT 1 FROM {table_links} GROUP BY src, dst, port;".format(table_links=table_links))
-        stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(rows))))
+        lrows = list(rows)
+        stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(lrows))))
         rows = common.db.query("SELECT SUM(links) AS 'links' FROM {table_links} "
                                "GROUP BY src, dst, port HAVING links > 100;".format(table_links=table_links))
-        stats.append(("Number of distinct connections occurring more than 100 times:", str(len(rows))))
+        lrows = list(rows)
+        stats.append(("Number of distinct connections occurring more than 100 times:", str(len(lrows))))
 
         return stats
 
     def overall_stats(self):
         # ds_model = models.datasources.Datasources(self.session, self.sub)
-        node_model = models.nodes.Nodes(self.sub)
+        node_model = models.nodes.Nodes(common.db, self.sub)
         stats = []
         stats.append(('Total hosts recorded', len(node_model.get_all_endpoints())))
 
@@ -114,10 +115,10 @@ class Stats(base.Headed):
     def perform_get_command(self, request):
         self.require_group('read')
         if request['query'] == 'timerange':
-            linksModel = models.links.Links(self.sub, request['ds'])
+            linksModel = models.links.Links(common.db, self.sub, request['ds'])
             return linksModel.get_timerange()
         elif request['query'] == 'protocols':
-            linksModel = models.links.Links(self.sub, request['ds'])
+            linksModel = models.links.Links(common.db, self.sub, request['ds'])
             return linksModel.get_protocol_list()
         else:
             raise errors.MalformedRequest("Query not recognized.")
@@ -129,7 +130,7 @@ class Stats(base.Headed):
         self.sub = self.user.viewing
         if self.sub is None:
             self.sub = constants.demo['id']
-        self.settingsModel = models.settings.Settings(self.session, self.sub)
+        self.settingsModel = models.settings.Settings(common.db, self.session, self.sub)
 
         try:
             self.request = self.decode_get_request(self.inbound)
@@ -143,12 +144,12 @@ class Stats(base.Headed):
     def headed_get(self):
         self.require_group('read')
         self.sub = self.user.viewing
-        self.settingsModel = models.settings.Settings(self.session, self.sub)
+        self.settingsModel = models.settings.Settings(common.db, self.session, self.sub)
         self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)
 
         segments = []
         segments.append(('Overall', self.overall_stats()))
-        ds_model = models.datasources.Datasources(self.session, self.sub)
+        ds_model = models.datasources.Datasources(common.db, self.session, self.sub)
         for ds_id in ds_model.ds_ids:
             section_name = 'Datasource: {0}'.format(ds_model.datasources[ds_id]['name'])
             segments.append((section_name, self.ds_stats(ds_id)))

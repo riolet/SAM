@@ -15,8 +15,8 @@ def test_render():
         tags = []
         envs = {'dev', 'inherit', 'production'}
         dses = [{'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 1L, 'name': u'default'},
-            {'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 2L, 'name': u'short'},
-            {'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 3L, 'name': u'live'}]
+                {'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 2L, 'name': u'short'},
+                {'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 3L, 'name': u'live'}]
         assert calls[0] == ('_head', (page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
         assert calls[1] == ('_header', (constants.navbar, page_title, p.user, constants.debug), {})
         assert calls[2] == ('metadata', (tags, envs, dses), {})

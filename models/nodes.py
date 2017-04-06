@@ -5,8 +5,14 @@ import common
 class Nodes(object):
     default_environments = {'production', 'dev', 'inherit'}
 
-    def __init__(self, subscription):
-        self.db = common.db
+    def __init__(self, db, subscription):
+        """
+        :type db: web.DB
+        :type subscription: int
+        :param db: 
+        :param subscription: 
+        """
+        self.db = db
         self.sub = subscription
         self.table_nodes = 's{acct}_Nodes'.format(acct=self.sub)
         self.table_tags = 's{acct}_Tags'.format(acct=self.sub)
@@ -136,7 +142,7 @@ class Nodes(object):
         else:
             return []
 
-        where = "subnet={2} && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end, subnet)
+        where = "subnet={2} AND ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end, subnet)
         rows = self.db.select(self.table_nodes, where=where)
         return list(rows)
 

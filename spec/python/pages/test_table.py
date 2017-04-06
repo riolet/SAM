@@ -134,25 +134,25 @@ def test_csv_encode():
 
 def test_columns_init():
     c = pages.table.Columns(address=1)
-    active = set([k for k, v in c.columns.iteritems() if v['active'] == True])
+    active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'address'}
 
     c = pages.table.Columns(protocols=1)
-    active = set([k for k, v in c.columns.iteritems() if v['active'] == True])
+    active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'protocols'}
 
     c = pages.table.Columns(address=1, alias=1, conn_in=1, conn_out=1, role=1,
                             environment=1, tags=1, bytes=1, packets=1, protocols=1)
-    active = set([k for k, v in c.columns.iteritems() if v['active'] == True])
+    active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'address', 'alias', 'conn_in', 'conn_out', 'role',
                       'environment', 'tags', 'bytes', 'packets', 'protocols'}
 
     c = pages.table.Columns(empty=1, fake=1, flicker=1, tags=1)
-    active = set([k for k, v in c.columns.iteritems() if v['active'] == True])
+    active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'tags'}
 
     c = pages.table.Columns()
-    active = set([k for k, v in c.columns.iteritems() if v['active'] == True])
+    active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == set()
 
 
@@ -228,19 +228,19 @@ def test_decode_filters():
 
     data = {}
     ds, filters = q.decode_filters(data)
-    assert ds == None
+    assert ds is None
     assert len(filters) == 0
 
 
 def test_next_page():
     q = pages.table.Table
     web.ctx.fullpath = 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=2&page_size=10'
-    assert q.next_page(range(10), 1, 10) == False
+    assert q.next_page(range(10), 1, 10) is False
     assert q.next_page(range(11), 1, 10) == 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=3&page_size=10'
     assert q.next_page(range(10), 1, 9) == 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=3&page_size=10'
     assert q.next_page(range(10), 50, 9) == 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=52&page_size=10'
-    assert q.next_page(range(9), 50, 9) == False
-    assert q.next_page(range(9), 50, 10) == False
+    assert q.next_page(range(9), 50, 9) is False
+    assert q.next_page(range(9), 50, 10) is False
 
     web.ctx.fullpath = 'http://sam.com/table'
     assert q.next_page(range(6), 1, 5) == 'http://sam.com/table?page=3'
@@ -254,7 +254,7 @@ def test_prev_page():
     web.ctx.fullpath = 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=3&page_size=10'
     assert q.prev_page(2) == 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=2&page_size=10'
     assert q.prev_page(1) == 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=1&page_size=10'
-    assert q.prev_page(0) == False
+    assert q.prev_page(0) is False
 
     web.ctx.fullpath = 'http://sam.com/table'
     assert q.prev_page(2) == 'http://sam.com/table?page=2'
@@ -327,7 +327,7 @@ def test_decode_get():
             'page_size': '2'
         }
         request = table.decode_get_request(data)
-        assert request['download'] == True
+        assert request['download'] is True
         assert request['page'] == 0
         assert request['page_size'] == pages.table.Table.download_max
 
@@ -381,5 +381,6 @@ def test_download():
                     u'10.24.34.0/24', u'10.24.34.44/32', u'10.24.34.45/32', u'50.0.0.0/8', u'50.64.0.0/16',
                     u'50.64.76.0/24', u'50.64.76.86/32']
         assert addresses == expected
-        assert headers == 'Address,Hostname,"Role (0 = client, 1 = server)",Environment,Tags,Bytes Handled,Packets Handled'
+        assert headers == 'Address,Hostname,"Role (0 = client, 1 = server)",' \
+                          'Environment,Tags,Bytes Handled,Packets Handled'
 

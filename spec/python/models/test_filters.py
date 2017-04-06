@@ -1,6 +1,9 @@
+from spec.python import db_connection
 import models.filters
 
-ds = 1
+db = db_connection.db
+sub_id = db_connection.default_sub
+ds = db_connection.dsid_default
 enabled = 1
 
 
@@ -15,8 +18,8 @@ def test_filter_connections():
 
     expected = models.filters.ConnectionsFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
@@ -29,10 +32,9 @@ def test_filter_env():
 
     expected = models.filters.EnvFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
-
 
 
 def test_filter_mask():
@@ -44,8 +46,8 @@ def test_filter_mask():
 
     expected = models.filters.MaskFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
@@ -59,8 +61,8 @@ def test_filter_port():
 
     expected = models.filters.PortFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
@@ -74,8 +76,8 @@ def test_filter_protocol():
 
     expected = models.filters.ProtocolFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
@@ -89,14 +91,13 @@ def test_filter_role():
 
     expected = models.filters.RoleFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
 def test_filter_subnet():
     ftype = models.filters.filterTypes.index(models.filters.SubnetFilter)
-    enabled = 1
     params = ["24"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
     dsid, filters = models.filters.readEncoded(encoded)
@@ -104,8 +105,8 @@ def test_filter_subnet():
 
     expected = models.filters.SubnetFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
@@ -119,8 +120,8 @@ def test_filter_tags():
 
     expected = models.filters.TagsFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 
@@ -134,8 +135,8 @@ def test_filter_target():
 
     expected = models.filters.TargetFilter(enabled, *params)
     assert dsid == ds
-    assert type(filter.where()) is str
-    assert type(filter.having()) is str
+    assert type(filter.where(db)) is str
+    assert type(filter.having(db)) is str
     assert filter == expected
 
 

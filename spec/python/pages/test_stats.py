@@ -47,6 +47,7 @@ def test_timerange():
         now = int(time.mktime(datetime.now().timetuple()))
         assert timerange == {"max": now, "min": now}
 
+
 def test_protocols():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         web.input = lambda: {'q': 'protocols', 'ds': 'ds{}'.format(ds_full)}

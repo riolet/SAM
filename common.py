@@ -133,15 +133,51 @@ def determine_range_string(ip=u"0/0"):
     return low, high
 
 
+def sqlite_udf(db):
+    db._db_cursor().connection.create_function("decodeIP", 1,
+                                               lambda ip: "{}.{}.{}.{}".format(ip >> 24,
+                                                                               ip >> 16 & 0xff,
+                                                                               ip >> 8 & 0xff,
+                                                                               ip & 0xff))
+    db._db_cursor().connection.create_function("encodeIP", 4,
+                                               lambda a, b, c, d: a << 24 | b << 16 | c << 8 | d)
+
+
+def get_db(config):
+    db = None
+    db_quiet = None
+    if config['dbn'] == 'mysql':
+        db = web.database(**config)
+        old = web.config.debug
+        web.config.debug = False
+        db_quiet = web.database(**config)
+        web.config.debug = old
+    elif config['dbn'] == 'sqlite':
+        config.pop('host', None)
+        config.pop('port', None)
+        config.pop('user', None)
+        config.pop('pw', None)
+
+        db = web.database(**config)
+        sqlite_udf(db)
+        old = web.config.debug
+        web.config.debug = False
+        db_quiet = web.database(**config)
+        sqlite_udf(db_quiet)
+        web.config.debug = old
+    return db, db_quiet
+
+
+def db_concat(db, *args):
+    if db.dbname == 'mysql':
+        return 'CONCAT({})'.format(','.join(args))
+    elif db.dbname == 'sqlite':
+        return ' || '.join(args)
+
+
 # tell renderer where to look for templates
 render = web.template.render(os.path.join(constants.base_path, 'templates/'))
-
-db = web.database(**constants.dbconfig)
-old = web.config.debug
-web.config.debug = False
-db_quiet = web.database(**constants.dbconfig)
-web.config.debug = old
-del old
+db, db_quiet = get_db(constants.dbconfig.copy())
 
 # Configure session storage. Session variable is filled in from server.py
 web.config.session_parameters['cookie_path'] = "/"

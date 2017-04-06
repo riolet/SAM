@@ -1,19 +1,17 @@
 from __future__ import absolute_import
+import time
 import constants
-TEST_DATABASE = 'samapper_test'
-constants.dbconfig['db'] = TEST_DATABASE
 import common
 import integrity
-from MySQLdb import OperationalError
 import models.datasources
-import models.subscriptions
 import web.template
 import importers.import_base
 import preprocess
 import models.links
 import models.nodes
 from datetime import datetime
-import time
+TEST_DATABASE_MYSQL = 'samapper_test'
+TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
 
 class mocker(object):
@@ -30,6 +28,7 @@ class mocker(object):
 
     def __getattr__(self, name):
         q = self.calls
+
         def receiver(*args, **kwargs):
             q.append((name, args, kwargs))
         return receiver
@@ -44,12 +43,12 @@ class mocker(object):
         return False
 
 
-class session(dict):
+class Session(dict):
     def kill(self):
         self.clear()
 
 
-class env():
+class env(object):
     def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False):
         self.input_real = web.input
         self.active_old = constants.access_control['active']
@@ -69,7 +68,7 @@ class env():
         elif self.mock_login is False:
             constants.access_control['active'] = False
         if self.mock_session:
-            common.session = session()
+            common.session = Session()
         if self.mock_render:
             common.render = mocker()
 
@@ -91,40 +90,28 @@ def make_timestamp(timestring):
 
 
 def get_test_db_connection():
-    constants.dbconfig['db'] = TEST_DATABASE
-    db = web.database(**constants.dbconfig)
-    common.db = db
-    try:
-        # dummy query to test db connection
-        tables = db.query("SHOW TABLES")
-    except OperationalError as e:
-        print("Error establishing db connection.")
-        print e
-        create_test_database()
-        try:
-            # dummy query to test db connection
-            tables = db.query("SHOW TABLES")
-        except OperationalError as e:
-            print("Error establishing db connection.")
-            raise e
-
-    rows = db.query("SELECT DATABASE();")
-    row = rows.first()
-    if row['DATABASE()'] == TEST_DATABASE:
-        return db
+    params = constants.dbconfig.copy()
+    if params['dbn'] == 'sqlite':
+        params['db'] = TEST_DATABASE_SQLITE
     else:
-        print("Database name doesn't match")
-        raise ValueError("Test Database not available")
+        params['db'] = TEST_DATABASE_MYSQL
+    tdb, tdbq = common.get_db(params)
+    print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
+    common.db = tdb
+    common.db_quiet = tdbq
+    print("CHECKING THE DB")
+    integrity.check_and_fix_integrity(tdbq, params)
+    return tdb
 
 
-def create_test_database():
+def create_test_database(db):
     # creates all the default tables and profile.
-    integrity.check_and_fix_integrity()
-    setup_datasources()
+    print("SETTING UP THE DATASOURCES")
+    setup_datasources(db, constants.demo['id'])
 
 
-def setup_datasources():
-    d = models.datasources.Datasources({}, constants.demo['id'])
+def setup_datasources(db, sub):
+    d = models.datasources.Datasources(db, {}, sub)
     sources = d.datasources
     remaining = ['default', 'short', 'live']
     for ds in sources.values():
@@ -143,14 +130,16 @@ def template_sql(path, *args):
 
 
 def clear_network(db, sub, ds):
-    l_model = models.links.Links(sub, ds)
+    l_model = models.links.Links(db, sub, ds)
     l_model.delete_connections()
 
-    n_model = models.nodes.Nodes(sub)
+    n_model = models.nodes.Nodes(db, sub)
     n_model.delete_custom_tags()
     n_model.delete_custom_envs()
     n_model.delete_custom_hostnames()
     db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
+    db.query("DELETE FROM {table}".format(table="s{}_ds{}_StagingLinks".format(sub, ds)))
+    db.query("DELETE FROM {table}".format(table="s{}_ds{}_Syslog".format(sub, ds)))
 
 
 def setup_network(db, sub_id, ds_id):
@@ -523,18 +512,21 @@ def setup_node_extras():
 
 
 # immediately run, to ensure the test db is present.
+print("GET TEST DB")
 db = get_test_db_connection()
+print("CREATE TEST DATABASE")
+create_test_database(db)
 default_sub = constants.demo['id']
-ds_model = models.datasources.Datasources({}, default_sub)
+ds_model = models.datasources.Datasources(db, {}, default_sub)
 dsid_default = 0
 dsid_short = 0
 dsid_live = 0
-for k, v in ds_model.datasources.iteritems():
-    if v['name'] == 'default':
-        dsid_default = k
-    if v['name'] == 'short':
-        dsid_short = k
-    if v['name'] == 'live':
-        dsid_live = k
+for dk, dv in ds_model.datasources.iteritems():
+    if dv['name'] == 'default':
+        dsid_default = dk
+    if dv['name'] == 'short':
+        dsid_short = dk
+    if dv['name'] == 'live':
+        dsid_live = dk
 clear_network(db, default_sub, dsid_default)
 setup_network(db, default_sub, dsid_default)
