@@ -315,7 +315,6 @@ class Preprocessor:
         """.format(div=self.divop, **self.tables)
         self.db.query(query, vars=time_vars)
 
-        print("links - 32")
         # /32 links
         query = """
             INSERT INTO {table_links_in} (src_start, src_end, dst_start, dst_end, protocols, port, timestamp, links, bytes, packets)

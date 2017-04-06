@@ -1,5 +1,4 @@
 import os
-import math
 import re
 import json
 import constants
@@ -12,8 +11,6 @@ import models.settings
 
 template_subscription_tables = map(lambda x: 's{acct}_' + x, constants.subscription_tables)
 template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, constants.datasource_tables)
-
-default_db = common.db_quiet
 
 
 def get_table_names(db):
@@ -468,7 +465,10 @@ def fix_sessions_table(db, is_missing):
         print("\tNo fix needed.")
 
 
-def check_integrity(db=default_db):
+def check_integrity(db=None):
+    healthy = True
+    if db is None:
+        db = common.db_quiet
     # ensure we can access the database
     if db.dbname == 'mysql':
         check_db_access = check_db_access_MySQL
@@ -480,23 +480,27 @@ def check_integrity(db=default_db):
     if error_code != 0:
         return False
     # check that all shared tables exist. No regard for contents.
-    check_shared_tables(db)
+    healthy = healthy and bool(check_shared_tables(db) == [])
+    if not healthy:
+        return healthy
     # check that the default demo subscription exists and is subscription 0
-    check_default_subscription(db)
+    healthy = healthy and bool(check_default_subscription(db) == 0)
     # make sure the subscription-specific tables exist
-    check_subscriptions(db)
+    healthy = healthy and all([len(x) == 0 for x in check_subscriptions(db).values()])
     # ensure that each subscription has a settings row to go along with it and at least 1 default data source
-    check_settings(db)
+    healthy = healthy and check_settings(db) == {}
     # ensure that each datasource has all the appropriate ds-specific tables
-    check_data_sources(db)
+    healthy = healthy and all([len(x) == 0 for x in check_data_sources(db).values()])
     # make sure the sessions table is there!
-    check_sessions_table(db)
+    healthy = healthy and check_sessions_table(db) == False
 
-    return True
+    return healthy
 
 
-def check_and_fix_integrity(db=default_db, params=None):
-    if params == None:
+def check_and_fix_integrity(db=None, params=None):
+    if db is None:
+        db = common.db_quiet
+    if params is None:
         params = constants.dbconfig.copy()
     error_code = check_and_fix_db_access(params)
     if error_code != 0:

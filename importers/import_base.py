@@ -182,6 +182,7 @@ Usage:
     def set_datasource(self, ds):
         self.datasource = ds
 
+
     def insert_data(self, rows, count):
         """
         Attempt to insert the first 'count' items in 'rows' into the database table `samapper`.`Syslog`.
@@ -199,31 +200,31 @@ Usage:
 
         global common
         global Datasources
+        try:
+            import common
+            from models.datasources import Datasources
+        except:
+            import integrity
+            integrity.check_and_fix_db_access(constants.dbconfig.copy())
+        try:
+            self.subscription = self.subscription or constants.demo['id']
+            self.dsModel = Datasources(common.db, {}, self.subscription)
+            datasources = self.dsModel.datasources.values()
+        except:
+            import integrity
+            integrity.check_and_fix_integrity()
+
         if not self.ds:
-            try:
-                import common
-                from models.datasources import Datasources
-                self.subscription = self.subscription or constants.demo['id']
-                self.dsModel = Datasources(common.db, {}, self.subscription)
-                for datasource in self.dsModel.datasources.values():
-                    # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
-                    if datasource['name'] == self.datasource:
-                        self.ds = datasource['id']
-                        break
-                    if unicode(datasource['id']) == unicode(self.datasource):
-                        self.ds = datasource['id']
-                        break
-                if self.ds is None:
-                    raise ValueError()
-            except ValueError:
-                print("No data source matches name {0}.".format(self.datasource))
-                if self.dsModel:
-                    ds_names = [ds['name'] for ds in self.dsModel.datasources.values()]
-                    print("Data sources include: {0}".format(', '.join(ds_names)))
-                raise AssertionError("No data source matches {0}".format(self.datasource))
-            except Exception as e:
-                print(e)
-                raise AssertionError("Cannot connect to database.")
+            for datasource in self.dsModel.datasources.values():
+                # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
+                if datasource['name'] == self.datasource:
+                    self.ds = datasource['id']
+                    break
+                if unicode(datasource['id']) == unicode(self.datasource):
+                    self.ds = datasource['id']
+                    break
+            if self.ds is None:
+                raise ValueError()
 
         table_name = "s{acct}_ds{ds}_Syslog".format(acct=self.subscription, ds=self.ds)
 
@@ -247,7 +248,7 @@ Usage:
             print("\t{0}".format(e))
             import integrity
             if self.failed_attempts < 2:
-                if integrity.check_and_fix_db_access() == 0:
+                if integrity.check_and_fix_integrity() == 0:
                     print("Resuming...")
                     self.insert_data(rows, count)
                 else:
