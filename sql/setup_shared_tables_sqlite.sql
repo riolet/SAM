@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS LiveKeys
 (access_key     CHAR(24) PRIMARY KEY
 ,subscription   INTEGER NOT NULL
 ,datasource     INT NOT NULL
-,created        TIMESTAMP DEFAULT (strftime('%s', 'now'))
+,created        INTEGER DEFAULT (strftime('%s', 'now'))
 ,CONSTRAINT `FK_lks` FOREIGN KEY (`subscription`) REFERENCES `Subscriptions` (`subscription`)
 ,CONSTRAINT `FK_lkd` FOREIGN KEY (`datasource`) REFERENCES `Datasources` (`id`)
 );

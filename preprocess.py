@@ -42,7 +42,7 @@ class Preprocessor:
             self.timeround = 'SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) % 5), Timestamp), 1, 16)'
         else:
             self.divop = '/'
-            self.timeround = "(strftime('%s', timestamp) - (strftime('%s', timestamp) % 300))"
+            self.timeround = "(strftime('%s', timestamp, 'utc') - (strftime('%s', timestamp, 'utc') % 300))"
 
 
         self.tables = {

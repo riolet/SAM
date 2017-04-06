@@ -96,20 +96,22 @@ def get_test_db_connection():
     else:
         params['db'] = TEST_DATABASE_MYSQL
     tdb, tdbq = common.get_db(params)
-    print('Database acquired: {}'.format(tdb.dbname))
+    print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
     common.db = tdb
     common.db_quiet = tdbq
+    print("CHECKING THE DB")
+    integrity.check_and_fix_integrity(tdbq, params)
     return tdb
 
 
 def create_test_database(db):
     # creates all the default tables and profile.
-    integrity.check_and_fix_integrity()
-    setup_datasources(db)
+    print("SETTING UP THE DATASOURCES")
+    setup_datasources(db, constants.demo['id'])
 
 
-def setup_datasources(db):
-    d = models.datasources.Datasources(db, {}, constants.demo['id'])
+def setup_datasources(db, sub):
+    d = models.datasources.Datasources(db, {}, sub)
     sources = d.datasources
     remaining = ['default', 'short', 'live']
     for ds in sources.values():
@@ -510,7 +512,10 @@ def setup_node_extras():
 
 
 # immediately run, to ensure the test db is present.
+print("GET TEST DB")
 db = get_test_db_connection()
+print("CREATE TEST DATABASE")
+create_test_database(db)
 default_sub = constants.demo['id']
 ds_model = models.datasources.Datasources(db, {}, default_sub)
 dsid_default = 0

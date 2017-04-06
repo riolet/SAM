@@ -29,10 +29,10 @@ class Filter (object):
         s += "\n\t".join([": ".join([k, v]) for k, v in self.params.iteritems()])
         return s
 
-    def where(self):
+    def where(self, db):
         raise NotImplemented("This method must be overridden in the ({0}) class.".format(self.type))
 
-    def having(self):
+    def having(self, db):
         raise NotImplemented("This method must be overridden in the ({0}) class.".format(self.type))
 
     def __eq__(self, other):
@@ -51,7 +51,7 @@ class SubnetFilter(Filter):
         self.params['subnet'] = ""
         self.load(args)
 
-    def where(self):
+    def where(self, db):
         subnet = int(self.params['subnet'])
         valid_subnets = [8, 16, 24, 32]
         if subnet not in valid_subnets:
@@ -59,7 +59,7 @@ class SubnetFilter(Filter):
 
         return "nodes.subnet = {0}".format(subnet)
 
-    def having(self):
+    def having(self, db):
         return ""
 
 
@@ -69,11 +69,11 @@ class MaskFilter(Filter):
         self.params['mask'] = ''
         self.load(args)
 
-    def where(self):
+    def where(self, db):
         r = common.determine_range_string(self.params['mask'])
         return "nodes.ipstart BETWEEN {0} AND {1}".format(r[0], r[1])
 
-    def having(self):
+    def having(self, db):
         return ""
 
 
@@ -89,7 +89,7 @@ class PortFilter(Filter):
         # 2: receives connection from port n
         # 3: doesn't receive connection from port n
 
-    def where(self):
+    def where(self, db):
         if self.params['connection'] == '0':
             return "EXISTS (SELECT port FROM {{table_links_out}} AS `lo` WHERE lo.port = '{0}' AND lo.src_start = nodes.ipstart AND lo.src_end = nodes.ipend)".format(int(self.params['port']))
         elif self.params['connection'] == '1':
@@ -104,7 +104,7 @@ class PortFilter(Filter):
                    "({0}, type: {1})".format(self.params['connection'], type(self.params['connection'])))
         return ""
 
-    def having(self):
+    def having(self, db):
         return ""
 
 
@@ -116,26 +116,35 @@ class ConnectionsFilter(Filter):
         self.params['limit'] = ""
         self.load(args)
 
-    def where(self):
-        return ""
-
-    def having(self):
-        HAVING = ""
+    def get_q(self):
+        q = ""
         if self.params['comparator'] not in ['<', '>']:
             return ""
         limit = float(self.params['limit'])
         if self.params['direction'] == 'i':
             src = "conn_in / seconds"
-            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+            q += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
         elif self.params['direction'] == 'o':
             src = "conn_out / seconds"
-            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+            q += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
         elif self.params['direction'] == 'c':
             src = "(conn_in + conn_out) / seconds"
-            HAVING += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
+            q += "{src} {comparator} '{limit}'".format(src=src, comparator=self.params['comparator'], limit=limit)
         else:
             return ""
-        return HAVING
+        return q
+
+    def where(self, db):
+        if db.dbname == 'sqlite':
+            return self.get_q()
+        else:
+            return ''
+
+    def having(self, db):
+        if db.dbname == 'mysql':
+            return self.get_q()
+        else:
+            return ''
 
 
 class TargetFilter(Filter):
@@ -150,7 +159,7 @@ class TargetFilter(Filter):
         #   2: hosts receive connections from target
         #   3: hosts do NOT receive connections from target
 
-    def where(self):
+    def where(self, db):
         ipstart, ipend = common.determine_range_string(self.params['target'])
         if self.params['to'] == '0':
             return "EXISTS (SELECT 1 FROM {{table_links}} AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
@@ -170,7 +179,7 @@ class TargetFilter(Filter):
                    "({0}, type: {1})".format(self.params['to'], type(self.params['to'])))
         return ""
 
-    def having(self):
+    def having(self, db):
         return ""
 
 
@@ -181,14 +190,14 @@ class TagsFilter(Filter):
         self.params['tags'] = ""
         self.load(args)
 
-    def where(self):
+    def where(self, db):
         tags = str(self.params['tags']).split(",")
         phrase = "EXISTS (SELECT 1 FROM {{table_tags}} AS `f_tags` WHERE tag={0} AND f_tags.ipstart <= nodes.ipstart AND f_tags.ipend >= nodes.ipend)"
         if self.params['has'] != '1':
             phrase = "NOT " + phrase
         return "\n AND ".join([phrase.format(common.web.sqlquote(tag)) for tag in tags])
 
-    def having(self):
+    def having(self, db):
         return ""
 
 
@@ -198,12 +207,21 @@ class EnvFilter(Filter):
         self.params['env'] = ""
         self.load(args)
 
-    def where(self):
-        return ""
-
-    def having(self):
+    def get_q(self):
         env = self.params['env']
-        return "env = {0}".format(common.web.sqlquote(env))
+        return "computed_env = {0}".format(common.web.sqlquote(env))
+
+    def where(self, db):
+        if db.dbname == 'sqlite':
+            return self.get_q()
+        else:
+            return ''
+
+    def having(self, db):
+        if db.dbname == 'mysql':
+            return self.get_q()
+        else:
+            return ''
 
 
 class RoleFilter(Filter):
@@ -213,15 +231,24 @@ class RoleFilter(Filter):
         self.params['ratio'] = ""
         self.load(args)
 
-    def where(self):
-        return ""
-
-    def having(self):
+    def get_q(self):
         cmp = self.params['comparator']
         if cmp not in ['<', '>']:
             cmp = '<'
         ratio = float(self.params['ratio'])
-        return "(conn_in / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
+        return "(conn_in * 1.0 / (conn_in + conn_out)) {0} {1:.4f}".format(cmp, ratio)
+
+    def where(self, db):
+        if db.dbname == 'sqlite':
+            return self.get_q()
+        else:
+            return ''
+
+    def having(self, db):
+        if db.dbname == 'mysql':
+            return self.get_q()
+        else:
+            return ''
 
 
 class ProtocolFilter(Filter):
@@ -236,10 +263,7 @@ class ProtocolFilter(Filter):
         #   2: outbound protocol
         #   3: NOT outbound protocol
 
-    def where(self):
-        return ""
-
-    def having(self):
+    def get_q(self):
         handles = '0'
         if self.params['handles'] in ['0', '1', '2', '3']:
             handles = self.params['handles']
@@ -256,12 +280,30 @@ class ProtocolFilter(Filter):
 
         return ""
 
+    def where(self, db):
+        if db.dbname == 'sqlite':
+            return self.get_q()
+        else:
+            return ''
+
+    def having(self, db):
+        if db.dbname == 'mysql':
+            return self.get_q()
+        else:
+            return ''
+
 
 filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,TargetFilter,RoleFilter,EnvFilter,ProtocolFilter]
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 
 def readEncoded(filterString):
+    """
+    :param filterString:
+     :type filterString: unicode
+    :return: 
+    :rtype: tuple[ int, list[ Filter ] ]
+    """
     filters = []
     fstrings = filterString.split("|")
 

@@ -1,5 +1,6 @@
 import web
 import common
+import filters
 
 
 class Table:
@@ -21,8 +22,8 @@ class Table:
         self.table_links_in = "s{acct}_ds{id}_LinksIn".format(acct=self.sub, id=ds)
         self.table_links_out = "s{acct}_ds{id}_LinksOut".format(acct=self.sub, id=ds)
         if self.db.dbname == 'mysql':
-            self.elapsed = "COALESCE((SELECT (MAX(TIME_TO_SEC(timestamp)) " \
-                           "- MIN(TIME_TO_SEC(timestamp)) + 300) FROM {table_links} AS l),1)"
+            self.elapsed = "COALESCE((SELECT (UNIX_TIMESTAMP(MAX(timestamp)) " \
+                           "- UNIX_TIMESTAMP(MIN(timestamp)) + 300) FROM {table_links} AS l),1)"
         else:
             self.elapsed = "COALESCE((SELECT (MAX(timestamp) - MIN(timestamp) + 300) FROM {table_links} AS l),1)"
         self.elapsed.format(table_links=self.table_links)
@@ -31,6 +32,7 @@ class Table:
         """
         
         :param clauses: list of Filter objects
+        :type clauses: list[ filters.Filter ]
         :param page: int; 0-based results page number
         :param page_size: int; number of results per page. will return page_size + 1. 
                           If the +1 is returned, you know there's a next page available.
@@ -44,7 +46,7 @@ class Table:
         :return: list of dictionaries (table rows)
         """
 
-        where_clause = " AND ".join(clause.where() for clause in clauses if clause.where())
+        where_clause = " AND ".join(clause.where(self.db) for clause in clauses if clause.where(self.db))
         if self.db.dbname == 'sqlite':
             if where_clause:
                 where_clause = "WHERE (conn_out + conn_in != 0) AND " + where_clause
@@ -55,7 +57,7 @@ class Table:
                 where_clause = "WHERE " + where_clause
 
 
-        having_clause = " AND ".join(clause.having() for clause in clauses if clause.having())
+        having_clause = " AND ".join(clause.having(self.db) for clause in clauses if clause.having(self.db))
         if self.db.dbname == 'mysql':
             if having_clause:
                 having_clause = "HAVING (conn_out + conn_in != 0) AND " + having_clause
@@ -90,7 +92,7 @@ class Table:
                 WHERE nodes.ipstart >= nz.ipstart AND nodes.ipend <= nz.ipend AND env IS NOT NULL AND env != "inherit"
                 ORDER BY subnet DESC
                 LIMIT 1
-            ), 'production') AS "env"
+            ), 'production') AS "computed_env"
             , COALESCE((SELECT SUM(links)
                 FROM {table_links_out} AS l_out
                 WHERE l_out.src_start = nodes.ipstart

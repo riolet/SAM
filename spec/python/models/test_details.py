@@ -18,7 +18,7 @@ def test_get_metadata():
     meta = m_details.get_metadata()
     print(meta)
 
-    assert meta['seconds'] == 68436600
+    assert meta['seconds'] == 68433000
     assert close_to(meta['overall_bps'], 0)
     assert meta['endpoints'] == 1
     assert meta['address'] == '10.20.30.40/32'

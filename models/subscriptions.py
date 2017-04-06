@@ -6,7 +6,8 @@ import models.ports
 
 
 class Subscriptions:
-    CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_subscription_tables.sql')
+    CREATE_MYSQL = os.path.join(constants.base_path, 'sql/setup_subscription_tables_mysql.sql')
+    CREATE_SQLITE = os.path.join(constants.base_path, 'sql/setup_subscription_tables_sqlite.sql')
     DROP_SQL = os.path.join(constants.base_path, 'sql/drop_subscription.sql')
     table = "Subscriptions"
 
@@ -40,7 +41,10 @@ class Subscriptions:
 
     def create_subscription_tables(self, sub_id):
         replacements = {"acct": sub_id}
-        common.exec_sql(self.db, self.CREATE_SQL, replacements)
+        if self.db.dbname == 'mysql':
+            common.exec_sql(self.db, self.CREATE_MYSQL, replacements)
+        else:
+            common.exec_sql(self.db, self.CREATE_SQLITE, replacements)
 
         # replicate port data
         portsModel = models.ports.Ports(self.db, sub_id)

@@ -140,22 +140,22 @@ def test_get_table_filter_conn():
     # fewer than 0.0002 inbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '<', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 46
+    assert len(rows) == 68
 
     # more than 0.0002 inbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '>', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 22
+    assert len(rows) == 0
 
     # more than 0.0002 outbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '>', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 20
+    assert len(rows) == 0
 
     # fewer than 0.0002 outbound connections / second
     filters = [models.filters.ConnectionsFilter(True, '<', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 48
+    assert len(rows) == 68
 
 
 def test_get_table_filter_target():

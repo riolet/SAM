@@ -61,8 +61,7 @@ class Links:
     def get_links_out(self, ip_start, ip_end, timerange, port, protocol):
         return self._get_links(ip_start, ip_end, False, timerange, port, protocol)
 
-    @staticmethod
-    def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
+    def build_where_clause(self, timestamp_range=None, port=None, protocol=None, rounding=True):
         clauses = []
         t_start = 0
         t_end = 0
@@ -76,7 +75,10 @@ class Links:
                     t_start -= 150
                 if t_end <= 2 ** 31 - 150:
                     t_end += 149
-            clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
+            if self.db.dbname == 'sqlite':
+                clauses.append("timestamp BETWEEN $tstart AND $tend")
+            else:
+                clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
 
         if port:
             clauses.append("port = $port")
@@ -86,9 +88,9 @@ class Links:
             protocol = "%{0}%".format(protocol)
 
         qvars = {'tstart': t_start, 'tend': t_end, 'port': port, 'protocol': protocol}
-        where = str(web.db.reparam("\n    && ".join(clauses), qvars))
+        where = str(web.db.reparam("\n    AND ".join(clauses), qvars))
         if where:
-            where = "    && " + where
+            where = "    AND " + where
         return where
 
     def _get_links(self, ip_start, ip_end, inbound, timerange, port, protocol):
@@ -121,17 +123,17 @@ class Links:
         where = self.build_where_clause(timerange, port, protocol)
 
         if ports:
-            select = "src_start, src_end, dst_start, dst_end, port, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
+            select = "src_start, src_end, dst_start, dst_end, port, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols) AS 'protocols'"
             group_by = "GROUP BY src_start, src_end, dst_start, dst_end, port"
         else:
-            select = "src_start, src_end, dst_start, dst_end, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols SEPARATOR ',') AS 'protocols'"
+            select = "src_start, src_end, dst_start, dst_end, SUM(links) AS 'links', SUM(bytes) AS 'bytes', SUM(packets) AS 'packets', GROUP_CONCAT(DISTINCT protocols) AS 'protocols'"
             group_by = "GROUP BY src_start, src_end, dst_start, dst_end"
 
         if inbound:
             query = """
             SELECT {select}
             FROM {table}
-            WHERE dst_start = $start && dst_end = $end
+            WHERE dst_start = $start AND dst_end = $end
              {where}
             {group_by}
             """.format(where=where, select=select, group_by=group_by, table=self.table_links_in)
@@ -139,7 +141,7 @@ class Links:
             query = """
             SELECT {select}
             FROM {table}
-            WHERE src_start = $start && src_end = $end
+            WHERE src_start = $start AND src_end = $end
              {where}
             {group_by}
             """.format(where=where, select=select, group_by=group_by, table=self.table_links_out)

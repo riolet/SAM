@@ -142,7 +142,7 @@ class Nodes(object):
         else:
             return []
 
-        where = "subnet={2} && ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end, subnet)
+        where = "subnet={2} AND ipstart BETWEEN {0} AND {1}".format(ip_start, ip_end, subnet)
         rows = self.db.select(self.table_nodes, where=where)
         return list(rows)
 

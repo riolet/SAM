@@ -24,7 +24,7 @@ class Details:
             self.time_range = (tr['min'], tr['max'])
 
         if self.db.dbname == 'mysql':
-            self.elapsed = '(MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)))'
+            self.elapsed = '(UNIX_TIMESTAMP(MAX(timestamp)) - UNIX_TIMESTAMP(MIN(timestamp)))'
             self.divop = 'DIV'
         else:
             self.elapsed = '(MAX(timestamp) - MIN(timestamp))'
@@ -71,7 +71,7 @@ class Details:
             LEFT JOIN (
                 SELECT $start AS 's1'
                 , COUNT(DISTINCT dst) AS 'unique_out_ip'
-                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE src BETWEEN $start AND $end)) AS 'unique_out_conn'
+                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE src BETWEEN $start AND $end) AS `temp1`) AS 'unique_out_conn'
                 , SUM(links) AS 'total_out'
                 , SUM(bytes_sent) AS 'b_s'
                 , SUM(bytes_received) AS 'b_r'
@@ -89,7 +89,7 @@ class Details:
             LEFT JOIN (
                 SELECT $start AS 's1'
                 , COUNT(DISTINCT src) AS 'unique_in_ip'
-                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE dst BETWEEN $start AND $end)) AS 'unique_in_conn'
+                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE dst BETWEEN $start AND $end) AS `temp2`) AS 'unique_in_conn'
                 , SUM(links) AS 'total_in'
                 , SUM(bytes_sent) AS 'b_s'
                 , SUM(bytes_received) AS 'b_r'
