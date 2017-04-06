@@ -18,34 +18,36 @@ def test_get_metadata():
     meta = m_details.get_metadata()
     print(meta)
 
-    assert meta['total_out'] == 24
-    assert meta['out_packets_sent'] == 69
-    assert meta['out_packets_received'] == 63
-    assert meta['unique_out_conn'] == 17
-    assert meta['in_packets_sent'] == 34
-    assert meta['seconds'] == 85200
-    assert meta['in_bytes_sent'] == 8400
-    assert meta['unique_out_ip'] == 14
-    assert meta['unique_in_ip'] == 8
-    assert close_to(meta['overall_bps'], 0.3404)
+    assert meta['seconds'] == 68436600
+    assert close_to(meta['overall_bps'], 0)
     assert meta['endpoints'] == 1
-    assert meta['total_in'] == 13
-    assert close_to(meta['in_avg_bps'], 25.4566)
     assert meta['address'] == '10.20.30.40/32'
-    assert close_to(meta['out_max_bps'], 500.0000)
-    assert meta['out_bytes_sent'] == 13800
-    assert meta['unique_in_conn'] == 9
-    assert close_to(meta['in_max_bps'], 500.0000)
-    assert set(meta['in_protocols'].split(',')) == {'TCP', 'UDP'}
-    assert meta['in_bytes_received'] == 2750
-    assert close_to(meta['out_duration'], 22.0000)
     assert meta['ports_used'] == 2
     assert meta['hostname'] == ''
-    assert set(meta['out_protocols'].split(',')) == {'TCP', 'UDP'}
+    assert meta['unique_in_conn'] == 9
+    assert meta['unique_in_ip'] == 8
+    assert meta['unique_out_conn'] == 17
+    assert meta['unique_out_ip'] == 14
+    assert meta['total_out'] == 24
+    assert meta['total_in'] == 13
+
+    assert meta['in_bytes_sent'] == 8400
+    assert meta['in_bytes_received'] == 2750
+    assert meta['in_packets_sent'] == 34
     assert meta['in_packets_received'] == 37
-    assert meta['out_bytes_received'] == 4050
+    assert close_to(meta['in_avg_bps'], 25.4566)
+    assert close_to(meta['in_max_bps'], 500.0000)
+    assert set(meta['in_protocols'].split(',')) == {'TCP', 'UDP'}
     assert close_to(meta['in_duration'], 33.6923)
+
+    assert meta['out_bytes_sent'] == 13800
+    assert meta['out_bytes_received'] == 4050
+    assert meta['out_packets_sent'] == 69
+    assert meta['out_packets_received'] == 63
+    assert close_to(meta['out_max_bps'], 500.0000)
     assert close_to(meta['out_avg_bps'], 33.8068)
+    assert set(meta['out_protocols'].split(',')) == {'TCP', 'UDP'}
+    assert close_to(meta['out_duration'], 22.0000)
 
 
 def test_get_details_connections_in_out():

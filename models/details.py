@@ -23,12 +23,19 @@ class Details:
             tr = linksModel.get_timerange()
             self.time_range = (tr['min'], tr['max'])
 
+        if self.db.dbname == 'mysql':
+            self.elapsed = '(MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp)))'
+            self.divop = 'DIV'
+        else:
+            self.elapsed = '(MAX(timestamp) - MIN(timestamp))'
+            self.divop = '/'
+
     def get_metadata(self):
         qvars = {"start": self.ip_start, "end": self.ip_end}
         # TODO: seconds has a magic number 300 added to account for DB time quantization.
 
         query = """
-            SELECT CONCAT(decodeIP(n.ipstart), CONCAT('/', n.subnet)) AS 'address'
+            SELECT {address_q} AS 'address'
                 , COALESCE(n.hostname, '') AS 'hostname'
                 , COALESCE(l_out.unique_out_ip, 0) AS 'unique_out_ip'
                 , COALESCE(l_out.unique_out_conn, 0) AS 'unique_out_conn'
@@ -36,20 +43,20 @@ class Details:
                 , COALESCE(l_out.b_s, 0) AS 'out_bytes_sent'
                 , COALESCE(l_out.b_r, 0) AS 'out_bytes_received'
                 , COALESCE(l_out.max_bps, 0) AS 'out_max_bps'
-                , COALESCE(l_out.sum_b / l_out.sum_duration, 0) AS 'out_avg_bps'
+                , COALESCE(l_out.sum_b * 1.0 / l_out.sum_duration, 0) AS 'out_avg_bps'
                 , COALESCE(l_out.p_s, 0) AS 'out_packets_sent'
                 , COALESCE(l_out.p_r, 0) AS 'out_packets_received'
-                , COALESCE(l_out.sum_duration / l_out.total_out, 0) AS 'out_duration'
+                , COALESCE(l_out.sum_duration * 1.0 / l_out.total_out, 0) AS 'out_duration'
                 , COALESCE(l_in.unique_in_ip, 0) AS 'unique_in_ip'
                 , COALESCE(l_in.unique_in_conn, 0) AS 'unique_in_conn'
                 , COALESCE(l_in.total_in, 0) AS 'total_in'
                 , COALESCE(l_in.b_s, 0) AS 'in_bytes_sent'
                 , COALESCE(l_in.b_r, 0) AS 'in_bytes_received'
                 , COALESCE(l_in.max_bps, 0) AS 'in_max_bps'
-                , COALESCE(l_in.sum_b / l_in.sum_duration, 0) AS 'in_avg_bps'
+                , COALESCE(l_in.sum_b * 1.0 / l_in.sum_duration, 0) AS 'in_avg_bps'
                 , COALESCE(l_in.p_s, 0) AS 'in_packets_sent'
                 , COALESCE(l_in.p_r, 0) AS 'in_packets_received'
-                , COALESCE(l_in.sum_duration / l_in.total_in, 0) AS 'in_duration'
+                , COALESCE(l_in.sum_duration * 1.0 / l_in.total_in, 0) AS 'in_duration'
                 , COALESCE(l_in.ports_used, 0) AS 'ports_used'
                 , children.endpoints AS 'endpoints'
                 , COALESCE(t.seconds, 0) + 300 AS 'seconds'
@@ -64,16 +71,16 @@ class Details:
             LEFT JOIN (
                 SELECT $start AS 's1'
                 , COUNT(DISTINCT dst) AS 'unique_out_ip'
-                , COUNT(DISTINCT src, dst, port) AS 'unique_out_conn'
+                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE src BETWEEN $start AND $end)) AS 'unique_out_conn'
                 , SUM(links) AS 'total_out'
                 , SUM(bytes_sent) AS 'b_s'
                 , SUM(bytes_received) AS 'b_r'
-                , MAX((bytes_sent + bytes_received) / duration) AS 'max_bps'
+                , MAX((bytes_sent + bytes_received) * 1.0 / duration) AS 'max_bps'
                 , SUM(bytes_sent + bytes_received) AS 'sum_b'
                 , SUM(packets_sent) AS 'p_s'
                 , SUM(packets_received) AS 'p_r'
                 , SUM(duration * links) AS 'sum_duration'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
+                , GROUP_CONCAT(DISTINCT protocol) AS 'protocol'
                 FROM {links_table}
                 WHERE src BETWEEN $start AND $end
                 GROUP BY 's1'
@@ -82,17 +89,17 @@ class Details:
             LEFT JOIN (
                 SELECT $start AS 's1'
                 , COUNT(DISTINCT src) AS 'unique_in_ip'
-                , COUNT(DISTINCT src, dst, port) AS 'unique_in_conn'
+                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE dst BETWEEN $start AND $end)) AS 'unique_in_conn'
                 , SUM(links) AS 'total_in'
                 , SUM(bytes_sent) AS 'b_s'
                 , SUM(bytes_received) AS 'b_r'
-                , MAX((bytes_sent + bytes_received) / duration) AS 'max_bps'
+                , MAX((bytes_sent + bytes_received) * 1.0 / duration) AS 'max_bps'
                 , SUM(bytes_sent + bytes_received) AS 'sum_b'
                 , SUM(packets_sent) AS 'p_s'
                 , SUM(packets_received) AS 'p_r'
                 , SUM(duration * links) AS 'sum_duration'
                 , COUNT(DISTINCT port) AS 'ports_used'
-                , GROUP_CONCAT(DISTINCT protocol SEPARATOR ",") AS 'protocol'
+                , GROUP_CONCAT(DISTINCT protocol) AS 'protocol'
                 FROM {links_table}
                 WHERE dst BETWEEN $start AND $end
                 GROUP BY 's1'
@@ -107,22 +114,25 @@ class Details:
                 ON n.ipstart = children.s1
             LEFT JOIN (
                 SELECT $start AS 's1'
-                    , (MAX(TIME_TO_SEC(timestamp)) - MIN(TIME_TO_SEC(timestamp))) AS 'seconds'
+                    , {elapsed} AS 'seconds'
                 FROM {links_table}
                 GROUP BY 's1'
             ) AS t
                 ON n.ipstart = t.s1
             LIMIT 1;
-        """.format(nodes_table=self.table_nodes, links_table=self.table_links)
+        """.format(
+            address_q=common.db_concat(self.db, 'decodeIP(n.ipstart)', "'/'", 'n.subnet'),
+            elapsed=self.elapsed,
+            nodes_table=self.table_nodes,
+            links_table=self.table_links)
         results = self.db.query(query, vars=qvars)
-
-        if len(results) == 1:
-            return results[0]
+        first = results.first()
+        if first:
+            return first
         else:
             return {}
 
-    @staticmethod
-    def build_where_clause(timestamp_range=None, port=None, protocol=None, rounding=True):
+    def build_where_clause(self, timestamp_range=None, port=None, protocol=None, rounding=True):
         """
         Build a WHERE SQL clause that covers basic timerange, port, and protocol filtering.
         :param timestamp_range: start and end times as unix timestamps (integers). Default is all time.
@@ -149,7 +159,10 @@ class Details:
                     t_start -= 150
                 if t_end <= 2 ** 31 - 150:
                     t_end += 149
-            clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
+            if self.db.dbname == 'sqlite':
+                clauses.append("timestamp BETWEEN $tstart AND $tend")
+            else:
+                clauses.append("timestamp BETWEEN FROM_UNIXTIME($tstart) AND FROM_UNIXTIME($tend)")
 
         if port:
             clauses.append("port = $port")
@@ -159,9 +172,9 @@ class Details:
             protocol = "%{0}%".format(protocol)
 
         qvars = {'tstart': t_start, 'tend': t_end, 'port': port, 'protocol': protocol}
-        where = str(web.db.reparam("\n    && ".join(clauses), qvars))
+        where = str(web.db.reparam("\n    AND ".join(clauses), qvars))
         if where:
-            where = "    && " + where
+            where = "    AND " + where
         return where
 
     def get_details_connections(self, inbound, page=1, order="-links", simple=False):
@@ -230,7 +243,7 @@ class Details:
             , decodeIP(dst) AS 'dst'
             , port AS 'port'
             , sum(links) AS 'links'
-            , GROUP_CONCAT(DISTINCT protocol SEPARATOR ", ") AS 'protocols'
+            , GROUP_CONCAT(DISTINCT protocol) AS 'protocols'
             , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
             , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
             , SUM(duration*links) AS '_duration'
@@ -325,24 +338,24 @@ class Details:
           , COALESCE(COALESCE(`l_in`.links,0) / (COALESCE(`l_in`.links,0) + COALESCE(`l_out`.links,0)), 0) AS 'ratio'
         FROM {nodes_table} AS `n`
         LEFT JOIN (
-            SELECT dst_start DIV $quot * $quot AS 'low'
-                , dst_end DIV $quot * $quot + $quot_1 AS 'high'
+            SELECT dst_start {div} $quot * $quot AS 'low'
+                , dst_end {div} $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
             FROM {links_in_table}
             GROUP BY low, high
             ) AS `l_in`
         ON `l_in`.low = `n`.ipstart AND `l_in`.high = `n`.ipend
         LEFT JOIN (
-            SELECT src_start DIV $quot * $quot AS 'low'
-                , src_end DIV $quot * $quot + $quot_1 AS 'high'
+            SELECT src_start {div} $quot * $quot AS 'low'
+                , src_end {div} $quot * $quot + $quot_1 AS 'high'
                 , sum(links) AS 'links'
             FROM {links_out_table}
             GROUP BY low, high
             ) AS `l_out`
         ON `l_out`.low = `n`.ipstart AND `l_out`.high = `n`.ipend
         LEFT JOIN (
-            SELECT ipstart DIV $quot * $quot AS 'low'
-                , ipend DIV $quot * $quot + $quot_1 AS 'high'
+            SELECT ipstart {div} $quot * $quot AS 'low'
+                , ipend {div} $quot * $quot + $quot_1 AS 'high'
                 , COUNT(ipstart) AS 'kids'
             FROM {nodes_table}
             WHERE ipstart = ipend
@@ -352,7 +365,8 @@ class Details:
         WHERE `n`.ipstart BETWEEN $ip_start AND $ip_end
             AND `n`.subnet BETWEEN $s_start AND $s_end
         ORDER BY {order};
-        """.format(order=qvars['order'],
+        """.format(div=self.divop,
+                   order=qvars['order'],
                    nodes_table=self.table_nodes,
                    links_in_table=self.table_links_in,
                    links_out_table=self.table_links_out)

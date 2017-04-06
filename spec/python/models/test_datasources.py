@@ -9,6 +9,22 @@ db = db_connection.db
 sub_id = db_connection.default_sub
 
 
+def get_table_names(db):
+    """
+    :type db: web.DB
+    :param db: 
+    :return: 
+    """
+    if db.dbname == 'mysql':
+        tables = [x.values()[0] for x in db.query("SHOW TABLES;")]
+    elif db.dbname == 'sqlite':
+        rows = list(db.select('sqlite_master', what='name', where="type='table'"))
+        tables = [row['name'] for row in rows]
+    else:
+        raise ValueError("Unknown dbn. Cannot determine tables")
+    return tables
+
+
 def test_datasources():
     ds = Datasources(db, session, sub_id)
     assert bool(ds.storage.get(Datasources.SESSION_KEY)) is False
@@ -100,17 +116,17 @@ def test_validate_ds_interval():
 
 def test_create_remove_datasource():
     ds = Datasources(db, session, sub_id)
-    old_tables = [row.values()[0] for row in db.query("SHOW TABLES")]
+    old_tables = get_table_names(db)
 
     dsid = ds.create_datasource('temp_ds')
 
     # new table exists
-    new_tables = [row.values()[0] for row in db.query("SHOW TABLES")]
+    new_tables = get_table_names(db)
     assert len(new_tables) - len(old_tables) > 0
     assert ds.datasources[dsid].name == 'temp_ds'
 
     ds.remove_datasource(dsid)
-    new_tables = [row.values()[0] for row in db.query("SHOW TABLES")]
+    new_tables = get_table_names(db)
     assert len(new_tables) - len(old_tables) == 0
     with pytest.raises(KeyError):
         assert ds.datasources[dsid].name == 'temp_ds'

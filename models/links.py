@@ -31,10 +31,20 @@ class Links:
         rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
                                "FROM {table_links};".format(table_links=self.table_links))
         row = rows[0]
+        timerange = {
+            'min': None,
+            'max': None,
+        }
         if row['min'] is None or row['max'] is None:
             now = int(time.mktime(datetime.now().timetuple()))
-            return {'min': now, 'max': now}
-        return {'min': int(time.mktime(row['min'].timetuple())), 'max': int(time.mktime(row['max'].timetuple()))}
+            timerange['min'] = timerange['max'] = now
+        elif isinstance(row['min'], (int, long)) and isinstance(row['min'], (int, long)):
+            timerange['min'] = row['min']
+            timerange['max'] = row['max']
+        else:
+            timerange['min'] = int(time.mktime(row['min'].timetuple()))
+            timerange['max'] = int(time.mktime(row['max'].timetuple()))
+        return timerange
 
     def get_links(self, addresses, timerange, port, protocol):
         result = {}
