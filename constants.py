@@ -10,8 +10,8 @@ subscription_tables = ['Nodes', 'Tags', 'PortAliases']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
 access_control = {
-    'active': config.get('access control', 'active', default='False').lower() == 'true',
-    'login_url': config.get('access control', 'login_url', default='/login_LDAP')
+    'active': config.get('access_control', 'active', default='False').lower() == 'true',
+    'login_url': config.get('access_control', 'login_url', default='/login_LDAP')
 }
 
 demo = {

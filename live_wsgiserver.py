@@ -13,6 +13,18 @@ import preprocess
 import importers.import_base
 
 
+"""
+Live Server
+-----------
+
+* runs server-side.
+* listens for uploaded log lines
+* inserts those lines into a database buffer
+* periodically processes the buffer into viewable data
+
+"""
+
+
 class Buffer:
 
     def __init__(self, sub, ds):
@@ -51,7 +63,7 @@ class MemoryBuffers:
     def __init__(self):
         # each buffer needs a sub, ds, list-of-lines, and last_empty_time
         self.buffers = {}
-        """:type : {int: {int: Buffer}}"""
+        """:type buffers: dict[ int, dict[ int, Buffer]]"""
 
     def create(self, sub, ds):
         sub_buffers = self.buffers.get(sub, {})

@@ -18,6 +18,8 @@ class TCPDumpImporter(BaseImporter):
         """
 
         # from running sudo tcpdump -i eno1 -f --immediate-mode -l -n -Q inout -tt
+        # 1491525947.515414 STP 802.1d, Config, Flags [none], bridge-id 8000.f8:32:e4:af:0a:a8.8001, length 43
+        # 1491525947.915376 ARP, Request who-has 192.168.10.106 tell 192.168.10.254, length 46
         # 1491525948.268015 IP 192.168.10.113.33060 > 172.217.3.196.443: Flags [P.], seq 256:730, ack 116, win 3818, options [nop,nop,TS val 71847613 ecr 4161606244], length 474
         # 1491525737.317942 IP 192.168.10.254.55943 > 239.255.255.250.1900: UDP, length 449
         a = line.split()
@@ -64,6 +66,5 @@ _class = TCPDumpImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":
-    sys.stderr.write("Warning: This importer is incomplete and uses empty data for some fields.")
     importer = _class()
     importer.main(sys.argv)
