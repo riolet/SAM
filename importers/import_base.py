@@ -42,13 +42,17 @@ Usage:
         """
         Converts a number from a sequence of dotted decimals into a single unsigned int.
         Args:
-            a: IP address segment 1 ###.0.0.0
-            b: IP address segment 2 0.###.0.0
-            c: IP address segment 3 0.0.###.0
-            d: IP address segment 4 0.0.0.###
+        :param a: IP address segment 1 ###.0.0.0
+        :type a: str or unicode
+        :param b: IP address segment 2 0.###.0.0
+        :type b: str or unicode
+        :param c: IP address segment 3 0.0.###.0
+        :type c: str or unicode
+        :param d: IP address segment 4 0.0.0.###
+        :type d: str or unicode
 
-        Returns: The IP address as a simple 32-bit unsigned integer
-
+        :return: The IP address as a simple 32-bit unsigned integer
+        :rtype: int
         """
         return (int(a) << 24) + (int(b) << 16) + (int(c) << 8) + int(d)
 
@@ -181,7 +185,6 @@ Usage:
 
     def set_datasource(self, ds):
         self.datasource = ds
-
 
     def insert_data(self, rows, count):
         """
