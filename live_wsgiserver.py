@@ -281,9 +281,20 @@ BUFFERS = MemoryBuffers()
 IMPORTER_THREAD = None
 application = app.wsgifunc()
 
+def local_mode():
+    # update constants
+    constants.enable_local_mode()
+    reload(common)
+
 
 if __name__ == "__main__":
     try:
-        app.run()
+        if len(sys.argv) >= 2 and sys.argv[1] == '-local':
+            print('Starting local server')
+            local_mode()
+            sys.argv[1] = constants.local['liveserver_port']
+            app.run()
+        else:
+            app.run()
     finally:
         print("{} shutting down.".format(sys.argv[0]))

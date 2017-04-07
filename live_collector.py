@@ -22,10 +22,10 @@ Live Collector
 """
 
 
-LISTEN_ADDRESS = (constants.config.get('live', 'listen_hostname'), int(constants.config.get('live', 'listen_port')))
-SERVER = constants.config.get('live', 'server')
-ACCESS_KEY = constants.config.get('live', 'upload_key')
-FORMAT = constants.config.get('live', 'format')
+LISTEN_ADDRESS = (constants.collector['hostname'], int(constants.collector['port']))
+SERVER = constants.collector['server']
+ACCESS_KEY = constants.collector['upload_key']
+FORMAT = constants.collector['format']
 
 SOCKET_BUFFER = []
 SOCKET_BUFFER_LOCK = threading.Lock()
@@ -268,5 +268,24 @@ def collector():
     print("Live_collector server shut down successfully.")
 
 
+def localmode():
+    global LISTEN_ADDRESS
+    global SERVER
+    global ACCESS_KEY
+    global FORMAT
+    constants.enable_local_mode()
+    LISTEN_ADDRESS = (constants.collector['hostname'], int(constants.collector['port']))
+    SERVER = constants.collector['server']
+    FORMAT = constants.collector['format']
+    import models.livekeys
+    import common
+    m_livekeys = models.livekeys.LiveKeys(common.db_quiet, constants.demo['id'])
+    keys = m_livekeys.read()
+    ACCESS_KEY = keys[0]['access_key']
+
+
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == '-local':
+        sys.argv.pop(1)
+        localmode()
     collector()

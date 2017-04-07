@@ -18,7 +18,7 @@ application = app.wsgifunc()  # for wsgi deployment
 live_server = None
 live_collector = None
 p_tcpdump = None
-
+p_netcat = None
 
 def check_database():
     # Validate the database format
@@ -44,17 +44,11 @@ def create_upload_key():
     keys = m_livekeys.read()
     if len(keys) == 0:
         m_livekeys.create(ds_id)
-        keys = m_livekeys.read()
-    constants.config.set('live', 'upload_key', keys[0]['access_key'])
-    constants.config.set('live', 'format', 'tcpdump')
-    constants.config.set('live', 'listen_port', '8082')
-    constants.config.set('live', 'listen_hostname', 'localhost')
-    constants.config.set('live', 'server', 'http://localhost:8081')
 
 
 def start_live_server():
     global live_server
-    args = shlex.split('python live_wsgiserver.py 8081')
+    args = shlex.split('python live_wsgiserver.py -local 8081')
     try:
         live_server = subprocess.Popen(args, bufsize=-1)
     except OSError as e:
@@ -63,8 +57,8 @@ def start_live_server():
 
 
 def start_live_collector():
-    global live_server
-    args = shlex.split('python live_collector.py')
+    global live_collector
+    args = shlex.split('python live_collector.py -local')
     try:
         live_collector = subprocess.Popen(args, bufsize=-1)
     except OSError as e:
@@ -90,11 +84,23 @@ def start_tcpdump():
     # 1491525947.915376 ARP, Request who-has 192.168.10.106 tell 192.168.10.254, length 46
     # 1491525948.268015 IP 192.168.10.113.33060 > 172.217.3.196.443: Flags [P.], seq 256:730, ack 116, win 3818, options [nop,nop,TS val 71847613 ecr 4161606244], length 474
     #
-    pass
+    global p_tcpdump
+    global p_netcat
+    # args = shlex.split('tcpdump -i eno1 -f --immediate-mode -l -n -Q inout -tt > /dev/udp/localhost/8082')
+    args_tcpdump = shlex.split('tcpdump -i eno1 -f --immediate-mode -l -n -Q inout -tt')
+    args_nc = shlex.split('nc -u localhost 8082')
+    try:
+        p_tcpdump = subprocess.Popen(args_tcpdump, bufsize=-1, stdout=subprocess.PIPE)
+        p_netcat = subprocess.Popen(args_nc, bufsize=-1, stdin=p_tcpdump.stdout)
+    except OSError as e:
+        sys.stderr.write("Error launching tcpdump. Is it installed?\n\tapt-get install tcpdump")
+        raise e
 
 
 def start_local():
     # setup environment to use sqlite
+    constants.enable_local_mode()
+    reload(common)
     check_database()
     create_session(app)
     # also: need access key for local
@@ -106,15 +112,23 @@ def start_local():
         #   live_collector application to translate the data (using import_tcpdump
         start_live_collector()
         #   tcpdump to collect data and feed it through a pipe.
-        #start_tcpdump()
+        start_tcpdump()
         #   server.py (this file) to deliver the webserver
-        sys.argv[1] = '8080'
+        if len(sys.argv) >= 3:
+            sys.argv[1] = sys.argv[2]
+        else:
+            sys.argv[1] = '8080'
         app.run()
     finally:
         print("{} shutting down.".format(sys.argv[0]))
+        if p_tcpdump is not None:
+            os.kill(p_tcpdump.pid, signal.SIGINT)
+            p_tcpdump.wait()
+            os.kill(p_netcat.pid, signal.SIGINT)
+            p_tcpdump.wait()
         if live_collector is not None:
-            os.kill(live_server.pid, signal.SIGINT)
-            live_server.wait()
+            os.kill(live_collector.pid, signal.SIGINT)
+            live_collector.wait()
         if live_server is not None:
             os.kill(live_server.pid, signal.SIGINT)
             live_server.wait()
