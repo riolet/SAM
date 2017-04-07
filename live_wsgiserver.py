@@ -226,7 +226,7 @@ class Collector(object):
         if version != "1.0":
             return {}, 'Version not compatible. Recieved {0}, expected {1}. Access Denied'.format(version, '1.0')
 
-        key_model = models.livekeys.LiveKeys(0)
+        key_model = models.livekeys.LiveKeys(common.db, 0)
         access = key_model.validate(access_key)
         return access, ''
 
@@ -283,4 +283,7 @@ application = app.wsgifunc()
 
 
 if __name__ == "__main__":
-    app.run()
+    try:
+        app.run()
+    finally:
+        print("{} shutting down.".format(sys.argv[0]))

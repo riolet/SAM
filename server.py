@@ -8,9 +8,16 @@ import common
 import integrity
 import models.livekeys
 import models.settings
+import subprocess
+import shlex
+import signal
 
 app = web.application(constants.urls, globals())
 application = app.wsgifunc()  # for wsgi deployment
+
+live_server = None
+live_collector = None
+p_tcpdump = None
 
 
 def check_database():
@@ -39,14 +46,30 @@ def create_upload_key():
         m_livekeys.create(ds_id)
         keys = m_livekeys.read()
     constants.config.set('live', 'upload_key', keys[0]['access_key'])
+    constants.config.set('live', 'format', 'tcpdump')
+    constants.config.set('live', 'listen_port', '8082')
+    constants.config.set('live', 'listen_hostname', 'localhost')
+    constants.config.set('live', 'server', 'http://localhost:8081')
 
 
 def start_live_server():
-    pass
+    global live_server
+    args = shlex.split('python live_wsgiserver.py 8081')
+    try:
+        live_server = subprocess.Popen(args, bufsize=-1)
+    except OSError as e:
+        sys.stderr.write("Error launching live_wsgiserver")
+        raise e
 
 
-def start_live_client():
-    pass
+def start_live_collector():
+    global live_server
+    args = shlex.split('python live_collector.py')
+    try:
+        live_collector = subprocess.Popen(args, bufsize=-1)
+    except OSError as e:
+        sys.stderr.write("Error launching live_collector")
+        raise e
 
 
 def start_tcpdump():
@@ -76,15 +99,25 @@ def start_local():
     create_session(app)
     # also: need access key for local
     create_upload_key()
-    # Need running programs:
-    #   live_wsgiserver application to import data into the database
-    start_live_server()
-    #   live_collector application to translate the data (using import_tcpdump
-    start_live_client()
-    #   tcpdump to collect data and feed it through a pipe.
-    start_tcpdump()
-    #   server.py (this file) to deliver the webserver
-    app.run()
+    try:
+        # Need running programs:
+        #   live_wsgiserver application to import data into the database
+        start_live_server()
+        #   live_collector application to translate the data (using import_tcpdump
+        start_live_collector()
+        #   tcpdump to collect data and feed it through a pipe.
+        #start_tcpdump()
+        #   server.py (this file) to deliver the webserver
+        sys.argv[1] = '8080'
+        app.run()
+    finally:
+        print("{} shutting down.".format(sys.argv[0]))
+        if live_collector is not None:
+            os.kill(live_server.pid, signal.SIGINT)
+            live_server.wait()
+        if live_server is not None:
+            os.kill(live_server.pid, signal.SIGINT)
+            live_server.wait()
 
 
 def start_server():
@@ -95,6 +128,8 @@ def start_server():
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == '-local':
+        print('Starting local server')
         start_local()
     else:
+        print('Starting dev server')
         start_server()

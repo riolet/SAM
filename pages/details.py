@@ -303,6 +303,7 @@ class Details(base.Headless):
             ]
         # convert list of dicts to ordered list of values
         minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
+        minutes = max(minutes, 1.0)
         conn_in = []
         for row in inputs:
             conn_row = []
@@ -346,6 +347,7 @@ class Details(base.Headless):
                 ['avg_duration', 'Avg Duration'],
             ]
         minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
+        minutes = max(minutes, 1.0)
         conn_out = []
         for row in outputs:
             conn_row = []
@@ -374,6 +376,7 @@ class Details(base.Headless):
             ['links', 'Count / min']
         ]
         minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
+        minutes = max(minutes, 1.0)
         ports_in = []
         for row in ports:
             conn_row = []

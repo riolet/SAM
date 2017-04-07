@@ -305,3 +305,6 @@ def test_multiple_components():
         assert keys == ['ports', 'quick_info', 'summary']
         for k in keys:
             assert type(data[k]) == dict
+
+
+def test_

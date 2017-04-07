@@ -42,7 +42,6 @@ IMPORTER = None
 
 
 def get_importer(argv):
-    global IMPORTER
     if len(argv) == 2:
         # strip the extras of the name
         importer_name = argv[1]
@@ -261,11 +260,12 @@ def collector():
     try:
         thread_batch_processor()
     except:
+        print("Live_collector server has encountered a critical error.")
         traceback.print_exc()
         print("==>--<" * 10)
         shutdown()
 
-    print("Server shut down successfully.")
+    print("Live_collector server shut down successfully.")
 
 
 if __name__ == "__main__":
