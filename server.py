@@ -11,6 +11,7 @@ import models.settings
 import subprocess
 import shlex
 import signal
+import time
 
 app = web.application(constants.urls, globals())
 application = app.wsgifunc()  # for wsgi deployment
@@ -87,8 +88,9 @@ def start_tcpdump():
     global p_tcpdump
     global p_netcat
     # args = shlex.split('tcpdump -i eno1 -f --immediate-mode -l -n -Q inout -tt > /dev/udp/localhost/8082')
-    args_tcpdump = shlex.split('tcpdump -i eno1 -f --immediate-mode -l -n -Q inout -tt')
-    args_nc = shlex.split('nc -u localhost 8082')
+    # specify 'any' for interface??
+    args_tcpdump = shlex.split('tcpdump -f --immediate-mode -l -n -Q inout -tt')
+    args_nc = shlex.split('nc -u {col_host} {col_port}'.format(col_host=constants.local['collector_host'], col_port=constants.local['collector_port']))
     try:
         p_tcpdump = subprocess.Popen(args_tcpdump, bufsize=-1, stdout=subprocess.PIPE)
         p_netcat = subprocess.Popen(args_nc, bufsize=-1, stdin=p_tcpdump.stdout)
@@ -117,21 +119,39 @@ def start_local():
         if len(sys.argv) >= 3:
             sys.argv[1] = sys.argv[2]
         else:
-            sys.argv[1] = '8080'
+            sys.argv[1] = constants.local['server_port']
+        # Check all processes are running
+        time.sleep(0.5)  # give processes a chance to crash and burn.
+        assert live_server.poll() is None
+        assert live_collector.poll() is None
+        assert p_netcat.poll() is None
+        assert p_tcpdump.poll() is None
         app.run()
     finally:
         print("{} shutting down.".format(sys.argv[0]))
         if p_tcpdump is not None:
-            os.kill(p_tcpdump.pid, signal.SIGINT)
-            p_tcpdump.wait()
-            os.kill(p_netcat.pid, signal.SIGINT)
-            p_tcpdump.wait()
+            try:
+                os.kill(p_tcpdump.pid, signal.SIGINT)
+                p_tcpdump.wait()
+            except:
+                pass
+            try:
+                os.kill(p_netcat.pid, signal.SIGINT)
+                p_netcat.wait()
+            except:
+                pass
         if live_collector is not None:
-            os.kill(live_collector.pid, signal.SIGINT)
-            live_collector.wait()
+            try:
+                os.kill(live_collector.pid, signal.SIGINT)
+                live_collector.wait()
+            except:
+                pass
         if live_server is not None:
-            os.kill(live_server.pid, signal.SIGINT)
-            live_server.wait()
+            try:
+                os.kill(live_server.pid, signal.SIGINT)
+                live_server.wait()
+            except:
+                pass
 
 
 def start_server():
