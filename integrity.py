@@ -86,10 +86,8 @@ def check_and_fix_db_access_MySQL(params):
     print("Checking database access...")
     db_name = params.pop('db')
     error_code = 0
-    print("connecting with {}".format(params))
     connection = web.database(**params)
     try:
-        print("connecting to {}".format(db_name))
         connection.query("USE {0}".format(db_name))
         print("\tDatabase access confirmed")
     except OperationalError as e:

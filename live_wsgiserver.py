@@ -250,12 +250,11 @@ class Collector(object):
 
         # read lines/etc
         # insert lines into buffer
-        print("SERVER: buffers is at {0}".format(hex(id(BUFFERS))))
         print("SERVER: Received input.")
         BUFFERS.add(sub, ds, data)
         buffers = BUFFERS.get_all()
-        print("SERVER: Number of Buffers = {0}".format(len(buffers)))
-        print("SERVER: Buffer[0] = {0}".format(buffers[0]))
+        #print("SERVER: Number of Buffers = {0}".format(len(buffers)))
+        #print("SERVER: Buffer[0] = {0}".format(buffers[0]))
         return False
 
     @staticmethod
