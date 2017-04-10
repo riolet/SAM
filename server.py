@@ -12,6 +12,7 @@ import subprocess
 import shlex
 import signal
 import time
+import getopt
 
 app = web.application(constants.urls, globals())
 application = app.wsgifunc()  # for wsgi deployment
@@ -49,7 +50,7 @@ def create_upload_key():
 
 def start_live_server():
     global live_server
-    args = shlex.split('python live_wsgiserver.py -local 8081')
+    args = shlex.split('python live_wsgiserver.py -local')
     try:
         live_server = subprocess.Popen(args, bufsize=-1)
     except OSError as e:
@@ -99,7 +100,11 @@ def start_tcpdump():
         raise e
 
 
-def start_local():
+def start_tshark():
+    raise NotImplementedError
+
+
+def start_local(parsed_args):
     # setup environment to use sqlite
     constants.enable_local_mode()
     reload(common)
@@ -109,23 +114,30 @@ def start_local():
     create_upload_key()
     try:
         # Need running programs:
-        #   live_wsgiserver application to import data into the database
-        start_live_server()
-        #   live_collector application to translate the data (using import_tcpdump
-        start_live_collector()
-        #   tcpdump to collect data and feed it through a pipe.
-        start_tcpdump()
-        #   server.py (this file) to deliver the webserver
-        if len(sys.argv) >= 3:
-            sys.argv[1] = sys.argv[2]
-        else:
-            sys.argv[1] = constants.local['server_port']
+        if parsed_args['scanner'] != 'none':
+            #   live_wsgiserver application to import data into the database
+            start_live_server()
+            #   live_collector application to translate the data (using import_tcpdump
+            start_live_collector()
+            #   scanner program to collect data and feed it through a pipe.
+            if parsed_args['scanner'] == 'tcpdump':
+                start_tcpdump()
+            elif parsed_args['scanner'] == 'tshark':
+                start_tshark()
+            else:
+                raise ValueError("Invalid scanner name given. Please use 'tshark', 'tcpdump', or 'none'.")
+
         # Check all processes are running
         time.sleep(0.5)  # give processes a chance to crash and burn.
-        assert live_server.poll() is None
-        assert live_collector.poll() is None
-        assert p_netcat.poll() is None
-        assert p_tcpdump.poll() is None
+        if live_server is not None:
+            assert live_server.poll() is None
+        if live_collector is not None:
+            assert live_collector.poll() is None
+        if p_netcat is not None:
+            assert p_netcat.poll() is None
+        if p_tcpdump is not None:
+            assert p_tcpdump.poll() is None
+        #   server.py (this file) to deliver the webserver
         app.run()
     finally:
         print("{} shutting down.".format(sys.argv[0]))
@@ -161,9 +173,30 @@ def start_server():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 2 and sys.argv[1] == '-local':
+    kwargs, args = getopt.getopt(sys.argv[1:], 'ls:', ['local', 'scanner='])
+    parsed_args = {'local': False, 'scanner': 'tcpdump'}
+    for key, val in kwargs:
+        if key == '-l' or key == '--local':
+            parsed_args['local'] = True
+        if key == '-s' or key == '--scanner':
+            parsed_args['scanner'] = val
+    if parsed_args['scanner'] not in ['tcpdump', 'tshark', 'none']:
+        print("Invalid scanner")
+        sys.exit(1)
+
+
+    # edit the sys.argv for webpy to work properly
+    if args:
+        for i in range(len(args)):
+            sys.argv[i+1] = args[i]
+    elif parsed_args['local']:
+        sys.argv[1] = constants.local['server_port']
+    else:
+        sys.argv[1] = '8080'
+
+    if parsed_args['local']:
         print('Starting local server')
-        start_local()
+        start_local(parsed_args)
     else:
         print('Starting dev server')
         start_server()
