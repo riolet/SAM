@@ -174,7 +174,7 @@ def start_server():
 
 if __name__ == "__main__":
     kwargs, args = getopt.getopt(sys.argv[1:], 'ls:', ['local', 'scanner='])
-    parsed_args = {'local': False, 'scanner': 'tcpdump'}
+    parsed_args = {'local': False, 'scanner': constants.local['collector_format']}
     for key, val in kwargs:
         if key == '-l' or key == '--local':
             parsed_args['local'] = True

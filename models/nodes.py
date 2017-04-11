@@ -1,5 +1,7 @@
 import web
 import common
+import threading
+import models.whois
 
 
 class Nodes(object):
@@ -180,3 +182,37 @@ class Nodes(object):
             deleted += self.db.delete(self.table_nodes, where=where)
 
         return deleted
+
+    def whois_hostnames(self):
+        """
+        spawns a thread to update node hostnames based on data from ARIN whois
+        :return: None
+        """
+        where = 'subnet=32 AND alias IS NULL'
+        # rows = db.select(tn, what='ipstart', where=where)
+        rows = self.db.select(self.table_nodes, what='ipstart', where=where)
+        missing = [common.IPtoString(row['ipstart']) for row in rows]
+        thread = WhoisLookup(self.db, self.sub, missing)
+
+
+class WhoisLookup(threading.Thread):
+    def __init__(self, db, sub, missing, *args, **kwargs):
+        super(WhoisLookup, self).__init__(*args, **kwargs)
+        self.db = db
+        self.sub = sub
+        self.missing = missing
+        self.n_model = Nodes(self.db, self.sub)
+
+    def run(self):
+        # while there are missing hosts
+        # run the lookup command
+        # save the hostname
+        while self.missing:
+            address = self.missing.pop()
+            try:
+                whois = models.whois.Whois(address)
+                org = whois.ip_to_org()
+                self.n_model.set_alias(address, org)
+            except:
+                continue
+        return
