@@ -200,3 +200,6 @@ if __name__ == "__main__":
     else:
         print('Starting dev server')
         start_server()
+else:
+    check_database()
+    create_session(app)
