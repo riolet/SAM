@@ -7,6 +7,7 @@ import constants
 import common
 import integrity
 import models.datasources
+import models.nodes
 
 
 class InvalidDatasource(ValueError):
@@ -37,6 +38,7 @@ class Preprocessor:
         self.db = database
         self.sub_id = subscription
         self.ds_id = datasource
+        self.whois_thread = None
         if self.db.dbname == 'mysql':
             self.divop = 'DIV'
             self.timeround = 'SUBSTRING(TIMESTAMPADD(MINUTE, -(MINUTE(Timestamp) % 5), Timestamp), 1, 16)'
@@ -567,27 +569,26 @@ class Preprocessor:
         common.exec_sql(self.db, os.path.join(constants.base_path, "sql", "delete_staging_data.sql"), replacements)
 
     def run_all(self):
-        print("Beginning preprocessing...")
+        print("PREP: beginning preprocessing...")
         db_transaction = self.db.transaction()
         try:
-            print("importing nodes...")
+            print("PREP: importing nodes...")
             self.syslog_to_nodes()  # import all nodes into the shared Nodes table
-            print("importing links...")
+            print("PREP: importing links...")
             self.syslog_to_staging_links()  # import all link info into staging tables
-            print("copying from staging to master...")
+            print("PREP: copying from staging to master...")
             self.staging_links_to_links()  # copy data from staging to master tables
-            print("precomputing aggregates...")
+            print("PREP: precomputing aggregates...")
             self.links_to_links_in_out()  # merge new data into the existing aggregates
-            print("deleting from staging...")
+            print("PREP: deleting from staging...")
             self.staging_to_null()  # delete all data from staging tables
         except:
             db_transaction.rollback()
-            print("Pre-processing rolled back.")
+            print("PREP: Pre-processing rolled back.")
             raise
         else:
             db_transaction.commit()
-            print("Pre-processing completed successfully.")
-
+            print("PREP: Pre-processing completed successfully.")
 
 # If running as a script
 if __name__ == "__main__":
@@ -599,7 +600,7 @@ if __name__ == "__main__":
             processor = Preprocessor(common.db_quiet, subscription, ds)
             processor.run_all()
         except InvalidDatasource:
-            print("Data source missing or invalid. Aborting.")
-            print("please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
+            print("PREP: Data source missing or invalid. Aborting.")
+            print("PREP: please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
     else:
-        print("Preprocess aborted. Database check failed.")
+        print("PREP: Preprocess aborted. Database check failed.")

@@ -6,12 +6,6 @@ import web
 web.config.debug = constants.debug  # must preceed import common
 import common
 import integrity
-import models.livekeys
-import models.settings
-import subprocess
-import shlex
-import signal
-import time
 
 
 def check_database():

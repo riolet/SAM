@@ -22,15 +22,8 @@ application = None
 #   localmode combo
 #     --local --scanner=tcpdump
 
-# args:
-#   --target=(webserver|aggregator|collector)
-#   --scanner=(tcpdump|tshark|none)
-#   --local
-#   --wsgi
-
 # suggested demo invocation:
-# sudo tcpdump -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local
-
+# sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
 
 
 def launcher(argv):
@@ -68,6 +61,9 @@ def launcher(argv):
     if parsed_args['target'] not in valid_targets:
         print("Invalid target")
         sys.exit(1)
+
+    if parsed_args['whois']:
+        constants.use_whois = True
 
     if parsed_args['local']:
         launch_localmode(parsed_args)
@@ -122,16 +118,14 @@ def launch_aggregator(args):
         print('aggregator shut down.')
 
 
-def create_upload_key():
+def create_upload_key(db, sub):
     # create 1 key if none exist
     import models.settings
     import models.livekeys
-    import common
 
-    sub_id = constants.demo['id']
-    m_set = models.settings.Settings(common.db_quiet, {}, sub_id)
+    m_set = models.settings.Settings(db, {}, sub)
     ds_id = m_set['datasource']
-    m_livekeys = models.livekeys.LiveKeys(common.db_quiet, sub_id)
+    m_livekeys = models.livekeys.LiveKeys(db, sub)
     keys = m_livekeys.read()
     if len(keys) == 0:
         m_livekeys.create(ds_id)
@@ -149,12 +143,24 @@ def check_database():
         exit(1)
 
 
+def launch_whois_service(db, sub):
+    import models.nodes
+    whois = models.nodes.WhoisService(db, sub)
+    whois.start()
+    return whois
+
+
 def launch_localmode(args):
     import server_collector
+
     # enable local mode
     constants.enable_local_mode()
+    import common
+    db = common.db_quiet
+    sub_id = constants.demo['id']
     check_database()
-    access_key = create_upload_key()
+    access_key = create_upload_key(db, sub_id)
+
     # launch aggregator process
     aggArgs = args.copy()
     aggArgs.pop('port')
@@ -166,7 +172,6 @@ def launch_localmode(args):
     def spawn_coll(stdin):
         collector = server_collector.Collector()
         collector.run_streamreader(stdin, format=args['format'], access_key=access_key)
-
     newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
         p_collector = multiprocessing.Process(target=spawn_coll, args=(newstdin,))
@@ -174,6 +179,14 @@ def launch_localmode(args):
     finally:
         newstdin.close()  # close in the parent
 
+    # launch whois service (if requested)
+    if args['whois']:
+        print("Starting whois service")
+        import models.nodes
+        whois_thread = models.nodes.WhoisService(db, sub_id)
+        whois_thread.start()
+    else:
+        whois_thread = None
 
     # launch webserver locally.
     launch_webserver(args)
@@ -186,6 +199,13 @@ def launch_localmode(args):
     print("joining aggregator")
     p_aggregator.join()
     print("aggregator joined")
+
+    if args['whois']:
+        print('joining whois')
+        if whois_thread and whois_thread.is_alive():
+            whois_thread.shutdown()
+            whois_thread.join()
+        print('whois joined')
 
 
 if __name__ == '__main__':

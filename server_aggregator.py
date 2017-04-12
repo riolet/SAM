@@ -9,6 +9,7 @@ web.config.debug = constants.debug
 import common
 import threading
 import models.livekeys
+import models.nodes
 import preprocess
 import importers.import_base
 
@@ -127,8 +128,8 @@ class DatabaseInserter(threading.Thread):
                 rows = processor.count_syslog()
 
                 if rows >= self.SIZE_QUOTA:
-                    print("PREPROCESSOR: exceeded size quota")
                     # process the buffer
+                    print("PREPROCESSOR: exceeded size quota")
                     self.syslog_to_tables(buff)
                     buff.flag_unexpired()
                 elif time.time() > buff.last_proc_time + self.TIME_QUOTA:
@@ -139,8 +140,8 @@ class DatabaseInserter(threading.Thread):
                         buff.flag_unexpired()
                     else:
                         if buff.expiring:
-                            print("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
                             # remove the buffer from the buffer list
+                            print("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
                             self.buffers.remove(buff.sub, buff.ds)
                         else:
                             # flag the buffer as inactive for future removal
@@ -169,25 +170,22 @@ class DatabaseInserter(threading.Thread):
             importer.insert_data(rows, len(lines))
 
     @staticmethod
-    def run_preprocessor(sub, ds):
-        print("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub, ds))
-        processor = preprocess.Preprocessor(common.db_quiet, sub, ds)
+    def run_preprocessor(sub_id, ds):
+        print("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub_id, ds))
+        processor = preprocess.Preprocessor(common.db_quiet, sub_id, ds)
         processor.run_all()
 
     def buffer_to_syslog(self, buff):
-        sub = buff.sub
-        ds = buff.ds
-        lines = self.buffers.yank(sub, ds)
-        DatabaseInserter.run_importer(sub, ds, lines)
+        sub_id = buff.sub
+        ds_id = buff.ds
+        lines = self.buffers.yank(sub_id, ds_id)
+        DatabaseInserter.run_importer(sub_id, ds_id, lines)
 
-    @staticmethod
-    def syslog_to_tables(buff):
+    def syslog_to_tables(self, buff):
         sub = buff.sub
         ds = buff.ds
         buff.last_proc_time = time.time()
-
         DatabaseInserter.run_preprocessor(sub, ds)
-
 
 class Aggregator(object):
     @staticmethod
@@ -272,7 +270,7 @@ class Aggregator(object):
 
 def start_server(port=None):
     if port == None:
-        port = constants.server
+        port = constants.aggregator['listen_port']
 
     urls = ['/', 'Aggregator']
     app = web.application(urls, globals(), autoreload=False)

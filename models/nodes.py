@@ -1,3 +1,4 @@
+import time
 import web
 import common
 import threading
@@ -166,7 +167,6 @@ class Nodes(object):
 
         return deleted
 
-
     def delete_collection(self, nodes):
         """
         :type self: Nodes
@@ -183,36 +183,45 @@ class Nodes(object):
 
         return deleted
 
-    def whois_hostnames(self):
-        """
-        spawns a thread to update node hostnames based on data from ARIN whois
-        :return: None
-        """
-        where = 'subnet=32 AND alias IS NULL'
-        # rows = db.select(tn, what='ipstart', where=where)
-        rows = self.db.select(self.table_nodes, what='ipstart', where=where)
-        missing = [common.IPtoString(row['ipstart']) for row in rows]
-        thread = WhoisLookup(self.db, self.sub, missing)
 
-
-class WhoisLookup(threading.Thread):
-    def __init__(self, db, sub, missing, *args, **kwargs):
-        super(WhoisLookup, self).__init__(*args, **kwargs)
+class WhoisService(threading.Thread):
+    def __init__(self, db, sub, *args, **kwargs):
+        super(WhoisService, self).__init__(*args, **kwargs)
         self.db = db
         self.sub = sub
-        self.missing = missing
+        self.missing = []
+        self.table = 's{acct}_Nodes'.format(acct=self.sub)
         self.n_model = Nodes(self.db, self.sub)
+        self.alive = True
+
+    def get_missing(self):
+        where = 'subnet=32 AND alias IS NULL'
+        q = self.db.select(self.table, what='ipstart', where=where, _test=True)
+        print(q)
+        rows = self.db.select(self.table, what='ipstart', where=where)
+        missing = [common.IPtoString(row['ipstart']) for row in rows]
+        print("running get_missing --> {} found.".format(len(missing)))
+        return missing
 
     def run(self):
         # while there are missing hosts
         # run the lookup command
         # save the hostname
-        while self.missing:
-            address = self.missing.pop()
-            try:
-                whois = models.whois.Whois(address)
-                org = whois.ip_to_org()
-                self.n_model.set_alias(address, org)
-            except:
-                continue
+        print("starting whois run")
+        while self.alive:
+            self.missing = self.get_missing()
+            while self.missing:
+                address = self.missing.pop()
+                try:
+                    whois = models.whois.Whois(address)
+                    org = whois.ip_to_org()
+                    self.n_model.set_alias(address, org)
+                except:
+                    continue
+                if not self.alive:
+                    break
+            time.sleep(5)
         return
+
+    def shutdown(self):
+        self.alive = False

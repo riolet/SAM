@@ -32,6 +32,7 @@ dbconfig = dict(config.items('database'))
 if 'port' in dbconfig:
     dbconfig['port'] = int(dbconfig['port'])
 
+use_whois = False
 localmode = False
 local = {
     'dbn': config.get('local', 'dbn'),

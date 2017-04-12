@@ -6,6 +6,8 @@ import traceback
 import importlib
 import importers.import_base as base_importer
 import constants
+import web
+web.config.debug = constants.debug
 import requests
 import cPickle
 import select

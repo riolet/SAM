@@ -38,6 +38,7 @@ class Whois(object):
             self.query = IPtoString(self.url)
         else:
             self.query = self.url
+        print('WHOIS: checking "{}"'.format(self.query))
 
     def query_ARIN(self):
         url = Whois.BASE_ARIN_URL.format(query=self.query)
@@ -130,10 +131,8 @@ class Whois(object):
     def ip_to_org(self):
         org = self.query_ARIN()
         if org == 'RIPE':
-            print('retrying on RIPE')
             org = self.query_RIPE()
         elif org == 'APNIC':
-            print('retrying on APNIC')
             org = self.query_APNIC()
         elif org == 'AFRINIC':
             print('retrying on AFRINIC')
