@@ -28,6 +28,10 @@ application = None
 #   --local
 #   --wsgi
 
+# suggested demo invocation:
+# sudo tcpdump -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local
+
+
 
 def launcher(argv):
     kwargs, args = getopt.getopt(argv[1:], '', ['format=', 'port=', 'target=', 'local', 'whois', 'wsgi'])
@@ -137,10 +141,19 @@ def create_upload_key():
     constants.collector['upload_key'] = key
     return key
 
+
+def check_database():
+    import integrity
+    # Validate the database format
+    if not integrity.check_and_fix_integrity():
+        exit(1)
+
+
 def launch_localmode(args):
     import server_collector
     # enable local mode
     constants.enable_local_mode()
+    check_database()
     access_key = create_upload_key()
     # launch aggregator process
     aggArgs = args.copy()

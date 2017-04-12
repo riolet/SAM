@@ -224,7 +224,7 @@ class Aggregator(object):
         if version != "1.0":
             return {}, 'Version not compatible. Recieved {0}, expected {1}. Access Denied'.format(version, '1.0')
 
-        key_model = models.livekeys.LiveKeys(common.db, 0)
+        key_model = models.livekeys.LiveKeys(common.db_quiet, 0)
         access = key_model.validate(access_key)
         return access, ''
 
