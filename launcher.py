@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(__file__))  # this could be executed from any di
 import getopt
 import constants
 import multiprocessing
+import time
 
 application = None
 
@@ -79,7 +80,7 @@ def launcher(argv):
 def launch_webserver(args):
     import server_webserver
     if args['wsgi']:
-        print("launching wsgi webserver")
+        print('launching wsgi webserver')
         global application
         application = server_webserver.start_wsgi()
     else:
@@ -88,16 +89,18 @@ def launch_webserver(args):
             port = constants.webserver['listen_port']
         print('launching dev webserver on {}'.format(port))
         server_webserver.start_server(port=port)
+        print('webserver shut down.')
 
 
 def launch_collector(args):
     import server_collector
-    port = args['port']
+    port = args.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
     print('launching collector on {}'.format(args['port']))
     collector = server_collector.Collector()
     collector.run(port=args['port'], format=args['format'])
+    print('collector shut down.')
 
 
 def launch_aggregator(args):
@@ -107,35 +110,70 @@ def launch_aggregator(args):
         global application
         application = server_aggregator.start_wsgi()
     else:
-        port = args['port']
+        port = args.get('port', None)
         if port is None:
             port = constants.aggregator['listen_port']
         print('launching dev aggregator on {}'.format(port))
         server_aggregator.start_server(port=port)
+        print('aggregator shut down.')
 
+
+def create_upload_key():
+    # create 1 key if none exist
+    import models.settings
+    import models.livekeys
+    import common
+
+    sub_id = constants.demo['id']
+    m_set = models.settings.Settings(common.db_quiet, {}, sub_id)
+    ds_id = m_set['datasource']
+    m_livekeys = models.livekeys.LiveKeys(common.db_quiet, sub_id)
+    keys = m_livekeys.read()
+    if len(keys) == 0:
+        m_livekeys.create(ds_id)
+
+    keys = m_livekeys.read()
+    key = keys[0]['access_key']
+    constants.collector['upload_key'] = key
+    return key
 
 def launch_localmode(args):
     import server_collector
     # enable local mode
-    # launch multi-process aggregator
-    # launch multi-process collector
+    constants.enable_local_mode()
+    access_key = create_upload_key()
+    # launch aggregator process
+    aggArgs = args.copy()
+    aggArgs.pop('port')
+    p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(aggArgs,))
+    p_aggregator.start()
+
+    # launch collector process
     #    pipe stdin into the collector
     def spawn_coll(stdin):
         collector = server_collector.Collector()
-        collector.run_streamreader(stdin, format=args['format'])
+        collector.run_streamreader(stdin, format=args['format'], access_key=access_key)
 
     newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
-        p = multiprocessing.Process(target=spawn_coll, args=(newstdin,))
-        p.start()
+        p_collector = multiprocessing.Process(target=spawn_coll, args=(newstdin,))
+        p_collector.start()
     finally:
         newstdin.close()  # close in the parent
 
 
     # launch webserver locally.
-    pass
+    launch_webserver(args)
 
-    # catch everything as it closes with ctrl-c...
+    # pressing ctrl-C sends SIGINT to all child processes. The shutdown order is not guaranteed.
+    print("joining collector")
+    p_collector.join()
+    print("collector joined")
+
+    print("joining aggregator")
+    p_aggregator.join()
+    print("aggregator joined")
+
 
 if __name__ == '__main__':
     launcher(sys.argv)

@@ -189,7 +189,7 @@ class DatabaseInserter(threading.Thread):
         DatabaseInserter.run_preprocessor(sub, ds)
 
 
-class Collector(object):
+class Aggregator(object):
     @staticmethod
     def handle(rawdata):
         # print("SERVER: Handling input!")
@@ -201,7 +201,7 @@ class Collector(object):
         if not data:
             return 'failed: no data received.'
 
-        errors = Collector.socket_to_buffer(data)
+        errors = Aggregator.socket_to_buffer(data)
 
         if errors == 'handshake':
             return 'handshake'
@@ -232,7 +232,7 @@ class Collector(object):
     def socket_to_buffer(data):
         global BUFFERS
 
-        access, error = Collector.validate_data(data)
+        access, error = Aggregator.validate_data(data)
         if error:
             return error
         if not access:
@@ -265,8 +265,8 @@ class Collector(object):
             IMPORTER_THREAD.start()
 
     def POST(self):
-        response = Collector.handle(web.data())
-        Collector.ensure_processing_thread()
+        response = Aggregator.handle(web.data())
+        Aggregator.ensure_processing_thread()
         return response
 
 
@@ -274,7 +274,7 @@ def start_server(port=None):
     if port == None:
         port = constants.server
 
-    urls = ['/', 'Collector']
+    urls = ['/', 'Aggregator']
     app = web.application(urls, globals(), autoreload=False)
     try:
         runwsgi(app.wsgifunc(), port)
@@ -289,7 +289,7 @@ def runwsgi(func, port):
 
 def start_wsgi():
     global application
-    urls = ['/', 'Collector']
+    urls = ['/', 'Aggregator']
     app = web.application(urls, globals())
     return app.wsgifunc()
 

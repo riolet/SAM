@@ -8,6 +8,7 @@ import importers.import_base as base_importer
 import constants
 import requests
 import cPickle
+import select
 
 """
 Live Collector
@@ -47,11 +48,34 @@ class SocketBuffer(object):
 SOCKET_BUFFER = SocketBuffer()
 
 
-class CollectorListener(SocketServer.BaseRequestHandler):
+class SocketListener(SocketServer.BaseRequestHandler):
     def handle(self):
         global SOCKET_BUFFER
         data = self.request[0].strip()
         SOCKET_BUFFER.store_data(data)
+
+
+class FileListener(threading.Thread):
+    def set_file(self, f):
+        self.file = f
+
+    def run(self):
+        global SOCKET_BUFFER
+        self.alive = True
+        while self.alive:
+            # block waiting for input from the stream, but unblock every 0.5 seconds.
+            # This works on linux but doesn't work on windows.
+            # see the [note] in https://docs.python.org/2/library/select.html#select.select
+            if self.file in select.select([self.file], [], [], 0.5)[0]:
+                line = self.file.readline()
+                if line == '':
+                    self.alive = False
+                else:
+                    line = line.rstrip()
+                    SOCKET_BUFFER.store_data(line)
+
+    def shutdown(self):
+        self.alive = False
 
 
 class Collector(object):
@@ -120,7 +144,7 @@ class Collector(object):
             self.shutdown()
 
         signal.signal(signal.SIGINT, sig_handler)
-        self.listener = SocketServer.UDPServer(self.listen_address, CollectorListener)
+        self.listener = SocketServer.UDPServer(self.listen_address, SocketListener)
 
         # Start the daemon listening on the port in an infinite loop that exits when the program is killed
         self.listener_thread = threading.Thread(target=self.listener.serve_forever)
@@ -138,7 +162,50 @@ class Collector(object):
         print("Live_collector server shut down successfully.")
 
     def run_streamreader(self, stream, format=None, access_key=None):
-        raise NotImplementedError
+        # set up the importer
+        if format is None:
+            format = self.default_format
+        self.importer = self.get_importer(format)
+        if not self.importer:
+            print("Collector: Failed to load importer; aborting")
+            return
+        if access_key is not None:
+            self.access_key = access_key
+
+        # test the connection
+        attempts = 1
+        connected = self.test_connection()
+        while not connected and attempts < 10:
+            time.sleep(1)
+            connected = self.test_connection()
+        if not connected:
+            print('Collector: Failed to connect to aggregator; aborting')
+            return
+
+            # register signals for safe shut down
+        def sig_handler(num, frame):
+            print('\nInterrupt received.')
+            self.shutdown()
+
+        signal.signal(signal.SIGINT, sig_handler)
+        self.listener = FileListener()
+        self.listener.set_file(stream)
+
+        # Start the daemon listening on the port in an infinite loop that exits when the program is killed
+        self.listener_thread = self.listener
+        self.listener_thread.daemon = True
+        self.listener_thread.start()
+        print('Collector: listening to {}.'.format(stream.name if hasattr(stream, 'name') else 'stream'))
+
+        try:
+            self.thread_batch_processor()
+        except:
+            print("Collector: server has encountered a critical error.")
+            traceback.print_exc()
+            print("==>--<" * 10)
+            self.shutdown()
+
+        print("Collector: server shut down successfully.")
 
     def thread_batch_processor(self):
         global SOCKET_BUFFER
@@ -221,10 +288,10 @@ class Collector(object):
             print("Error sending package: {0}".format(e))
             # keep the unsent lines around
             self.transmit_buffer.extend(lines)
-            self.transmit_buffer_size == len(self.transmit_buffer)
+            self.transmit_buffer_size = len(self.transmit_buffer)
 
     def test_connection(self):
-        print "Testing connection...",
+        print "Collector: Testing connection...",
 
         package = {
             'access_key': self.access_key,
@@ -249,30 +316,13 @@ class Collector(object):
             return False
 
     def shutdown(self):
-        print("Shutting down handler.")
+        print("Collector: Shutting down handler.")
         self.listener.shutdown()
         if self.listener_thread:
             self.listener_thread.join()
-            print("Handler stopped.")
-        print("Shutting down batch processor.")
+            print("Collector: Handler stopped.")
+        print("Collector: Shutting down batch processor.")
         self.shutdown_event.set()
-
-
-def localmode():
-    # global LISTEN_ADDRESS
-    # global SERVER
-    # global ACCESS_KEY
-    # global FORMAT
-    # constants.enable_local_mode()
-    # LISTEN_ADDRESS = (constants.collector['hostname'], int(constants.collector['port']))
-    # SERVER = constants.collector['server']
-    # FORMAT = constants.collector['format']
-    # import models.livekeys
-    # import common
-    # m_livekeys = models.livekeys.LiveKeys(common.db_quiet, constants.demo['id'])
-    # keys = m_livekeys.read()
-    # ACCESS_KEY = keys[0]['access_key']
-    pass
 
 
 if __name__ == "__main__":
