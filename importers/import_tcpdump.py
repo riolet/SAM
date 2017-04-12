@@ -57,6 +57,22 @@ class TCPDumpImporter(BaseImporter):
             dictionary['bytes_sent'] = nBytes
             dictionary['packets_received'] = '0'
             dictionary['packets_sent'] = '1'
+
+            # apply heuristic to direction: lower port is server, higher port is client
+            if dictionary['srcport'] > dictionary['dstport']:
+                temp = dictionary['srcport']
+                dictionary['srcport'] = dictionary['dstport']
+                dictionary['dstport'] = temp
+
+                temp = dictionary['src']
+                dictionary['src'] = dictionary['dst']
+                dictionary['dst'] = temp
+
+                dictionary['bytes_received'] = nBytes
+                dictionary['bytes_sent'] = '0'
+                dictionary['packets_received'] = '1'
+                dictionary['packets_sent'] = '0'
+
         except:
             return 1
         return 0

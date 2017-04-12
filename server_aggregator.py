@@ -26,7 +26,6 @@ Live Server
 
 
 class Buffer:
-
     def __init__(self, sub, ds):
         self.sub = sub
         self.ds = ds
@@ -59,7 +58,6 @@ class Buffer:
 
 
 class MemoryBuffers:
-
     def __init__(self):
         # each buffer needs a sub, ds, list-of-lines, and last_empty_time
         self.buffers = {}
@@ -271,29 +269,35 @@ class Collector(object):
         Collector.ensure_processing_thread()
         return response
 
-urls = [
-    '/', 'Collector',
-]
 
-app = web.application(urls, globals(), autoreload=False)
-BUFFERS = MemoryBuffers()
-IMPORTER_THREAD = None
-application = app.wsgifunc()
+def start_server(port=None):
+    if port == None:
+        port = constants.server
 
-def local_mode():
-    # update constants
-    constants.enable_local_mode()
-    reload(common)
-
-
-if __name__ == "__main__":
+    urls = ['/', 'Collector']
+    app = web.application(urls, globals(), autoreload=False)
     try:
-        if len(sys.argv) >= 2 and sys.argv[1] == '-local':
-            print('Starting local server')
-            local_mode()
-            sys.argv[1] = constants.local['liveserver_port']
-            app.run()
-        else:
-            app.run()
+        runwsgi(app.wsgifunc(), port)
     finally:
         print("{} shutting down.".format(sys.argv[0]))
+
+
+def runwsgi(func, port):
+    server_addr = web.validip(port)
+    return web.httpserver.runsimple(func, server_addr)
+
+
+def start_wsgi():
+    global application
+    urls = ['/', 'Collector']
+    app = web.application(urls, globals())
+    return app.wsgifunc()
+
+
+# buffer to pass data between threads
+BUFFERS = MemoryBuffers()
+# to persist the thread reference between invocations
+IMPORTER_THREAD = None
+
+if __name__ == "__main__":
+    application = start_wsgi()

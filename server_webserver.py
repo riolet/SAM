@@ -12,15 +12,7 @@ import subprocess
 import shlex
 import signal
 import time
-import getopt
 
-app = web.application(constants.urls, globals())
-application = app.wsgifunc()  # for wsgi deployment
-
-live_server = None
-live_collector = None
-p_tcpdump = None
-p_netcat = None
 
 def check_database():
     # Validate the database format
@@ -49,23 +41,23 @@ def create_upload_key():
 
 
 def start_live_server():
-    global live_server
-    args = shlex.split('python live_wsgiserver.py -local')
+    args = shlex.split('python server_aggregator.py -local')
     try:
         live_server = subprocess.Popen(args, bufsize=-1)
     except OSError as e:
         sys.stderr.write("Error launching live_wsgiserver")
         raise e
+    return live_server
 
 
 def start_live_collector():
-    global live_collector
-    args = shlex.split('python live_collector.py -local')
+    args = shlex.split('python server_collector.py -local')
     try:
         live_collector = subprocess.Popen(args, bufsize=-1)
     except OSError as e:
         sys.stderr.write("Error launching live_collector")
         raise e
+    return live_collector
 
 
 def start_tcpdump():
@@ -86,8 +78,6 @@ def start_tcpdump():
     # 1491525947.915376 ARP, Request who-has 192.168.10.106 tell 192.168.10.254, length 46
     # 1491525948.268015 IP 192.168.10.113.33060 > 172.217.3.196.443: Flags [P.], seq 256:730, ack 116, win 3818, options [nop,nop,TS val 71847613 ecr 4161606244], length 474
     #
-    global p_tcpdump
-    global p_netcat
     # args = shlex.split('tcpdump -i eno1 -f --immediate-mode -l -n -Q inout -tt > /dev/udp/localhost/8082')
     # specify 'any' for interface??
     args_tcpdump = shlex.split('tcpdump -f --immediate-mode -l -n -Q inout -tt')
@@ -98,6 +88,7 @@ def start_tcpdump():
     except OSError as e:
         sys.stderr.write("Error launching tcpdump. Is it installed?\n\tapt-get install tcpdump")
         raise e
+    return p_tcpdump, p_netcat
 
 
 def start_tshark():
@@ -107,21 +98,26 @@ def start_tshark():
 def start_local(parsed_args):
     # setup environment to use sqlite
     constants.enable_local_mode()
+    app = web.application(constants.urls, globals())
     reload(common)
     check_database()
     create_session(app)
     # also: need access key for local
     create_upload_key()
+    live_server = None
+    live_collector = None
+    p_tcpdump = None
+    p_netcat = None
     try:
         # Need running programs:
         if parsed_args['scanner'] != 'none':
             #   live_wsgiserver application to import data into the database
-            start_live_server()
+            live_server = start_live_server()
             #   live_collector application to translate the data (using import_tcpdump
-            start_live_collector()
+            live_collector = start_live_collector()
             #   scanner program to collect data and feed it through a pipe.
             if parsed_args['scanner'] == 'tcpdump':
-                start_tcpdump()
+                p_tcpdump, p_netcat = start_tcpdump()
             elif parsed_args['scanner'] == 'tshark':
                 start_tshark()
             else:
@@ -166,40 +162,25 @@ def start_local(parsed_args):
                 pass
 
 
-def start_server():
+def start_server(port):
+    app = web.application(constants.urls, globals())
     check_database()
     create_session(app)
-    app.run()
+    runwsgi(app.wsgifunc(), port)
+
+
+def runwsgi(func, port):
+    server_addr = web.validip(port)
+    return web.httpserver.runsimple(func, server_addr)
+
+
+def start_wsgi():
+    global application
+    app = web.application(constants.urls, globals())
+    check_database()
+    create_session(app)
+    return app.wsgifunc()
 
 
 if __name__ == "__main__":
-    kwargs, args = getopt.getopt(sys.argv[1:], 'ls:', ['local', 'scanner='])
-    parsed_args = {'local': False, 'scanner': constants.local['collector_format']}
-    for key, val in kwargs:
-        if key == '-l' or key == '--local':
-            parsed_args['local'] = True
-        if key == '-s' or key == '--scanner':
-            parsed_args['scanner'] = val
-    if parsed_args['scanner'] not in ['tcpdump', 'tshark', 'none']:
-        print("Invalid scanner")
-        sys.exit(1)
-
-
-    # edit the sys.argv for webpy to work properly
-    if args:
-        for i in range(len(args)):
-            sys.argv[i+1] = args[i]
-    elif parsed_args['local']:
-        sys.argv[1] = constants.local['server_port']
-    else:
-        sys.argv[1] = '8080'
-
-    if parsed_args['local']:
-        print('Starting local server')
-        start_local(parsed_args)
-    else:
-        print('Starting dev server')
-        start_server()
-else:
-    check_database()
-    create_session(app)
+    application = start_wsgi()
