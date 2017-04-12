@@ -137,6 +137,9 @@ class Collector(object):
 
         print("Live_collector server shut down successfully.")
 
+    def run_streamreader(self, stream, format=None, access_key=None):
+        raise NotImplementedError
+
     def thread_batch_processor(self):
         global SOCKET_BUFFER
         # loop:

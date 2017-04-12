@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
 import getopt
 import constants
+import multiprocessing
 
 application = None
 
@@ -114,7 +115,27 @@ def launch_aggregator(args):
 
 
 def launch_localmode(args):
+    import server_collector
+    # enable local mode
+    # launch multi-process aggregator
+    # launch multi-process collector
+    #    pipe stdin into the collector
+    def spawn_coll(stdin):
+        collector = server_collector.Collector()
+        collector.run_streamreader(stdin, format=args['format'])
+
+    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
+    try:
+        p = multiprocessing.Process(target=spawn_coll, args=(newstdin,))
+        p.start()
+    finally:
+        newstdin.close()  # close in the parent
+
+
+    # launch webserver locally.
     pass
+
+    # catch everything as it closes with ctrl-c...
 
 if __name__ == '__main__':
     launcher(sys.argv)

@@ -50,13 +50,13 @@ def enable_local_mode():
     access_control['active'] = False
     dbconfig['db'] = local['db']
     dbconfig['dbn'] = local['dbn']
-    collector['hostname'] = local['collector_host']
-    collector['port'] = local['collector_port']
-    collector['server'] = 'http://{}:{}'.format(local['liveserver_host'], local['liveserver_port'])
+    collector['listen_host'] = local['collector_host']
+    collector['listen_port'] = local['collector_port']
+    collector['target_host'] = local['liveserver_host']
+    collector['target_port'] = local['liveserver_port']
     collector['format'] = local['collector_format']
     global localmode
     localmode = True
-
 
 # to make sure config is not being read from anymore
 del config
