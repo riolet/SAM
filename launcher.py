@@ -37,7 +37,7 @@ def launcher(argv):
         'whois': False,
         'wsgi': False,
     }
-    valid_formats = ['tcpdump', 'tshark', 'none']
+    valid_formats = ['tcpdump', 'none']
     valid_targets = ['aggregator', 'collector', 'webserver']
 
     parsed_args = defaults.copy()
@@ -56,7 +56,7 @@ def launcher(argv):
             parsed_args['port'] = val
 
     if parsed_args['format'] not in valid_formats:
-        print("Invalid scanner")
+        print("Invalid format")
         sys.exit(1)
     if parsed_args['target'] not in valid_targets:
         print("Invalid target")

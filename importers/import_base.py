@@ -186,6 +186,24 @@ Usage:
     def set_datasource(self, ds):
         self.datasource = ds
 
+    @staticmethod
+    def reverse_connection(conn):
+        temp = conn['srcport']
+        conn['srcport'] = conn['dstport']
+        conn['dstport'] = temp
+
+        temp = conn['src']
+        conn['src'] = conn['dst']
+        conn['dst'] = temp
+
+        temp = conn['bytes_received']
+        conn['bytes_received'] = conn['bytes_sent']
+        conn['bytes_sent'] = temp
+
+        temp = conn['packets_received']
+        conn['packets_received'] = conn['packets_sent']
+        conn['packets_sent'] = temp
+
     def insert_data(self, rows, count):
         """
         Attempt to insert the first 'count' items in 'rows' into the database table `samapper`.`Syslog`.
