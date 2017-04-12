@@ -131,6 +131,9 @@ class Nodes(object):
     def get_root_nodes(self):
         return list(self.db.select(self.table_nodes, where="subnet=8"))
 
+    def get_flat_nodes(self):
+        return list(self.db.select(self.table_nodes, where="ipstart=ipend"))
+
     def get_children(self, address):
         ip_start, ip_end = common.determine_range_string(address)
         diff = ip_end - ip_start

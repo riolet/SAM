@@ -40,14 +40,17 @@ class Nodes(base.HeadlessPost):
         address_str = data.get('address')
         if address_str:
             addresses = address_str.split(',')
-
         addresses = filter(lambda x: bool(x), addresses)
 
-        return {'addresses': addresses}
+        flat = data.get('flat', 'false').lower() == 'true'
+
+        return {'addresses': addresses, 'flat': flat}
 
     def perform_get_command(self, request):
         self.require_group('read')
-        if len(request['addresses']) == 0:
+        if request['flat']:
+            response = {'_': self.nodesModel.get_flat_nodes()}
+        elif len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:
             response = {address: self.nodesModel.get_children(address) for address in request['addresses']}

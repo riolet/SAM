@@ -46,12 +46,15 @@ class Links(base.Headless):
         else:
             raise errors.RequiredKey('data source', 'ds')
 
+        flat = data.get('flat', 'false').lower() == 'true'
+
         return {'ds': ds,
                 'addresses': addresses,
                 'tstart': tstart,
                 'tend': tend,
                 'port': port,
-                'protocol': protocol}
+                'protocol': protocol,
+                'flat': flat}
 
     def perform_get_command(self, request):
         self.require_group('read')

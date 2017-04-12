@@ -46,20 +46,18 @@ class Links:
             timerange['max'] = int(time.mktime(row['max'].timetuple()))
         return timerange
 
-    def get_links(self, addresses, timerange, port, protocol):
+    def get_links(self, addresses, timerange, port, protocol, flat):
         result = {}
         for address in addresses:
             ip_start, ip_end = common.determine_range_string(address)
             result[address] = {}
-            result[address]['inputs'] = self.get_links_in(ip_start, ip_end, timerange, port, protocol)
-            result[address]['outputs'] = self.get_links_out(ip_start, ip_end, timerange, port, protocol)
+            if flat:
+                result[address]['inputs'] = self._get_links_flat(ip_start, True, timerange, port, protocol)
+                result[address]['outputs'] = self._get_links_flat(ip_start, False, timerange, port, protocol)
+            else:
+                result[address]['inputs'] = self._get_links(ip_start, ip_end, True, timerange, port, protocol)
+                result[address]['outputs'] = self._get_links(ip_start, ip_end, False, timerange, port, protocol)
         return result
-
-    def get_links_in(self, ip_start, ip_end, timerange, port, protocol):
-        return self._get_links(ip_start, ip_end, True, timerange, port, protocol)
-
-    def get_links_out(self, ip_start, ip_end, timerange, port, protocol):
-        return self._get_links(ip_start, ip_end, False, timerange, port, protocol)
 
     def build_where_clause(self, timestamp_range=None, port=None, protocol=None, rounding=True):
         clauses = []
@@ -92,6 +90,37 @@ class Links:
         if where:
             where = "    AND " + where
         return where
+
+    def _get_links_flat(self, ip, inbound, timerange, port, protocol):
+        where = self.build_where_clause(timerange, port, protocol)
+
+        select = "src AS 'src_start', src AS 'src_end', dst AS 'dst_start', dst AS 'dst_end', port,  " \
+                 "SUM(links) AS 'links', " \
+                 "SUM(bytes_sent) + SUM(COALESCE(bytes_received, 0)) AS 'bytes', " \
+                 "SUM(packets_sent) + SUM(COALESCE(packets_received, 0)) AS 'packets', " \
+                 "GROUP_CONCAT(DISTINCT protocols) AS 'protocols'"
+        group_by = "GROUP BY src, dst, port"
+
+        if inbound:
+            query = """
+                    SELECT {select}
+                    FROM {table}
+                    WHERE dst = $ip
+                     {where}
+                    {group_by}
+                    """.format(where=where, select=select, group_by=group_by, table=self.table_links)
+        else:
+            query = """
+                    SELECT {select}
+                    FROM {table}
+                    WHERE src = $ip
+                     {where}
+                    {group_by}
+                    """.format(where=where, select=select, group_by=group_by, table=self.table_links)
+
+        qvars = {"ip": ip}
+        rows = list(self.db.query(query, vars=qvars))
+        return rows
 
     def _get_links(self, ip_start, ip_end, inbound, timerange, port, protocol):
         """
