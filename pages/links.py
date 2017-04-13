@@ -61,7 +61,7 @@ class Links(base.Headless):
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
         links = models.links.Links(common.db, self.user.viewing, request['ds'])
-        return links.get_links(request['addresses'], timerange, request['port'], request['protocol'])
+        return links.get_links(request['addresses'], timerange, request['port'], request['protocol'], request['flat'])
 
     def encode_get_response(self, response):
         seconds = self.duration

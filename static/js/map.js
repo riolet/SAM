@@ -33,7 +33,8 @@ var config = {
     "tend": 2147483647,  // window maximum
     "protocol": "all",
     "ds": null,
-    "linewidth": "links"
+    "linewidth": "links",
+    "flat": true
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -148,6 +149,7 @@ function init_configbuttons() {
     init_toggleButton("show_in", "Inbound Shown", "Inbound Hidden", config.show_in);
     init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
     init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
+    init_toggleButton("flat", "Flatten subnets", "Use subnets", config.update);
     $(".ds.toggle.button").state();
     $(".lw.toggle.button").state();
     document.getElementById("links").classList.add("active");

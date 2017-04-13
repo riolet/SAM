@@ -232,7 +232,7 @@ function onResize() {
 
 function updateDsSelection() {
   "use strict";
-  //determine which ds buttons are clicked.
+  //determine which datasource (ds) buttons are clicked.
   var btns = document.getElementsByClassName("ds button active");
   var oldDS = config.ds;
   var newDS = config.ds;
@@ -269,6 +269,7 @@ function updateDsSelection() {
 
 function updateLwSelection() {
   "use strict";
+  //lw is line width
   let lwbuttons = document.getElementsByClassName("lw button active");
   let num_buttons = lwbuttons.length;
   var oldLW = config.linewidth;
@@ -301,6 +302,7 @@ function updateConfig() {
     config.show_in = document.getElementById("show_in").classList.contains("active");
     config.show_out = document.getElementById("show_out").classList.contains("active");
     config.update = document.getElementById("update").classList.contains("active");
+    config.flat = document.getElementById("flat").classList.contains("active");
     updateDsSelection();
     updateLwSelection();
 
