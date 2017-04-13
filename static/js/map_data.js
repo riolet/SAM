@@ -45,37 +45,40 @@ callback: if is a function, call it when done importing.
 ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 */
 function GET_nodes(parents, callback) {
-    "use strict";
-    var request = {}
-    if (parents !== null) {
-        //filter out parents with children already loaded
-        parents = parents.filter(function (parent) {
-            return !parent.childrenLoaded;
-        });
-        if (parents.length == 0) {
-            return;
-        }
-        request.address = parents.map(function (parent) {
-            parent.childrenLoaded = true;
-            return parent.address;
-        }).join(",");
-    }
-    $.ajax({
-        url: "/nodes",
-        type: "GET",
-        data: request,
-        dataType: "json",
-        error: onNotLoadData,
-        success: function (response) {
-            node_update(response);
-            if (typeof callback === "function") {
-                callback(response);
-            } else {
-                updateRenderRoot();
-                render_all();
-            }
-        }
+  "use strict";
+  var request = {}
+  if (parents !== null) {
+    //filter out parents with children already loaded
+    parents = parents.filter(function (parent) {
+        return !parent.childrenLoaded;
     });
+    if (parents.length == 0) {
+      return;
+    }
+    request.address = parents.map(function (parent) {
+      parent.childrenLoaded = true;
+      return parent.address;
+    }).join(",");
+  }
+  if (config.flat) {
+    request.flat = true;
+  }
+  $.ajax({
+    url: "/nodes",
+    type: "GET",
+    data: request,
+    dataType: "json",
+    error: onNotLoadData,
+    success: function (response) {
+      node_update(response);
+      if (typeof callback === "function") {
+        callback(response);
+      } else {
+        updateRenderRoot();
+        render_all();
+      }
+    }
+  });
 }
 
 function reportErrors(response) {
@@ -115,6 +118,9 @@ function GET_links(addrs) {
         "tend": config.tend,
         "ds": config.ds
     };
+    if (config.flat) {
+      requestData.flat = true;
+    }
     $.ajax({
         url: "/links",
         type: "GET",
@@ -155,17 +161,20 @@ function GET_portinfo(port, callback) {
 }
 
 function checkLoD() {
-    "use strict";
-
-    var nodesToLoad = []
-    renderCollection.forEach(function (node) {
-        if (node.subnet < currentSubnet(g_scale)) {
-            nodesToLoad.push(node);
-        }
-    });
+  "use strict";
+  console.log("checkLoD: ", "running...");
+  var nodesToLoad = [];
+  renderCollection.forEach(function (node) {
+    if (node.subnet < currentSubnet(g_scale)) {
+      nodesToLoad.push(node);
+    }
+  });
+  console.log("checkLoD:", nodesToLoad);
+  if (nodesToLoad.length > 0) {
     GET_nodes(nodesToLoad);
     updateRenderRoot();
     render_all();
+  }
 }
 
 function GET_details(node, callback) {

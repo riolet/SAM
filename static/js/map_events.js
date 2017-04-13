@@ -57,26 +57,28 @@ function pick(x, y, scale) {
 }
 
 function mouseup(event) {
-    "use strict";
-    if (ismdown === false) {
-        return;
-    }
+  "use strict";
+  if (ismdown === false) {
+    return;
+  }
 
-    ismdown = false;
-    mx = event.clientX - rect.left;
-    my = event.clientY - rect.top;
+  ismdown = false;
+  mx = event.clientX - rect.left;
+  my = event.clientY - rect.top;
 
-    if (mx === mdownx && my === mdowny) {
-        //mouse hasn't moved. treat this as a "pick" operation
-        var selection = pick((mx - tx) / g_scale, (my - ty) / g_scale, g_scale);
-        //updateSelection(selection);
-        sel_set_selection(selection);
-    }
+  if (mx === mdownx && my === mdowny) {
+    //mouse hasn't moved. treat this as a "pick" operation
+    var selection = pick((mx - tx) / g_scale, (my - ty) / g_scale, g_scale);
+    //updateSelection(selection);
+    sel_set_selection(selection);
+  }
 
-    tx = tx + mx - mdownx;
-    ty = ty + my - mdowny;
-    render_all();
+  tx = tx + mx - mdownx;
+  ty = ty + my - mdowny;
+  render_all();
+  if (config.flat === false) {
     checkLoD();
+  }
 }
 
 function mousemove(event) {
@@ -90,38 +92,40 @@ function mousemove(event) {
 }
 
 function wheel(event) {
-    "use strict";
-    //event is a WheelEvent
-    mx = event.clientX - rect.left;
-    my = event.clientY - rect.top;
+  "use strict";
+  //event is a WheelEvent
+  mx = event.clientX - rect.left;
+  my = event.clientY - rect.top;
 
-    if (event.deltaY < 0) { // Zoom in
-        if (g_scale >= 60.0) {
-            return;
-        }
-        tx -= mx;
-        ty -= my;
-        g_scale *= 1.15;
-        tx *= 1.15;
-        ty *= 1.15;
-        tx += mx;
-        ty += my;
-    } else if (event.deltaY > 0) { // Zoom out
-        if (g_scale <= 0.0005) {
-            return;
-        }
-        tx -= mx;
-        ty -= my;
-        g_scale *= 0.87;
-        tx *= 0.87;
-        ty *= 0.87;
-        tx += mx;
-        ty += my;
-    } else {
-        return;
+  if (event.deltaY < 0) { // Zoom in
+    if (g_scale >= 60.0) {
+      return;
     }
-    render_all();
+    tx -= mx;
+    ty -= my;
+    g_scale *= 1.15;
+    tx *= 1.15;
+    ty *= 1.15;
+    tx += mx;
+    ty += my;
+  } else if (event.deltaY > 0) { // Zoom out
+    if (g_scale <= 0.0005) {
+      return;
+    }
+    tx -= mx;
+    ty -= my;
+    g_scale *= 0.87;
+    tx *= 0.87;
+    ty *= 0.87;
+    tx += mx;
+    ty += my;
+  } else {
+    return;
+  }
+  render_all();
+  if (config.flat === false) {
     checkLoD();
+  }
 }
 
 function keydown(event) {

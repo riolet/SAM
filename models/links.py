@@ -98,7 +98,7 @@ class Links:
                  "SUM(links) AS 'links', " \
                  "SUM(bytes_sent) + SUM(COALESCE(bytes_received, 0)) AS 'bytes', " \
                  "SUM(packets_sent) + SUM(COALESCE(packets_received, 0)) AS 'packets', " \
-                 "GROUP_CONCAT(DISTINCT protocols) AS 'protocols'"
+                 "GROUP_CONCAT(DISTINCT protocol) AS 'protocols'"
         group_by = "GROUP BY src, dst, port"
 
         if inbound:

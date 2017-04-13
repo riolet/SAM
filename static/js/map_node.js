@@ -1,6 +1,6 @@
 var m_nodes = {};
 
-function Node(alias, address, number, subnet, connections, x, y, radius) {
+function Node(alias, address, number, subnet, x, y, radius) {
     "use strict";
     if (typeof alias === "string") {
         this.alias = alias;  //Custom address translation
@@ -10,7 +10,6 @@ function Node(alias, address, number, subnet, connections, x, y, radius) {
     this.address = address.toString();  //address: 12.34.56.78
     this.number = number;               //ip segment number: 78
     this.subnet = subnet;               //ip subnet number: 8, 16, 24, 32
-    this.connections = connections;     //number of connections (not unique) this node is involved in
     this.x = x;                         //render: x position in graph
     this.y = y;                         //render: y position in graph
     this.radius = radius;               //render: radius
@@ -120,11 +119,23 @@ function import_node(parent, node) {
     "use strict";
     var number = determine_number(node);
     if (parent === null) {
-        m_nodes[number] = new Node(node.alias, number.toString(), number, 8, node.connections, node.x, node.y, node.radius);
+        m_nodes[number] = new Node(node.alias, number.toString(), number, 8, node.x, node.y, node.radius);
     } else {
         var name = parent.address + "." + number.toString();
-        parent.children[number] = new Node(node.alias, name, number, parent.subnet + 8, node.connections, node.x, node.y, node.radius);
+        parent.children[number] = new Node(node.alias, name, number, parent.subnet + 8, node.x, node.y, node.radius);
     }
+}
+
+function ip_to_string(ip) {
+  return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
+}
+
+function import_node_flat(parent, node) {
+    "use strict";
+    var number = node.ipstart;
+    var address = ip_to_string(number);
+    m_nodes[number] = new Node(node.alias, address, number, 32, node.x, node.y, 1500);
+    m_nodes[number].childrenLoaded = true
 }
 
 // `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
@@ -140,6 +151,13 @@ function node_update(response) {
             if (subnetLabel == "") { //resets view if we aren't zoomed in.
                     resetViewport(m_nodes);
             }
+        } else if (parent_address === "flat") {
+          console.log("importing flat nodes");
+          console.log(response[parent_address]);
+          m_nodes = {};
+            response[parent_address].forEach(function (node) {
+                import_node_flat(null, node);
+            });
         } else {
             var parent = findNode(parent_address);
             response[parent_address].forEach(function (node) {
@@ -151,3 +169,4 @@ function node_update(response) {
     updateRenderRoot();
     render_all();
 }
+

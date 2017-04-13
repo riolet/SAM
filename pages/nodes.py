@@ -49,7 +49,7 @@ class Nodes(base.HeadlessPost):
     def perform_get_command(self, request):
         self.require_group('read')
         if request['flat']:
-            response = {'_': self.nodesModel.get_flat_nodes()}
+            response = {'flat': self.nodesModel.get_flat_nodes()}
         elif len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:

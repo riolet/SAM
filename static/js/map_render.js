@@ -53,6 +53,10 @@ function opacity(subnet, type, scale) {
     var startZoom = -Infinity;
     var endZoom = Infinity;
 
+    if (config.flat) {
+      return 1
+    }
+
     if (subnet === 8) {
         endZoom = zLinks16;
     } else if (subnet === 16) {
@@ -208,6 +212,7 @@ function updateRenderRoot() {
     "use strict";
     renderCollection = onScreen(tx, ty, g_scale);
     subnetLabel = getSubnetLabel();
+    //console.log("updateRenderRoot: ", "updating: ", renderCollection.length, " nodes in collection");
 }
 
 function drawLoopArrow(node, scale) {

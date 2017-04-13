@@ -174,6 +174,10 @@ function init_canvas(c, cx) {
 
 function currentSubnet(scale) {
     "use strict";
+    if (config.flat) {
+        return 32;
+    }
+
     if (scale < zNodes16) {
         return 8;
     }
@@ -256,6 +260,15 @@ function findNode(ip8, ip16, ip24, ip32) {
     }
     if (ip32 === undefined) {
         ip32 = -1;
+    }
+
+    if (config.flat) {
+      var ip = ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32;
+      if (m_nodes.hasOwnProperty(ip)) {
+        return m_nodes[ip]
+      } else {
+        return null;
+      }
     }
 
     if (m_nodes.hasOwnProperty(ip8)) {

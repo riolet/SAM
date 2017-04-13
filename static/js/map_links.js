@@ -21,16 +21,14 @@ function dist_between_squared(x1, y1, x2, y2) {
 
 function link_comparator(a, b) {
     "use strict";
-    var aValue;
-    var bValue;
     //determine value of a and b
     var centerx = (rect.width - 2 * tx) / (2 * g_scale);
     var centery = (rect.height - 2 * ty) / (2 * g_scale);
 
     var aNode = findNode(a);
     var bNode = findNode(b);
-    aValue = 1 / Math.max(1, dist_between_squared(aNode.x, aNode.y, centerx, centery));
-    bValue = 1 / Math.max(1, dist_between_squared(bNode.x, bNode.y, centerx, centery));
+    var aValue = 1 / Math.max(1, dist_between_squared(aNode.x, aNode.y, centerx, centery));
+    var bValue = 1 / Math.max(1, dist_between_squared(bNode.x, bNode.y, centerx, centery));
     // _Value is now a number between 0 and 1, where 1 is closer to center screen
 
     if (renderCollection.indexOf(aNode) != -1) {
@@ -58,14 +56,15 @@ function link_request_submit() {
     }
 
     if (g_chunkSize > request.length) {
+        console.log("Sending a final link request chunk of size ", request.length);
         GET_links(request);
         m_link_requests = [];
     } else {
+        console.log("Sending a link request chunk of size ", g_chunkSize);
         GET_links(request.slice(0, g_chunkSize));
         m_link_requests = request.slice(g_chunkSize);
         m_link_timer = setTimeout(link_request_submit, 500);
     }
-
 }
 
 function link_remove_all(collection) {
@@ -91,6 +90,9 @@ function GET_links_callback(result) {
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
+    console.log("GET_links_callback");
+    console.log(result);
+
     Object.keys(result).forEach(function (address) {
         var node = findNode(address);
         node.inputs = result[address].inputs;
