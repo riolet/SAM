@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS Datasources
 ,name           VARCHAR(255) NOT NULL DEFAULT "default"
 ,ar_active      TINYINT(1) NOT NULL DEFAULT 0
 ,ar_interval    INT NOT NULL DEFAULT 300
+,flat           TINYINT(1) NOT NULL DEFAULT 0
 ,CONSTRAINT `PK_ids` PRIMARY KEY (`id`)
 ,CONSTRAINT `FK_sds` FOREIGN KEY (`subscription`) REFERENCES `Subscriptions` (`subscription`)
 );

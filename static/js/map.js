@@ -34,7 +34,7 @@ var config = {
     "protocol": "all",
     "ds": null,
     "linewidth": "links",
-    "flat": true
+    "flat": false
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity

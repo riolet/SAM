@@ -246,6 +246,7 @@ class Table(base.Headed):
         self.outbound = None
         self.tableModel = None
         self.nodesModel = None
+        self.dsModel = models.datasources.Datasources(common.db, self.session, self.user.viewing)
         self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
     @staticmethod
@@ -313,6 +314,7 @@ class Table(base.Headed):
             'page_size': page_size,
             'order_by': order_by,
             'order_dir': order_dir,
+            'flat': str(self.dsModel.datasources[ds].get('flat', 0) == '1')
         }
 
         return request
@@ -331,6 +333,12 @@ class Table(base.Headed):
             row is a list of [columns]
             column is a tuple of (name, value)
         """
+
+        # if flat mode, default a /32 subnet filter
+        if request['flat']:
+            if not any(isinstance(f, models.filters.SubnetFilter) for f in request['filters']):
+                request['filters'].append(models.filters.SubnetFilter(True, '32'))
+
         self.tableModel = models.tables.Table(common.db, self.user.viewing, self.request['ds'])
         data = self.tableModel.get_table_info(request['filters'],
                                               request['page'],
@@ -368,9 +376,8 @@ class Table(base.Headed):
         return outbound
 
     def get_dses(self):
-        datasources_model = models.datasources.Datasources(common.db, self.session, self.user.viewing)
         ds = self.request['ds']
-        return datasources_model.priority_list(ds)
+        return self.dsModel.priority_list(ds)
 
     @staticmethod
     def next_page(rows, page, page_size):

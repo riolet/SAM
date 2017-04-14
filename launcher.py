@@ -117,14 +117,21 @@ def launch_aggregator(args):
         print('aggregator shut down.')
 
 
-def create_upload_key(db, sub):
+def create_local_settings(db, sub):
     # create 1 key if none exist
     import models.settings
+    import models.datasources
     import models.livekeys
 
     m_set = models.settings.Settings(db, {}, sub)
     ds_id = m_set['datasource']
     m_livekeys = models.livekeys.LiveKeys(db, sub)
+
+    # set useful settings for local viewing.
+    m_ds = models.datasources.Datasources(db, {}, sub)
+    m_ds.set(ds_id, flat='1', ar_active='1', ar_interval=30)
+
+    # create key for uploading securely
     keys = m_livekeys.read()
     if len(keys) == 0:
         m_livekeys.create(ds_id)
@@ -158,7 +165,7 @@ def launch_localmode(args):
     db = common.db_quiet
     sub_id = constants.demo['id']
     check_database()
-    access_key = create_upload_key(db, sub_id)
+    access_key = create_local_settings(db, sub_id)
 
     # launch aggregator process
     aggArgs = args.copy()
