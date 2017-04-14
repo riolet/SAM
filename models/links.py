@@ -59,7 +59,7 @@ class Links:
                 result[address]['outputs'] = self._get_links(ip_start, ip_end, False, timerange, port, protocol)
         return result
 
-    def build_where_clause(self, timestamp_range=None, port=None, protocol=None, rounding=True):
+    def build_where_clause(self, timestamp_range=None, port=None, protocol=None, rounding=True, flat=False):
         clauses = []
         t_start = 0
         t_end = 0
@@ -82,7 +82,10 @@ class Links:
             clauses.append("port = $port")
 
         if protocol:
-            clauses.append("protocols LIKE $protocol")
+            if flat:
+                clauses.append("protocol LIKE $protocol")
+            else:
+                clauses.append("protocols LIKE $protocol")
             protocol = "%{0}%".format(protocol)
 
         qvars = {'tstart': t_start, 'tend': t_end, 'port': port, 'protocol': protocol}
@@ -92,7 +95,7 @@ class Links:
         return where
 
     def _get_links_flat(self, ip, inbound, timerange, port, protocol):
-        where = self.build_where_clause(timerange, port, protocol)
+        where = self.build_where_clause(timerange, port, protocol, flat=True)
 
         select = "src AS 'src_start', src AS 'src_end', dst AS 'dst_start', dst AS 'dst_end', port,  " \
                  "SUM(links) AS 'links', " \
@@ -105,21 +108,20 @@ class Links:
             query = """
                     SELECT {select}
                     FROM {table}
-                    WHERE dst = $ip
+                    WHERE dst = {ip}
                      {where}
                     {group_by}
-                    """.format(where=where, select=select, group_by=group_by, table=self.table_links)
+                    """.format(where=where, select=select, group_by=group_by, table=self.table_links, ip=int(ip))
         else:
             query = """
                     SELECT {select}
                     FROM {table}
-                    WHERE src = $ip
+                    WHERE src = {ip}
                      {where}
                     {group_by}
-                    """.format(where=where, select=select, group_by=group_by, table=self.table_links)
+                    """.format(where=where, select=select, group_by=group_by, table=self.table_links, ip=int(ip))
 
-        qvars = {"ip": ip}
-        rows = list(self.db.query(query, vars=qvars))
+        rows = list(self.db.query(query))
         return rows
 
     def _get_links(self, ip_start, ip_end, inbound, timerange, port, protocol):
@@ -162,21 +164,20 @@ class Links:
             query = """
             SELECT {select}
             FROM {table}
-            WHERE dst_start = $start AND dst_end = $end
+            WHERE dst_start = {start} AND dst_end = {end}
              {where}
             {group_by}
-            """.format(where=where, select=select, group_by=group_by, table=self.table_links_in)
+            """.format(where=where, select=select, group_by=group_by, table=self.table_links_in, start=int(ip_start), end=int(ip_end))
         else:
             query = """
             SELECT {select}
             FROM {table}
-            WHERE src_start = $start AND src_end = $end
+            WHERE src_start = {start} AND src_end = {end}
              {where}
             {group_by}
-            """.format(where=where, select=select, group_by=group_by, table=self.table_links_out)
+            """.format(where=where, select=select, group_by=group_by, table=self.table_links_out, start=int(ip_start), end=int(ip_end))
 
-        qvars = {"start": ip_start, "end": ip_end}
-        rows = list(self.db.query(query, vars=qvars))
+        rows = list(self.db.query(query))
         return rows
 
     def get_all_endpoints(self):
