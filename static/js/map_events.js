@@ -215,12 +215,40 @@ function applysearch() {
     updateRenderRoot();
     render_all();
 }
+function flatsearch() {
+    "use strict";
+    let searchElement = document.getElementById("search");
+    let target = searchElement.value;
+    let ips = target.split(".");
+
+    if (ips.length !== 4) {
+        return;
+    }
+
+    console.log('ips ', ips);
+    let address = parseInt(ips[0]) * 16777216 + parseInt(ips[1]) * 65536 + parseInt(ips[2]) * 256 + parseInt(ips[3]);
+    console.log('seeking address ', address);
+    let node = m_nodes[address];
+    if (!node) {
+        console.log("Address not found: ", target);
+        return;
+    }
+
+    resetViewport([node], 0.2);
+    sel_set_selection(node);
+    updateRenderRoot();
+    render_all();
+}
 function onsearch() {
     "use strict";
     if (g_timer !== null) {
         clearTimeout(g_timer);
     }
-    g_timer = setTimeout(applysearch, 700);
+    if (config.flat) {
+        g_timer = setTimeout(flatsearch, 700);
+    } else {
+        g_timer = setTimeout(applysearch, 700);
+    }
 }
 
 function onResize() {

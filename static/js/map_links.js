@@ -27,6 +27,9 @@ function link_comparator(a, b) {
 
     var aNode = findNode(a);
     var bNode = findNode(b);
+    if (aNode === null || bNode === null) {
+        return 0;
+    }
     var aValue = 1 / Math.max(1, dist_between_squared(aNode.x, aNode.y, centerx, centery));
     var bValue = 1 / Math.max(1, dist_between_squared(bNode.x, bNode.y, centerx, centery));
     // _Value is now a number between 0 and 1, where 1 is closer to center screen
