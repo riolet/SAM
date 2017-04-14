@@ -353,7 +353,7 @@ function renderLabels(node, x, y, scale) {
     var alpha = 0;
     ctx.font = "1.5em sans";
     ctx.globalAlpha = 1.0;
-    if (scale > 25) {
+    if (scale > 25 || config.flat) {
         //Draw port labels at this zoom level
         alpha = opacity(32, "label", scale);
         if (m_selection["selection"] === null || m_selection["selection"] === node) {
@@ -363,41 +363,66 @@ function renderLabels(node, x, y, scale) {
         }
         if (node.subnet === 32) {
             Object.keys(node.ports).forEach(function (p) {
+                let side = node.ports[p]
                 var text = ports.get_alias(p);
                 ctx.font = "1.5em sans";
                 var sizeMin = ctx.measureText("mmmmm");
                 var size = Math.max(ctx.measureText(text).width, sizeMin.width);
                 var hOffset = sizeMin.width * 0.07;
 
-                var newSize = (1.2 * scale) / size * 1.6;
+                var newSize = (1.2 * scale) / size * node.radius;
                 ctx.font = newSize.toString() + "em sans";
                 size = ctx.measureText(text).width;
                 var px;
                 var py;
-                if (node.ports[p].side === "left") {
-                    px = node.ports[p].x * scale + x - size / 2;
-                    py = node.ports[p].y * scale + y + hOffset;
-                    ctx.fillText(text, px, py);
-                } else if (node.ports[p].side === "right") {
-                    px = node.ports[p].x * scale + x - size / 2;
-                    py = node.ports[p].y * scale + y + hOffset;
-                    ctx.fillText(text, px, py);
-                } else if (node.ports[p].side === "top") {
-                    px = node.ports[p].x * scale + x;
-                    py = node.ports[p].y * scale + y;
-                    ctx.save();
-                    ctx.translate(px, py);
-                    ctx.rotate(Math.PI / 2);
-                    ctx.fillText(text, -size / 2, hOffset);
-                    ctx.restore();
-                } else if (node.ports[p].side === "bottom") {
-                    px = node.ports[p].x * scale + x;
-                    py = node.ports[p].y * scale + y;
-                    ctx.save();
-                    ctx.translate(px, py);
-                    ctx.rotate(Math.PI / 2);
-                    ctx.fillText(text, -size / 2, hOffset);
-                    ctx.restore();
+                if (side === 'l-t') {
+                  px = (node.x - node.radius) * scale + x - size / 2;
+                  py = (node.y - node.radius / 3) * scale + y + hOffset;
+                  ctx.fillText(text, px, py);
+                } else if (side === 'l-b') {
+                  px = (node.x - node.radius) * scale + x - size / 2;
+                  py = (node.y + node.radius / 3) * scale + y + hOffset;
+                  ctx.fillText(text, px, py);
+                } else if (side === 'r-t') {
+                  px = (node.x + node.radius) * scale + x - size / 2;
+                  py = (node.y - node.radius / 3) * scale + y + hOffset;
+                  ctx.fillText(text, px, py);
+                } else if (side === 'r-b') {
+                  px = (node.x + node.radius) * scale + x - size / 2;
+                  py = (node.y + node.radius / 3) * scale + y + hOffset;
+                  ctx.fillText(text, px, py);
+                } else if (side === 't-l') {
+                  px = (node.x - node.radius / 3) * scale + x;
+                  py = (node.y - node.radius) * scale + y;
+                  ctx.save();
+                  ctx.translate(px, py);
+                  ctx.rotate(Math.PI / 2);
+                  ctx.fillText(text, -size / 2, 0);
+                  ctx.restore();
+                } else if (side === 't-r') {
+                  px = (node.x + node.radius / 3) * scale + x;
+                  py = (node.y - node.radius) * scale + y;
+                  ctx.save();
+                  ctx.translate(px, py);
+                  ctx.rotate(Math.PI / 2);
+                  ctx.fillText(text, -size / 2, 0);
+                  ctx.restore();
+                } else if (side === 'b-l') {
+                  px = (node.x - node.radius / 3) * scale + x;
+                  py = (node.y + node.radius) * scale + y;
+                  ctx.save();
+                  ctx.translate(px, py);
+                  ctx.rotate(Math.PI / 2);
+                  ctx.fillText(text, -size / 2, 0);
+                  ctx.restore();
+                } else if (side === 'b-r') {
+                  px = (node.x + node.radius / 3) * scale + x;
+                  py = (node.y + node.radius) * scale + y;
+                  ctx.save();
+                  ctx.translate(px, py);
+                  ctx.rotate(Math.PI / 2);
+                  ctx.fillText(text, -size / 2, 0);
+                  ctx.restore();
                 }
             });
         }
@@ -430,36 +455,98 @@ function renderLabels(node, x, y, scale) {
 }
 
 function renderNode(node) {
-    "use strict";
-    if (node.subnet < 31) {
-        ctx.moveTo(node.x + node.radius, node.y);
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
-    } else {
-        //terminal node (final IP address)
-        ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
-        //draw ports
-        var width = 1.2;
-        var height = 0.8;
-        Object.keys(node.ports).forEach(function (p) {
-            if (node.ports[p].side === "left") {
-                //if the port is on the left side
-                ctx.fillRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-                ctx.strokeRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-            } else if (node.ports[p].side === "right") {
-                //if the port is on the right side
-                ctx.fillRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-                ctx.strokeRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-            } else if (node.ports[p].side === "bottom") {
-                //if the port is on the bottom side
-                ctx.fillRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-                ctx.strokeRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-            } else {
-                //the port must be on the top side
-                ctx.fillRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-                ctx.strokeRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-            }
-        });
-    }
+  "use strict";
+  if (node.subnet < 31) {
+    ctx.moveTo(node.x + node.radius, node.y);
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
+  } else {
+    //terminal node (final IP address)
+    ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
+    //draw ports
+    let p_long = node.radius * 4 / 5;  // 1.2
+    let p_short = p_long * 2 / 3;  // 0.8
+    let p_long_r = p_long / 2;  // 0.6
+    let p_short_r = p_short / 2;  // 0.4
+    var corner_x = 0;
+    var corner_y = 0;
+    var width = 0;
+    var height = 0;
+    Object.keys(node.ports).forEach(function (p) {
+      let side = node.ports[p];
+      if (side === "l-t") {
+        //if the port is on the left-top side
+        corner_x = node.x - node.radius - p_long_r;
+        corner_y = node.y - node.radius / 3 - p_short_r;
+        width = p_long;
+        height = p_short;
+      } else if (side === "l-b") {
+        //if the port is on the left-bottom side
+        corner_x = node.x - node.radius - p_long_r;
+        corner_y = node.y + node.radius / 3 - p_short_r;
+        width = p_long;
+        height = p_short;
+      } else if (side === "r-t") {
+        //if the port is on the right-top side
+        corner_x = node.x + node.radius - p_long_r;
+        corner_y = node.y - node.radius / 3 - p_short_r;
+        width = p_long;
+        height = p_short;
+      } else if (side === "r-b") {
+        //if the port is on the right-bottom side
+        corner_x = node.x + node.radius - p_long_r;
+        corner_y = node.y + node.radius / 3 - p_short_r;
+        width = p_long;
+        height = p_short;
+      } else if (side === "t-l") {
+        //if the port is on the top-left side
+        corner_x = node.x - node.radius / 3 - p_short_r;
+        corner_y = node.y - node.radius - p_long_r;
+        width = p_short;
+        height = p_long;
+      } else if (side === "t-r") {
+        //if the port is on the top-right side
+        corner_x = node.x + node.radius / 3 - p_short_r;
+        corner_y = node.y - node.radius - p_long_r;
+        width = p_short;
+        height = p_long;
+      } else if (side === "b-l") {
+        //if the port is on the bottom-left side
+        corner_x = node.x - node.radius / 3 - p_short_r;
+        corner_y = node.y + node.radius - p_long_r;
+        width = p_short;
+        height = p_long;
+      } else if (side === "b-r") {
+        //if the port is on the bottom-right side
+        corner_x = node.x + node.radius / 3 - p_short_r;
+        corner_y = node.y + node.radius - p_long_r;
+        width = p_short;
+        height = p_long;
+      }
+      ctx.fillRect(  corner_x, corner_y, width, height);
+      ctx.strokeRect(corner_x, corner_y, width, height);
+    })
+    /*
+    Object.keys(node.ports).forEach(function (p) {
+        if (node.ports[p].side === "left") {
+            //if the port is on the left side
+            ctx.fillRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
+            ctx.strokeRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
+        } else if (node.ports[p].side === "right") {
+            //if the port is on the right side
+            ctx.fillRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
+            ctx.strokeRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
+        } else if (node.ports[p].side === "bottom") {
+            //if the port is on the bottom side
+            ctx.fillRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
+            ctx.strokeRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
+        } else {
+            //the port must be on the top side
+            ctx.fillRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
+            ctx.strokeRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
+        }
+    });
+    */
+  }
 }
 
 function renderClusters(collection, x, y, scale) {

@@ -29,7 +29,11 @@ function Node(alias, address, number, subnet, x, y, radius) {
 function get_node_name(node) {
     "use strict";
     if (node.alias.length === 0) {
+      if (config.flat) {
+        return node.address.toString();
+      } else {
         return node.number.toString();
+      }
     } else {
         return node.alias;
     }
@@ -47,6 +51,12 @@ function get_node_address(node) {
         add += "/" + node.subnet;
     }
     return add;
+}
+
+function offset_node(node, dx, dy) {
+  //move node
+  node.x += dx;
+  node.y += dy;
 }
 
 function set_node_name(node, name) {
@@ -134,7 +144,7 @@ function import_node_flat(parent, node) {
     "use strict";
     var number = node.ipstart;
     var address = ip_to_string(number);
-    m_nodes[number] = new Node(node.alias, address, number, 32, node.x, node.y, 1500);
+    m_nodes[number] = new Node(node.alias, address, number, 32, node.x, node.y, 12000);
     m_nodes[number].childrenLoaded = true
 }
 
@@ -170,3 +180,57 @@ function node_update(response) {
     render_all();
 }
 
+function get_len(link) {
+  return Math.sqrt(Math.pow(link.x2 - link.x1, 2) + Math.pow(link.y2 - link.y1, 2));
+}
+
+function calculate_average_distance() {
+  var sum_length = 0
+  var n_lengths = 0
+
+  Object.keys(m_nodes).forEach(function (ip, i, ary) {
+    let node = m_nodes[ip];
+    node.inputs.forEach(function (input, i, ary2) {
+      sum_length += get_len(input);
+      n_lengths += 1;
+    });
+  });
+  let avg_len = sum_length / n_lengths
+  return avg_len;
+}
+
+function jiggle_node(node, goal_dist) {
+  node.inputs.forEach(function (input, i, ary2) {
+    let real_dist = get_len(input);
+    let proportion = ((real_dist - goal_dist) / 3) / real_dist;
+    let dx = (input.x1 - input.x2) * proportion;
+    let dy = (input.y1 - input.y2) * proportion;
+    offset_node(node, dx, dy);
+  });
+  node.outputs.forEach(function (output, i, ary2) {
+    let real_dist = get_len(output);
+    let proportion = ((real_dist - goal_dist) / 3) / real_dist;
+    let dx = (output.x2 - output.x1) * proportion;
+    let dy = (output.y2 - output.y1) * proportion;
+    offset_node(node, dx, dy);
+  });
+}
+
+function jiggle_nodes(iterations) {
+  if (iterations === 0) {
+    render_all();
+    return 0;
+  }
+  if (!iterations) {
+    var iterations = 1;
+  }
+  //var dist_avg = calculate_average_distance()
+  var dist_avg = 200000;
+
+  Object.keys(m_nodes).forEach(function (ip, i, ary) {
+    let node = m_nodes[ip];
+    jiggle_node(node, dist_avg);
+  });
+  link_updateAllPositions();
+  return jiggle_nodes(iterations - 1)
+}

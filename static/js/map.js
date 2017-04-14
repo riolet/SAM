@@ -191,6 +191,9 @@ function currentSubnet(scale) {
 }
 
 function find_by_range(ipstart, ipend) {
+    if (config.flat) {
+      return m_nodes[ipstart];
+    }
     var segments;
     var range = ipend - ipstart;
     if (range === 16777215) {

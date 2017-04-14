@@ -116,15 +116,16 @@ function GET_links_callback(result) {
     render_all();
 }
 
-function link_closestEmptyPort(link, used) {
+function link_closestEmptyPort(dest, src, used) {
     "use strict";
     var right = [1, 0, 2, 7, 3, 6, 4, 5];
     var top = [3, 2, 4, 1, 5, 0, 6, 7];
     var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
     var left = [4, 5, 3, 6, 2, 7, 1, 0];
 
-    var dx = link.x2 - link.x1;
-    var dy = link.y2 - link.y1;
+    //console.log("Link_closest from ", src.x, src.y, " to ", dest.x, dest.y);
+    var dx = dest.x - src.x;
+    var dy = dest.y - src.y;
 
     var chooser = function (i) {
         return used[i] === false;
@@ -159,7 +160,7 @@ function link_processPorts(links, node) {
         return;
     }
 
-    var destination = node;
+    var dest = node;
     //
     //    3_2
     //  4|   |1
@@ -167,14 +168,10 @@ function link_processPorts(links, node) {
     //    6 7
     //
     var used = [false, false, false, false, false, false, false, false];
-    var locations = [{"x": destination.x + destination.radius, "y": destination.y + destination.radius / 3, "alias": "", "side": "right"},
-            {"x": destination.x + destination.radius, "y": destination.y - destination.radius / 3, "alias": "", "side": "right"},
-            {"x": destination.x + destination.radius / 3, "y": destination.y - destination.radius, "alias": "", "side": "top"},
-            {"x": destination.x - destination.radius / 3, "y": destination.y - destination.radius, "alias": "", "side": "top"},
-            {"x": destination.x - destination.radius, "y": destination.y - destination.radius / 3, "alias": "", "side": "left"},
-            {"x": destination.x - destination.radius, "y": destination.y + destination.radius / 3, "alias": "", "side": "left"},
-            {"x": destination.x - destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"},
-            {"x": destination.x + destination.radius / 3, "y": destination.y + destination.radius, "alias": "", "side": "bottom"}];
+    var locations = ["r-b", "r-t",
+                     "t-r", "t-l",
+                     "l-t", "l-b",
+                     "b-l", "b-r"];
 
     var port_tracker = {};
     var j;
@@ -185,7 +182,8 @@ function link_processPorts(links, node) {
             continue;
         }
         ports.request_add(links[j].port);
-        choice = link_closestEmptyPort(links[j], used);
+        var source = find_by_range(links[j].src_start, links[j].src_end);
+        choice = link_closestEmptyPort(dest, source, used);
         if (choice === undefined) {
             continue;
         }
@@ -195,56 +193,65 @@ function link_processPorts(links, node) {
             break;
         }
     }
-    destination.ports = port_tracker;
+    dest.ports = port_tracker;
 
     links.forEach(function (link) {
-        var source = find_by_range(link.src_start, link.src_end);
+        var src = find_by_range(link.src_start, link.src_end);
 
-        //offset endpoints by radius
-        var dx = destination.x - source.x;
-        var dy = destination.y - source.y;
+        var dx = dest.x - src.x;
+        var dy = dest.y - src.y;
 
         if (port_tracker.hasOwnProperty(link.port)) {
-            if (port_tracker[link.port].side === "top") {
-                link.x2 = port_tracker[link.port].x;
-                link.y2 = port_tracker[link.port].y - 0.6;
-            } else if (port_tracker[link.port].side === "left") {
-                link.x2 = port_tracker[link.port].x - 0.6;
-                link.y2 = port_tracker[link.port].y;
-            } else if (port_tracker[link.port].side === "right") {
-                link.x2 = port_tracker[link.port].x + 0.6;
-                link.y2 = port_tracker[link.port].y;
-            } else if (port_tracker[link.port].side === "bottom") {
-                link.x2 = port_tracker[link.port].x;
-                link.y2 = port_tracker[link.port].y + 0.6;
-            } else {
-                //this should never execute
-                link.x2 = port_tracker[link.port].x;
-                link.y2 = port_tracker[link.port].y;
-            }
-            if (Math.abs(dx) > Math.abs(dy)) {
-                //arrow is more horizontal than vertical
-                if (dx < 0) {
-                    //leftward flowing
-                    link.x1 = source.x - source.radius;
-                    link.y1 = source.y + source.radius * 0.2;
-                } else {
-                    //rightward flowing
-                    link.x1 = source.x + source.radius;
-                    link.y1 = source.y - source.radius * 0.2;
-                }
-            } else {
-                //arrow is more vertical than horizontal
-                if (dy < 0) {
-                    //upward flowing
-                    link.y1 = source.y - source.radius;
-                    link.x1 = source.x + source.radius * 0.2;
-                } else {
-                    //downward flowing
-                    link.y1 = source.y + source.radius;
-                    link.x1 = source.x - source.radius * 0.2;
-                }
-            }
+          var side = port_tracker[link.port];
+          if (side === 't-l') {
+            link.x2 = dest.x - dest.radius / 3;
+            link.y2 = dest.y - dest.radius - dest.radius * 2 / 5;
+          } else if (side === 't-r') {
+            link.x2 = dest.x + dest.radius / 3;
+            link.y2 = dest.y - dest.radius - dest.radius * 2 / 5;
+          } else if (side === 'b-l') {
+            link.x2 = dest.x - dest.radius / 3;
+            link.y2 = dest.y + dest.radius + dest.radius * 2 / 5;
+          } else if (side === 'b-r') {
+            link.x2 = dest.x + dest.radius / 3;
+            link.y2 = dest.y + dest.radius + dest.radius * 2 / 5;
+          } else if (side === 'l-t') {
+            link.x2 = dest.x - dest.radius - dest.radius * 2 / 5;
+            link.y2 = dest.y - dest.radius / 3;
+          } else if (side === 'l-b') {
+            link.x2 = dest.x - dest.radius - dest.radius * 2 / 5;
+            link.y2 = dest.y + dest.radius / 3;
+          } else if (side === 'r-t') {
+            link.x2 = dest.x + dest.radius + dest.radius * 2 / 5;
+            link.y2 = dest.y - dest.radius / 3;
+          } else if (side === 'r-b') {
+            link.x2 = dest.x + dest.radius + dest.radius * 2 / 5;
+            link.y2 = dest.y + dest.radius / 3;
+          }
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+              //arrow is more horizontal than vertical
+              if (dx < 0) {
+                  //leftward flowing
+                  link.x1 = source.x - source.radius;
+                  link.y1 = source.y + source.radius * 0.2;
+              } else {
+                  //rightward flowing
+                  link.x1 = source.x + source.radius;
+                  link.y1 = source.y - source.radius * 0.2;
+              }
+          } else {
+              //arrow is more vertical than horizontal
+              if (dy < 0) {
+                  //upward flowing
+                  link.y1 = source.y - source.radius;
+                  link.x1 = source.x + source.radius * 0.2;
+              } else {
+                  //downward flowing
+                  link.y1 = source.y + source.radius;
+                  link.x1 = source.x - source.radius * 0.2;
+              }
+          }
         } else {
             //align to corners
             if (dx > 0) {
@@ -317,4 +324,12 @@ function link_processPosition(links, node, n_type) {
             }
         }
     });
+}
+
+function link_updateAllPositions() {
+  Object.keys(m_nodes).forEach(function (ip, i, ary) {
+    let node = m_nodes[ip];
+    link_processPorts(node.inputs, node);
+    link_processPosition(node.outputs, node, "src");
+  });
 }
