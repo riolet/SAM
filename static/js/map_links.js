@@ -59,11 +59,9 @@ function link_request_submit() {
     }
 
     if (g_chunkSize > request.length) {
-        console.log("Sending a final link request chunk of size ", request.length);
         GET_links(request);
         m_link_requests = [];
     } else {
-        console.log("Sending a link request chunk of size ", g_chunkSize);
         GET_links(request.slice(0, g_chunkSize));
         m_link_requests = request.slice(g_chunkSize);
         m_link_timer = setTimeout(link_request_submit, 500);
@@ -93,8 +91,6 @@ function GET_links_callback(result) {
     //for each node address in result:
     //  find that node,
     //  add the new inputs/outputs to that node
-    console.log("GET_links_callback");
-    console.log(result);
 
     Object.keys(result).forEach(function (address) {
         var node = findNode(address);

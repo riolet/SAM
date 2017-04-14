@@ -105,6 +105,7 @@ function init() {
     GET_settings(null, function (settings) {
         config.update = (settings.datasources[settings.datasource].ar_active === 1);
         config.update_interval = settings.datasources[settings.datasource].ar_interval;
+        config.flat = (settings.datasources[settings.datasource].flat === 1);
         config.ds = "ds" + settings.datasource;
         setAutoUpdate();
 
