@@ -4,7 +4,6 @@ sys.path.append(os.path.dirname(__file__))  # this could be executed from any di
 import getopt
 import constants
 import multiprocessing
-import time
 
 application = None
 
