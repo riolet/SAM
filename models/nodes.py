@@ -199,11 +199,8 @@ class WhoisService(threading.Thread):
 
     def get_missing(self):
         where = 'subnet=32 AND alias IS NULL'
-        q = self.db.select(self.table, what='ipstart', where=where, _test=True)
-        print(q)
         rows = self.db.select(self.table, what='ipstart', where=where)
         missing = [common.IPtoString(row['ipstart']) for row in rows]
-        print("running get_missing --> {} found.".format(len(missing)))
         return missing
 
     def run(self):
