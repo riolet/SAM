@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='samapper',
-    version='0.1.0',
+    version='0.1.3',
     classifiers=[
             'Development Status :: 3 - Alpha',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -24,5 +24,8 @@ setup(
     ],
     extras_require={
             'dev': ['pytest>=3.0', 'jasmine>=2.5', 'py>=1.4'],
+    },
+    entry_points={
+            'console_scripts': ['samapper = sam.launcher:main'],
     },
 )

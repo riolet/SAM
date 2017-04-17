@@ -25,7 +25,7 @@ application = None
 # sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
 
 
-def launcher(argv):
+def main(argv):
     kwargs, args = getopt.getopt(argv[1:], '', ['format=', 'port=', 'target=', 'local', 'whois', 'wsgi'])
 
     defaults = {
@@ -215,4 +215,4 @@ def launch_localmode(args):
 
 
 if __name__ == '__main__':
-    launcher(sys.argv)
+    main(sys.argv)
