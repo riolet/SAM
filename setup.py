@@ -23,9 +23,13 @@ setup(
         'requests>=2.13'
     ],
     package_data={
-        'templates': ['*.html'],
-        'sql': ['*.sql', '*.json'],
-        'static': ['*.js', '*.css', '*.png', 'semantic/themes/default/assets/fonts/*.*']
+        'sam': ['templates/*.html',
+                'sql/*.sql',
+                'sql/*.json',
+                'static/*.js',
+                'static/*.css',
+                'static/*.png',
+                'static/semantic/themes/default/assets/fonts/*.*'],
     },
     extras_require={
             'dev': ['pytest>=3.0', 'jasmine>=2.5', 'py>=1.4'],
