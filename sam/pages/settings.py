@@ -1,4 +1,4 @@
-import errors
+from sam import errors
 import re
 import base64
 import base
@@ -74,7 +74,7 @@ class Settings(base.HeadlessPost):
         if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval', 'upload', 'add_live_key'):
             ds = self.decode_datasource(data.get('ds'))
             if not ds:
-                raise errors.RequiredKey('datasource', 'param1')
+                raise errors.RequiredKey('datasource', 'ds')
             request['ds'] = ds
 
         if command == 'ds_name':

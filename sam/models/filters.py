@@ -1,6 +1,6 @@
 import sam.common
 import re
-import sam.models.settings
+from sam.models.settings import Settings
 from sam.models.user import User
 
 
@@ -313,7 +313,7 @@ def readEncoded(filterString):
         ds = int(ds_match.group())
     else:
         user = User(sam.common.session)
-        settings_model = sam.models.settings.Settings({}, user.viewing)
+        settings_model = Settings({}, user.viewing)
         ds = settings_model['datasource']
 
     for encodedFilter in fstrings[1:]:

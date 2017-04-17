@@ -11,7 +11,7 @@ class Login_LDAP(base.Headed):
         super(Login_LDAP, self).__init__('Login', False, True)
         self.styles = ["/static/css/general.css"]
         self.errors = []
-        self.server_address, self.namespace = self.decode_connection_string(constants.config.get('LDAP', 'connection_string'))
+        self.server_address, self.namespace = self.decode_connection_string(constants.LDAP['connection_string'])
 
     # ======== Get
 

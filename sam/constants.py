@@ -1,7 +1,8 @@
 import os
 base_path = os.path.dirname(__file__)
-from ConfigEnvy import ConfigEnvy
+from sam.ConfigEnvy import ConfigEnvy
 
+ConfigEnvy.default_file_name = '/home/joe/SAM/default.cfg'
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases']
@@ -63,20 +64,20 @@ def enable_local_mode():
 del config
 
 urls = [
-    '/', 'pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
-    '/map', 'pages.map.Map',
-    '/stats', 'pages.stats.Stats',
-    '/nodes', 'pages.nodes.Nodes',
-    '/links', 'pages.links.Links',
-    '/details', 'pages.details.Details',
-    '/portinfo', 'pages.portinfo.Portinfo',
-    '/metadata', 'pages.metadata.Metadata',
-    '/settings', 'pages.settings.Settings',
-    '/settings_page', 'pages.settings_page.SettingsPage',
-    '/table', 'pages.table.Table',
+    '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
+    '/map', 'sam.pages.map.Map',
+    '/stats', 'sam.pages.stats.Stats',
+    '/nodes', 'sam.pages.nodes.Nodes',
+    '/links', 'sam.pages.links.Links',
+    '/details', 'sam.pages.details.Details',
+    '/portinfo', 'sam.pages.portinfo.Portinfo',
+    '/metadata', 'sam.pages.metadata.Metadata',
+    '/settings', 'sam.pages.settings.Settings',
+    '/settings_page', 'sam.pages.settings_page.SettingsPage',
+    '/table', 'sam.pages.table.Table',
 
-    '/login_LDAP', 'pages.login.Login_LDAP',
-    '/logout', 'pages.logout.Logout',
+    '/login_LDAP', 'sam.pages.login.Login_LDAP',
+    '/logout', 'sam.pages.logout.Logout',
 ]
 
 navbar = [

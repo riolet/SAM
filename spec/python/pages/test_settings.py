@@ -76,7 +76,7 @@ def test_post_ds_name():
             data = {'command': 'ds_name', 'ds': 'ds_1'}
             p.decode_post_request(data)
 
-        p.dsModel = db_connection.mocker()
+        p.dsModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
         assert calls[0] == ('set', (1,), {'name': 'test_name'})
@@ -100,7 +100,7 @@ def test_post_ds_live():
             data = {'command': 'ds_live', 'ds': 'ds_1'}
             p.decode_post_request(data)
 
-        p.dsModel = db_connection.mocker()
+        p.dsModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
         assert calls[0] == ('set', (1,), {'ar_active': 1})
@@ -124,7 +124,7 @@ def test_post_ds_interval():
             data = {'command': 'ds_interval', 'ds': 'ds_1'}
             p.decode_post_request(data)
 
-        p.dsModel = db_connection.mocker()
+        p.dsModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
         assert calls[0] == ('set', (1,), {'ar_interval': 300})
@@ -144,7 +144,7 @@ def test_post_ds_new():
             data = {'command': 'ds_new'}
             p.decode_post_request(data)
 
-        p.dsModel = db_connection.mocker()
+        p.dsModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
         assert calls[0] == ('create_datasource', ('test datasource',), {})
@@ -164,7 +164,7 @@ def test_post_ds_rm():
             data = {'command': 'ds_rm'}
             p.decode_post_request(data)
 
-        p.dsModel = db_connection.mocker()
+        p.dsModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.dsModel.calls
         assert calls[0] == ('remove_datasource', (12,), {})
@@ -184,7 +184,7 @@ def test_post_ds_select():
             data = {'command': 'ds_select'}
             p.decode_post_request(data)
 
-        p.settingsModel = db_connection.mocker()
+        p.settingsModel = db_connection.Mocker()
         p.perform_post_command(expected)
         print(p.settingsModel.kvs)
         print(type(p.settingsModel.kvs))
@@ -201,7 +201,7 @@ def test_post_rm_hosts():
         }
         assert request == expected
 
-        p.nodesModel = db_connection.mocker()
+        p.nodesModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.nodesModel.calls
         assert calls[0] == ('delete_custom_hostnames', (), {})
@@ -217,7 +217,7 @@ def test_post_rm_tags():
         }
         assert request == expected
 
-        p.nodesModel = db_connection.mocker()
+        p.nodesModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.nodesModel.calls
         assert calls[0] == ('delete_custom_tags', (), {})
@@ -233,7 +233,7 @@ def test_post_rm_envs():
         }
         assert request == expected
 
-        p.nodesModel = db_connection.mocker()
+        p.nodesModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.nodesModel.calls
         assert calls[0] == ('delete_custom_envs', (), {})
@@ -256,7 +256,7 @@ def test_post_rm_conns():
 
         old = sam.models.links.Links
         try:
-            sam.models.links.Links = db_connection.mocker
+            sam.models.links.Links = db_connection.Mocker
             p.perform_post_command(expected)
             calls = p.linksModel.calls
             assert p.linksModel.constructor == ((db, sub_id, 12), {})
@@ -289,7 +289,7 @@ def test_post_upload():
 
         old = sam.models.upload.Uploader
         try:
-            sam.models.upload.Uploader = db_connection.mocker
+            sam.models.upload.Uploader = db_connection.Mocker
             p.perform_post_command(expected)
             calls = p.uploadModel.calls
             assert p.uploadModel.constructor == ((db, sub_id, 12, 'paloalto'), {})
@@ -312,7 +312,7 @@ def test_post_add_live_key():
             data = {'command': 'add_live_key'}
             p.decode_post_request(data)
 
-        p.livekeyModel = db_connection.mocker()
+        p.livekeyModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.livekeyModel.calls
         assert calls[0] == ('create', (12,), {})
@@ -332,7 +332,7 @@ def test_post_del_live_key():
             data = {'command': 'del_live_key'}
             p.decode_post_request(data)
 
-        p.livekeyModel = db_connection.mocker()
+        p.livekeyModel = db_connection.Mocker()
         p.perform_post_command(expected)
         calls = p.livekeyModel.calls
         assert calls[0] == ('delete', ('abc123',), {})

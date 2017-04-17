@@ -314,7 +314,7 @@ class Table(base.Headed):
             'page_size': page_size,
             'order_by': order_by,
             'order_dir': order_dir,
-            'flat': str(self.dsModel.datasources[ds].get('flat', 0) == '1')
+            'flat': str(self.dsModel.datasources[ds].get('flat', 0)) == '1'
         }
 
         return request

@@ -1,4 +1,4 @@
-import models.datasources
+from sam.models.datasources import Datasources
 import base
 from sam import common
 
@@ -25,7 +25,7 @@ class Map(base.Headed):
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
         self.require_group('read')
-        datasources = models.datasources.Datasources(common.db, self.session, self.user.viewing)
+        datasources = Datasources(common.db, self.session, self.user.viewing)
         dses = [(k, v['name']) for k, v in datasources.datasources.iteritems()]
 
         return self.render('map', dses)

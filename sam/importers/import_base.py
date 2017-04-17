@@ -1,6 +1,7 @@
 import sys
 import os
 import sam.constants
+import traceback
 common = None
 Datasources = None
 
@@ -223,8 +224,10 @@ Usage:
         global Datasources
         try:
             import sam.common
+            common = sam.common
             from sam.models.datasources import Datasources
         except:
+            traceback.print_exc()
             import sam.integrity
             sam.integrity.check_and_fix_db_access(sam.constants.dbconfig.copy())
         try:
@@ -232,11 +235,12 @@ Usage:
             self.dsModel = Datasources(common.db, {}, self.subscription)
             datasources = self.dsModel.datasources.values()
         except:
-            import integrity
-            integrity.check_and_fix_integrity()
+            traceback.print_exc()
+            import sam.integrity
+            sam.integrity.check_and_fix_integrity()
 
         if not self.ds:
-            for datasource in self.dsModel.datasources.values():
+            for datasource in datasources:
                 # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                 if datasource['name'] == self.datasource:
                     self.ds = datasource['id']

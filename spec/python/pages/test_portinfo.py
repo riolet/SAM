@@ -89,7 +89,7 @@ def test_decode_post():
 def test_perform_post():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = sam.pages.portinfo.Portinfo()
-        p.portModel = db_connection.mocker()
+        p.portModel = db_connection.Mocker()
 
         request = {'port': 80, 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}
         p.perform_post_command(request)

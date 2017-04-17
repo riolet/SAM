@@ -34,7 +34,8 @@ def test_decode_get():
             'ds': 1,
             'tend': 2147483647,
             'tstart': 1,
-            'port': 180
+            'port': 180,
+            'flat': False
         }
         assert actual == expected
 
@@ -49,7 +50,8 @@ def test_decode_get():
             'ds': 1,
             'tstart': 1,
             'tend': 2147483647,
-            'port': None
+            'port': None,
+            'flat': False
         }
         assert actual == expected
 

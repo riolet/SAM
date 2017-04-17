@@ -25,13 +25,13 @@ def test_get_protocol_list():
 
 def test_get_timerange():
     l_model = Links(db, sub_id, ds_full)
-    range = l_model.get_timerange()
-    assert datetime.fromtimestamp(range['min']) == datetime(2016, 1, 17, 13, 20, 00)
-    assert datetime.fromtimestamp(range['max']) == datetime(2018, 3, 19, 15, 25, 00)
+    trange = l_model.get_timerange()
+    assert datetime.fromtimestamp(trange['min']) == datetime(2016, 1, 17, 13, 20, 00)
+    assert datetime.fromtimestamp(trange['max']) == datetime(2018, 3, 19, 15, 25, 00)
 
     l_model = Links(db, sub_id, ds_empty)
-    range = l_model.get_timerange()
-    assert range['min'] == range['max']
+    trange = l_model.get_timerange()
+    assert trange['min'] == trange['max']
 
 
 def test_get_links():
@@ -40,21 +40,21 @@ def test_get_links():
     port = None
     protocol = None
 
-    links = l_model.get_links([], timerange, port, protocol)
+    links = l_model.get_links([], timerange, port, protocol, False)
     assert links == {}
 
-    links = l_model.get_links(['110.11.12.13'], timerange, port, protocol)
+    links = l_model.get_links(['110.11.12.13'], timerange, port, protocol, False)
     first = links['110.11.12.13']
     assert len(first['outputs']) == 0
     assert len(first['inputs']) == 0
 
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 6
     assert sum([x['links'] for x in first['outputs']]) == 16
     assert len(first['inputs']) == 3
 
-    links = l_model.get_links(['159.69.79.89', '150.60.70.80'], timerange, port, protocol)
+    links = l_model.get_links(['159.69.79.89', '150.60.70.80'], timerange, port, protocol, False)
     first = links['159.69.79.89']
     second = links['150.60.70.80']
     assert len(first['outputs']) == 2
@@ -71,7 +71,7 @@ def test_get_links_time():
     protocol = None
 
     # need filter by time range
-    links = l_model.get_links(['110.20.30.40', '150.60.70.80', '159.69.79.89'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40', '150.60.70.80', '159.69.79.89'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     second = links['150.60.70.80']
     third = links['159.69.79.89']
@@ -98,7 +98,7 @@ def test_get_links_port():
     # need filter by port
     # '110.20.30.40' @ 180  # 8 out 2 in
     # "150.60.70.80" @ 180  # 0 out, 1 in
-    links = l_model.get_links(['110.20.30.40', '150.60.70.80'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40', '150.60.70.80'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     second = links['150.60.70.80']
     assert len(first['outputs']) == 4
@@ -111,7 +111,7 @@ def test_get_links_port():
     # '110.20.30.40' @ 1443  # 8 out 1 in
     # "150.60.70.80" @ 1443  # 0 out, 0 in
     port = 1443
-    links = l_model.get_links(['110.20.30.40', '150.60.70.80'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40', '150.60.70.80'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     second = links['150.60.70.80']
     assert len(first['outputs']) == 2
@@ -131,7 +131,7 @@ def test_get_links_protocol():
     # '110.20.30.40' ICMP  # 0 out 3 in
     # '150.60.70.80' ICMP  # 0 out 0 in
     # '159.69.79.89' ICMP  # 3 out 0 in
-    links = l_model.get_links(['110.20.30.40', '150.60.70.80', '159.69.79.89'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40', '150.60.70.80', '159.69.79.89'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     second = links['150.60.70.80']
     third = links['159.69.79.89']
@@ -144,14 +144,14 @@ def test_get_links_protocol():
 
     # '110.20.30.40' TCP   # 8 out 1 in
     protocol = 'TCP'
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 4 and sum([x['links'] for x in first['outputs']]) == 8
     assert len(first['inputs']) == 1
 
     # '110.20.30.40' UDP   # 8 out 0 in
     protocol = 'UDP'
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 2 and sum([x['links'] for x in first['outputs']]) == 8
     assert len(first['inputs']) == 0
@@ -164,14 +164,14 @@ def test_get_links_combined():
     protocol = 'TCP'
 
     # '110.20.30.40' TCP 2018 180  # 2 out 0 in
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 1 and sum([x['links'] for x in first['outputs']]) == 2
     assert len(first['inputs']) == 0
 
     # '110.20.30.40' 2018 180  # 3 out 1 in
     protocol = None
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 2 and sum([x['links'] for x in first['outputs']]) == 3
     assert len(first['inputs']) == 1 and sum([x['links'] for x in first['inputs']]) == 1
@@ -179,7 +179,7 @@ def test_get_links_combined():
     # '110.20.30.40' TCP 2018  # 4 out 0 in
     protocol = 'TCP'
     port = None
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 2 and sum([x['links'] for x in first['outputs']]) == 4
     assert len(first['inputs']) == 0
@@ -188,7 +188,7 @@ def test_get_links_combined():
     port = 180
     protocol = 'TCP'
     timerange = None
-    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol)
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, False)
     first = links['110.20.30.40']
     assert len(first['outputs']) == 3 and sum([x['links'] for x in first['outputs']]) == 4
     assert len(first['inputs']) == 1 and sum([x['links'] for x in first['inputs']]) == 1

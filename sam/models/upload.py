@@ -26,9 +26,9 @@ class Uploader(object):
     def get_importer(self):
         try:
             try:
-                m_importer = importlib.import_module("importers." + self.log_format)
+                m_importer = importlib.import_module("sam.importers." + self.log_format)
             except ImportError:
-                m_importer = importlib.import_module("importers.import_" + self.log_format)
+                m_importer = importlib.import_module("sam.importers.import_" + self.log_format)
             classes = filter(lambda x: x.endswith("Importer") and x != "BaseImporter", dir(m_importer))
             class_ = getattr(m_importer, classes[0])
             self.importer = class_()

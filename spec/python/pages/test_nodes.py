@@ -11,39 +11,39 @@ def test_decode_get():
         p = sam.pages.nodes.Nodes()
         data = {'address': '10.20.30,150.20,59'}
         request = p.decode_get_request(data)
-        expected = {'addresses': ['10.20.30', '150.20', '59']}
+        expected = {'addresses': ['10.20.30', '150.20', '59'], 'flat': False}
         assert request == expected
 
         data = {'address': '50.60.70.80'}
         request = p.decode_get_request(data)
-        expected = {'addresses': ['50.60.70.80']}
+        expected = {'addresses': ['50.60.70.80'], 'flat': False}
         assert request == expected
 
         data = {}
         request = p.decode_get_request(data)
-        expected = {'addresses': []}
+        expected = {'addresses': [], 'flat': False}
         assert request == expected
 
         data = {'horseradish': 'pickles'}
         request = p.decode_get_request(data)
-        expected = {'addresses': []}
+        expected = {'addresses': [], 'flat': False}
         assert request == expected
 
 
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = sam.pages.nodes.Nodes()
-        request = {'addresses': []}
+        request = {'addresses': [], 'flat': False}
         response = p.perform_get_command(request)
         assert response.keys() == ['_']
         assert len(response['_']) == 6
 
-        request = {'addresses': ['10']}
+        request = {'addresses': ['10'], 'flat': False}
         response = p.perform_get_command(request)
         assert response.keys() == ['10']
         assert len(response['10']) == 2
 
-        request = {'addresses': ['50.60.70.80', '150.60.70', '110.20']}
+        request = {'addresses': ['50.60.70.80', '150.60.70', '110.20'], 'flat': False}
         response = p.perform_get_command(request)
         assert set(response.keys()) == {'50.60.70.80', '150.60.70', '110.20'}
         assert len(response['50.60.70.80']) == 0
@@ -83,7 +83,7 @@ def test_decode_post():
 def test_perform_post():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = sam.pages.nodes.Nodes()
-        p.nodesModel = db_connection.mocker()
+        p.nodesModel = db_connection.Mocker()
 
         request = {'node': '10.20.30.40', 'alias': 'test_alias', 'tags': 'tag1,tag2,,', 'env': 'dev_2'}
         p.perform_post_command(request)

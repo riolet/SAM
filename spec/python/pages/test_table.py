@@ -1,7 +1,7 @@
 from spec.python import db_connection
 
 import sam.pages.table
-import models.filters
+import sam.models.filters
 import web
 from sam import common
 from sam import constants
@@ -217,14 +217,14 @@ def test_columns_headers():
 
 def test_decode_filters():
     q = sam.pages.table.Table
-    port_f = models.filters.filterTypes.index(models.filters.PortFilter)
+    port_f = sam.models.filters.filterTypes.index(sam.models.filters.PortFilter)
     data = {
         'filters': 'ds{ds}|{port};1;2;443'.format(ds=ds_full, port=port_f)
     }
     ds, filters = q.decode_filters(data)
     assert ds == ds_full
     assert len(filters) == 1
-    assert isinstance(filters[0], models.filters.PortFilter)
+    assert isinstance(filters[0], sam.models.filters.PortFilter)
 
     data = {}
     ds, filters = q.decode_filters(data)
@@ -286,7 +286,7 @@ def test_decode_order():
 
 
 def test_decode_get():
-    port_f = models.filters.filterTypes.index(models.filters.PortFilter)
+    port_f = sam.models.filters.filterTypes.index(sam.models.filters.PortFilter)
     with db_connection.env(mock_input=True, mock_session=True, login_active=False):
         table = sam.pages.table.Table()
         data = {
@@ -300,11 +300,12 @@ def test_decode_get():
         expected = {
             'download': False,
             'ds': ds_full,
-            'filters': [models.filters.PortFilter(True, '2', '443')],
+            'filters': [sam.models.filters.PortFilter(True, '2', '443')],
             'page': 2,
             'page_size': 20,
             'order_by': 1,
             'order_dir': 'desc',
+            'flat': False
         }
         assert request == expected
 
@@ -318,6 +319,7 @@ def test_decode_get():
             'page_size': 10,
             'order_by': 0,
             'order_dir': 'asc',
+            'flat': False
         }
         assert request == expected
 
@@ -367,7 +369,7 @@ def test_render():
 
 
 def test_download():
-    port_f = models.filters.filterTypes.index(models.filters.PortFilter)
+    port_f = sam.models.filters.filterTypes.index(sam.models.filters.PortFilter)
     with db_connection.env(mock_input=True, mock_session=True, login_active=False, mock_render=True):
         web.input = lambda: {'download': '1', 'filters': 'ds{ds}|{port};1;2;80'.format(ds=ds_full, port=port_f)}
         web.ctx['headers'] = []
@@ -377,9 +379,18 @@ def test_download():
         headers = lines[0]
         lines = lines[1:]
         addresses = [line.partition(',')[0] for line in lines]
-        expected = [u'10.0.0.0/8', u'10.20.0.0/16', u'10.20.32.0/24', u'10.20.32.43/32', u'10.24.0.0/16',
-                    u'10.24.34.0/24', u'10.24.34.44/32', u'10.24.34.45/32', u'50.0.0.0/8', u'50.64.0.0/16',
-                    u'50.64.76.0/24', u'50.64.76.86/32']
+        expected = [u'10.0.0.0/8',
+                    u'10.20.0.0/16',
+                    u'10.20.32.0/24',
+                    u'10.20.32.43/32',
+                    u'10.24.0.0/16',
+                    u'10.24.34.0/24',
+                    u'10.24.34.44/32',
+                    u'10.24.34.45/32',
+                    u'50.0.0.0/8',
+                    u'50.64.0.0/16',
+                    u'50.64.76.0/24',
+                    u'50.64.76.86/32']
         assert addresses == expected
         assert headers == 'Address,Hostname,"Role (0 = client, 1 = server)",' \
                           'Environment,Tags,Bytes Handled,Packets Handled'
