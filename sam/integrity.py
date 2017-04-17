@@ -5,9 +5,9 @@ from sam import constants
 from sam import common
 import web
 from MySQLdb import OperationalError
-import sam.models.subscriptions
-import sam.models.datasources
-import sam.models.settings
+from sam.models.subscriptions import Subscriptions
+from sam.models.datasources import Datasources
+from sam.models.settings import Settings
 
 template_subscription_tables = map(lambda x: 's{acct}_' + x, constants.subscription_tables)
 template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, constants.datasource_tables)
@@ -224,7 +224,7 @@ def check_default_subscription(db):
     :return: 0 if no problems, -1 if default subscription is missing, -2 if default subscription id is taken.
     """
     print("Checking default subscription")
-    sub_model = sam.models.subscriptions.Subscriptions(db)
+    sub_model = Subscriptions(db)
     subs = sub_model.get_all()
     errors = -1
     for sub in subs:
@@ -247,7 +247,7 @@ def fix_default_subscription(db, errors):
         print("\tNo fix needed")
     elif errors == -1:
         print("\tCreating default subscription")
-        sub_model = sam.models.subscriptions.Subscriptions(db)
+        sub_model = Subscriptions(db)
         sub_model.create_default_subscription()
     else:
         raise NotImplementedError("Cannot fix bad default subscription")
@@ -264,7 +264,7 @@ def check_subscriptions(db):
     :rtype: dict[str, set[str]]
     """
     print("Checking subscription tables")
-    sub_model = sam.models.subscriptions.Subscriptions(db)
+    sub_model = Subscriptions(db)
     sub_ids = sub_model.get_id_list()
     all_sub_tables = get_table_names(db)
     all_sub_tables = filter(lambda x: re.match(r'^s\d+_[a-zA-Z0-9]+$', x), all_sub_tables)
@@ -307,7 +307,7 @@ def fix_subscriptions(db, errors):
         for table in errors['extra']:
             db.query("DROP TABLE {0};".format(table))
     # create tables for malformed subscriptions
-    sub_model = sam.models.subscriptions.Subscriptions(db)
+    sub_model = Subscriptions(db)
     if 'malformed' in errors and len(errors['malformed']) > 0:
         for sid in errors['malformed']:
             print("\tRebuilding malformed tables for subscription {0}".format(sid))
@@ -327,7 +327,7 @@ def check_settings(db):
         "missing": a set of all subscriptions that are missing their settings row
     """
     print("Checking settings...")
-    sub_model = sam.models.subscriptions.Subscriptions(db)
+    sub_model = Subscriptions(db)
     expected = set(sub_model.get_id_list())
 
     settings_rows = list(db.select("Settings"))
@@ -362,7 +362,7 @@ def fix_settings(db, errors):
     if 'missing' in errors and len(errors['missing']) > 0:
         for sub_id in errors['missing']:
             print("\tRepairing settings for {0}".format(sub_id))
-            settings_model = sam.models.settings.Settings(db, {}, sub_id)
+            settings_model = Settings(db, {}, sub_id)
             settings_model.create()
 
     if not any(map(len, errors.values())):
@@ -380,7 +380,7 @@ def check_data_sources(db):
         "malformed": a set of all datasources that are missing some of their tables
     """
     print("Checking data sources...")
-    sub_model = sam.models.subscriptions.Subscriptions(db)
+    sub_model = Subscriptions(db)
     all_tables = get_table_names(db)
     ds_table_pattern = re.compile(r'^s\d+_ds\d+_[a-zA-Z0-9]+$')
     ds_tables = set(filter(lambda x: re.match(ds_table_pattern, x), all_tables))
@@ -391,7 +391,7 @@ def check_data_sources(db):
     malformed_datasources = set()
 
     for sub_id in known_subscriptions:
-        ds_model = sam.models.datasources.Datasources(db, {}, sub_id)
+        ds_model = Datasources(db, {}, sub_id)
         for ds_id in ds_model.ds_ids:
             expected_tables = {tab.format(acct=sub_id, id=ds_id) for tab in template_tables_per_ds}
             if not expected_tables.issubset(ds_tables):
@@ -427,7 +427,7 @@ def fix_data_sources(db, errors):
         print("\tRebuilding data source tables")
         for sub_id, ds_id in errors['malformed']:
             print("\tRebuilding malformed tables for subscription {0} datasource {1}".format(sub_id, ds_id))
-            ds_model = sam.models.datasources.Datasources(db, {}, sub_id)
+            ds_model = Datasources(db, {}, sub_id)
             ds_model.create_ds_tables(ds_id)
 
     if not any(map(len, errors.values())):

@@ -1,11 +1,15 @@
 from spec.python import db_connection
-from sam import common
-from sam import constants
+import sam.common
+import sam.constants
 import web
 
-app = web.application(constants.urls, globals())
-common.session = web.session.Session(app, common.session_store)
+app = web.application(sam.constants.urls, globals(), autoreload=False)
+sam.common.session_store = web.session.DBStore(db_connection.db, 'sessions')
+sam.common.session = web.session.Session(app, sam.common.session_store)
 
+# TODO: these commands ping the prod server instead of the test server for the session table.
+#       If the prod server is missing, these fail.
+#       I'm not sure why they do that.
 
 def test_404():
     with db_connection.env(login_active=False):

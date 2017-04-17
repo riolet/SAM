@@ -23,9 +23,9 @@ def test_perform_get():
         request = {}
         response = p.perform_get_command(request)
         expected = {'datasources':
-                    {1: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'},
-                     2: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'},
-                     3: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 3, 'name': u'live'}},
+                    {1: {'flat': 0, 'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'},
+                     2: {'flat': 0, 'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'},
+                     3: {'flat': 0, 'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 3, 'name': u'live'}},
                     'settings': {'color_udp': 13391189, 'color_error': 10053222, 'color_label_bg': 16777215,
                                  'color_bg': 11206621, 'datasource': 1, 'color_node': 5592524,
                                  'color_label': 0, 'color_tcp': 5592524, 'subscription': 1}}
