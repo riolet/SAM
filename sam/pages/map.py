@@ -1,6 +1,6 @@
 import models.datasources
 import base
-import common
+from sam import common
 
 
 class Map(base.Headed):

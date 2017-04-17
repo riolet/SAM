@@ -3,11 +3,11 @@ Preprocess the data in the database's upload table Syslog
 """
 import os
 import sys
-import constants
-import common
-import integrity
-import models.datasources
-import models.nodes
+from sam import constants
+from sam import common
+from sam import integrity
+import sam.models.datasources
+import sam.models.nodes
 
 
 class InvalidDatasource(ValueError):
@@ -15,7 +15,7 @@ class InvalidDatasource(ValueError):
 
 
 def determine_datasource(db, sub, argv):
-    dsModel = models.datasources.Datasources(db, {}, sub)
+    dsModel = sam.models.datasources.Datasources(db, {}, sub)
     ds_id = None
     if len(argv) >= 2:
         requested_ds = argv[1]

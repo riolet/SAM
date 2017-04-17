@@ -1,7 +1,7 @@
-import common
+import sam.common
 import re
-import models.settings
-from models.user import User
+import sam.models.settings
+from sam.models.user import User
 
 
 class Filter (object):
@@ -70,7 +70,7 @@ class MaskFilter(Filter):
         self.load(args)
 
     def where(self, db):
-        r = common.determine_range_string(self.params['mask'])
+        r = sam.common.determine_range_string(self.params['mask'])
         return "nodes.ipstart BETWEEN {0} AND {1}".format(r[0], r[1])
 
     def having(self, db):
@@ -160,7 +160,7 @@ class TargetFilter(Filter):
         #   3: hosts do NOT receive connections from target
 
     def where(self, db):
-        ipstart, ipend = common.determine_range_string(self.params['target'])
+        ipstart, ipend = sam.common.determine_range_string(self.params['target'])
         if self.params['to'] == '0':
             return "EXISTS (SELECT 1 FROM {{table_links}} AS `l` WHERE l.dst BETWEEN {lower} AND {upper} " \
                    "AND l.src BETWEEN nodes.ipstart AND nodes.ipend)".format(lower=ipstart, upper=ipend)
@@ -195,7 +195,7 @@ class TagsFilter(Filter):
         phrase = "EXISTS (SELECT 1 FROM {{table_tags}} AS `f_tags` WHERE tag={0} AND f_tags.ipstart <= nodes.ipstart AND f_tags.ipend >= nodes.ipend)"
         if self.params['has'] != '1':
             phrase = "NOT " + phrase
-        return "\n AND ".join([phrase.format(common.web.sqlquote(tag)) for tag in tags])
+        return "\n AND ".join([phrase.format(sam.common.web.sqlquote(tag)) for tag in tags])
 
     def having(self, db):
         return ""
@@ -209,7 +209,7 @@ class EnvFilter(Filter):
 
     def get_q(self):
         env = self.params['env']
-        return "computed_env = {0}".format(common.web.sqlquote(env))
+        return "computed_env = {0}".format(sam.common.web.sqlquote(env))
 
     def where(self, db):
         if db.dbname == 'sqlite':
@@ -267,7 +267,7 @@ class ProtocolFilter(Filter):
         handles = '0'
         if self.params['handles'] in ['0', '1', '2', '3']:
             handles = self.params['handles']
-        protocol = common.web.sqlquote("%" + self.params['protocol'] + "%")
+        protocol = sam.common.web.sqlquote("%" + self.params['protocol'] + "%")
 
         if handles == '0':
             return "proto_in LIKE {protocol}".format(protocol=protocol)
@@ -312,8 +312,8 @@ def readEncoded(filterString):
     if ds_match:
         ds = int(ds_match.group())
     else:
-        user = User(common.session)
-        settings_model = models.settings.Settings({}, user.viewing)
+        user = User(sam.common.session)
+        settings_model = sam.models.settings.Settings({}, user.viewing)
         ds = settings_model['datasource']
 
     for encodedFilter in fstrings[1:]:

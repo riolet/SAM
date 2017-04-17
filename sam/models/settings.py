@@ -1,6 +1,6 @@
-import common
+from sam import common
 import web
-import models.datasources
+import sam.models.datasources
 
 
 class Settings:
@@ -56,7 +56,7 @@ class Settings:
         self.storage[Settings.SESSION_KEY] = {}
 
     def set(self, **kwargs):
-        datasources = models.datasources.Datasources(self.db, self.storage, self.sub)
+        datasources = sam.models.datasources.Datasources(self.db, self.storage, self.sub)
         if 'datasource' in kwargs and kwargs['datasource'] not in datasources.datasources:
             raise ValueError("Invalid DS specified")
 
@@ -65,7 +65,7 @@ class Settings:
 
     def create(self):
         # add default datasource for subscription
-        dsModel = models.datasources.Datasources(self.db, {}, self.sub)
+        dsModel = sam.models.datasources.Datasources(self.db, {}, self.sub)
         ds_id = dsModel.create_datasource()
 
         self.db.insert(Settings.TABLE, subscription=self.sub, datasource=ds_id)

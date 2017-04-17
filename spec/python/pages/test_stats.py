@@ -1,8 +1,8 @@
 from spec.python import db_connection
 
-import pages.stats
-import common
-import constants
+import sam.pages.stats
+from sam import common
+from sam import constants
 import web
 import json
 import time
@@ -14,7 +14,7 @@ ds_empty = db_connection.dsid_live
 
 def test_render():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
-        p = pages.stats.Stats()
+        p = sam.pages.stats.Stats()
         dummy = p.GET()
         calls = common.render.calls
         page_title = 'Stats'
@@ -34,14 +34,14 @@ def test_timerange():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         web.input = lambda: {'q': 'timerange', 'ds': 'ds{}'.format(ds_full)}
         web.ctx['headers'] = []
-        p = pages.stats.Stats()
+        p = sam.pages.stats.Stats()
         response = p.GET()
         timerange = json.loads(response)
         assert timerange == {"max": 1521498300, "min": 1453065600}
 
         web.input = lambda: {'q': 'timerange', 'ds': 'ds{}'.format(ds_empty)}
         web.ctx['headers'] = []
-        p = pages.stats.Stats()
+        p = sam.pages.stats.Stats()
         response = p.GET()
         timerange = json.loads(response)
         now = int(time.mktime(datetime.now().timetuple()))
@@ -52,14 +52,14 @@ def test_protocols():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         web.input = lambda: {'q': 'protocols', 'ds': 'ds{}'.format(ds_full)}
         web.ctx['headers'] = []
-        p = pages.stats.Stats()
+        p = sam.pages.stats.Stats()
         response = p.GET()
         protocols = json.loads(response)
         assert set(protocols) == {u'TCP', u'UDP', u'ICMP'}
 
         web.input = lambda: {'q': 'protocols', 'ds': 'ds{}'.format(ds_empty)}
         web.ctx['headers'] = []
-        p = pages.stats.Stats()
+        p = sam.pages.stats.Stats()
         response = p.GET()
         protocols = json.loads(response)
         assert set(protocols) == set()

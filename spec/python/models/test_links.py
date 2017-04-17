@@ -2,8 +2,8 @@ import time
 from datetime import datetime
 
 from spec.python import db_connection
-import common
-import models.links
+from sam import common
+from sam.models.links import Links
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -12,30 +12,30 @@ ds_empty = db_connection.dsid_short
 
 
 def test_get_protocol_list():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     protocols = l_model.get_protocol_list()
     protocols.sort()
     assert protocols == [u'ICMP', u'TCP', u'UDP']
 
-    l_model = models.links.Links(db, sub_id, ds_empty)
+    l_model = Links(db, sub_id, ds_empty)
     protocols = l_model.get_protocol_list()
     protocols.sort()
     assert protocols == []
 
 
 def test_get_timerange():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     range = l_model.get_timerange()
     assert datetime.fromtimestamp(range['min']) == datetime(2016, 1, 17, 13, 20, 00)
     assert datetime.fromtimestamp(range['max']) == datetime(2018, 3, 19, 15, 25, 00)
 
-    l_model = models.links.Links(db, sub_id, ds_empty)
+    l_model = Links(db, sub_id, ds_empty)
     range = l_model.get_timerange()
     assert range['min'] == range['max']
 
 
 def test_get_links():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     timerange = None
     port = None
     protocol = None
@@ -65,7 +65,7 @@ def test_get_links():
 
 
 def test_get_links_time():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     timerange = (time.mktime(datetime(2017, 1, 1).timetuple()), time.mktime(datetime(2018, 1, 1).timetuple()))
     port = None
     protocol = None
@@ -91,7 +91,7 @@ def test_get_links_time():
 
 
 def test_get_links_port():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     timerange = None
     port = 180
     protocol = None
@@ -122,7 +122,7 @@ def test_get_links_port():
 
 
 def test_get_links_protocol():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     timerange = None
     port = None
     protocol = 'ICMP'
@@ -158,7 +158,7 @@ def test_get_links_protocol():
 
 
 def test_get_links_combined():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     timerange = (time.mktime(datetime(2018, 1, 1).timetuple()), time.mktime(datetime(2019, 1, 1).timetuple()))
     port = 180
     protocol = 'TCP'
@@ -195,7 +195,7 @@ def test_get_links_combined():
 
 
 def test_get_all_endpoints():
-    l_model = models.links.Links(db, sub_id, ds_full)
+    l_model = Links(db, sub_id, ds_full)
     eps = l_model.get_all_endpoints()
     expected = map(common.IPStringtoInt, [
         '10.20.30.40',
@@ -235,6 +235,6 @@ def test_get_all_endpoints():
     eps.sort()
     assert eps == expected
 
-    l_model = models.links.Links(db, sub_id, ds_empty)
+    l_model = Links(db, sub_id, ds_empty)
     eps = l_model.get_all_endpoints()
     assert eps == []

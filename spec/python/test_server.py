@@ -1,6 +1,6 @@
 from spec.python import db_connection
-import common
-import constants
+from sam import common
+from sam import constants
 import web
 
 app = web.application(constants.urls, globals())

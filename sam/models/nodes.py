@@ -1,8 +1,8 @@
 import time
 import web
-import common
+from sam import common
 import threading
-import models.whois
+import sam.models.whois
 
 
 class Nodes(object):
@@ -213,7 +213,7 @@ class WhoisService(threading.Thread):
             while self.missing:
                 address = self.missing.pop()
                 try:
-                    whois = models.whois.Whois(address)
+                    whois = sam.models.whois.Whois(address)
                     org = whois.ip_to_org()
                     self.n_model.set_alias(address, org)
                 except:

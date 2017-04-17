@@ -1,5 +1,5 @@
 import sys
-from import_base import BaseImporter
+from sam.importers.import_base import BaseImporter
 from datetime import datetime
 import time
 

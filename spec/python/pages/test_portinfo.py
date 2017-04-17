@@ -1,7 +1,7 @@
 from spec.python import db_connection
-import pages.portinfo
+import sam.pages.portinfo
 import pytest
-import errors
+from sam import errors
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -10,7 +10,7 @@ ds_full = db_connection.dsid_default
 
 def test_decode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.portinfo.Portinfo()
+        p = sam.pages.portinfo.Portinfo()
         data = {'port': '80,,443,8080'}
         request = p.decode_get_request(data)
         expected = {'ports': [80, 443, 8080]}
@@ -33,7 +33,7 @@ def test_decode_get():
 
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.portinfo.Portinfo()
+        p = sam.pages.portinfo.Portinfo()
         request = {'ports': [80, 443, 8080]}
         response = p.perform_get_command(request)
         assert len(response) == 3
@@ -53,7 +53,7 @@ def test_perform_get():
 
 def test_encode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.portinfo.Portinfo()
+        p = sam.pages.portinfo.Portinfo()
         response = [{'port': 40, 'name': 'test1'}, {'port': 48, 'name': 'test2'}, {'port': 56, 'name': 'test3'}]
         encoded = p.encode_get_response(response)
         expected = {
@@ -66,7 +66,7 @@ def test_encode_get():
 
 def test_decode_post():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.portinfo.Portinfo()
+        p = sam.pages.portinfo.Portinfo()
         data = {'port': '80', 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}
         request = p.decode_post_request(data)
         expected = {'port': 80, 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}
@@ -88,7 +88,7 @@ def test_decode_post():
 
 def test_perform_post():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.portinfo.Portinfo()
+        p = sam.pages.portinfo.Portinfo()
         p.portModel = db_connection.mocker()
 
         request = {'port': 80, 'alias_name': 'test_alias', 'alias_description': 'test_description', 'active': '1'}

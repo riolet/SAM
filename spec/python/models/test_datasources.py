@@ -2,7 +2,7 @@ import pytest
 import web
 
 from spec.python import db_connection
-from models.datasources import Datasources
+from sam.models.datasources import Datasources
 
 session = {}
 db = db_connection.db

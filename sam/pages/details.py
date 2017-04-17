@@ -1,10 +1,10 @@
-import common
+from sam import common
 import re
-import errors
+from sam import errors
 import base
-import models.details
-import models.nodes
-import models.links
+import sam.models.details
+import sam.models.nodes
+import sam.models.links
 
 
 # This class is for getting the main selection details, such as ins, outs, and ports.
@@ -81,7 +81,7 @@ class Details(base.Headless):
         # self.ip_range = (0, 4294967295)
         self.page_size = Details.default_page_size
         self.detailsModel = None
-        self.nodesModel = models.nodes.Nodes(common.db, self.user.viewing)
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
         self.linksModel = None  # set during decode_get_request()
 
     def decode_get_request(self, data):
@@ -94,7 +94,7 @@ class Details(base.Headless):
                 raise errors.MalformedRequest("Could not read data source ('ds')")
         else:
             raise errors.RequiredKey('data source', 'ds')
-        self.linksModel = models.links.Links(common.db, self.user.viewing, ds)
+        self.linksModel = sam.models.links.Links(common.db, self.user.viewing, ds)
         # port filter
         port = data.get('port')
 
@@ -132,7 +132,7 @@ class Details(base.Headless):
             components = components.split(',')
 
         self.page_size = page_size
-        self.detailsModel = models.details.Details(common.db, self.user.viewing, ds, address, (tstart, tend), port, page_size)
+        self.detailsModel = sam.models.details.Details(common.db, self.user.viewing, ds, address, (tstart, tend), port, page_size)
 
         request = {
             'ds': ds,

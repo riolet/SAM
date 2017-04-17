@@ -1,9 +1,9 @@
 from spec.python import db_connection
-import pages.settings
+import sam.pages.settings
 import pytest
-import errors
-import models.links
-import models.upload
+from sam import errors
+import sam.models.links
+import sam.models.upload
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -11,15 +11,15 @@ ds_full = db_connection.dsid_default
 
 
 def test_nice_name():
-    assert pages.settings.nice_name('superHero') == 'Super Hero'
-    assert pages.settings.nice_name('BluRay') == 'Blu Ray'
-    assert pages.settings.nice_name('something_Else') == 'Something Else'
-    assert pages.settings.nice_name('oneTwoThreeFour') == 'One Two Three Four'
+    assert sam.pages.settings.nice_name('superHero') == 'Super Hero'
+    assert sam.pages.settings.nice_name('BluRay') == 'Blu Ray'
+    assert sam.pages.settings.nice_name('something_Else') == 'Something Else'
+    assert sam.pages.settings.nice_name('oneTwoThreeFour') == 'One Two Three Four'
 
 
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         request = {}
         response = p.perform_get_command(request)
         expected = {'datasources':
@@ -34,7 +34,7 @@ def test_perform_get():
 
 def test_encode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         response = {'datasources':
                     {1: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 1, 'name': u'default'},
                      2: {'subscription': 1, 'ar_active': 0, 'ar_interval': 300, 'id': 2, 'name': u'short'},
@@ -50,7 +50,7 @@ def test_encode_get():
 
 
 def test_decode_datasource():
-    decode = pages.settings.Settings.decode_datasource
+    decode = sam.pages.settings.Settings.decode_datasource
     assert decode('ds15') == 15
     assert decode('1') == 1
     assert decode('ds_1678') == 1678
@@ -60,7 +60,7 @@ def test_decode_datasource():
 
 def test_post_ds_name():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'ds_name', 'ds': 'ds_1', 'name': 'test_name'}
         request = p.decode_post_request(data)
         expected = {
@@ -84,7 +84,7 @@ def test_post_ds_name():
 
 def test_post_ds_live():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'ds_live', 'ds': 'ds_1', 'is_active': 'true'}
         request = p.decode_post_request(data)
         expected = {
@@ -108,7 +108,7 @@ def test_post_ds_live():
 
 def test_post_ds_interval():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'ds_interval', 'ds': 'ds_1', 'interval': '300'}
         request = p.decode_post_request(data)
         expected = {
@@ -132,7 +132,7 @@ def test_post_ds_interval():
 
 def test_post_ds_new():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'ds_new', 'name': 'test datasource'}
         request = p.decode_post_request(data)
         expected = {
@@ -152,7 +152,7 @@ def test_post_ds_new():
 
 def test_post_ds_rm():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'ds_rm', 'ds': 'ds12'}
         request = p.decode_post_request(data)
         expected = {
@@ -172,7 +172,7 @@ def test_post_ds_rm():
 
 def test_post_ds_select():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'ds_select', 'ds': 'ds12'}
         request = p.decode_post_request(data)
         expected = {
@@ -193,7 +193,7 @@ def test_post_ds_select():
 
 def test_post_rm_hosts():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'rm_hosts'}
         request = p.decode_post_request(data)
         expected = {
@@ -209,7 +209,7 @@ def test_post_rm_hosts():
 
 def test_post_rm_tags():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'rm_tags'}
         request = p.decode_post_request(data)
         expected = {
@@ -225,7 +225,7 @@ def test_post_rm_tags():
 
 def test_post_rm_envs():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'rm_envs'}
         request = p.decode_post_request(data)
         expected = {
@@ -242,7 +242,7 @@ def test_post_rm_envs():
 def test_post_rm_conns():
 
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'rm_conns', 'ds': 'ds12'}
         request = p.decode_post_request(data)
         expected = {
@@ -254,20 +254,20 @@ def test_post_rm_conns():
             data = {'command': 'rm_conns'}
             p.decode_post_request(data)
 
-        old = models.links.Links
+        old = sam.models.links.Links
         try:
-            models.links.Links = db_connection.mocker
+            sam.models.links.Links = db_connection.mocker
             p.perform_post_command(expected)
             calls = p.linksModel.calls
             assert p.linksModel.constructor == ((db, sub_id, 12), {})
             assert calls[0] == ('delete_connections', (), {})
         finally:
-            models.links.Links = old
+            sam.models.links.Links = old
 
 
 def test_post_upload():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'upload', 'ds': 'ds12', 'format': 'paloalto', 'file': 'b64,YWJjMTIz'}
         request = p.decode_post_request(data)
         expected = {
@@ -287,20 +287,20 @@ def test_post_upload():
             data = {'command': 'upload', 'ds': 'ds12', 'format': 'paloalto'}
             p.decode_post_request(data)
 
-        old = models.upload.Uploader
+        old = sam.models.upload.Uploader
         try:
-            models.upload.Uploader = db_connection.mocker
+            sam.models.upload.Uploader = db_connection.mocker
             p.perform_post_command(expected)
             calls = p.uploadModel.calls
             assert p.uploadModel.constructor == ((db, sub_id, 12, 'paloalto'), {})
             assert calls[0] == ('import_log', ('abc123',), {})
         finally:
-            models.upload.Uploader = old
+            sam.models.upload.Uploader = old
 
 
 def test_post_add_live_key():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'add_live_key', 'ds': 'ds12'}
         request = p.decode_post_request(data)
         expected = {
@@ -320,7 +320,7 @@ def test_post_add_live_key():
 
 def test_post_del_live_key():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.settings.Settings()
+        p = sam.pages.settings.Settings()
         data = {'command': 'del_live_key', 'key': 'abc123'}
         request = p.decode_post_request(data)
         expected = {

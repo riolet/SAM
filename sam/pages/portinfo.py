@@ -1,7 +1,7 @@
 import base
-import models.ports
-import errors
-import common
+import sam.models.ports
+from sam import errors
+from sam import common
 
 # This class is for getting the aliases for a port number
 
@@ -26,7 +26,7 @@ class Portinfo(base.HeadlessPost):
 
     def __init__(self):
         super(Portinfo, self).__init__()
-        self.portModel = models.ports.Ports(common.db, self.user.viewing)
+        self.portModel = sam.models.ports.Ports(common.db, self.user.viewing)
 
     def decode_get_request(self, data):
         port_string = data.get('port')
@@ -41,7 +41,7 @@ class Portinfo(base.HeadlessPost):
 
     def perform_get_command(self, request):
         self.require_group('read')
-        portModel = models.ports.Ports(common.db, self.user.viewing)
+        portModel = sam.models.ports.Ports(common.db, self.user.viewing)
         ports = portModel.get(request['ports'])
         return ports
 

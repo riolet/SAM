@@ -1,7 +1,7 @@
 import sys
 import subprocess
 import shlex
-from import_base import BaseImporter
+from sam.importers.import_base import BaseImporter
 
 
 def safe_translate(value):

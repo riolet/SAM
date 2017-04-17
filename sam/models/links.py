@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 import web
-import common
+import sam.common
 
 
 class Links:
@@ -24,11 +24,11 @@ class Links:
         self.db.delete(self.table_links_out, "1")
 
     def get_protocol_list(self):
-        rows = common.db.select(self.table_links, what="DISTINCT protocol")
+        rows = sam.common.db.select(self.table_links, what="DISTINCT protocol")
         return [row.protocol for row in rows if row.protocol]
 
     def get_timerange(self):
-        rows = common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
+        rows = sam.common.db.query("SELECT MIN(timestamp) AS 'min', MAX(timestamp) AS 'max' "
                                "FROM {table_links};".format(table_links=self.table_links))
         row = rows[0]
         timerange = {
@@ -49,7 +49,7 @@ class Links:
     def get_links(self, addresses, timerange, port, protocol, flat):
         result = {}
         for address in addresses:
-            ip_start, ip_end = common.determine_range_string(address)
+            ip_start, ip_end = sam.common.determine_range_string(address)
             result[address] = {}
             if flat:
                 result[address]['inputs'] = self._get_links_flat(ip_start, True, timerange, port, protocol)

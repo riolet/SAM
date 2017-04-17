@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
 import getopt
-import constants
+from sam import constants
 import multiprocessing
 
 application = None

@@ -1,15 +1,15 @@
 import re
 import os
-import constants
+import sam.constants
 import web
-import common
+import sam.common
 import settings
 import livekeys
 
 
 class Datasources:
     DS_TABLES = ["StagingLinks", "Links", "LinksIn", "LinksOut", "Syslog"]
-    DROP_SQL = os.path.join(constants.base_path, 'sql/drop_datasource.sql')
+    DROP_SQL = os.path.join(sam.constants.base_path, 'sql/drop_datasource.sql')
     MIN_INTERVAL = 5
     MAX_INTERVAL = 1800
     SESSION_KEY = "_datasources"
@@ -28,9 +28,9 @@ class Datasources:
         self.sub = subscription
         self.storage = session
         if self.db.dbname == 'sqlite':
-            self.CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_datasource_sqlite.sql')
+            self.CREATE_SQL = os.path.join(sam.constants.base_path, 'sql/setup_datasource_sqlite.sql')
         else:
-            self.CREATE_SQL = os.path.join(constants.base_path, 'sql/setup_datasource_mysql.sql')
+            self.CREATE_SQL = os.path.join(sam.constants.base_path, 'sql/setup_datasource_mysql.sql')
 
     @property
     def datasources(self):
@@ -87,7 +87,7 @@ class Datasources:
 
     def create_ds_tables(self, dsid):
         replacements = {'acct': self.sub, 'id': dsid}
-        common.exec_sql(self.db, self.CREATE_SQL, replacements)
+        sam.common.exec_sql(self.db, self.CREATE_SQL, replacements)
 
     def create_datasource(self, name='default'):
         if not self.validate_ds_name(name):
@@ -124,7 +124,7 @@ class Datasources:
         self.db.delete(Datasources.TABLE, "id={0}".format(int(ds_id)))
         # Drop relevant tables
         replacements = {'acct': self.sub, 'id': int(ds_id)}
-        common.exec_sql(self.db, Datasources.DROP_SQL, replacements)
+        sam.common.exec_sql(self.db, Datasources.DROP_SQL, replacements)
         self.clear_cache()
 
     def remove_all(self):
@@ -137,4 +137,4 @@ class Datasources:
 
             # remove all datasource tables
             replacements = {'acct': self.sub, 'id': int(dsid)}
-            common.exec_sql(self.db, Datasources.DROP_SQL, replacements)
+            sam.common.exec_sql(self.db, Datasources.DROP_SQL, replacements)

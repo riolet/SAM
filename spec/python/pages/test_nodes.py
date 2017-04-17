@@ -1,5 +1,5 @@
 from spec.python import db_connection
-import pages.nodes
+import sam.pages.nodes
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -8,7 +8,7 @@ ds_full = db_connection.dsid_default
 
 def test_decode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.nodes.Nodes()
+        p = sam.pages.nodes.Nodes()
         data = {'address': '10.20.30,150.20,59'}
         request = p.decode_get_request(data)
         expected = {'addresses': ['10.20.30', '150.20', '59']}
@@ -32,7 +32,7 @@ def test_decode_get():
 
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.nodes.Nodes()
+        p = sam.pages.nodes.Nodes()
         request = {'addresses': []}
         response = p.perform_get_command(request)
         assert response.keys() == ['_']
@@ -53,7 +53,7 @@ def test_perform_get():
 
 def test_decode_post():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.nodes.Nodes()
+        p = sam.pages.nodes.Nodes()
         data = {'node': '10.20.30.40', 'alias': 'test_alias', 'tags': 'tag1,tag2,,', 'env': 'dev_2', 'extra': 'peanuts'}
         request = p.decode_post_request(data)
         expected = {'node': '10.20.30.40', 'alias': 'test_alias', 'tags': 'tag1,tag2,,', 'env': 'dev_2'}
@@ -82,7 +82,7 @@ def test_decode_post():
 
 def test_perform_post():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.nodes.Nodes()
+        p = sam.pages.nodes.Nodes()
         p.nodesModel = db_connection.mocker()
 
         request = {'node': '10.20.30.40', 'alias': 'test_alias', 'tags': 'tag1,tag2,,', 'env': 'dev_2'}

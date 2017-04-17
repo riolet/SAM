@@ -1,6 +1,6 @@
 import os
 import web
-import constants
+from sam import constants
 
 
 def parse_sql_string(script, replacements):

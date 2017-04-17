@@ -1,6 +1,6 @@
 import sys
 import os
-import constants
+import sam.constants
 common = None
 Datasources = None
 
@@ -222,13 +222,13 @@ Usage:
         global common
         global Datasources
         try:
-            import common
-            from models.datasources import Datasources
+            import sam.common
+            from sam.models.datasources import Datasources
         except:
-            import integrity
-            integrity.check_and_fix_db_access(constants.dbconfig.copy())
+            import sam.integrity
+            sam.integrity.check_and_fix_db_access(sam.constants.dbconfig.copy())
         try:
-            self.subscription = self.subscription or constants.demo['id']
+            self.subscription = self.subscription or sam.constants.demo['id']
             self.dsModel = Datasources(common.db, {}, self.subscription)
             datasources = self.dsModel.datasources.values()
         except:

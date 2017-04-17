@@ -4,14 +4,14 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 import time
 import cPickle
-import constants
+from sam import constants
 import web
 web.config.debug = constants.debug
-import common
+from sam import common
 import threading
-import models.livekeys
-import models.nodes
-import preprocess
+import sam.models.livekeys
+import sam.models.nodes
+from sam import preprocess
 import sam.importers.import_base
 
 
@@ -223,7 +223,7 @@ class Aggregator(object):
         if version != "1.0":
             return {}, 'Version not compatible. Recieved {0}, expected {1}. Access Denied'.format(version, '1.0')
 
-        key_model = models.livekeys.LiveKeys(common.db_quiet, 0)
+        key_model = sam.models.livekeys.LiveKeys(common.db_quiet, 0)
         access = key_model.validate(access_key)
         return access, ''
 

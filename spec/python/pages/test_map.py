@@ -1,13 +1,13 @@
 from spec.python import db_connection
 
-import pages.map
-import common
-import constants
+import sam.pages.map
+from sam import common
+from sam import constants
 
 
 def test_render():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
-        p = pages.map.Map()
+        p = sam.pages.map.Map()
         common.session.clear()
         dummy = p.GET()
         calls = common.render.calls

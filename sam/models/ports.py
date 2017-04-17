@@ -1,7 +1,6 @@
 import web
-import common
+from sam import common
 
-#TODO: test 'active' toggle -- it was moved to PortAlias from Ports
 
 class Ports:
     MAX_NAME_LENGTH = 10

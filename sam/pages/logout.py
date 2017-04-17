@@ -1,5 +1,5 @@
-import constants
-import base
+from sam import constants
+from sam.pages import base
 import web
 
 

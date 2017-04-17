@@ -1,5 +1,5 @@
-import db_connection
-import constants
+from spec.python import db_connection
+from sam import constants
 
 
 def test_urls():

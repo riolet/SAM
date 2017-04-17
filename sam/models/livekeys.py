@@ -1,7 +1,7 @@
 import os
 import math
 import base64
-import common
+from sam import common
 import web
 
 

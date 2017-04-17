@@ -1,4 +1,4 @@
-import constants
+from sam import constants
 
 
 class User(object):

@@ -1,14 +1,14 @@
 import json
-import constants
+from sam import constants
 import web
-import common
+from sam import common
 import re
-import models.settings
-import models.links
-import models.datasources
-import models.nodes
+import sam.models.settings
+import sam.models.links
+import sam.models.datasources
+import sam.models.nodes
 import base
-import errors
+from sam import errors
 import decimal
 
 
@@ -82,8 +82,8 @@ class Stats(base.Headed):
         return stats
 
     def overall_stats(self):
-        # ds_model = models.datasources.Datasources(self.session, self.sub)
-        node_model = models.nodes.Nodes(common.db, self.sub)
+        # ds_model = sam.models.datasources.Datasources(self.session, self.sub)
+        node_model = sam.models.nodes.Nodes(common.db, self.sub)
         stats = []
         stats.append(('Total hosts recorded', len(node_model.get_all_endpoints())))
 
@@ -115,10 +115,10 @@ class Stats(base.Headed):
     def perform_get_command(self, request):
         self.require_group('read')
         if request['query'] == 'timerange':
-            linksModel = models.links.Links(common.db, self.sub, request['ds'])
+            linksModel = sam.models.links.Links(common.db, self.sub, request['ds'])
             return linksModel.get_timerange()
         elif request['query'] == 'protocols':
-            linksModel = models.links.Links(common.db, self.sub, request['ds'])
+            linksModel = sam.models.links.Links(common.db, self.sub, request['ds'])
             return linksModel.get_protocol_list()
         else:
             raise errors.MalformedRequest("Query not recognized.")
@@ -130,7 +130,7 @@ class Stats(base.Headed):
         self.sub = self.user.viewing
         if self.sub is None:
             self.sub = constants.demo['id']
-        self.settingsModel = models.settings.Settings(common.db, self.session, self.sub)
+        self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.sub)
 
         try:
             self.request = self.decode_get_request(self.inbound)
@@ -144,12 +144,12 @@ class Stats(base.Headed):
     def headed_get(self):
         self.require_group('read')
         self.sub = self.user.viewing
-        self.settingsModel = models.settings.Settings(common.db, self.session, self.sub)
+        self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.sub)
         self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)
 
         segments = []
         segments.append(('Overall', self.overall_stats()))
-        ds_model = models.datasources.Datasources(common.db, self.session, self.sub)
+        ds_model = sam.models.datasources.Datasources(common.db, self.session, self.sub)
         for ds_id in ds_model.ds_ids:
             section_name = 'Datasource: {0}'.format(ds_model.datasources[ds_id]['name'])
             segments.append((section_name, self.ds_stats(ds_id)))

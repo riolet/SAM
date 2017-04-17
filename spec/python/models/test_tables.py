@@ -1,8 +1,8 @@
 from spec.python import db_connection
 
-import models.filters
-import models.tables
-import models.nodes
+import sam.models.filters
+from sam.models.tables import Table
+from sam.models.nodes import Nodes
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -22,14 +22,14 @@ def correct_format(data):
 
 
 def test_get_table_info():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=100, order_by=0, order_dir='asc')
     assert len(rows) == 68
     assert correct_format(rows)
 
 
 def test_get_table_pages():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=0, order_dir='asc')
     assert len(rows) == 11
     rows = m_table.get_table_info([], page=1, page_size=50, order_by=0, order_dir='asc')
@@ -51,7 +51,7 @@ def test_get_table_pages():
 
 
 def test_get_table_order():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=0, order_dir='asc')
     actual = [x['address'] for x in rows]
     expected = [u'10.0.0.0/8', u'10.20.0.0/16', u'10.20.30.0/24',
@@ -80,8 +80,8 @@ def test_get_table_order():
 
 
 def test_get_table_filter_subnet():
-    m_table = models.tables.Table(db, sub_id, ds_full)
-    filters = [models.filters.SubnetFilter(True, '16')]
+    m_table = Table(db, sub_id, ds_full)
+    filters = [sam.models.filters.SubnetFilter(True, '16')]
     rows = m_table.get_table_info(filters, page=0, page_size=10, order_by=0, order_dir='asc')
     addresses = [x['address'].endswith('/16') for x in rows]
     assert len(addresses) == 10
@@ -89,8 +89,8 @@ def test_get_table_filter_subnet():
 
 
 def test_get_table_filter_mask():
-    m_table = models.tables.Table(db, sub_id, ds_full)
-    filters = [models.filters.MaskFilter(True, '10.20')]
+    m_table = Table(db, sub_id, ds_full)
+    filters = [sam.models.filters.MaskFilter(True, '10.20')]
     rows = m_table.get_table_info(filters, page=0, page_size=10, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'10.20.0.0/16', u'10.20.30.0/24', u'10.20.30.40/32', u'10.20.30.41/32',
@@ -99,17 +99,17 @@ def test_get_table_filter_mask():
 
 
 def test_get_table_filter_port():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
 
     # nodes that start '110.' and connect to another on port 180
-    filters = [models.filters.MaskFilter(True, '110'), models.filters.PortFilter(True, '0', '180')]
+    filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.PortFilter(True, '0', '180')]
     rows = m_table.get_table_info(filters, page=0, page_size=20, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'110.0.0.0/8', u'110.20.0.0/16', u'110.20.30.0/24', u'110.20.30.40/32']
     assert addresses == expected
 
     # nodes that start '110.' and don't connect to another on port 180
-    filters = [models.filters.MaskFilter(True, '110'), models.filters.PortFilter(True, '1', '180')]
+    filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.PortFilter(True, '1', '180')]
     rows = m_table.get_table_info(filters, page=0, page_size=20, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'110.20.30.41/32', u'110.20.32.0/24', u'110.20.32.42/32', u'110.20.32.43/32',
@@ -118,7 +118,7 @@ def test_get_table_filter_port():
     assert addresses == expected
 
     # nodes that start '110.' and receive connections on port 180
-    filters = [models.filters.MaskFilter(True, '110'), models.filters.PortFilter(True, '2', '180')]
+    filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.PortFilter(True, '2', '180')]
     rows = m_table.get_table_info(filters, page=0, page_size=20, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'110.0.0.0/8', u'110.20.0.0/16', u'110.20.30.0/24', u'110.20.30.40/32',
@@ -126,7 +126,7 @@ def test_get_table_filter_port():
     assert addresses == expected
 
     # nodes that start '110.' and don't receive connections on port 180
-    filters = [models.filters.MaskFilter(True, '110'), models.filters.PortFilter(True, '3', '180')]
+    filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.PortFilter(True, '3', '180')]
     rows = m_table.get_table_info(filters, page=0, page_size=20, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'110.24.0.0/16', u'110.24.34.0/24', u'110.24.34.44/32', u'110.24.34.45/32',
@@ -135,51 +135,51 @@ def test_get_table_filter_port():
 
 
 def test_get_table_filter_conn():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
 
     # fewer than 0.0002 inbound connections / second
-    filters = [models.filters.ConnectionsFilter(True, '<', 'i', '0.0002')]
+    filters = [sam.models.filters.ConnectionsFilter(True, '<', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     assert len(rows) == 68
 
     # more than 0.0002 inbound connections / second
-    filters = [models.filters.ConnectionsFilter(True, '>', 'i', '0.0002')]
+    filters = [sam.models.filters.ConnectionsFilter(True, '>', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     assert len(rows) == 0
 
     # more than 0.0002 outbound connections / second
-    filters = [models.filters.ConnectionsFilter(True, '>', 'o', '0.0002')]
+    filters = [sam.models.filters.ConnectionsFilter(True, '>', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     assert len(rows) == 0
 
     # fewer than 0.0002 outbound connections / second
-    filters = [models.filters.ConnectionsFilter(True, '<', 'o', '0.0002')]
+    filters = [sam.models.filters.ConnectionsFilter(True, '<', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     assert len(rows) == 68
 
 
 def test_get_table_filter_target():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
 
     # nodes that connect to 10.20.30
-    filters = [models.filters.TargetFilter(True, '10.20.30', '0')]
+    filters = [sam.models.filters.TargetFilter(True, '10.20.30', '0')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrA = [x['address'] for x in rows]
     assert len(rows) == 28
     # nodes that don't connect to 10.20.30
-    filters = [models.filters.TargetFilter(True, '10.20.30', '1')]
+    filters = [sam.models.filters.TargetFilter(True, '10.20.30', '1')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrB = [x['address'] for x in rows]
     assert len(rows) == 40
     assert len(set(addrA) & set(addrB)) == 0
 
     # nodes that receive connections from 10.20.30
-    filters = [models.filters.TargetFilter(True, '10.20.30', '2')]
+    filters = [sam.models.filters.TargetFilter(True, '10.20.30', '2')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrA = [x['address'] for x in rows]
     assert len(rows) == 34
     # nodes that don't receive connections from 10.20.30
-    filters = [models.filters.TargetFilter(True, '10.20.30', '3')]
+    filters = [sam.models.filters.TargetFilter(True, '10.20.30', '3')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrB = [x['address'] for x in rows]
     assert len(rows) == 34
@@ -187,8 +187,8 @@ def test_get_table_filter_target():
 
 
 def test_get_table_filter_tags():
-    m_nodes = models.nodes.Nodes(db, sub_id)
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_nodes = Nodes(db, sub_id)
+    m_table = Table(db, sub_id, ds_full)
 
     try:
         m_nodes.delete_custom_tags()
@@ -204,19 +204,19 @@ def test_get_table_filter_tags():
         # m_nodes.set_tags('150.60.70', ['tag24b'])
         m_nodes.set_tags('150.60.70.80', ['tag32b'])
 
-        filters = [models.filters.TagsFilter(True, '1', 'tag24')]
+        filters = [sam.models.filters.TagsFilter(True, '1', 'tag24')]
         rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
         actual = [x['address'] for x in rows]
         expected = [u'110.20.30.0/24', u'110.20.30.40/32', u'110.20.30.41/32']
         assert actual == expected
 
-        filters = [models.filters.TagsFilter(True, '1', 'tag16,tag32b')]
+        filters = [sam.models.filters.TagsFilter(True, '1', 'tag16,tag32b')]
         rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
         actual = [x['address'] for x in rows]
         expected = [u'110.20.30.41/32']
         assert actual == expected
 
-        filters = [models.filters.MaskFilter(True, '110'), models.filters.TagsFilter(True, '0', 'tag24')]
+        filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.TagsFilter(True, '0', 'tag24')]
         rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
         actual = [x['address'] for x in rows]
         expected = [u'110.0.0.0/8', u'110.20.0.0/16', u'110.20.32.0/24', u'110.20.32.42/32',
@@ -228,8 +228,8 @@ def test_get_table_filter_tags():
 
 
 def test_get_table_filter_env():
-    m_nodes = models.nodes.Nodes(db, sub_id)
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_nodes = Nodes(db, sub_id)
+    m_table = Table(db, sub_id, ds_full)
 
     try:
         m_nodes.delete_custom_envs()
@@ -239,14 +239,14 @@ def test_get_table_filter_env():
         m_nodes.set_env('150.60', 'production')
         m_nodes.set_env('150.64', 'test_env')
 
-        filters = [models.filters.EnvFilter(True, 'dev')]
+        filters = [sam.models.filters.EnvFilter(True, 'dev')]
         rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
         actual = [x['address'] for x in rows]
         expected = [u'110.20.0.0/16', u'110.20.30.0/24', u'110.20.30.40/32', u'110.20.30.41/32',
                     u'110.20.32.0/24', u'110.20.32.42/32', u'110.20.32.43/32']
         assert actual == expected
 
-        filters = [models.filters.MaskFilter(True, '150'), models.filters.EnvFilter(True, 'test_env')]
+        filters = [sam.models.filters.MaskFilter(True, '150'), sam.models.filters.EnvFilter(True, 'test_env')]
         rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
         actual = [x['address'] for x in rows]
         expected = [u'150.64.0.0/16', u'150.64.74.0/24', u'150.64.74.84/32', u'150.64.74.85/32',
@@ -258,14 +258,14 @@ def test_get_table_filter_env():
 
 
 def test_get_table_filter_role():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
 
-    filters = [models.filters.MaskFilter(True, '10'), models.filters.RoleFilter(True, '>', '0.4999')]
+    filters = [sam.models.filters.MaskFilter(True, '10'), sam.models.filters.RoleFilter(True, '>', '0.4999')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrA = [x['address'] for x in rows]
     assert len(rows) == 7
 
-    filters = [models.filters.MaskFilter(True, '10'), models.filters.RoleFilter(True, '<', '0.4999')]
+    filters = [sam.models.filters.MaskFilter(True, '10'), sam.models.filters.RoleFilter(True, '<', '0.4999')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrB = [x['address'] for x in rows]
     assert len(rows) == 8
@@ -273,10 +273,10 @@ def test_get_table_filter_role():
 
 
 def test_get_table_filter_protocol():
-    m_table = models.tables.Table(db, sub_id, ds_full)
+    m_table = Table(db, sub_id, ds_full)
 
     # receives $protocol traffic
-    filters = [models.filters.MaskFilter(True, '10'), models.filters.ProtocolFilter(True, '0', 'TCP')]
+    filters = [sam.models.filters.MaskFilter(True, '10'), sam.models.filters.ProtocolFilter(True, '0', 'TCP')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'10.0.0.0/8', u'10.20.0.0/16', u'10.20.30.0/24', u'10.20.30.40/32',
@@ -286,7 +286,7 @@ def test_get_table_filter_protocol():
     assert addresses == expected
 
     # doesn't receives $protocol traffic
-    filters = [models.filters.MaskFilter(True, '150'), models.filters.ProtocolFilter(True, '1', 'TCP')]
+    filters = [sam.models.filters.MaskFilter(True, '150'), sam.models.filters.ProtocolFilter(True, '1', 'TCP')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'150.0.0.0/8', u'150.60.0.0/16', u'150.60.70.0/24', u'150.60.70.80/32',
@@ -296,14 +296,14 @@ def test_get_table_filter_protocol():
     assert addresses == expected
 
     # sends $protocol traffic
-    filters = [models.filters.MaskFilter(True, '110'), models.filters.ProtocolFilter(True, '2', 'TCP')]
+    filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.ProtocolFilter(True, '2', 'TCP')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'110.0.0.0/8', u'110.20.0.0/16', u'110.20.30.0/24', u'110.20.30.40/32']
     assert addresses == expected
 
     # DOESN'T send $protocol traffic
-    filters = [models.filters.MaskFilter(True, '110'), models.filters.ProtocolFilter(True, '3', 'TCP')]
+    filters = [sam.models.filters.MaskFilter(True, '110'), sam.models.filters.ProtocolFilter(True, '3', 'TCP')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
     expected = [u'110.20.30.41/32', u'110.20.32.0/24', u'110.20.32.42/32', u'110.20.32.43/32',

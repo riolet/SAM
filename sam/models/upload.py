@@ -1,5 +1,5 @@
 import importlib
-import preprocess
+from sam import preprocess
 import web
 
 

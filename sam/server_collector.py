@@ -7,7 +7,7 @@ import traceback
 
 import web
 
-import constants
+from sam import constants
 import sam.importers.import_base as base_importer
 
 web.config.debug = constants.debug

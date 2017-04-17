@@ -1,7 +1,7 @@
 import base
-import models.nodes
-import errors
-import common
+import sam.models.nodes
+from sam import errors
+from sam import common
 
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
@@ -33,7 +33,7 @@ class Nodes(base.HeadlessPost):
     """
     def __init__(self):
         base.HeadlessPost.__init__(self)
-        self.nodesModel = models.nodes.Nodes(common.db, self.user.viewing)
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
 
     def decode_get_request(self, data):
         addresses = []

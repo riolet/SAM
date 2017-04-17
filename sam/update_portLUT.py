@@ -1,8 +1,8 @@
 import csv
-import common
+from sam import common
 import os
 import urllib2
-import integrity
+from sam import integrity
 
 
 def get_raw_data():

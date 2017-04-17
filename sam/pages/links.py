@@ -1,8 +1,8 @@
 import re
 import base
-import models.links
-import errors
-import common
+import sam.models.links
+from sam import errors
+from sam import common
 
 
 class Links(base.Headless):
@@ -60,7 +60,7 @@ class Links(base.Headless):
         self.require_group('read')
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
-        links = models.links.Links(common.db, self.user.viewing, request['ds'])
+        links = sam.models.links.Links(common.db, self.user.viewing, request['ds'])
         return links.get_links(request['addresses'], timerange, request['port'], request['protocol'], request['flat'])
 
     def encode_get_response(self, response):

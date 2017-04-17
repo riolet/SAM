@@ -2,9 +2,9 @@ from spec.python import db_connection
 
 import pytest
 import web
-import pages.links
-import constants
-import errors
+import sam.pages.links
+from sam import constants
+from sam import errors
 import json
 import urllib
 
@@ -18,7 +18,7 @@ keys_p = [u'bytes', u'dst_end', u'dst_start', u'links', u'packets',  u'port', u'
 
 def test_decode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.links.Links()
+        p = sam.pages.links.Links()
         good_data = {
             'address': '110,110.20,110.20.30,110.20.30.40',
             'filter': '180',

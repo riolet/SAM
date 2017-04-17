@@ -1,6 +1,6 @@
 import web
-import common
-import models.links
+import sam.common
+import sam.models.links
 
 
 class Details:
@@ -13,13 +13,13 @@ class Details:
         self.table_links_out = "s{acct}_ds{id}_LinksOut".format(acct=self.sub, id=ds)
 
         self.ds = ds
-        self.ip_start, self.ip_end = common.determine_range_string(address)
+        self.ip_start, self.ip_end = sam.common.determine_range_string(address)
         self.page_size = page_size
         self.port = port
         if timestamp_range:
             self.time_range = timestamp_range
         else:
-            linksModel = models.links.Links(db, self.sub, self.ds)
+            linksModel = sam.models.links.Links(db, self.sub, self.ds)
             tr = linksModel.get_timerange()
             self.time_range = (tr['min'], tr['max'])
 
@@ -29,7 +29,7 @@ class Details:
         else:
             self.elapsed = '(MAX(timestamp) - MIN(timestamp))'
             self.divop = '/'
-            common.sqlite_udf(self.db)
+            sam.common.sqlite_udf(self.db)
 
     def get_metadata(self):
         qvars = {"start": self.ip_start, "end": self.ip_end}
@@ -122,7 +122,7 @@ class Details:
                 ON n.ipstart = t.s1
             LIMIT 1;
         """.format(
-            address_q=common.db_concat(self.db, 'decodeIP(n.ipstart)', "'/'", 'n.subnet'),
+            address_q=sam.common.db_concat(self.db, 'decodeIP(n.ipstart)', "'/'", 'n.subnet'),
             elapsed=self.elapsed,
             nodes_table=self.table_nodes,
             links_table=self.table_links)
@@ -290,7 +290,7 @@ class Details:
             ORDER BY {order}
             LIMIT $first, $size;
         """.format(**qvars)
-        return list(common.db.query(query, vars=qvars))
+        return list(sam.common.db.query(query, vars=qvars))
 
     def get_details_children(self, order='+ipstart'):
         sort_options = ['ipstart', 'hostname', 'endpoints', 'ratio']
@@ -371,7 +371,7 @@ class Details:
                    nodes_table=self.table_nodes,
                    links_in_table=self.table_links_in,
                    links_out_table=self.table_links_out)
-        return list(common.db.query(query, vars=qvars))
+        return list(sam.common.db.query(query, vars=qvars))
 
     def get_details_summary(self):
         where = self.build_where_clause(timestamp_range=self.time_range, port=self.port)
@@ -394,5 +394,5 @@ class Details:
         ) AS `outputs`;""".format(where=where, links_table=self.table_links)
 
         qvars = {'start': self.ip_start, 'end': self.ip_end}
-        rows = common.db.query(query, vars=qvars)
+        rows = sam.common.db.query(query, vars=qvars)
         return rows.first()

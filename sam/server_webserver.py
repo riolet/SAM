@@ -1,11 +1,11 @@
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))  # could be executed from any directory
-import constants
+from sam import constants
 import web
 web.config.debug = constants.debug  # must preceed import common
-import common
-import integrity
+from sam import common
+from sam import integrity
 
 
 def check_database():

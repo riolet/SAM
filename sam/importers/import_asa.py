@@ -1,6 +1,6 @@
 import sys
 import re
-from import_base import BaseImporter
+from sam.importers.import_base import BaseImporter
 import time
 
 

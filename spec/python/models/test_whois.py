@@ -1,4 +1,4 @@
-import models.whois
+from sam.models.whois import Whois
 
 ip_arin1 = '104.31.70.170'
 ip_arin1_name = 'Cloudflare, Inc.'
@@ -18,47 +18,47 @@ ip_apnic2_name = 'NICNET, INDIA'
 
 
 def test_arin():
-    w = models.whois.Whois(ip_arin1)
+    w = Whois(ip_arin1)
     assert w.query_ARIN() == ip_arin1_name
 
-    w = models.whois.Whois(ip_arin2)
+    w = Whois(ip_arin2)
     assert w.query_ARIN() == ip_arin2_name
 
-    w = models.whois.Whois(ip_ripe1)
+    w = Whois(ip_ripe1)
     assert w.query_ARIN() == 'RIPE'
 
-    w = models.whois.Whois(ip_ripe2)
+    w = Whois(ip_ripe2)
     assert w.query_ARIN() == 'RIPE'
 
-    w = models.whois.Whois(ip_apnic1)
+    w = Whois(ip_apnic1)
     assert w.query_ARIN() == 'APNIC'
 
-    w = models.whois.Whois(ip_apnic2)
+    w = Whois(ip_apnic2)
     assert w.query_ARIN() == 'APNIC'
 
 
 def test_ripe():
-    w = models.whois.Whois(ip_ripe1)
+    w = Whois(ip_ripe1)
     assert w.query_RIPE() == ip_ripe1_name
 
-    w = models.whois.Whois(ip_ripe2)
+    w = Whois(ip_ripe2)
     assert w.query_RIPE() == ip_ripe2_name
 
 
 def test_apnic():
-    w = models.whois.Whois(ip_apnic1)
+    w = Whois(ip_apnic1)
     assert w.query_APNIC() == ip_apnic1_name
 
-    w = models.whois.Whois(ip_apnic2)
+    w = Whois(ip_apnic2)
     assert w.query_APNIC() == ip_apnic2_name
 
 
 def test_overall():
-    w = models.whois.Whois(ip_arin1)
+    w = Whois(ip_arin1)
     assert w.ip_to_org() == ip_arin1_name
 
-    w = models.whois.Whois(ip_ripe1)
+    w = Whois(ip_ripe1)
     assert w.ip_to_org() == ip_ripe1_name
 
-    w = models.whois.Whois(ip_apnic1)
+    w = Whois(ip_apnic1)
     assert w.ip_to_org() == ip_apnic1_name

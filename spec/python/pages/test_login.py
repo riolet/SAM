@@ -1,15 +1,15 @@
 from spec.python import db_connection
 
 import pytest
-import pages.login
-import common
-import constants
-import errors
+import sam.pages.login
+from sam import common
+from sam import constants
+from sam import errors
 
 
 def test_render():
     with db_connection.env(mock_input=True, login_active=True, mock_session=True, mock_render=True):
-        p = pages.login.Login_LDAP()
+        p = sam.pages.login.Login_LDAP()
         common.session.clear()
         dummy = p.GET()
         calls = common.render.calls
@@ -22,7 +22,7 @@ def test_render():
 
 def test_decode_post():
     with db_connection.env(mock_input=True, mock_session=True):
-        p = pages.login.Login_LDAP()
+        p = sam.pages.login.Login_LDAP()
         common.session.clear()
         with pytest.raises(errors.MalformedRequest):
             p.decode_post_request({'user': 'bob'})
@@ -43,7 +43,7 @@ def test_decode_post():
 
 def test_decode_connection_string():
     with db_connection.env(mock_input=True, mock_session=True):
-        p = pages.login.Login_LDAP()
+        p = sam.pages.login.Login_LDAP()
         cs = 'ldaps://ipa.demo1.freeipa.org/CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
         address, ns = p.decode_connection_string(cs)
         assert address == 'ldaps://ipa.demo1.freeipa.org'
@@ -53,7 +53,7 @@ def test_decode_connection_string():
 def test_connect():
     # TODO: I don't control this test server. This could break.
     with db_connection.env(mock_input=True, mock_session=True):
-        p = pages.login.Login_LDAP()
+        p = sam.pages.login.Login_LDAP()
         p.server_address = 'ldaps://ipa.demo1.freeipa.org'
         p.namespace = 'CN=users,CN=accounts,DC=demo1,DC=freeipa,DC=org'
 

@@ -1,14 +1,14 @@
 from spec.python import db_connection
-import pages.base
+import sam.pages.base
 import web
-import constants
-import common
+from sam import constants
+from sam import common
 import pytest
 
 
 def test_page():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        p = pages.base.Page()
+        p = sam.pages.base.Page()
         p.user.groups = {'garbage'}
         with pytest.raises(Exception):
             assert p.require_group('write')
@@ -25,7 +25,7 @@ def test_page():
 
 def test_headed():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
-        p = pages.base.Headed('TestTitle', True, True)
+        p = sam.pages.base.Headed('TestTitle', True, True)
         p.styles = ['1', '2']
         p.scripts = ['3', '4']
         p.render('testPage', 'arg1', 'arg2', start=12, end=15)
@@ -37,19 +37,19 @@ def test_headed():
         assert calls[4] == ('_tail', (), {})
 
         common.render.clear()
-        p = pages.base.Headed('TestTitle', True, False)
+        p = sam.pages.base.Headed('TestTitle', True, False)
         p.render('testPage')
         calls = [x[0] for x in common.render.calls]
         assert calls == ['_head', '_header', 'testPage', '_tail']
 
         common.render.clear()
-        p = pages.base.Headed('TestTitle', False, False)
+        p = sam.pages.base.Headed('TestTitle', False, False)
         p.render('testPage')
         calls = [x[0] for x in common.render.calls]
         assert calls == ['_head', 'testPage', '_tail']
 
         common.render.clear()
-        p = pages.base.Headed('TestTitle', False, True)
+        p = sam.pages.base.Headed('TestTitle', False, True)
         p.render('testPage')
         calls = [x[0] for x in common.render.calls]
         assert calls == ['_head', 'testPage', '_footer', '_tail']
@@ -60,7 +60,7 @@ def test_headless():
     perform_calls = []
     encode_calls = []
 
-    class headless_t(pages.base.Headless):
+    class headless_t(sam.pages.base.Headless):
         def decode_get_request(self, data):
             decode_calls.append(data.copy())
             return {'a': 1, 'b': 2}
@@ -94,7 +94,7 @@ def test_headlesspost():
     perform_calls = []
     encode_calls = []
 
-    class headless_t(pages.base.HeadlessPost):
+    class headless_t(sam.pages.base.HeadlessPost):
         def decode_post_request(self, data):
             decode_calls.append(data.copy())
             return {'a': 1, 'b': 2}

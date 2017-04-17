@@ -1,5 +1,5 @@
 import web
-import common
+from sam import common
 import filters
 
 

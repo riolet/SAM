@@ -1,8 +1,8 @@
 import os
-import constants
+from sam import constants
 import web
-import common
-import models.ports
+from sam import common
+import sam.models.ports
 
 
 class Subscriptions:
@@ -47,7 +47,7 @@ class Subscriptions:
             common.exec_sql(self.db, self.CREATE_SQLITE, replacements)
 
         # replicate port data
-        portsModel = models.ports.Ports(self.db, sub_id)
+        portsModel = sam.models.ports.Ports(self.db, sub_id)
         portsModel.reset()
 
     def create_default_subscription(self):
