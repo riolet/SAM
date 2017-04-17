@@ -1,0 +1,208 @@
+$def with (datasources)
+<script src="/static/js/map.js"></script>
+<h3 class="ui center aligned header">Loading...</h3>
+<div id="output">
+<canvas id="canvas"></canvas>
+<!--
+--------------- Settings/Search Panel ---------------
+-->
+<div id="searchbar">
+  <div class="ui icon menu">
+    <div id="settings_menu" class="ui left dropdown item">
+      <i class="setting icon large"></i>
+      <!--The settings menu -->
+      <div class="menu">
+        <div class="item" id="time_box">
+          <p>Time Range</p>
+          <div class="slider-box">
+            <div id="slider-date"></div>
+          </div>
+          <p><input class="slider-input" id="input-start" value="2016-06-19 19:00"> From</p>
+          <p><input class="slider-input" id="input-end" value="2016-06-20 08:00"> To</p>
+        </div>
+        <div class="item">
+          <div class="ui icon input" data-content="Filter by port number. Try: 80">
+            <input placeholder="Filter by port..." id="filter" type="text">
+            <i class="filter icon"></i>
+          </div>
+        </div>
+        <div class="item">
+          <div class="ui icon input" data-content="Filter by protocol. Try: UDP">
+            <input placeholder="Protocol" id="proto_filter" name="protocol" type="text">
+            <i class="exchange icon"></i>
+          </div>
+        </div>
+        <div class="ui dropdown item" style="display: flex">
+          Line width represents
+          <i class="dropdown icon"></i>
+          <div class="menu">
+            <div class="thin item">
+              <div class="ui four vertical buttons">
+                <button class="ui lw toggle button" id="links">Number of occurences</button>
+                <button class="ui lw toggle button" id="bytes">Bytes transferred</button>
+                <button class="ui lw toggle button" id="packets">Packets transmitted</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ui dropdown item" style="display: flex">
+          Show/Hide
+          <i class="dropdown icon"></i>
+          <div class="menu">
+            <div class="thin item">
+              <div class="ui four vertical buttons">
+                <button class="ui toggle button" id="show_in"></button>
+                <button class="ui toggle button" id="show_out"></button>
+                <button class="ui toggle button" id="show_clients"></button>
+                <button class="ui toggle button" id="show_servers"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ui dropdown item" style="display: flex">
+          Data source
+          <i class="dropdown icon"></i>
+          <div class="menu">
+            <div class="thin item">
+              <div class="ui two vertical buttons">
+                $for source in datasources:
+                  <button class="ui ds toggle button" id="ds$source[0]"><i class="cube icon"></i>$source[1]</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="thin item">
+          <div class="two ui buttons">
+            <button class="ui toggle button" id="update"></button>
+            <button class="ui toggle button" id="flat"></button>
+          </div>
+        </div>
+      </div>
+    </div> <!-- end menu -->
+    <!-- The actual search bar, not in the menu -->
+    <div class="ui item">
+      <div class="ui icon input" data-content="Find an IP address. e.g. 192.168.0.12">
+        <input placeholder="Find IP..." id="search" type="text">
+        <i class="search icon"></i>
+      </div>
+    </div>
+  </div>
+</div>
+<!--
+--------------- Selection Details Panel ---------------
+-->
+<div id="sel_bar">
+  <div id="sel_titles">
+    <h4>No selection</h4>
+    <h5>&nbsp;</h5>
+  </div>
+  <div id="selectionInfo" class="ui styled fluid accordion">
+    <div class="title">
+      <i class="dropdown icon"></i>
+      Unique inbound clients: <span id="unique_in">0</span>
+    </div>
+    <div class="content">
+      <div class="transition hidden">
+        <table class="ui very compact sortable celled structured table">
+          <thead>
+          <tr id="conn_in_h">
+            <th>Source IP</th>
+            <th>Dest. Port</th>
+            <th>Count</th>
+          </tr>
+          </thead>
+          <tbody id="conn_in"></tbody>
+          <tfoot class="full-width" id="conn_in_overflow"></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="title">
+      <i class="dropdown icon"></i>
+      Unique servers contacted: <span id="unique_out">0</span>
+    </div>
+    <div class="content">
+      <div class="transition hidden">
+        <table class="ui very compact sortable celled structured table">
+          <thead>
+            <tr id="conn_out_h">
+              <th>Dest. IP</th>
+              <th>Dest. Port</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody id="conn_out"></tbody>
+          <tfoot class="full-width" id="conn_out_overflow"></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="title">
+      <i class="dropdown icon"></i>
+      Unique ports accessed: <span id="unique_ports">0</span>
+    </div>
+    <div class="content">
+      <div class="transition hidden">
+        <table class="ui very compact sortable celled table">
+          <thead>
+            <tr id="ports_in_h">
+              <th>Port Accessed</th>
+              <th class="sorted descending">Occurrences</th>
+            </tr>
+          </thead>
+          <tbody id="ports_in"></tbody>
+          <tfoot class="full-width" id="ports_in_overflow"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="sel_link" class="bottom attached ui segment" style="display: none"></div>
+</div> <!-- end selection info div -->
+</div> <!-- end div id=output -->
+<!--
+--------------- Port Edit Panel ---------------
+-->
+<div class="ui modal ports">
+  <div class="header">Port <span id="port_number"></span></div>
+  <div class="content">
+    <table class="ui table">
+      <tr><td class="right aligned">Use Name Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+      <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
+      <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+      <tr><td class="right aligned">Expected Protocols:</td><td id="port_protocols"></td></tr>
+      <tr>
+        <td class="right aligned">Alias Name:</td>
+        <td>
+          <div class="ui input" data-content="A custom alias to override the default name">
+            <input placeholder="port name" id="port_alias_name" type="text">
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="right aligned">Alias Description:</td>
+        <td>
+          <div class="ui input" data-content="A custom alias to override the default description">
+            <input placeholder="port description" id="port_alias_description" type="text">
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="actions">
+    <div class="ui blue ok button">
+      <i class="save icon"></i>
+      Save
+    </div>
+    <div class="ui red cancel button">
+      <i class="cancel icon"></i>
+      Cancel
+    </div>
+  </div>
+</div>
+
+<!-- Demo data warning -->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Demonstration
+  </div>
+  <p>This is a subset of real network data, anonymized for privacy. The database is read-only and changes will not be saved.</p>
+</div>

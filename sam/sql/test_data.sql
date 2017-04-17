@@ -1,0 +1,3 @@
+$def with (acct, dsid)
+
+-- INSERT INTO ...

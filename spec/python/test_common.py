@@ -1,11 +1,17 @@
-import common
+from spec.python import db_connection
+from sam import common
 
 
-def test_navbar():
-    nav = common.navbar
-    assert type(nav) == list
-    assert type(nav[0]) == dict
-    assert sorted(nav[0].keys()) == ["icon", "link", "name"]
+def test_parse_sql_file():
+    expected = ['DROP TABLE IF EXISTS myKey_blah',
+                '\n \n \n CREATE TABLE IF NOT EXISTS myKey_blah\n'
+                ' (port              INT UNSIGNED NOT NULL\n'
+                ' ,CONSTRAINT PKportAliasLUT PRIMARY KEY (port)\n'
+                ' )',
+                '\n \n SELECT * FROM myKey_blah\n ']
+    replacements = {'id': "myKey"}
+    actual = common.parse_sql_file("./spec/python/test_sql.sql", replacements)
+    assert actual == expected
 
 
 def test_IPtoString():
