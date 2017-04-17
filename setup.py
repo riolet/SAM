@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='samapper',
-    version='0.1.3',
+    version='0.1.4',
     classifiers=[
             'Development Status :: 3 - Alpha',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -22,6 +22,11 @@ setup(
         'web.py>=0.38',
         'requests>=2.13'
     ],
+    package_data={
+        'templates': ['*.html'],
+        'sql': ['*.sql', '*.json'],
+        'static': ['*.js', '*.css', '*.png', 'semantic/themes/default/assets/fonts/*.*']
+    },
     extras_require={
             'dev': ['pytest>=3.0', 'jasmine>=2.5', 'py>=1.4'],
     },

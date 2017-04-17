@@ -25,7 +25,10 @@ application = None
 # sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
 
 
-def main(argv):
+def main(argv=None):
+    if argv == None:
+        argv = sys.argv
+
     kwargs, args = getopt.getopt(argv[1:], '', ['format=', 'port=', 'target=', 'local', 'whois', 'wsgi'])
 
     defaults = {
