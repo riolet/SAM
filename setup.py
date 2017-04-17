@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='samapper',
-    version='0.1.4',
+    version='0.1.6',
     classifiers=[
             'Development Status :: 3 - Alpha',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -26,9 +26,13 @@ setup(
         'sam': ['templates/*.html',
                 'sql/*.sql',
                 'sql/*.json',
-                'static/*.js',
-                'static/*.css',
-                'static/*.png',
+                'static/js/*.js',
+                'static/css/*.css',
+                'static/img/*.png',
+                'static/nouislider/*.css',
+                'static/nouislider/*.js',
+                'static/semantic/*.js',
+                'static/semantic/*.css',
                 'static/semantic/themes/default/assets/fonts/*.*'],
     },
     extras_require={
