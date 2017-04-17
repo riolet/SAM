@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(__file__))
 import time
 import cPickle
@@ -11,7 +12,7 @@ import threading
 import models.livekeys
 import models.nodes
 import preprocess
-import importers.import_base
+import sam.importers.import_base
 
 
 """
@@ -156,7 +157,7 @@ class DatabaseInserter(threading.Thread):
 
     @staticmethod
     def run_importer(sub, ds, messages):
-        importer = importers.import_base.BaseImporter()
+        importer = sam.importers.import_base.BaseImporter()
         importer.set_subscription(sub)
         importer.set_datasource(ds)
 

@@ -1,10 +1,9 @@
+import sam.common as common
+import sam.models.links
+import sam.models.nodes
+import sam.models.upload
+import sam.importers.import_base
 from spec.python import db_connection
-
-import common
-import models.upload
-import models.links
-import models.nodes
-import importers.import_base
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -34,20 +33,20 @@ short_log = """
 
 
 def test_get_importer():
-    m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
-    assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
+    m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
+    assert isinstance(m_upload.importer, sam.importers.import_base.BaseImporter)
 
-    m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'import_paloalto')
-    assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
+    m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, 'import_paloalto')
+    assert isinstance(m_upload.importer, sam.importers.import_base.BaseImporter)
 
-    m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'PaloAlto')
-    assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
+    m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, 'PaloAlto')
+    assert isinstance(m_upload.importer, sam.importers.import_base.BaseImporter)
 
     for i in importer_names:
-        m_upload = models.upload.Uploader(db, sub_id, ds_empty, i)
-        assert isinstance(m_upload.importer, importers.import_base.BaseImporter)
+        m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, i)
+        assert isinstance(m_upload.importer, sam.importers.import_base.BaseImporter)
 
-    m_upload = models.upload.Uploader(db, sub_id, ds_empty, '')
+    m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, '')
     assert m_upload.importer is None
 
 
@@ -55,11 +54,11 @@ def test_run_import():
     table_name = "s{s}_ds{ds}_Syslog".format(s=sub_id, ds=ds_empty)
     db.query("DELETE FROM {table}".format(table=table_name))
     try:
-        m_upload = models.upload.Uploader(db, sub_id, ds_empty, '')
+        m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, '')
         inserted = m_upload.run_import(short_log)
         assert inserted == 0
 
-        m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
+        m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
         inserted = m_upload.run_import(short_log)
         assert inserted == 10
         rows = list(db.query("SELECT * FROM {table}".format(table=table_name)))
@@ -85,7 +84,7 @@ def test_import_log():
     syslog_table_name = "s{s}_ds{ds}_Syslog".format(s=sub_id, ds=ds_empty)
     links_table_name = "s{s}_ds{ds}_Links".format(s=sub_id, ds=ds_empty)
     try:
-        m_upload = models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
+        m_upload = sam.models.upload.Uploader(db, sub_id, ds_empty, 'paloalto')
         m_upload.import_log(short_log)
         rows = list(db.query("SELECT src, dst, port FROM {table} WHERE src < 167772160 "
                              "ORDER BY src ASC, dst ASC, port ASC"
@@ -108,10 +107,10 @@ def test_import_log():
     finally:
         db.query("DELETE FROM {table}".format(table=syslog_table_name))
 
-        m_links = models.links.Links(db, sub_id, ds_empty)
+        m_links = sam.models.links.Links(db, sub_id, ds_empty)
         m_links.delete_connections()
 
-        m_nodes = models.nodes.Nodes(db, sub_id)
+        m_nodes = sam.models.nodes.Nodes(db, sub_id)
         m_nodes.delete_collection(['6', '7', '8', '9'])
 
 

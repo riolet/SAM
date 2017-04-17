@@ -1,12 +1,15 @@
 import SocketServer
-import threading
+import importlib
 import signal
+import threading
 import time
 import traceback
-import importlib
-import importers.import_base as base_importer
-import constants
+
 import web
+
+import constants
+import sam.importers.import_base as base_importer
+
 web.config.debug = constants.debug
 import requests
 import cPickle
