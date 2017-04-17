@@ -1,12 +1,12 @@
 from spec.python import db_connection
 
-import pages.settings_page
-import common
-import constants
+import sam.pages.settings_page
+from sam import common
+from sam import constants
 
 
 def test_get_importers():
-    importers = pages.settings_page.SettingsPage.get_available_importers()
+    importers = sam.pages.settings_page.SettingsPage.get_available_importers()
     for importer in importers:
         assert len(importer) == 2
         assert isinstance(importer[0], basestring)
@@ -15,7 +15,7 @@ def test_get_importers():
 
 def test_render():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
-        p = pages.settings_page.SettingsPage()
+        p = sam.pages.settings_page.SettingsPage()
         dummy = p.GET()
         calls = common.render.calls
         page_title = 'Settings'

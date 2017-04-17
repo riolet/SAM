@@ -1,20 +1,20 @@
 from __future__ import absolute_import
 import time
-import constants
-import common
-import integrity
-import models.datasources
+import sam.constants
+import sam.common
+import sam.integrity
+import sam.models.datasources
 import web.template
-import importers.import_base
-import preprocess
-import models.links
-import models.nodes
+import sam.importers.import_base
+import sam.preprocess
+import sam.models.links
+import sam.models.nodes
 from datetime import datetime
 TEST_DATABASE_MYSQL = 'samapper_test'
 TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
 
-class mocker(object):
+class Mocker(object):
     def __init__(self, *args, **kwargs):
         self.constructor = (args, kwargs)
         self.kvs = {}
@@ -51,9 +51,9 @@ class Session(dict):
 class env(object):
     def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False):
         self.input_real = web.input
-        self.active_old = constants.access_control['active']
-        self.session = common.session
-        self.render = common.render
+        self.active_old = sam.constants.access_control['active']
+        self.session = sam.common.session
+        self.render = sam.common.render
 
         self.mock_input = mock_input
         self.mock_login = login_active
@@ -64,23 +64,23 @@ class env(object):
         if self.mock_input:
             web.input = lambda: {}
         if self.mock_login is True:
-            constants.access_control['active'] = True
+            sam.constants.access_control['active'] = True
         elif self.mock_login is False:
-            constants.access_control['active'] = False
+            sam.constants.access_control['active'] = False
         if self.mock_session:
-            common.session = Session()
+            sam.common.session = Session()
         if self.mock_render:
-            common.render = mocker()
+            sam.common.render = Mocker()
 
     def __exit__(self, type, value, traceback):
         if self.mock_input:
             web.input = self.input_real
         if self.mock_login:
-            constants.access_control['active'] = self.active_old
+            sam.constants.access_control['active'] = self.active_old
         if self.mock_session:
-            common.session = self.session
+            sam.common.session = self.session
         if self.mock_render:
-            common.render = self.render
+            sam.common.render = self.render
 
 
 def make_timestamp(timestring):
@@ -90,28 +90,28 @@ def make_timestamp(timestring):
 
 
 def get_test_db_connection():
-    params = constants.dbconfig.copy()
+    params = sam.constants.dbconfig.copy()
     if params['dbn'] == 'sqlite':
         params['db'] = TEST_DATABASE_SQLITE
     else:
         params['db'] = TEST_DATABASE_MYSQL
-    tdb, tdbq = common.get_db(params)
+    tdb, tdbq = sam.common.get_db(params)
     print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
-    common.db = tdb
-    common.db_quiet = tdbq
+    sam.common.db = tdb
+    sam.common.db_quiet = tdbq
     print("CHECKING THE DB")
-    integrity.check_and_fix_integrity(tdbq, params)
+    sam.integrity.check_and_fix_integrity(tdbq, params)
     return tdb
 
 
 def create_test_database(db):
     # creates all the default tables and profile.
     print("SETTING UP THE DATASOURCES")
-    setup_datasources(db, constants.demo['id'])
+    setup_datasources(db, sam.constants.demo['id'])
 
 
 def setup_datasources(db, sub):
-    d = models.datasources.Datasources(db, {}, sub)
+    d = sam.models.datasources.Datasources(db, {}, sub)
     sources = d.datasources
     remaining = ['default', 'short', 'live']
     for ds in sources.values():
@@ -125,15 +125,15 @@ def setup_datasources(db, sub):
 
 def template_sql(path, *args):
     tmpl = web.template.Template(open(path).read())
-    commands = common.parse_sql_string(unicode(tmpl(*args)), {})
+    commands = sam.common.parse_sql_string(unicode(tmpl(*args)), {})
     return commands
 
 
 def clear_network(db, sub, ds):
-    l_model = models.links.Links(db, sub, ds)
+    l_model = sam.models.links.Links(db, sub, ds)
     l_model.delete_connections()
 
-    n_model = models.nodes.Nodes(db, sub)
+    n_model = sam.models.nodes.Nodes(db, sub)
     n_model.delete_custom_tags()
     n_model.delete_custom_envs()
     n_model.delete_custom_hostnames()
@@ -144,10 +144,10 @@ def clear_network(db, sub, ds):
 
 def setup_network(db, sub_id, ds_id):
     clear_network(db, sub_id, ds_id)
-    loader = importers.import_base.BaseImporter()
+    loader = sam.importers.import_base.BaseImporter()
     loader.subscription = sub_id
     loader.datasource = ds_id
-    processor = preprocess.Preprocessor(db, sub_id, ds_id)
+    processor = sam.preprocess.Preprocessor(db, sub_id, ds_id)
 
     # used to generate network data for testing
     #def rand_time():
@@ -186,7 +186,7 @@ def setup_network(db, sub_id, ds_id):
     when1 = datetime(2016, 1, 17, 13, 24, 35)
     when2 = datetime(2017, 2, 18, 14, 25, 36)
     when3 = datetime(2018, 3, 19, 15, 26, 37)
-    t = common.IPStringtoInt
+    t = sam.common.IPStringtoInt
 
     log_lines = [
         [t('110.20.30.40'), 12345, t('110.20.30.40'), 180, when1, 'TCP', 100, 0, 1, 0, 5],
@@ -505,7 +505,7 @@ def setup_network(db, sub_id, ds_id):
 
 
 def setup_node_extras():
-    sub_id = constants.demo['id']
+    sub_id = sam.constants.demo['id']
     commands = template_sql("./sql/test_data.sql", sub_id)
     for command in commands:
         print command
@@ -516,8 +516,8 @@ print("GET TEST DB")
 db = get_test_db_connection()
 print("CREATE TEST DATABASE")
 create_test_database(db)
-default_sub = constants.demo['id']
-ds_model = models.datasources.Datasources(db, {}, default_sub)
+default_sub = sam.constants.demo['id']
+ds_model = sam.models.datasources.Datasources(db, {}, default_sub)
 dsid_default = 0
 dsid_short = 0
 dsid_live = 0

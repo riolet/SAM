@@ -1,13 +1,13 @@
 # importing db_connection has the side effect of setting the test database.
 from spec.python import db_connection
-import models.ports
+from sam.models.ports import Ports
 
 db = db_connection.db
 sub_id = db_connection.default_sub
 
 
 def test_get_port_info_present():
-    pm = models.ports.Ports(db, sub_id)
+    pm = Ports(db, sub_id)
 
     port_info = pm.get(80)
 
@@ -19,14 +19,14 @@ def test_get_port_info_present():
 
 
 def test_get_port_info_absent():
-    pm = models.ports.Ports(db, sub_id)
+    pm = Ports(db, sub_id)
 
     port_info = pm.get(4)
     assert port_info == []
 
 
 def test_get_port_info_many():
-    pm = models.ports.Ports(db, sub_id)
+    pm = Ports(db, sub_id)
     port_info = pm.get([3, 4, 5, 6])
     assert len(port_info) == 2
     info3 = port_info[0]
@@ -38,7 +38,7 @@ def test_get_port_info_many():
 
 
 def test_set_port_info():
-    pm = models.ports.Ports(db, sub_id)
+    pm = Ports(db, sub_id)
 
     test_port = 1
     try:

@@ -1,7 +1,7 @@
-import db_connection
-import constants
-import common
-import integrity
+from spec.python import db_connection
+from sam import constants
+from sam import common
+from sam import integrity
 import traceback
 
 mysql_params = constants.dbconfig.copy()

@@ -1,8 +1,8 @@
 from spec.python import db_connection
 
 import web
-import pages.details
-import constants
+import sam.pages.details
+from sam import constants
 import json
 import urllib
 
@@ -12,46 +12,46 @@ ds_full = db_connection.dsid_default
 
 
 def test_nice_protocol():
-    res = pages.details.nice_protocol(u'tcp', u'udp')
+    res = sam.pages.details.nice_protocol(u'tcp', u'udp')
     assert res == u'tcp (in), udp (out)'
 
-    res = pages.details.nice_protocol(u'tcp', u'')
+    res = sam.pages.details.nice_protocol(u'tcp', u'')
     assert res == u'tcp (in)'
-    res = pages.details.nice_protocol(u'tcp', None)
+    res = sam.pages.details.nice_protocol(u'tcp', None)
     assert res == u'tcp (in)'
 
-    res = pages.details.nice_protocol(u'', u'udp')
+    res = sam.pages.details.nice_protocol(u'', u'udp')
     assert res == u'udp (out)'
-    res = pages.details.nice_protocol(None, u'udp')
+    res = sam.pages.details.nice_protocol(None, u'udp')
     assert res == u'udp (out)'
 
-    res = pages.details.nice_protocol(u'abc,def', u'def,ghi,jkl')
+    res = sam.pages.details.nice_protocol(u'abc,def', u'def,ghi,jkl')
     assert res == u'abc (in), def (i/o), jkl (out), ghi (out)'
 
 
 def test_si_formatting():
-    s = pages.details.si_formatting(123)
+    s = sam.pages.details.si_formatting(123)
     assert s == u'123.00'
 
-    s = pages.details.si_formatting(123456)
+    s = sam.pages.details.si_formatting(123456)
     assert s == u'123.46K'
 
-    s = pages.details.si_formatting(123456789)
+    s = sam.pages.details.si_formatting(123456789)
     assert s == u'123.46M'
 
-    s = pages.details.si_formatting(12345678987)
+    s = sam.pages.details.si_formatting(12345678987)
     assert s == u'12.35G'
 
-    s = pages.details.si_formatting(12345678987, places=0)
+    s = sam.pages.details.si_formatting(12345678987, places=0)
     assert s == u'12G'
 
-    s = pages.details.si_formatting(12345678987, places=6)
+    s = sam.pages.details.si_formatting(12345678987, places=6)
     assert s == u'12.345679G'
 
 
 def test_decode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
-        d = pages.details.Details()
+        d = sam.pages.details.Details()
         good_data = {
             'ds': 'ds{}'.format(ds_full),
             'tstart': 1000025,
@@ -117,21 +117,21 @@ def test_decode_get():
 
 
 def test_nice_ip_address():
-    nice = pages.details.Details.nice_ip_address('110.20')
+    nice = sam.pages.details.Details.nice_ip_address('110.20')
     assert nice == '110.20.0.0/16'
-    nice = pages.details.Details.nice_ip_address('110')
+    nice = sam.pages.details.Details.nice_ip_address('110')
     assert nice == '110.0.0.0/8'
-    nice = pages.details.Details.nice_ip_address('10.20.30.40')
+    nice = sam.pages.details.Details.nice_ip_address('10.20.30.40')
     assert nice == '10.20.30.40/32'
-    nice = pages.details.Details.nice_ip_address('11.22.33.44/0')
+    nice = sam.pages.details.Details.nice_ip_address('11.22.33.44/0')
     assert nice == '0.0.0.0/0'
-    nice = pages.details.Details.nice_ip_address('11.22.33.44/8')
+    nice = sam.pages.details.Details.nice_ip_address('11.22.33.44/8')
     assert nice == '11.0.0.0/8'
-    nice = pages.details.Details.nice_ip_address('11.22.33.44/16')
+    nice = sam.pages.details.Details.nice_ip_address('11.22.33.44/16')
     assert nice == '11.22.0.0/16'
-    nice = pages.details.Details.nice_ip_address('11.22.33.44/24')
+    nice = sam.pages.details.Details.nice_ip_address('11.22.33.44/24')
     assert nice == '11.22.33.0/24'
-    nice = pages.details.Details.nice_ip_address('11.22.33.44/32')
+    nice = sam.pages.details.Details.nice_ip_address('11.22.33.44/32')
     assert nice == '11.22.33.44/32'
 
 # ---------------------------------------------------------

@@ -1,5 +1,5 @@
-import db_connection
-import common
+from spec.python import db_connection
+from sam import common
 
 
 def test_parse_sql_file():

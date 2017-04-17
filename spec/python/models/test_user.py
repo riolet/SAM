@@ -1,6 +1,6 @@
 # importing db_connection has the side effect of setting the test database.
 from spec.python import db_connection
-from models.user import User
+from sam.models.user import User
 
 sub_id = db_connection.default_sub
 session = {}

@@ -5,31 +5,48 @@ It runs as a local python-based server and displays the a map and statistics on 
 
 Check out the [website](http://sam.centralus.cloudapp.azure.com) for details about the project and a demo!
 
-## Prerequisites
+## Quickstart (using pip)
 
-MySQL - SAM will support other databases in the future:
+install SAM with pip:
 
-    apt-get install mysql-server
-    apt-get install libmysqlclient-dev
+    pip install samapper
+    
+Collect network data with tcpdump and run the http server:
 
-Python - python-dev is needed to build the MySQLdb package
+    sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | samapper --local --whois --format=tcpdump
+    
+  tcpdump will probably need to be run with sudo priviledge to allow it to capture network traffic for your devices. 
 
-    apt-get install python
-    apt-get install python-dev
+Or, run the http server without collecting data:
 
-Pip - for installing python packages
+    samapper --target=webserver --whois
+
+
+## Installation (using git)
+
+### Prerequisites
+(optional) mysql - database software that will work better for this than sqlite.
+
+    apt-get install mysql-server libmysqlclient-dev python python-dev
+    
+pip - to install python packages
 
     apt-get install python-pip
 
-## Installation
-
-1. Clone the repository
+### Installing
+1. Clone this repository
 2. Run `pip install -r requirements.txt` from within the directory to install necessary packages.
-3. Duplicate `dbconfig.py` as `dbconfig_local.py` and fill out database credentials
+3. Set environment variables for credentials and settings.  See sam/default.cfg.
 
-## Usage
 
-1. Edit your defaults.cfg (or export environment variables) to provide your database password to the server. 
+      e.g:
+      export SAM__DATABASE__DBN=mysql
+      export SAM__DATABASE__USER=root
+      export SAM__DATABASE__PW=mypassword
+
+### Usage
+
+1. Start the server locally by running: `python -m sam.launcher --target=webserver`  For a more robust deployment, SAM supports the WSGI interface (`python sam/server_webserver.py`) and can be run through a different web server.
 
 2. Create a data source to use in the settings page, or use the default empty data source provided.
 
@@ -47,21 +64,16 @@ Pip - for installing python packages
    5. tcpdump: Partial support.
    6. TShark: Partial support.
 
-   Import from all files before moving on.
-
-4. For live analysis, 
-   1. On the settings page, choose a data source for your live data to be funneled into then create a Access Key.
-   2. Edit default.cfg: Enter your access key into default.cfg in the [live] section.
-      also in the live section, choose your format and ports to use.
-   3. Start the live update server 
-      * The command is `python live_wsgiserver 8081`
-      * It should print "http://0.0.0.0:8081/" or similar
-   4. Start the collector
-      * The command is `python live_collector`
+4. For live analysis,
+ 
+   1. On the settings page, choose a data source for your live data to be funneled into then create a Access Key
+   2. Edit default.cfg or set an environment variable (SAM__COLLECTOR__UPLOAD_KEY) to your new access key
+   3. Start the aggregator (this loads log data into the database) 
+      * `python -m sam.launcher --target=aggregator`
+   4. Start the collector (this listens to port 514 and translates syslog lines)
+      * `python -m sam.launcher --target=collector`
       * You will need priviledges to bind to system port 514.
-      * It should print "Testing connection... Succeeded.  Live Collector listening on localhost:514." or similar
+      * It should print "Testing connection... Succeeded." 
    5. Tell your router to output it's log files to that freshly opened socket.
    
-5. Start the server locally by running: `python server.py`  For a more robust deployment, SAM supports the WSGI interface (`wsgiserver.py`) and can be run through a different web server.
-
-6. Navigate your browser to localhost:8080 and explore your network!
+5. Navigate your browser to localhost:8080 and explore your network!

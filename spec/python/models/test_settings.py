@@ -1,5 +1,5 @@
 from spec.python import db_connection
-from models.settings import Settings
+from sam.models.settings import Settings
 
 db = db_connection.db
 sub_id = db_connection.default_sub
