@@ -1,9 +1,11 @@
 import sys
 import os
-sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
 import getopt
-from sam import constants
 import multiprocessing
+import importlib
+import traceback
+sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
+from sam import constants
 
 application = None
 
@@ -20,6 +22,9 @@ application = None
 #     --target=collector
 #   localmode combo
 #     --local --scanner=tcpdump
+#   import
+#     --target=import  --format=palo_alto
+
 
 # suggested demo invocation:
 # sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
@@ -29,7 +34,7 @@ def main(argv=None):
     if argv == None:
         argv = sys.argv
 
-    kwargs, args = getopt.getopt(argv[1:], '', ['format=', 'port=', 'target=', 'local', 'whois', 'wsgi'])
+    kwargs, args = getopt.getopt(argv[1:], '', ['format=', 'port=', 'target=', 'dest=', 'sub=', 'local', 'whois', 'wsgi'])
 
     defaults = {
         'format': 'tcpdump',
@@ -38,9 +43,11 @@ def main(argv=None):
         'local': False,
         'whois': False,
         'wsgi': False,
+        'dest': 'default',
+        'sub': constants.demo['id']
     }
-    valid_formats = ['tcpdump', 'none']
-    valid_targets = ['aggregator', 'collector', 'webserver']
+    valid_formats = ['tcpdump', 'nfdump', 'paloalto', 'tshark', 'asa', 'aws', 'none']
+    valid_targets = ['aggregator', 'collector', 'webserver', 'import']
 
     parsed_args = defaults.copy()
     for key, val in kwargs:
@@ -56,6 +63,10 @@ def main(argv=None):
             parsed_args['target'] = val
         if key == '--port':
             parsed_args['port'] = val
+        if key == '--dest':
+            parsed_args['dest'] = val
+        if key == '--sub':
+            parsed_args['sub'] = val
 
     if parsed_args['format'] not in valid_formats:
         print("Invalid format")
@@ -75,6 +86,8 @@ def main(argv=None):
         launch_collector(parsed_args)
     elif parsed_args['target'] == 'aggregator':
         launch_aggregator(parsed_args)
+    elif parsed_args['target'] == 'import':
+        launch_importer(parsed_args, args)
     else:
         print("Error determining what to launch.")
 
@@ -120,18 +133,77 @@ def launch_aggregator(args):
         print('aggregator shut down.')
 
 
+def launch_importer(parsed, args):
+    import common
+    datasource = parsed['dest']
+    subscription_id = parsed['sub']
+    format = parsed['format']
+
+    if len(args) != 1:
+        print("Please specify one source file. Exiting.")
+        return
+
+    importer = get_importer(format)
+    if importer is None:
+        return
+    importer.set_subscription(subscription_id)
+    from sam.models.datasources import Datasources
+    d_model = Datasources(common.db_quiet, {}, subscription_id)
+    try:
+        dsid = int(datasource)
+    except (TypeError, ValueError):
+        try:
+            dsid = d_model.name_to_id(datasource)
+        except:
+            print("Could not read datasource. Exiting.")
+            return
+    importer.set_datasource(dsid)
+
+    if importer.validate_file(args[0]):
+        importer.import_file(args[0])
+    else:
+        print("Could not open source file. Exiting.")
+        return
+
+    from sam.preprocess import Preprocessor
+    processor = Preprocessor(common.db_quiet, subscription_id, dsid)
+    processor.run_all()
+
+
+def get_importer(importer_name):
+    if importer_name.startswith("import_"):
+        importer_name = importer_name[7:]
+    i = importer_name.rfind(".py")
+    if i != -1:
+        importer_name = importer_name[:i]
+
+    # attempt to import the module
+    fullname = "sam.importers.import_{0}".format(importer_name)
+    try:
+        module = importlib.import_module(fullname)
+        instance = module._class()
+    except ImportError:
+        print("Cannot find importer {0}".format(importer_name))
+        instance = None
+    except AttributeError:
+        traceback.print_exc()
+        print("Cannot instantiate importer. Is _class defined?")
+        instance = None
+    return instance
+
+
 def create_local_settings(db, sub):
     # create 1 key if none exist
-    import models.settings
-    import models.datasources
-    import models.livekeys
+    from sam.models.settings import Settings
+    from sam.models.datasources import Datasources
+    from sam.models.livekeys import LiveKeys
 
-    m_set = models.settings.Settings(db, {}, sub)
+    m_set = Settings(db, {}, sub)
     ds_id = m_set['datasource']
-    m_livekeys = models.livekeys.LiveKeys(db, sub)
+    m_livekeys = LiveKeys(db, sub)
 
     # set useful settings for local viewing.
-    m_ds = models.datasources.Datasources(db, {}, sub)
+    m_ds = Datasources(db, {}, sub)
     m_ds.set(ds_id, flat='1', ar_active='1', ar_interval=30)
 
     # create key for uploading securely

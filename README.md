@@ -15,11 +15,18 @@ Collect network data with tcpdump and run the http server:
 
     sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | samapper --local --whois --format=tcpdump
     
-  tcpdump will probably need to be run with sudo priviledge to allow it to capture network traffic for your devices. 
+  * tcpdump will probably need to be run with sudo to allow it to capture network traffic from your devices.
+  * Only tcpdump format works locally via pipe at the moment.
 
 Or, run the http server without collecting data:
 
-    samapper --target=webserver --whois
+    samapper --local --whois --format=none
+
+
+#### Known issue:
+When running samapper in local mode using sqlite (the default) the database will sometimes 
+lock up when the collector is inserting and you are viewing the display. If this is happening,
+just run the collector for a while, stop it, and run the http server on its own
 
 
 ## Installation (using git)
@@ -38,11 +45,12 @@ pip - to install python packages
 2. Run `pip install -r requirements.txt` from within the directory to install necessary packages.
 3. Set environment variables for credentials and settings.  See sam/default.cfg.
 
-
-      e.g:
-      export SAM__DATABASE__DBN=mysql
-      export SAM__DATABASE__USER=root
-      export SAM__DATABASE__PW=mypassword
+```bash
+e.g:
+export SAM__DATABASE__DBN=mysql
+export SAM__DATABASE__USER=root
+export SAM__DATABASE__PW=mypassword
+```
 
 ### Usage
 
@@ -52,17 +60,16 @@ pip - to install python packages
 
 3. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
 
-      `python -m importers.import_* <log_file> <destination>`
-      
-      `python preprocess.py <destination>`
+      `python -m sam.launcher --target=import --format=<format> --dest=<destination> <log_file>`
       
       Log formats currently supported include:
-   1. Palo Alto logs: The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
-   2. nfdumps: Binary files from **nfcapd** are expected. nfdump must be installed.
-   3. Cisco ASA logs: Partial support. Thanks to [Emre Saglam](https://github.com/emresaglam) for contributing. 
-   4. AWS VPC Flow logs: Partial support. Thanks to [Emre Saglam](https://github.com/emresaglam) for contributing. [VPC log spec](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records)
-   5. tcpdump: Partial support.
-   6. TShark: Partial support.
+
+   1. paloalto: The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
+   2. nfdump: Binary files from **nfcapd** are expected. nfdump must be installed.
+   3. asa: Cisco ASA logs, Partial support. Thanks to Emre for contributing. 
+   4. aws: AWS VPC Flow logs: Partial support. Thanks to Emre for contributing. [VPC log spec](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records)
+   5. tcpdump: Designed to work with live local mode. See quickstart above
+   6. tshark: Partial support.
 
 4. For live analysis,
  
@@ -75,5 +82,5 @@ pip - to install python packages
       * You will need priviledges to bind to system port 514.
       * It should print "Testing connection... Succeeded." 
    5. Tell your router to output it's log files to that freshly opened socket.
-   
+
 5. Navigate your browser to localhost:8080 and explore your network!

@@ -60,9 +60,8 @@ function GET_nodes(parents, callback) {
       return parent.address;
     }).join(",");
   }
-  if (config.flat) {
-    request.flat = true;
-  }
+  request.flat = config.flat;
+  request.ds = config.ds;
   $.ajax({
     url: "/nodes",
     type: "GET",
@@ -162,14 +161,12 @@ function GET_portinfo(port, callback) {
 
 function checkLoD() {
   "use strict";
-  console.log("checkLoD: ", "running...");
   var nodesToLoad = [];
   renderCollection.forEach(function (node) {
     if (node.subnet < currentSubnet(g_scale)) {
       nodesToLoad.push(node);
     }
   });
-  console.log("checkLoD:", nodesToLoad);
   if (nodesToLoad.length > 0) {
     GET_nodes(nodesToLoad);
     updateRenderRoot();

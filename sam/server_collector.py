@@ -109,7 +109,7 @@ class Collector(object):
             importer_name = self.default_format
 
         # attempt to import the module
-        fullname = "importers.import_{0}".format(importer_name)
+        fullname = "sam.importers.import_{0}".format(importer_name)
         try:
             module = importlib.import_module(fullname)
             instance = module._class()
@@ -228,15 +228,15 @@ class Collector(object):
 
             deltatime = time.time() - last_processing
             if self.transmit_buffer_size > self.transmit_buffer_threshold:
-                print("CHRON: process server running batch (due to buffer cap reached)")
+                print("COLLECTOR: process server running batch (due to buffer cap reached)")
                 self.transmit_lines()
                 last_processing = time.time()
             elif deltatime > self.time_between_transmits and self.transmit_buffer_size > 0:
-                print("CHRON: process server running batch (due to time)")
+                print("COLLECTOR: process server running batch (due to time)")
                 self.transmit_lines()
                 last_processing = time.time()
             elif self.transmit_buffer_size > 0:
-                print("CHRON: waiting for time limit or a full buffer. "
+                print("COLLECTOR: waiting for time limit or a full buffer. "
                       "Time at {0:.1f}, Size at {1}".format(deltatime, self.transmit_buffer_size))
             else:
                 # Don't let time accumulate while the buffer is empty
@@ -246,7 +246,7 @@ class Collector(object):
             if len(SOCKET_BUFFER) > 0:
                 self.import_lines()
 
-        print("CHRON: process server shutting down")
+        print("COLLECTOR: process server shutting down")
 
     def import_lines(self):
         global SOCKET_BUFFER
@@ -284,13 +284,13 @@ class Collector(object):
             'lines': lines
         }
 
-        print("Sending package...")
+        print("COLLECTOR: Sending package...")
         try:
             response = requests.request('POST', self.target_address, data=cPickle.dumps(package))
             reply = response.content
-            print("Received reply: {0}".format(reply))
+            print("COLLECTOR: Received reply: {0}".format(reply))
         except Exception as e:
-            print("Error sending package: {0}".format(e))
+            print("COLLECTOR: Error sending package: {0}".format(e))
             # keep the unsent lines around
             self.transmit_buffer.extend(lines)
             self.transmit_buffer_size = len(self.transmit_buffer)

@@ -9,24 +9,24 @@ ds_full = db_connection.dsid_default
 def test_decode_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         p = sam.pages.nodes.Nodes()
-        data = {'address': '10.20.30,150.20,59'}
+        data = {'address': '10.20.30,150.20,59', 'ds': 'ds_13'}
         request = p.decode_get_request(data)
-        expected = {'addresses': ['10.20.30', '150.20', '59'], 'flat': False}
+        expected = {'addresses': ['10.20.30', '150.20', '59'], 'flat': False, 'ds': 13}
         assert request == expected
 
-        data = {'address': '50.60.70.80'}
+        data = {'address': '50.60.70.80', 'ds': 'ds_13'}
         request = p.decode_get_request(data)
-        expected = {'addresses': ['50.60.70.80'], 'flat': False}
+        expected = {'addresses': ['50.60.70.80'], 'flat': False, 'ds': 13}
         assert request == expected
 
-        data = {}
+        data = {'ds': '53'}
         request = p.decode_get_request(data)
-        expected = {'addresses': [], 'flat': False}
+        expected = {'addresses': [], 'flat': False, 'ds': 53}
         assert request == expected
 
-        data = {'horseradish': 'pickles'}
+        data = {'horseradish': 'pickles', 'ds': 'ds_13'}
         request = p.decode_get_request(data)
-        expected = {'addresses': [], 'flat': False}
+        expected = {'addresses': [], 'flat': False, 'ds': 13}
         assert request == expected
 
 

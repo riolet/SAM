@@ -3,6 +3,7 @@ import web
 from sam import common
 import threading
 import sam.models.whois
+from sam.models.links import Links
 
 
 class Nodes(object):
@@ -131,8 +132,17 @@ class Nodes(object):
     def get_root_nodes(self):
         return list(self.db.select(self.table_nodes, where="subnet=8"))
 
-    def get_flat_nodes(self):
-        return list(self.db.select(self.table_nodes, where="ipstart=ipend"))
+    def get_flat_nodes(self, ds):
+        link_model = Links(self.db, self.sub, ds)
+        query = """SELECT ipstart, ipend, subnet, alias, env, x, y, radius
+FROM {t_nodes} AS `n`
+  JOIN (SELECT src AS 'ip' from {t_links}
+        UNION
+        SELECT dst AS 'ip' from {t_links}) AS `lnks`
+  ON `lnks`.ip = `n`.ipstart
+WHERE `n`.ipstart=`n`.ipend;""".format(t_nodes=self.table_nodes, t_links=link_model.table_links)
+        nodes = list(self.db.query(query))
+        return nodes
 
     def get_children(self, address):
         ip_start, ip_end = common.determine_range_string(address)
