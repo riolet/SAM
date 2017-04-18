@@ -100,11 +100,11 @@ function delta_to_dest(node, x1, y1) {
         if (dx < 0) {
             //leftward flowing
             x = node.x + node.radius;
-            y = node.y + node.radius * 0.2;
+            y = node.y - node.radius * 0.2;
         } else {
             //rightward flowing
             x = node.x - node.radius;
-            y = node.y - node.radius * 0.2;
+            y = node.y + node.radius * 0.2;
         }
     } else {
         //arrow is more vertical than horizontal
@@ -143,11 +143,11 @@ function delta_to_src(node, x2, y2) {
         if (dy < 0) {
             //upward flowing
             y = node.y + node.radius;
-            x = node.x + node.radius * 0.2;
+            x = node.x - node.radius * 0.2;
         } else {
             //downward flowing
             y = node.y - node.radius;
-            x = node.x - node.radius * 0.2;
+            x = node.x + node.radius * 0.2;
         }
     }
     return [x, y];
