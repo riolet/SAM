@@ -63,6 +63,7 @@ export SAM__DATABASE__PW=mypassword
       `python -m sam.launcher --target=import --format=<format> --dest=<destination> <log_file>`
       
       Log formats currently supported include:
+
    1. paloalto: The [paloalto syslog](https://www.paloaltonetworks.com/documentation/61/pan-os/pan-os/reports-and-logging/syslog-field-descriptions.html) format is expected.
    2. nfdump: Binary files from **nfcapd** are expected. nfdump must be installed.
    3. asa: Cisco ASA logs, Partial support. Thanks to Emre for contributing. 
