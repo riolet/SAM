@@ -60,9 +60,8 @@ function GET_nodes(parents, callback) {
       return parent.address;
     }).join(",");
   }
-  if (config.flat) {
-    request.flat = true;
-  }
+  request.flat = config.flat;
+  request.ds = config.ds;
   $.ajax({
     url: "/nodes",
     type: "GET",

@@ -320,8 +320,6 @@ function node_update(response) {
                     resetViewport(m_nodes);
             }
         } else if (parent_address === "flat") {
-          console.log("importing flat nodes");
-          console.log(response[parent_address]);
           m_nodes = {};
             response[parent_address].forEach(function (node) {
                 import_node_flat(null, node);
