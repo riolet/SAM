@@ -162,14 +162,12 @@ function GET_portinfo(port, callback) {
 
 function checkLoD() {
   "use strict";
-  console.log("checkLoD: ", "running...");
   var nodesToLoad = [];
   renderCollection.forEach(function (node) {
     if (node.subnet < currentSubnet(g_scale)) {
       nodesToLoad.push(node);
     }
   });
-  console.log("checkLoD:", nodesToLoad);
   if (nodesToLoad.length > 0) {
     GET_nodes(nodesToLoad);
     updateRenderRoot();

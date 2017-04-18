@@ -75,6 +75,7 @@ function mouseup(event) {
 
   tx = tx + mx - mdownx;
   ty = ty + my - mdowny;
+  updateRenderRoot();
   render_all();
   if (config.flat === false) {
     checkLoD();
@@ -122,6 +123,7 @@ function wheel(event) {
   } else {
     return;
   }
+  updateRenderRoot();
   render_all();
   if (config.flat === false) {
     checkLoD();
