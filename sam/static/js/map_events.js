@@ -351,7 +351,7 @@ function updateConfig() {
     updateLwSelection();
     //linewidth choice
 
-    setAutoUpdate(); //required to kill the timer if we wnat to turn it off.
+    setAutoUpdate(); //required to kill the timer if we want to turn it off.
     updateRenderRoot();
     render_all();
 }
