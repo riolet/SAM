@@ -288,8 +288,8 @@ function updateDsSelection() {
       let datasource = settings.datasources[newDS_num]
       config.update = (datasource.ar_active === 1);
       config.update_interval = datasource.ar_interval;
-      init_toggleButton("update", "Auto refresh enabled", "Auto-refresh disabled", config.update);
-
+      config.flat = (datasource.flat === 1);
+      init_toggleButton("update", "Auto refresh", "No refresh", config.update);
       setAutoUpdate();
       updateCall();
     });
@@ -351,7 +351,7 @@ function updateConfig() {
     updateLwSelection();
     //linewidth choice
 
-    setAutoUpdate(); //required to kill the timer if we wnat to turn it off.
+    setAutoUpdate(); //required to kill the timer if we want to turn it off.
     updateRenderRoot();
     render_all();
 }
