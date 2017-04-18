@@ -6,8 +6,7 @@ import sys
 from sam import constants
 from sam import common
 from sam import integrity
-import sam.models.datasources
-import sam.models.nodes
+from sam.models.datasources import Datasources
 
 
 class InvalidDatasource(ValueError):
@@ -15,11 +14,11 @@ class InvalidDatasource(ValueError):
 
 
 def determine_datasource(db, sub, argv):
-    dsModel = sam.models.datasources.Datasources(db, {}, sub)
+    ds_model = Datasources(db, {}, sub)
     ds_id = None
     if len(argv) >= 2:
         requested_ds = argv[1]
-        for datasource in dsModel.datasources.values():
+        for datasource in ds_model.datasources.values():
             if datasource['name'] == requested_ds:
                 ds_id = datasource['id']
                 break
@@ -45,7 +44,6 @@ class Preprocessor:
         else:
             self.divop = '/'
             self.timeround = "(strftime('%s', timestamp, 'utc') - (strftime('%s', timestamp, 'utc') % 300))"
-
 
         self.tables = {
             'table_nodes': 's{acct}_Nodes'.format(acct=self.sub_id),
@@ -569,38 +567,38 @@ class Preprocessor:
         common.exec_sql(self.db, os.path.join(constants.base_path, "sql", "delete_staging_data.sql"), replacements)
 
     def run_all(self):
-        print("PREP: beginning preprocessing...")
+        print("PREPROCESSOR: beginning preprocessing...")
         db_transaction = self.db.transaction()
         try:
-            print("PREP: importing nodes...")
+            print("PREPROCESSOR: importing nodes...")
             self.syslog_to_nodes()  # import all nodes into the shared Nodes table
-            print("PREP: importing links...")
+            print("PREPROCESSOR: importing links...")
             self.syslog_to_staging_links()  # import all link info into staging tables
-            print("PREP: copying from staging to master...")
+            print("PREPROCESSOR: copying from staging to master...")
             self.staging_links_to_links()  # copy data from staging to master tables
-            print("PREP: precomputing aggregates...")
+            print("PREPROCESSOR: precomputing aggregates...")
             self.links_to_links_in_out()  # merge new data into the existing aggregates
-            print("PREP: deleting from staging...")
+            print("PREPROCESSOR: deleting from staging...")
             self.staging_to_null()  # delete all data from staging tables
         except:
             db_transaction.rollback()
-            print("PREP: Pre-processing rolled back.")
+            print("PREPROCESSOR: Pre-processing rolled back.")
             raise
         else:
             db_transaction.commit()
-            print("PREP: Pre-processing completed successfully.")
+            print("PREPROCESSOR: Pre-processing completed successfully.")
 
 # If running as a script
 if __name__ == "__main__":
     error_number = integrity.check_and_fix_db_access(constants.dbconfig)
     if error_number == 0:
-        subscription = constants.demo['id']
+        sub_id = constants.demo['id']
         try:
-            ds = determine_datasource(common.db_quiet, subscription, sys.argv)
-            processor = Preprocessor(common.db_quiet, subscription, ds)
+            ds = determine_datasource(common.db_quiet, sub_id, sys.argv)
+            processor = Preprocessor(common.db_quiet, sub_id, ds)
             processor.run_all()
         except InvalidDatasource:
-            print("PREP: Data source missing or invalid. Aborting.")
-            print("PREP: please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
+            print("PREPROCESSOR: Data source missing or invalid. Aborting.")
+            print("PREPROCESSOR: please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
     else:
-        print("PREP: Preprocess aborted. Database check failed.")
+        print("PREPROCESSOR: Preprocess aborted. Database check failed.")
