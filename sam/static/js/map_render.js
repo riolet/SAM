@@ -304,7 +304,7 @@ function renderLinks(node, scale, faded) {
                 let src = find_by_range(link['src_start'], link['src_end'])
                 let out_pos = get_outbound_link_point(src, node.x, node.y)
                 let in_pos = get_inbound_link_point(node, src.x, src.y, link.port)
-                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
+                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
             }
             ctx.stroke();
         });
