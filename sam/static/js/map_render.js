@@ -284,6 +284,7 @@ function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
 
 function renderLinks(node, scale, faded) {
     "use strict";
+    // inbound lines
     if (config.show_in) {
         node.inputs.forEach(function (link) {
             ctx.beginPath();
@@ -294,15 +295,21 @@ function renderLinks(node, scale, faded) {
                 ctx.strokeStyle = link.color;
                 ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
             }
+
+            // if connecting to self
             if (link.src_start === link.dst_start
                     && link.src_end === link.dst_end) {
                 drawLoopArrow(node, scale);
             } else {
-                drawArrow(link.x1, link.y1, link.x2, link.y2, scale);
+                let src = find_by_range(link['src_start'], link['src_end'])
+                let out_pos = get_outbound_link_point(src, node.x, node.y)
+                let in_pos = get_inbound_link_point(node, src.x, src.y, link.port)
+                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
             }
             ctx.stroke();
         });
     }
+    // outbound lines
     if (config.show_out) {
         node.outputs.forEach(function (link) {
             ctx.beginPath();
@@ -313,11 +320,15 @@ function renderLinks(node, scale, faded) {
                 ctx.strokeStyle = link.color;
                 ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
             }
-            if (link.src_start === link.dst_start
-                    && link.src_end === link.dst_end) {
+
+            // if connecting to self
+            if (link.src_start === link.dst_start && link.src_end === link.dst_end) {
                 drawLoopArrow(node, scale);
             } else {
-                drawArrow(link.x1, link.y1, link.x2, link.y2, scale, false);
+                let dest = find_by_range(link['dst_start'], link['dst_end'])
+                let out_pos = get_outbound_link_point(node, dest.x, dest.y)
+                let in_pos = get_inbound_link_point(dest, node.x, node.y, link.port)
+                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
             }
             ctx.stroke();
         });

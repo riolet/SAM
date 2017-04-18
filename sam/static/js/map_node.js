@@ -39,6 +39,147 @@ function get_node_name(node) {
     }
 }
 
+function port_to_pos(node, side) {
+    "use strict";
+    var x = 0;
+    var y = 0;
+    if (side === 't-l') {
+        x = node.x - node.radius / 3;
+        y = node.y - node.radius * 7 / 5;
+    } else if (side === 't-r') {
+        x = node.x + node.radius / 3;
+        y = node.y - node.radius * 7 / 5;
+    } else if (side === 'b-l') {
+        x = node.x - node.radius / 3;
+        y = node.y + node.radius * 7 / 5;
+    } else if (side === 'b-r') {
+        x = node.x + node.radius / 3;
+        y = node.y + node.radius * 7 / 5;
+    } else if (side === 'l-t') {
+        x = node.x - node.radius * 7 / 5;
+        y = node.y - node.radius / 3;
+    } else if (side === 'l-b') {
+        x = node.x - node.radius * 7 / 5;
+        y = node.y + node.radius / 3;
+    } else if (side === 'r-t') {
+        x = node.x + node.radius * 7 / 5;
+        y = node.y - node.radius / 3;
+    } else if (side === 'r-b') {
+        x = node.x + node.radius * 7 / 5;
+        y = node.y + node.radius / 3;
+    }
+    return [x, y];
+}
+
+function nearest_corner(node, x1, y1) {
+    "use strict";
+    var x = 0;
+    var y = 0;
+    if (x1 < node.x) {
+        x = node.x - node.radius;
+    } else {
+        x = node.x + node.radius;
+    }
+    if (y1 < node.y) {
+        y = node.y - node.radius;
+    } else {
+        y = node.y + node.radius;
+    }
+
+    return [x, y];
+}
+
+function delta_to_dest(node, x1, y1) {
+    "use strict";
+    let dx = node.x - x1;
+    let dy = node.y - y1;
+    var x = 0;
+    var y = 0;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //leftward flowing
+            x = node.x + node.radius;
+            y = node.y + node.radius * 0.2;
+        } else {
+            //rightward flowing
+            x = node.x - node.radius;
+            y = node.y - node.radius * 0.2;
+        }
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //upward flowing
+            y = node.y + node.radius;
+            x = node.x + node.radius * 0.2;
+        } else {
+            //downward flowing
+            y = node.y - node.radius;
+            x = node.x - node.radius * 0.2;
+        }
+    }
+    return [x, y];
+}
+
+function delta_to_src(node, x2, y2) {
+    "use strict";
+    let dx = node.x - x2;
+    let dy = node.y - y2;
+    var x = 0;
+    var y = 0;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        //arrow is more horizontal than vertical
+        if (dx < 0) {
+            //leftward flowing
+            x = node.x + node.radius;
+            y = node.y + node.radius * 0.2;
+        } else {
+            //rightward flowing
+            x = node.x - node.radius;
+            y = node.y - node.radius * 0.2;
+        }
+    } else {
+        //arrow is more vertical than horizontal
+        if (dy < 0) {
+            //upward flowing
+            y = node.y + node.radius;
+            x = node.x + node.radius * 0.2;
+        } else {
+            //downward flowing
+            y = node.y - node.radius;
+            x = node.x - node.radius * 0.2;
+        }
+    }
+    return [x, y];
+}
+
+function get_inbound_link_point(node, x1, y1, port) {
+  "use strict";
+  //given a line from (x1, y1) to this node, where should it connect?
+  if (node.ports.hasOwnProperty(port)) {
+    //get the port connection point
+    return port_to_pos(node, node.ports[port]);
+  } else if (node.subnet == 32) {
+    //get the nearest corner (because the ports are all taken)
+    return nearest_corner(node, x1, y1);
+  } else {
+    //get the closest side and offset a little bit
+    return delta_to_dest(node, x1, y1);
+  }
+}
+
+function get_outbound_link_point(node, x2, y2) {
+  "use strict";
+  //given a line from this node to (x2, y2), where should it connect?
+  if (node.subnet == 32) {
+    //get the nearest corner (because the ports are all taken)
+    return nearest_corner(node, x2, y2);
+  } else {
+    //get the closest side and offset a little bit
+    return delta_to_src(node, x2, y2);
+  }
+}
+
 function get_node_address(node) {
     "use strict";
     var add = node.address;

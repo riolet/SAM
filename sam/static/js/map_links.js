@@ -201,33 +201,35 @@ function link_processPorts(links, node) {
         var dy = dest.y - src.y;
 
         if (port_tracker.hasOwnProperty(link.port)) {
+          // place the inbound end point of the line (the arrowhead)
           var side = port_tracker[link.port];
           if (side === 't-l') {
             link.x2 = dest.x - dest.radius / 3;
-            link.y2 = dest.y - dest.radius - dest.radius * 2 / 5;
+            link.y2 = dest.y - dest.radius * 7 / 5;
           } else if (side === 't-r') {
             link.x2 = dest.x + dest.radius / 3;
-            link.y2 = dest.y - dest.radius - dest.radius * 2 / 5;
+            link.y2 = dest.y - dest.radius * 7 / 5;
           } else if (side === 'b-l') {
             link.x2 = dest.x - dest.radius / 3;
-            link.y2 = dest.y + dest.radius + dest.radius * 2 / 5;
+            link.y2 = dest.y + dest.radius * 7 / 5;
           } else if (side === 'b-r') {
             link.x2 = dest.x + dest.radius / 3;
-            link.y2 = dest.y + dest.radius + dest.radius * 2 / 5;
+            link.y2 = dest.y + dest.radius * 7 / 5;
           } else if (side === 'l-t') {
-            link.x2 = dest.x - dest.radius - dest.radius * 2 / 5;
+            link.x2 = dest.x - dest.radius * 7 / 5;
             link.y2 = dest.y - dest.radius / 3;
           } else if (side === 'l-b') {
-            link.x2 = dest.x - dest.radius - dest.radius * 2 / 5;
+            link.x2 = dest.x - dest.radius * 7 / 5;
             link.y2 = dest.y + dest.radius / 3;
           } else if (side === 'r-t') {
-            link.x2 = dest.x + dest.radius + dest.radius * 2 / 5;
+            link.x2 = dest.x + dest.radius * 7 / 5;
             link.y2 = dest.y - dest.radius / 3;
           } else if (side === 'r-b') {
-            link.x2 = dest.x + dest.radius + dest.radius * 2 / 5;
+            link.x2 = dest.x + dest.radius * 7 / 5;
             link.y2 = dest.y + dest.radius / 3;
           }
 
+          // place the start point of the line
           if (Math.abs(dx) > Math.abs(dy)) {
               //arrow is more horizontal than vertical
               if (dx < 0) {
