@@ -59,8 +59,6 @@ export SAM__DATABASE__PW=mypassword
 
 3. For static analysis, import your log files into the database by running the following scripts, where log_file is the path to your log file and destination is the name of the data source you wish to fill.
 
-      `python -m sam.importers.import_XXX <log_file> <destination>`
-      
       `python -m sam.launcher --target=import --format=<format> --dest=<destination> <log_file>`
       
       Log formats currently supported include:
