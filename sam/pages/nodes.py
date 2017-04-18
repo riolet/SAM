@@ -1,3 +1,4 @@
+import re
 import base
 import sam.models.nodes
 from sam import errors
@@ -44,12 +45,21 @@ class Nodes(base.HeadlessPost):
 
         flat = data.get('flat', 'false').lower() == 'true'
 
-        return {'addresses': addresses, 'flat': flat}
+        if 'ds' in data:
+            ds_match = re.search('(\d+)', data['ds'])
+            if ds_match:
+                ds = int(ds_match.group())
+            else:
+                raise errors.MalformedRequest("Could not read data source ('ds')")
+        else:
+            raise errors.RequiredKey('data source', 'ds')
+
+        return {'addresses': addresses, 'flat': flat, 'ds': ds}
 
     def perform_get_command(self, request):
         self.require_group('read')
         if request['flat']:
-            response = {'flat': self.nodesModel.get_flat_nodes()}
+            response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
         elif len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:
