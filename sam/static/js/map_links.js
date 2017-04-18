@@ -99,10 +99,7 @@ function GET_links_callback(result) {
         //position links
         if (node.subnet === 32) {
             link_processPorts(node.inputs, node);
-        } else {
-            link_processPosition(node.inputs, node, "dst");
         }
-        link_processPosition(node.outputs, node, "src");
         //determine server/client
         node.server = node.inputs.length > 0;
         node.client = node.outputs.length > 0;
@@ -153,13 +150,12 @@ function link_closestEmptyPort(dest, src, used) {
     return choice;
 }
 
-function link_processPorts(links, node) {
+function link_processPorts(links, dest) {
     "use strict";
     if (links.length === 0) {
         return;
     }
 
-    var dest = node;
     //
     //    3_2
     //  4|   |1
@@ -193,144 +189,4 @@ function link_processPorts(links, node) {
         }
     }
     dest.ports = port_tracker;
-
-    links.forEach(function (link) {
-        var src = find_by_range(link.src_start, link.src_end);
-
-        var dx = dest.x - src.x;
-        var dy = dest.y - src.y;
-
-        if (port_tracker.hasOwnProperty(link.port)) {
-          // place the inbound end point of the line (the arrowhead)
-          var side = port_tracker[link.port];
-          if (side === 't-l') {
-            link.x2 = dest.x - dest.radius / 3;
-            link.y2 = dest.y - dest.radius * 7 / 5;
-          } else if (side === 't-r') {
-            link.x2 = dest.x + dest.radius / 3;
-            link.y2 = dest.y - dest.radius * 7 / 5;
-          } else if (side === 'b-l') {
-            link.x2 = dest.x - dest.radius / 3;
-            link.y2 = dest.y + dest.radius * 7 / 5;
-          } else if (side === 'b-r') {
-            link.x2 = dest.x + dest.radius / 3;
-            link.y2 = dest.y + dest.radius * 7 / 5;
-          } else if (side === 'l-t') {
-            link.x2 = dest.x - dest.radius * 7 / 5;
-            link.y2 = dest.y - dest.radius / 3;
-          } else if (side === 'l-b') {
-            link.x2 = dest.x - dest.radius * 7 / 5;
-            link.y2 = dest.y + dest.radius / 3;
-          } else if (side === 'r-t') {
-            link.x2 = dest.x + dest.radius * 7 / 5;
-            link.y2 = dest.y - dest.radius / 3;
-          } else if (side === 'r-b') {
-            link.x2 = dest.x + dest.radius * 7 / 5;
-            link.y2 = dest.y + dest.radius / 3;
-          }
-
-          // place the start point of the line
-          if (Math.abs(dx) > Math.abs(dy)) {
-              //arrow is more horizontal than vertical
-              if (dx < 0) {
-                  //leftward flowing
-                  link.x1 = source.x - source.radius;
-                  link.y1 = source.y + source.radius * 0.2;
-              } else {
-                  //rightward flowing
-                  link.x1 = source.x + source.radius;
-                  link.y1 = source.y - source.radius * 0.2;
-              }
-          } else {
-              //arrow is more vertical than horizontal
-              if (dy < 0) {
-                  //upward flowing
-                  link.y1 = source.y - source.radius;
-                  link.x1 = source.x + source.radius * 0.2;
-              } else {
-                  //downward flowing
-                  link.y1 = source.y + source.radius;
-                  link.x1 = source.x - source.radius * 0.2;
-              }
-          }
-        } else {
-            //align to corners
-            if (dx > 0) {
-                link.x1 = source.x + source.radius;
-                link.x2 = destination.x - destination.radius;
-            } else {
-                link.x1 = source.x - source.radius;
-                link.x2 = destination.x + destination.radius;
-            }
-
-            if (dy > 0) {
-                link.y1 = source.y + source.radius;
-                link.y2 = destination.y - destination.radius;
-            } else {
-                link.y1 = source.y - source.radius;
-                link.y2 = destination.y + destination.radius;
-            }
-        }
-    });
-}
-
-function link_processPosition(links, node, n_type) {
-    "use strict";
-    var destination;
-    var source;
-    if (n_type === "dst") {
-        destination = node;
-    } else {
-        source = node;
-    }
-    links.forEach(function (link) {
-        if (n_type === "dst") {
-            source = find_by_range(link.src_start, link.src_end);
-        } else {
-            destination = find_by_range(link.dst_start, link.dst_end);
-        }
-
-        var dx = destination.x - source.x;
-        var dy = destination.y - source.y;
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            //arrow is more horizontal than vertical
-            if (dx < 0) {
-                //leftward flowing
-                link.x1 = source.x - source.radius;
-                link.x2 = destination.x + destination.radius;
-                link.y1 = source.y + source.radius * 0.2;
-                link.y2 = destination.y + destination.radius * 0.2;
-            } else {
-                //rightward flowing
-                link.x1 = source.x + source.radius;
-                link.x2 = destination.x - destination.radius;
-                link.y1 = source.y - source.radius * 0.2;
-                link.y2 = destination.y - destination.radius * 0.2;
-            }
-        } else {
-            //arrow is more vertical than horizontal
-            if (dy < 0) {
-                //upward flowing
-                link.y1 = source.y - source.radius;
-                link.y2 = destination.y + destination.radius;
-                link.x1 = source.x + source.radius * 0.2;
-                link.x2 = destination.x + destination.radius * 0.2;
-            } else {
-                //downward flowing
-                link.y1 = source.y + source.radius;
-                link.y2 = destination.y - destination.radius;
-                link.x1 = source.x - source.radius * 0.2;
-                link.x2 = destination.x - destination.radius * 0.2;
-            }
-        }
-    });
-}
-
-function link_updateAllPositions() {
-  Object.keys(m_nodes).forEach(function (ip, i, ary) {
-    let node = m_nodes[ip];
-    link_processPorts(node.inputs, node);
-    link_processPosition(node.outputs, node, "src");
-  });
 }
