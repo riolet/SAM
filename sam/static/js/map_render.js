@@ -213,6 +213,9 @@ function updateRenderRoot() {
     renderCollection = onScreen(tx, ty, g_scale);
     subnetLabel = getSubnetLabel();
     //console.log("updateRenderRoot: ", "updating: ", renderCollection.length, " nodes in collection");
+    if (config.flat) {
+        node_flat_scale();
+    }
 }
 
 function drawLoopArrow(node, scale) {

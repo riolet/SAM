@@ -180,6 +180,23 @@ function get_outbound_link_point(node, x2, y2) {
   }
 }
 
+function node_flat_scale() {
+    "use strict";
+    //These three magic numbers (160, 0.027101, 54.2) are related
+    // based on the global scale such that nodes will growing as you
+    // zoom in up to a point, and then stay a constant size.
+    var r = 0;
+    if (g_scale > 0.027101) {
+        //stop getting bigger after a certain zoom.
+        r =  54.2 / g_scale;
+    } else {
+        r = 160 / Math.pow(g_scale, 0.7);
+    }
+    Object.keys(m_nodes).forEach(function (k) {
+        m_nodes[k].radius = r;
+    });
+}
+
 function get_node_address(node) {
     "use strict";
     var add = node.address;

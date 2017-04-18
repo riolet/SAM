@@ -123,6 +123,7 @@ function wheel(event) {
   } else {
     return;
   }
+  updateRenderRoot();
   render_all();
   if (config.flat === false) {
     checkLoD();
