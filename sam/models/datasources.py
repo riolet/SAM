@@ -54,6 +54,20 @@ class Datasources:
         rest.sort(key=lambda x: x['id'])
         return [first] + rest
 
+    def name_to_id(self, name):
+        """
+        :param name: data source name
+         :type name: unicode
+        :return: data source id or None
+        :rtype: int or None
+        """
+        rows = self.db.select(Datasources.TABLE, what='id', where='name=$name', vars={'name': name}, limit=1)
+        answer = rows.first()
+        if answer:
+            return answer['id']
+        else:
+            return None
+
     def update_cache(self):
         rows = self.db.select(Datasources.TABLE, where='subscription=$sub', vars={'sub': self.sub})
         self.storage[Datasources.SESSION_KEY] = {ds['id']: ds for ds in rows}

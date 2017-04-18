@@ -109,7 +109,7 @@ class Collector(object):
             importer_name = self.default_format
 
         # attempt to import the module
-        fullname = "importers.import_{0}".format(importer_name)
+        fullname = "sam.importers.import_{0}".format(importer_name)
         try:
             module = importlib.import_module(fullname)
             instance = module._class()

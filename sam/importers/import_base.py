@@ -34,8 +34,8 @@ Usage:
 """.format(sys.argv[0])
         self.dsModel = None
         self.subscription = None
-        self.datasource = None
-        self.ds = None
+        self.datasource = None  # datasource id number
+        self.ds = None  # datasource name
         self.failed_attempts = 0
 
     @staticmethod
@@ -185,6 +185,11 @@ Usage:
         self.subscription = sub
 
     def set_datasource(self, ds):
+        """
+        :param ds: integer datasource id
+         :type ds: int
+        :return: None 
+        """
         self.datasource = ds
 
     @staticmethod
@@ -232,7 +237,7 @@ Usage:
             sam.integrity.check_and_fix_db_access(sam.constants.dbconfig.copy())
         try:
             self.subscription = self.subscription or sam.constants.demo['id']
-            self.dsModel = Datasources(common.db, {}, self.subscription)
+            self.dsModel = Datasources(common.db_quiet, {}, self.subscription)
             datasources = self.dsModel.datasources.values()
         except:
             traceback.print_exc()
@@ -240,7 +245,7 @@ Usage:
             sam.integrity.check_and_fix_integrity()
 
         if not self.ds:
-            for datasource in datasources:
+            for datasource in self.dsModel.datasources.values():
                 # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
                 if datasource['name'] == self.datasource:
                     self.ds = datasource['id']
