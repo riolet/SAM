@@ -1,7 +1,7 @@
 //rendering configuration settings
 // test at https://jsfiddle.net/tn7836so/
 var renderConfig = {
-  backgroundColor: "#AAFFDD",
+  backgroundColor: "#F7F7F7",
   nodeColor: "#5555CC",
   nodeColorFaded: "#95D5D9",
 
@@ -476,6 +476,7 @@ function renderNode(node) {
   } else {
     //terminal node (final IP address)
     ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
+    ctx.fillRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
     //draw ports
     let p_long = node.radius * 4 / 5;  // 1.2
     let p_short = p_long * 2 / 3;  // 0.8
@@ -539,27 +540,6 @@ function renderNode(node) {
       ctx.fillRect(  corner_x, corner_y, width, height);
       ctx.strokeRect(corner_x, corner_y, width, height);
     })
-    /*
-    Object.keys(node.ports).forEach(function (p) {
-        if (node.ports[p].side === "left") {
-            //if the port is on the left side
-            ctx.fillRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-            ctx.strokeRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-        } else if (node.ports[p].side === "right") {
-            //if the port is on the right side
-            ctx.fillRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-            ctx.strokeRect(node.ports[p].x - 0.6, node.ports[p].y - 0.4, width, height);
-        } else if (node.ports[p].side === "bottom") {
-            //if the port is on the bottom side
-            ctx.fillRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-            ctx.strokeRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-        } else {
-            //the port must be on the top side
-            ctx.fillRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-            ctx.strokeRect(node.ports[p].x - 0.4, node.ports[p].y - 0.6, height, width);
-        }
-    });
-    */
   }
 }
 
