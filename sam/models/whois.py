@@ -61,7 +61,6 @@ class Whois(object):
             self.query = ip_itos(self.url)
         else:
             self.query = self.url
-        print('WHOIS: checking "{}"'.format(self.query))
 
         self.downloaded = False
         self.info = None
