@@ -1,6 +1,6 @@
 var m_nodes = {};
 
-function Node(alias, address, number, subnet, x, y, radius) {
+function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     "use strict";
     if (typeof alias === "string") {
         this.alias = alias;  //Custom address translation
@@ -8,7 +8,8 @@ function Node(alias, address, number, subnet, x, y, radius) {
         this.alias = "";
     }
     this.address = address.toString();  //address: 12.34.56.78
-    this.number = number;               //ip segment number: 78
+    this.ipstart = ipstart;             //ip range start
+    this.ipend = ipend;                 //ip range end
     this.subnet = subnet;               //ip subnet number: 8, 16, 24, 32
     this.x = x;                         //render: x position in graph
     this.y = y;                         //render: y position in graph
@@ -32,7 +33,7 @@ function get_node_name(node) {
       if (config.flat) {
         return node.address.toString();
       } else {
-        return node.number.toString();
+        return determine_number(node).toString();
       }
     } else {
         return node.alias;
@@ -238,18 +239,6 @@ function node_alias_submit(event) {
     return false;
 }
 
-function node_info_click() {
-    "use strict";
-    //var node = m_selection['selection'];
-
-    $('.ui.modal.nodeinfo')
-        .modal({
-            onApprove : function () { console.log("approved!"); }
-        })
-        .modal('show')
-    ;
-}
-
 /**
  * Determine the last given number in this node's dotted decimal address.
  * ex: this node is 192.168.174.0/24,
@@ -278,114 +267,78 @@ function determine_number(node) {
     return undefined
 }
 
-/**
- *
- * @param parent Node object, ex: m_nodes['66'], or null if top-level
- * @param node the server node object, from a recent AJAX query
- */
-function import_node(parent, node) {
-    "use strict";
-    var number = determine_number(node);
-    if (parent === null) {
-        m_nodes[number] = new Node(node.alias, number.toString(), number, 8, node.x, node.y, node.radius);
-    } else {
-        var name = parent.address + "." + number.toString();
-        parent.children[number] = new Node(node.alias, name, number, parent.subnet + 8, node.x, node.y, node.radius);
-    }
-}
-
 function ip_to_string(ip) {
   return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
 }
 
-function insert_node_flat_parent(record) {
+function insert_node(record) {
   "use strict";
-  //create parent
-  let number = record.ipstart;
-  let address = ip_to_string(number);
-  let node = new Node(record.alias, address, number, record.subnet, record.x, record.y, 12000);
+  //create node
+  let address = ip_to_string(record.ipstart);
+  let node = new Node(record.alias, address, record.ipstart, record.ipend, record.subnet, record.x, record.y, record.radius);
   node.childrenLoaded = true;
+  //console.log("installing node ", address);
 
-  console.log("installing parent ", number, "..", record.ipend, " - ", address, "/", record.subnet);
-
-  //find and foster children
-  Object.keys(m_nodes).forEach(function (key) {
-    if (record.ipstart <= key && key <= record.ipend) {
-      console.log("    fostering child ", m_nodes[key].number, " - ", m_nodes[key].address);
-      node.children[key] = m_nodes[key];
-      delete m_nodes[key];
+  //find parents
+  let parentColl = m_nodes;
+  let old_parentColl = null;
+  while (old_parentColl !== parentColl) {
+    old_parentColl = parentColl;
+    let index = -1;
+    let m_keys = Object.keys(parentColl);
+    m_keys.sort(function(a, b){return a-b});
+    for(let i = 0; i < m_keys.length; i += 1) {
+      if (m_keys[i] > node.ipstart) {
+        break;
+      }
+      index = i;
     }
-  });
-  //take place in roster
-  m_nodes[number] = node;
-}
-
-function insert_node_flat_host(record) {
-  "use strict";
-  let number = record.ipstart;
-  let address = ip_to_string(number);
-  let node = new Node(record.alias, address, number, record.subnet, record.x, record.y, 12000);
-  node.childrenLoaded = true;
+    if (index >= 0 && node.ipend <= parentColl[m_keys[index]].ipend) {
+      //console.log("    parent: ", parentColl[m_keys[index]].address);
+      parentColl = parentColl[m_keys[index]].children;
+    }
+  }
   
-  //find possible parents
-  var index = -1;
-  let m_keys = Object.keys(m_nodes);
+  //console.log("  searching for children in range %s..%s", node.ipstart, node.ipend);
+  //find children within parent collection
+  let children = {};
+  let m_keys = Object.keys(parentColl);
   m_keys.sort(function(a, b){return a-b});
-  for(let i = 0; i < m_keys.length; i += 1)
-    if (m_keys[i] > number) {
-      index = i - 1;
-      break;
+  for(let i = 0; i < m_keys.length; i += 1) {
+    let child = parentColl[m_keys[i]];
+    if (node.ipstart <= child.ipstart && child.ipend <= node.ipend) {
+      //console.log("    child added: ", child.address);
+      node.children[child.ipstart] = child;
+      delete parentColl[m_keys[i]];
     }
-  if (index < 0) {
-    return null;
   }
-  //possible parent is the nearest existing node next to the sought IP.
-  let possible_parent = m_nodes[m_keys[index]];
-  let ipend = Math.pow(2, 32 - possible_parent.subnet) - 1 + possible_parent.number
-
-  //assign new home to node
-  console.log("installing host ", number, " - ", address);
-  if (ipend >= number && possible_parent.number <= number) {
-    console.log("possible parent: ", possible_parent.number, "..", ipend, " accepted");
-    possible_parent.children[number] = node;
-  } else {
-    console.log("possible parent: ", possible_parent.number, "..", ipend, " rejected");
-    m_nodes[number] = node;
-  }
-}
-
-function import_node_flat(node) {
-    "use strict";
-    if (node.ipstart != node.ipend) {
-      insert_node_flat_parent(node);
-    } else {
-      insert_node_flat_host(node);
-    }
+  
+  //insert at that point in the tree.
+  parentColl[node.ipstart] = node;
 }
 
 // `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 function node_update(response) {
     "use strict";
     Object.keys(response).forEach(function (parent_address) {
-        if (parent_address === "_") {
-            //must be a call using null, update everything
-            m_nodes = {};
-            response[parent_address].forEach(function (node) {
-                import_node(null, node);
-            });
-            if (subnetLabel == "") { //resets view if we aren't zoomed in.
-                    resetViewport(m_nodes);
-            }
-        } else if (parent_address === "flat") {
+        if (parent_address === "flat") {
           m_nodes = {};
-            response[parent_address].forEach(function (node) {
-                import_node_flat(node);
-            });
+          response[parent_address].forEach(function (record) {
+            insert_node(record);
+          });
+        } else if (parent_address === "_") {
+          //must be a call using null, update everything
+          m_nodes = {};
+          response[parent_address].forEach(function (record) {
+            insert_node(record);
+          });
+          if (subnetLabel == "") { //resets view if we aren't zoomed in.
+            resetViewport(m_nodes);
+          }
         } else {
-            var parent = findNode(parent_address);
-            response[parent_address].forEach(function (node) {
-                import_node(parent, node);
-            });
+          response[parent_address].forEach(function (record) {
+            import_node(record);
+          });
         }
     });
     link_request_submit();
@@ -446,4 +399,32 @@ function jiggle_nodes(iterations) {
   });
   link_updateAllPositions();
   return jiggle_nodes(iterations - 1)
+}
+
+function node_print_tree(collection, prestring) {
+  if (!prestring) {
+    prestring = "";
+  }
+  let col_keys = Object.keys(collection);
+  col_keys.sort(function(a, b){return a-b});
+  col_keys.forEach(function (key, i, ary) {
+    let node = collection[key];
+    var r = "";
+    if (renderCollection.indexOf(node) != -1) {
+      r = " (rendered)";
+    }
+    
+    if (i == ary.length - 1) {
+      console.log("%s`---%s%s", prestring, node.address, r);
+    } else {
+      console.log('%s+---%s%s', prestring, node.address, r);
+    }
+    if (Object.keys(node.children).length != 0) {
+      if (i == ary.length - 1) {
+        node_print_tree(node.children, prestring + "    ");
+      } else {
+        node_print_tree(node.children, prestring + "|   ");
+      }
+    }
+  });
 }
