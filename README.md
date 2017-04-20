@@ -3,7 +3,7 @@
 SAM is a tool designed to map a network based on the data log of a router.
 It runs as a local python-based server and displays the a map and statistics on the browser.
 
-Check out the [website](http://sam.centralus.cloudapp.azure.com) for details about the project and a demo!
+Check out the [website](http://www.samapper.com) for details about the project and a demo!
 
 ## Quickstart (using pip)
 
@@ -26,7 +26,7 @@ Or, run the http server without collecting data:
 #### Known issue:
 When running samapper in local mode using sqlite (the default) the database will sometimes 
 lock up when the collector is inserting and you are viewing the display. If this is happening,
-just run the collector for a while, stop it, and run the http server on its own
+just run the collector for a while, stop it, and run the http server on its own.
 
 
 ## Installation (using git)
