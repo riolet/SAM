@@ -23,7 +23,8 @@ setup(
         'requests>=2.13'
     ],
     package_data={
-        'sam': ['templates/*.html',
+        'sam': ['default.cfg',
+                'templates/*.html',
                 'sql/*.sql',
                 'sql/*.json',
                 'static/js/*.js',
