@@ -346,6 +346,76 @@ function node_update(response) {
     render_all();
 }
 
+function find_by_addr(address) {
+  let ip_subnet = address.split("/");
+  let ip = ip_subnet[0];
+  let start = 0;
+  let end = 0;
+  let subnet = -1;
+  if (ip_subnet.length == 2) {
+    subnet = +ip_subnet[1];
+  }
+  
+  let ip_segs = ip.split(".");
+  if (subnet == -1) {
+    subnet = ip_segs.length * 8;
+  } else {
+    if (subnet <= 24) { ip_segs.pop(); }
+    if (subnet <= 16) { ip_segs.pop(); }
+    if (subnet <= 8) { ip_segs.pop(); }
+  }
+  
+  if (ip_segs.length == 4) {
+      start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256 + Number(ip_segs[3]);;
+      end = start;
+  } else if (ip_segs.length == 3) {
+      start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256;
+      end = start + 255;
+  } else if (ip_segs.length == 2) {
+      start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536;
+      end = start + 65535;
+  } else if (ip_segs.length == 1) {
+      start = Number(ip_segs[0]) * 16777216;
+      end = start + 16777215;
+  } else {
+    return null;
+  }
+  //console.log("searching for '%s'", address);
+  return find_by_range(start, end);
+}
+
+function find_by_range(start, end, coll) {
+  if (!coll) {
+    coll = m_nodes;
+  }
+  //console.log("  searching by ", start, "..", end, " in ", coll);
+  let m_keys = Object.keys(coll);
+  m_keys.sort(function(a, b){return a-b});
+  let high = m_keys.length - 1;
+  let low = 0;
+  let mid;
+  while (low <= high) {
+    mid = Math.floor(low + (high-low) / 2);
+    let node = coll[m_keys[mid]];
+    //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
+    if (node.ipstart == start && end == node.ipend) {
+      return node;
+    } else if (node.ipstart <= start && end <= node.ipend) {
+      let finer = find_by_range(start, end, node.children);
+      if (finer === null) {
+        return node;
+      } else {
+        return finer;
+      }
+    } else if (node.ipend < end) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return null;
+}
+
 function get_len(link) {
   return Math.sqrt(Math.pow(link.x2 - link.x1, 2) + Math.pow(link.y2 - link.y1, 2));
 }
