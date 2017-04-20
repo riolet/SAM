@@ -134,12 +134,13 @@ class Nodes(object):
 
     def get_flat_nodes(self, ds):
         link_model = Links(self.db, self.sub, ds)
-        query = """SELECT ipstart, ipend, subnet, alias, env, x, y, radius
+        query = """
+SELECT DISTINCT ipstart, ipend, subnet, alias, env, x, y, radius
 FROM {t_nodes} AS `n`
   JOIN (SELECT src AS 'ip' from {t_links}
         UNION
         SELECT dst AS 'ip' from {t_links}) AS `lnks`
-  ON `lnks`.ip = `n`.ipstart
+  ON `lnks`.ip BETWEEN `n`.ipstart AND `n`.ipend
 WHERE `n`.ipstart=`n`.ipend OR alias IS NOT NULL;""".format(t_nodes=self.table_nodes, t_links=link_model.table_links)
         nodes = list(self.db.query(query))
         return nodes

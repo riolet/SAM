@@ -267,10 +267,27 @@ function findNode(ip8, ip16, ip24, ip32) {
     }
 
     if (config.flat) {
-      var ip = ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32;
+      let ip = ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32;
       if (m_nodes.hasOwnProperty(ip)) {
         return m_nodes[ip]
       } else {
+        let m_keys = Object.keys(m_nodes);
+        m_keys.sort(function(a, b){return a-b});
+        var index = -1
+        for(let i = 0; i < m_keys.length; i += 1)
+          if (m_keys[i] > ip) {
+            index = i - 1;
+            break;
+          }
+        if (index < 0) {
+          return null;
+        }
+        //the nearest existing node next to the sought IP.
+        let possible_parent = m_nodes[m_keys[index]];
+        let ipend = Math.pow(2, 32 - possible_parent.subnet) - 1 + possible_parent.number
+        if (ipend > ip && possible_parent.number < ip) {
+          return possible_parent;
+        }
         return null;
       }
     }

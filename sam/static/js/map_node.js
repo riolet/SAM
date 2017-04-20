@@ -298,12 +298,69 @@ function ip_to_string(ip) {
   return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
 }
 
-function import_node_flat(parent, node) {
+function insert_node_flat_parent(record) {
+  "use strict";
+  //create parent
+  let number = record.ipstart;
+  let address = ip_to_string(number);
+  let node = new Node(record.alias, address, number, record.subnet, record.x, record.y, 12000);
+  node.childrenLoaded = true;
+
+  console.log("installing parent ", number, "..", record.ipend, " - ", address, "/", record.subnet);
+
+  //find and foster children
+  Object.keys(m_nodes).forEach(function (key) {
+    if (record.ipstart <= key && key <= record.ipend) {
+      console.log("    fostering child ", m_nodes[key].number, " - ", m_nodes[key].address);
+      node.children[key] = m_nodes[key];
+      delete m_nodes[key];
+    }
+  });
+  //take place in roster
+  m_nodes[number] = node;
+}
+
+function insert_node_flat_host(record) {
+  "use strict";
+  let number = record.ipstart;
+  let address = ip_to_string(number);
+  let node = new Node(record.alias, address, number, record.subnet, record.x, record.y, 12000);
+  node.childrenLoaded = true;
+  
+  //find possible parents
+  var index = -1;
+  let m_keys = Object.keys(m_nodes);
+  m_keys.sort(function(a, b){return a-b});
+  for(let i = 0; i < m_keys.length; i += 1)
+    if (m_keys[i] > number) {
+      index = i - 1;
+      break;
+    }
+  if (index < 0) {
+    return null;
+  }
+  //possible parent is the nearest existing node next to the sought IP.
+  let possible_parent = m_nodes[m_keys[index]];
+  let ipend = Math.pow(2, 32 - possible_parent.subnet) - 1 + possible_parent.number
+
+  //assign new home to node
+  console.log("installing host ", number, " - ", address);
+  if (ipend >= number && possible_parent.number <= number) {
+    console.log("possible parent: ", possible_parent.number, "..", ipend, " accepted");
+    possible_parent.children[number] = node;
+  } else {
+    console.log("possible parent: ", possible_parent.number, "..", ipend, " rejected");
+    m_nodes[number] = node;
+  }
+}
+
+function import_node_flat(node) {
     "use strict";
-    var number = node.ipstart;
-    var address = ip_to_string(number);
-    m_nodes[number] = new Node(node.alias, address, number, 32, node.x, node.y, 12000);
-    m_nodes[number].childrenLoaded = true
+    if (node.ipstart != node.ipend) {
+      insert_node_flat_parent(node);
+    } else {
+      insert_node_flat_host(node);
+    }
 }
 
 // `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
@@ -322,7 +379,7 @@ function node_update(response) {
         } else if (parent_address === "flat") {
           m_nodes = {};
             response[parent_address].forEach(function (node) {
-                import_node_flat(null, node);
+                import_node_flat(node);
             });
         } else {
             var parent = findNode(parent_address);
