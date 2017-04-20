@@ -140,7 +140,7 @@ FROM {t_nodes} AS `n`
         UNION
         SELECT dst AS 'ip' from {t_links}) AS `lnks`
   ON `lnks`.ip = `n`.ipstart
-WHERE `n`.ipstart=`n`.ipend;""".format(t_nodes=self.table_nodes, t_links=link_model.table_links)
+WHERE `n`.ipstart=`n`.ipend OR alias IS NOT NULL;""".format(t_nodes=self.table_nodes, t_links=link_model.table_links)
         nodes = list(self.db.query(query))
         return nodes
 
@@ -224,8 +224,13 @@ class WhoisService(threading.Thread):
                 address = self.missing.pop()
                 try:
                     whois = sam.models.whois.Whois(address)
-                    org = whois.ip_to_org()
-                    self.n_model.set_alias(address, org)
+                    name = whois.get_name()
+                    print('WHOIS: "{}" -> {}'.format(whois.query, name))
+                    self.n_model.set_alias(address, name)
+                    netname, ipstart, ipend, subnet = whois.get_network()
+                    #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
+                    if subnet in (8, 16, 24):
+                        self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
                 except:
                     continue
                 if not self.alive:

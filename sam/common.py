@@ -159,6 +159,7 @@ def get_db(config):
         config.pop('pw', None)
 
         db = web.database(**config)
+        db.query('PRAGMA journal_mode=WAL')
         sqlite_udf(db)
         old = web.config.debug
         web.config.debug = False
