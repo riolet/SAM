@@ -51,19 +51,19 @@ def test_arin():
     assert w.get_network() == ip_arin2_net
 
     w = Whois(ip_ripe1)
-    with pytest.raises(WrongAuthorityError, 'RIPE'):
+    with pytest.raises(WrongAuthorityError):
         w.query_ARIN()
 
     w = Whois(ip_ripe2)
-    with pytest.raises(WrongAuthorityError, 'RIPE'):
+    with pytest.raises(WrongAuthorityError):
         w.query_ARIN()
 
     w = Whois(ip_apnic1)
-    with pytest.raises(WrongAuthorityError, 'APNIC'):
+    with pytest.raises(WrongAuthorityError):
         w.query_ARIN()
 
     w = Whois(ip_apnic2)
-    with pytest.raises(WrongAuthorityError, 'APNIC'):
+    with pytest.raises(WrongAuthorityError):
         w.query_ARIN()
 
 
