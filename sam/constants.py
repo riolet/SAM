@@ -2,8 +2,6 @@ import os
 base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
 
-ConfigEnvy.default_file_name = '/home/joe/SAM/default.cfg'
-
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
