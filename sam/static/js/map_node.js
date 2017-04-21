@@ -14,6 +14,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     this.x = x;                         //render: x position in graph
     this.y = y;                         //render: y position in graph
     this.radius = radius;               //render: radius
+    this.radius_orig = radius;          //original radius (because it will be overwritten);
     this.parent = null;                 //pointer to parent node. This is null if at the top level.
     this.children = {};                 //child nodes (if this is subnet 8, 16, or 24)
     this.childrenLoaded = false;        //whether the children have been loaded
@@ -183,20 +184,12 @@ function get_outbound_link_point(node, x2, y2) {
 }
 
 function node_flat_scale() {
-    "use strict";
-    //These three magic numbers (160, 0.027101, 54.2) are related
-    // based on the global scale such that nodes will growing as you
-    // zoom in up to a point, and then stay a constant size.
-    var r = 0;
-    if (g_scale > 0.027101) {
-        //stop getting bigger after a certain zoom.
-        r =  54.2 / g_scale;
-    } else {
-        r = 160 / Math.pow(g_scale, 0.7);
-    }
-    Object.keys(m_nodes).forEach(function (k) {
-        m_nodes[k].radius = r;
-    });
+  "use strict";
+  let constant_size = 20 / g_scale;
+  
+  renderCollection.forEach(function (node) {
+    node.radius = Math.max(constant_size, node.radius_orig);
+  });
 }
 
 function get_node_address(node) {
@@ -482,7 +475,12 @@ function find_step_closer(collection, target) {
   return null;
 }
 
-function node_print_tree(collection, prestring) {
+//what is rendered:
+// node_print_tree(m_nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
+//subnet and should it be rendered
+// node_print_tree(m_nodes, "", function (n) {return " @" + n.subnet + (currentSubnet(g_scale) < n.subnet ? " (further in)" : (currentSubnet(g_scale) > n.subnet ? " (further out)" : " (perfect)"));});
+
+function node_print_tree(collection, prestring, poststring_func) {
   if (!prestring) {
     prestring = "";
   }
@@ -490,21 +488,21 @@ function node_print_tree(collection, prestring) {
   col_keys.sort(function(a, b){return a-b});
   col_keys.forEach(function (key, i, ary) {
     let node = collection[key];
-    var r = "";
-    if (renderCollection.indexOf(node) != -1) {
-      r = " (rendered)";
+    var post = "";
+    if (typeof(poststring_func) == "function") {
+      post = poststring_func(node);
     }
     
     if (i == ary.length - 1) {
-      console.log("%s`---%s%s", prestring, node.address, r);
+      console.log("%s`---%s %s", prestring, node.address, post);
     } else {
-      console.log('%s+---%s%s', prestring, node.address, r);
+      console.log('%s+---%s %s', prestring, node.address, post);
     }
     if (Object.keys(node.children).length != 0) {
       if (i == ary.length - 1) {
-        node_print_tree(node.children, prestring + "    ");
+        node_print_tree(node.children, prestring + "    ", poststring_func);
       } else {
-        node_print_tree(node.children, prestring + "|   ");
+        node_print_tree(node.children, prestring + "|   ", poststring_func);
       }
     }
   });

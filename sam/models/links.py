@@ -48,7 +48,6 @@ class Links:
 
     def get_links(self, addresses, timerange, port, protocol, flat):
         result = {}
-        print("getting links for {}".format(addresses))
         for address in addresses:
             ip_start, ip_end = sam.common.determine_range_string(address)
             result[address] = {}

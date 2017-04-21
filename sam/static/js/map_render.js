@@ -142,9 +142,13 @@ function onScreenRecursive(left, right, top, bottom, collection, subnet) {
         y = collection[node].y;
         r = collection[node].radius * 2;
 
+        //if the position is on screen
         if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
+            //add it.
             selected.push(collection[node]);
+            //If it has children, and the current subnet is deeper than this node's subnet, 
             if (collection[node].childrenLoaded && collection[node].subnet < subnet) {
+                //then recurse on this node's children.
                 selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children, subnet));
             }
         }
@@ -174,8 +178,6 @@ function onScreen(x, y, scale) {
             filtered.push(node);
         }
     });
-    //unfilter
-    //filtered = visible;
     filtered.sort(function (a, b) {
         return b.subnet - a.subnet;
     });
