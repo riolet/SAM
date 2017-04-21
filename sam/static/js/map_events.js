@@ -28,10 +28,10 @@ function distanceSquared(x1, y1, x2, y2) {
 //Helper for pick. Determines if a coordinate is within a node's bounding box
 function contains(node, x, y) {
     "use strict";
-    return x < node.x + node.radius
-            && x > node.x - node.radius
-            && y < node.y + node.radius
-            && y > node.y - node.radius;
+    return x < node.abs_x + node.radius
+            && x > node.abs_x - node.radius
+            && y < node.abs_y + node.radius
+            && y > node.abs_y - node.radius;
 }
 
 //For onMouseUp, returns node if a node was clicked on, else null.
@@ -41,7 +41,7 @@ function pick(x, y, scale) {
     var bestDist = +Infinity;
     var tempDist = 0;
     renderCollection.forEach(function (node) {
-        tempDist = distanceSquared(x, y, node.x, node.y);
+        tempDist = distanceSquared(x, y, node.abs_x, node.abs_y);
         if (tempDist < node.radius*node.radius) {
         //if (contains(node, x, y)) {
             if (tempDist < bestDist || node.subnet > best.subnet) {

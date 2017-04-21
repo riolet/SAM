@@ -29,8 +29,8 @@ function link_comparator(a, b) {
     if (aNode === null || bNode === null) {
         return 0;
     }
-    var aValue = 1 / Math.max(1, dist_between_squared(aNode.x, aNode.y, centerx, centery));
-    var bValue = 1 / Math.max(1, dist_between_squared(bNode.x, bNode.y, centerx, centery));
+    var aValue = 1 / Math.max(1, dist_between_squared(aNode.abs_x, aNode.abs_y, centerx, centery));
+    var bValue = 1 / Math.max(1, dist_between_squared(bNode.abs_x, bNode.abs_y, centerx, centery));
     // _Value is now a number between 0 and 1, where 1 is closer to center screen
 
     if (renderCollection.indexOf(aNode) != -1) {
@@ -151,9 +151,9 @@ function link_closestEmptyPort(dest, src, used) {
     var bottom = [6, 7, 5, 0, 4, 1, 3, 2];
     var left = [4, 5, 3, 6, 2, 7, 1, 0];
 
-    //console.log("Link_closest from ", src.x, src.y, " to ", dest.x, dest.y);
-    var dx = dest.x - src.x;
-    var dy = dest.y - src.y;
+    //console.log("Link_closest from ", src.abs_x, src.abs_y, " to ", dest.abs_x, dest.abs_y);
+    var dx = dest.abs_x - src.abs_x;
+    var dy = dest.abs_y - src.abs_y;
 
     var chooser = function (i) {
         return used[i] === false;

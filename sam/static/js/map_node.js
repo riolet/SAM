@@ -11,10 +11,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     this.ipstart = ipstart;             //ip range start
     this.ipend = ipend;                 //ip range end
     this.subnet = subnet;               //ip subnet number: 8, 16, 24, 32
-    this.x = x;                         //render: x position in graph
-    this.y = y;                         //render: y position in graph
+    this.abs_x = x;                     //render: absolute y position
+    this.abs_y = y;                     //render: absolute x position
+    this.rel_x = x;                     //render: relative x position in graph
+    this.rel_y = y;                     //render: relative y position in graph
     this.radius = radius;               //render: radius
-    this.radius_orig = radius;          //original radius (because it will be overwritten);
+    this.radius_orig = radius;          //render: original radius (because it will be overwritten);
     this.parent = null;                 //pointer to parent node. This is null if at the top level.
     this.children = {};                 //child nodes (if this is subnet 8, 16, or 24)
     this.childrenLoaded = false;        //whether the children have been loaded
@@ -47,29 +49,29 @@ function port_to_pos(node, side) {
     var x = 0;
     var y = 0;
     if (side === 't-l') {
-        x = node.x - node.radius / 3;
-        y = node.y - node.radius * 7 / 5;
+        x = node.abs_x - node.radius / 3;
+        y = node.abs_y - node.radius * 7 / 5;
     } else if (side === 't-r') {
-        x = node.x + node.radius / 3;
-        y = node.y - node.radius * 7 / 5;
+        x = node.abs_x + node.radius / 3;
+        y = node.abs_y - node.radius * 7 / 5;
     } else if (side === 'b-l') {
-        x = node.x - node.radius / 3;
-        y = node.y + node.radius * 7 / 5;
+        x = node.abs_x - node.radius / 3;
+        y = node.abs_y + node.radius * 7 / 5;
     } else if (side === 'b-r') {
-        x = node.x + node.radius / 3;
-        y = node.y + node.radius * 7 / 5;
+        x = node.abs_x + node.radius / 3;
+        y = node.abs_y + node.radius * 7 / 5;
     } else if (side === 'l-t') {
-        x = node.x - node.radius * 7 / 5;
-        y = node.y - node.radius / 3;
+        x = node.abs_x - node.radius * 7 / 5;
+        y = node.abs_y - node.radius / 3;
     } else if (side === 'l-b') {
-        x = node.x - node.radius * 7 / 5;
-        y = node.y + node.radius / 3;
+        x = node.abs_x - node.radius * 7 / 5;
+        y = node.abs_y + node.radius / 3;
     } else if (side === 'r-t') {
-        x = node.x + node.radius * 7 / 5;
-        y = node.y - node.radius / 3;
+        x = node.abs_x + node.radius * 7 / 5;
+        y = node.abs_y - node.radius / 3;
     } else if (side === 'r-b') {
-        x = node.x + node.radius * 7 / 5;
-        y = node.y + node.radius / 3;
+        x = node.abs_x + node.radius * 7 / 5;
+        y = node.abs_y + node.radius / 3;
     }
     return [x, y];
 }
@@ -78,15 +80,15 @@ function nearest_corner(node, x1, y1) {
     "use strict";
     var x = 0;
     var y = 0;
-    if (x1 < node.x) {
-        x = node.x - node.radius;
+    if (x1 < node.abs_x) {
+        x = node.abs_x - node.radius;
     } else {
-        x = node.x + node.radius;
+        x = node.abs_x + node.radius;
     }
-    if (y1 < node.y) {
-        y = node.y - node.radius;
+    if (y1 < node.abs_y) {
+        y = node.abs_y - node.radius;
     } else {
-        y = node.y + node.radius;
+        y = node.abs_y + node.radius;
     }
 
     return [x, y];
@@ -94,31 +96,31 @@ function nearest_corner(node, x1, y1) {
 
 function delta_to_dest(node, x1, y1) {
     "use strict";
-    let dx = node.x - x1;
-    let dy = node.y - y1;
+    let dx = node.abs_x - x1;
+    let dy = node.abs_y - y1;
     var x = 0;
     var y = 0;
     if (Math.abs(dx) > Math.abs(dy)) {
         //arrow is more horizontal than vertical
         if (dx < 0) {
             //leftward flowing
-            x = node.x + node.radius;
-            y = node.y - node.radius * 0.2;
+            x = node.abs_x + node.radius;
+            y = node.abs_y - node.radius * 0.2;
         } else {
             //rightward flowing
-            x = node.x - node.radius;
-            y = node.y + node.radius * 0.2;
+            x = node.abs_x - node.radius;
+            y = node.abs_y + node.radius * 0.2;
         }
     } else {
         //arrow is more vertical than horizontal
         if (dy < 0) {
             //upward flowing
-            y = node.y + node.radius;
-            x = node.x + node.radius * 0.2;
+            y = node.abs_y + node.radius;
+            x = node.abs_x + node.radius * 0.2;
         } else {
             //downward flowing
-            y = node.y - node.radius;
-            x = node.x - node.radius * 0.2;
+            y = node.abs_y - node.radius;
+            x = node.abs_x - node.radius * 0.2;
         }
     }
     return [x, y];
@@ -126,31 +128,31 @@ function delta_to_dest(node, x1, y1) {
 
 function delta_to_src(node, x2, y2) {
     "use strict";
-    let dx = node.x - x2;
-    let dy = node.y - y2;
+    let dx = node.abs_x - x2;
+    let dy = node.abs_y - y2;
     var x = 0;
     var y = 0;
     if (Math.abs(dx) > Math.abs(dy)) {
         //arrow is more horizontal than vertical
         if (dx < 0) {
             //leftward flowing
-            x = node.x + node.radius;
-            y = node.y + node.radius * 0.2;
+            x = node.abs_x + node.radius;
+            y = node.abs_y + node.radius * 0.2;
         } else {
             //rightward flowing
-            x = node.x - node.radius;
-            y = node.y - node.radius * 0.2;
+            x = node.abs_x - node.radius;
+            y = node.abs_y - node.radius * 0.2;
         }
     } else {
         //arrow is more vertical than horizontal
         if (dy < 0) {
             //upward flowing
-            y = node.y + node.radius;
-            x = node.x - node.radius * 0.2;
+            y = node.abs_y + node.radius;
+            x = node.abs_x - node.radius * 0.2;
         } else {
             //downward flowing
-            y = node.y - node.radius;
-            x = node.x + node.radius * 0.2;
+            y = node.abs_y - node.radius;
+            x = node.abs_x + node.radius * 0.2;
         }
     }
     return [x, y];
@@ -206,10 +208,36 @@ function get_node_address(node) {
     return add;
 }
 
-function offset_node(node, dx, dy) {
+function works(q) {
+  if (q === null || q === undefined) {
+    console.log("q is null or undefined");
+  }
+  if (q) {
+    console.log("if (q) works");
+  }
+  if (typeof(q) === "number") {
+    console.log("q is a number");
+  }
+}
+
+function update_pos_tree(node, parent) {
+  if (parent) {
+    node.abs_x = node.rel_x + parent.abs_x;
+    node.abs_y = node.rel_y + parent.abs_y;
+  } else {
+    node.abs_x = node.rel_x;
+    node.abs_y = node.rel_y;
+  }
+  Object.keys(node.children).forEach(function (k) {
+    update_pos_tree(node.children[k], node);
+  });
+}
+
+function offset_node(node, rel_dx, rel_dy) {
   //move node
-  node.x += dx;
-  node.y += dy;
+  node.rel_x += rel_dx;
+  node.rel_y += rel_dy;
+  update_pos_tree(node, node.parent);
 }
 
 function set_node_name(node, name) {
@@ -297,6 +325,10 @@ function insert_node(record) {
     }
   }
   node.parent = parent;
+  if (parent) {
+    node.rel_x = node.abs_x - parent.abs_x;
+    node.rel_y = node.abs_y - parent.abs_y;
+  }
   
   //console.log("  searching for children in range %s..%s", node.ipstart, node.ipend);
   //find children within parent collection
@@ -309,12 +341,15 @@ function insert_node(record) {
       //console.log("    child added: ", child.address);
       node.children[child.ipstart] = child;
       child.parent = node;
+      child.rel_x = child.abs_x - node.abs_x;
+      child.rel_y = child.abs_x - node.abs_x;
       delete parentColl[m_keys[i]];
     }
   }
   
   //insert at that point in the tree.
   parentColl[node.ipstart] = node;
+  //node_print_tree(m_nodes, "", function (n) {return "(" + n.abs_x + ", " + n.abs_y + ")";})
 }
 
 // `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
@@ -479,6 +514,8 @@ function find_step_closer(collection, target) {
 // node_print_tree(m_nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
 //subnet and should it be rendered
 // node_print_tree(m_nodes, "", function (n) {return " @" + n.subnet + (currentSubnet(g_scale) < n.subnet ? " (further in)" : (currentSubnet(g_scale) > n.subnet ? " (further out)" : " (perfect)"));});
+// relative and absolute position
+// node_print_tree(m_nodes, "", function (n) {return "rel(" + n.rel_x + ", " + n.rel_y + "), abs(" + n.abs_x + ", " + n.abs_y + ")";})
 
 function node_print_tree(collection, prestring, poststring_func) {
   if (!prestring) {
@@ -507,60 +544,5 @@ function node_print_tree(collection, prestring, poststring_func) {
     }
   });
 }
-/*
--------------------- testing node rearrangement code ------------------------ 
-*/
-function get_len(link) {
-  return Math.sqrt(Math.pow(link.x2 - link.x1, 2) + Math.pow(link.y2 - link.y1, 2));
-}
 
-function calculate_average_distance() {
-  var sum_length = 0
-  var n_lengths = 0
 
-  Object.keys(m_nodes).forEach(function (ip, i, ary) {
-    let node = m_nodes[ip];
-    node.inputs.forEach(function (input, i, ary2) {
-      sum_length += get_len(input);
-      n_lengths += 1;
-    });
-  });
-  let avg_len = sum_length / n_lengths
-  return avg_len;
-}
-
-function jiggle_node(node, goal_dist) {
-  node.inputs.forEach(function (input, i, ary2) {
-    let real_dist = get_len(input);
-    let proportion = ((real_dist - goal_dist) / 3) / real_dist;
-    let dx = (input.x1 - input.x2) * proportion;
-    let dy = (input.y1 - input.y2) * proportion;
-    offset_node(node, dx, dy);
-  });
-  node.outputs.forEach(function (output, i, ary2) {
-    let real_dist = get_len(output);
-    let proportion = ((real_dist - goal_dist) / 3) / real_dist;
-    let dx = (output.x2 - output.x1) * proportion;
-    let dy = (output.y2 - output.y1) * proportion;
-    offset_node(node, dx, dy);
-  });
-}
-
-function jiggle_nodes(iterations) {
-  if (iterations === 0) {
-    render_all();
-    return 0;
-  }
-  if (!iterations) {
-    var iterations = 1;
-  }
-  //var dist_avg = calculate_average_distance()
-  var dist_avg = 200000;
-
-  Object.keys(m_nodes).forEach(function (ip, i, ary) {
-    let node = m_nodes[ip];
-    jiggle_node(node, dist_avg);
-  });
-  link_updateAllPositions();
-  return jiggle_nodes(iterations - 1)
-}

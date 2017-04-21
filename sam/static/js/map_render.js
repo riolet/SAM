@@ -116,8 +116,8 @@ function getSubnetLabel() {
     renderCollection.forEach(function (node) {
         if (node.subnet === subnet - 8) {
             tempDist = magnitudeSquared(
-                node.x * g_scale + tx - rect.width / 2,
-                node.y * g_scale + ty - rect.height / 2
+                node.abs_x * g_scale + tx - rect.width / 2,
+                node.abs_y * g_scale + ty - rect.height / 2
             );
             if (tempDist < dist) {
                 dist = tempDist;
@@ -138,8 +138,8 @@ function onScreenRecursive(left, right, top, bottom, collection, subnet) {
     var y;
     var r;
     Object.keys(collection).forEach(function (node) {
-        x = collection[node].x;
-        y = collection[node].y;
+        x = collection[node].abs_x;
+        y = collection[node].abs_y;
         r = collection[node].radius * 2;
 
         //if the position is on screen
@@ -192,17 +192,17 @@ function resetViewport(collection, fill) {
     var bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
     Object.keys(collection).forEach(function (nodeKey) {
         var node = collection[nodeKey];
-        if (node.x - node.radius < bbox.left) {
-            bbox.left = node.x - node.radius;
+        if (node.abs_x - node.radius < bbox.left) {
+            bbox.left = node.abs_x - node.radius;
         }
-        if (node.x + node.radius > bbox.right) {
-            bbox.right = node.x + node.radius;
+        if (node.abs_x + node.radius > bbox.right) {
+            bbox.right = node.abs_x + node.radius;
         }
-        if (node.y - node.radius < bbox.top) {
-            bbox.top = node.y - node.radius;
+        if (node.abs_y - node.radius < bbox.top) {
+            bbox.top = node.abs_y - node.radius;
         }
-        if (node.y + node.radius > bbox.bottom) {
-            bbox.bottom = node.y + node.radius;
+        if (node.abs_y + node.radius > bbox.bottom) {
+            bbox.bottom = node.abs_y + node.radius;
         }
     });
     var scaleA = fill * rect.width / (bbox.right - bbox.left);
@@ -226,17 +226,17 @@ function drawLoopArrow(node, scale) {
     "use strict";
     var x1 = node.radius * Math.cos(3 * Math.PI / 8);
     var y1 = node.radius * Math.sin(3 * Math.PI / 8);
-    var x2 = 3 * x1 + node.x;
-    var y2 = 3 * y1 + node.y;
+    var x2 = 3 * x1 + node.abs_x;
+    var y2 = 3 * y1 + node.abs_y;
     var x4 = node.radius * Math.cos(1 * Math.PI / 8);
     var y4 = node.radius * Math.sin(1 * Math.PI / 8);
-    var x3 = 3 * x4 + node.x;
-    var y3 = 3 * y4 + node.y;
+    var x3 = 3 * x4 + node.abs_x;
+    var y3 = 3 * y4 + node.abs_y;
 
-    x1 += node.x;
-    y1 += node.y;
-    x4 += node.x;
-    y4 += node.y;
+    x1 += node.abs_x;
+    y1 += node.abs_y;
+    x4 += node.abs_x;
+    y4 += node.abs_y;
 
     // draw the curve.
     ctx.moveTo(x1, y1);
@@ -309,8 +309,8 @@ function renderLinks(node, scale, faded) {
                 drawLoopArrow(node, scale);
             } else {
                 let src = link["src"];
-                let out_pos = get_outbound_link_point(src, node.x, node.y)
-                let in_pos = get_inbound_link_point(node, src.x, src.y, link.port)
+                let out_pos = get_outbound_link_point(src, node.abs_x, node.abs_y)
+                let in_pos = get_inbound_link_point(node, src.abs_x, src.abs_y, link.port)
                 drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
             }
             ctx.stroke();
@@ -333,8 +333,8 @@ function renderLinks(node, scale, faded) {
                 drawLoopArrow(node, scale);
             } else {
                 let dest = link["dst"];
-                let out_pos = get_outbound_link_point(node, dest.x, dest.y)
-                let in_pos = get_inbound_link_point(dest, node.x, node.y, link.port)
+                let out_pos = get_outbound_link_point(node, dest.abs_x, dest.abs_y)
+                let in_pos = get_inbound_link_point(dest, node.abs_x, node.abs_y, link.port)
                 drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
             }
             ctx.stroke();
@@ -394,48 +394,48 @@ function renderLabels(node, x, y, scale) {
                 var px;
                 var py;
                 if (side === 'l-t') {
-                  px = (node.x - node.radius) * scale + x - size / 2;
-                  py = (node.y - node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x - node.radius) * scale + x - size / 2;
+                  py = (node.abs_y - node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 'l-b') {
-                  px = (node.x - node.radius) * scale + x - size / 2;
-                  py = (node.y + node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x - node.radius) * scale + x - size / 2;
+                  py = (node.abs_y + node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 'r-t') {
-                  px = (node.x + node.radius) * scale + x - size / 2;
-                  py = (node.y - node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x + node.radius) * scale + x - size / 2;
+                  py = (node.abs_y - node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 'r-b') {
-                  px = (node.x + node.radius) * scale + x - size / 2;
-                  py = (node.y + node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x + node.radius) * scale + x - size / 2;
+                  py = (node.abs_y + node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 't-l') {
-                  px = (node.x - node.radius / 3) * scale + x;
-                  py = (node.y - node.radius) * scale + y;
+                  px = (node.abs_x - node.radius / 3) * scale + x;
+                  py = (node.abs_y - node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
                   ctx.fillText(text, -size / 2, 0);
                   ctx.restore();
                 } else if (side === 't-r') {
-                  px = (node.x + node.radius / 3) * scale + x;
-                  py = (node.y - node.radius) * scale + y;
+                  px = (node.abs_x + node.radius / 3) * scale + x;
+                  py = (node.abs_y - node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
                   ctx.fillText(text, -size / 2, 0);
                   ctx.restore();
                 } else if (side === 'b-l') {
-                  px = (node.x - node.radius / 3) * scale + x;
-                  py = (node.y + node.radius) * scale + y;
+                  px = (node.abs_x - node.radius / 3) * scale + x;
+                  py = (node.abs_y + node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
                   ctx.fillText(text, -size / 2, 0);
                   ctx.restore();
                 } else if (side === 'b-r') {
-                  px = (node.x + node.radius / 3) * scale + x;
-                  py = (node.y + node.radius) * scale + y;
+                  px = (node.abs_x + node.radius / 3) * scale + x;
+                  py = (node.abs_y + node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
@@ -449,12 +449,12 @@ function renderLabels(node, x, y, scale) {
     ctx.font = "1.5em sans";
     var text = get_node_name(node);
     var size = ctx.measureText(text);
-    var px = node.x * scale + x - size.width / 2;
+    var px = node.abs_x * scale + x - size.width / 2;
     var py;
     if (node.subnet === 32) {
-        py = node.y * scale + y + 10;
+        py = node.abs_y * scale + y + 10;
     } else {
-        py = (node.y - node.radius) * scale + y - 5;
+        py = (node.abs_y - node.radius) * scale + y - 5;
     }
     alpha = opacity(node.subnet, "label", scale);
 
@@ -475,12 +475,12 @@ function renderLabels(node, x, y, scale) {
 function renderNode(node) {
   "use strict";
   if (node.subnet < 31) {
-    ctx.moveTo(node.x + node.radius, node.y);
-    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
+    ctx.moveTo(node.abs_x + node.radius, node.abs_y);
+    ctx.arc(node.abs_x, node.abs_y, node.radius, 0, Math.PI * 2, 0);
   } else {
     //terminal node (final IP address)
-    ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
-    ctx.fillRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
+    ctx.strokeRect(node.abs_x - node.radius, node.abs_y - node.radius, node.radius * 2, node.radius * 2);
+    ctx.fillRect(node.abs_x - node.radius, node.abs_y - node.radius, node.radius * 2, node.radius * 2);
     //draw ports
     let p_long = node.radius * 4 / 5;  // 1.2
     let p_short = p_long * 2 / 3;  // 0.8
@@ -494,50 +494,50 @@ function renderNode(node) {
       let side = node.ports[p];
       if (side === "l-t") {
         //if the port is on the left-top side
-        corner_x = node.x - node.radius - p_long_r;
-        corner_y = node.y - node.radius / 3 - p_short_r;
+        corner_x = node.abs_x - node.radius - p_long_r;
+        corner_y = node.abs_y - node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "l-b") {
         //if the port is on the left-bottom side
-        corner_x = node.x - node.radius - p_long_r;
-        corner_y = node.y + node.radius / 3 - p_short_r;
+        corner_x = node.abs_x - node.radius - p_long_r;
+        corner_y = node.abs_y + node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "r-t") {
         //if the port is on the right-top side
-        corner_x = node.x + node.radius - p_long_r;
-        corner_y = node.y - node.radius / 3 - p_short_r;
+        corner_x = node.abs_x + node.radius - p_long_r;
+        corner_y = node.abs_y - node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "r-b") {
         //if the port is on the right-bottom side
-        corner_x = node.x + node.radius - p_long_r;
-        corner_y = node.y + node.radius / 3 - p_short_r;
+        corner_x = node.abs_x + node.radius - p_long_r;
+        corner_y = node.abs_y + node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "t-l") {
         //if the port is on the top-left side
-        corner_x = node.x - node.radius / 3 - p_short_r;
-        corner_y = node.y - node.radius - p_long_r;
+        corner_x = node.abs_x - node.radius / 3 - p_short_r;
+        corner_y = node.abs_y - node.radius - p_long_r;
         width = p_short;
         height = p_long;
       } else if (side === "t-r") {
         //if the port is on the top-right side
-        corner_x = node.x + node.radius / 3 - p_short_r;
-        corner_y = node.y - node.radius - p_long_r;
+        corner_x = node.abs_x + node.radius / 3 - p_short_r;
+        corner_y = node.abs_y - node.radius - p_long_r;
         width = p_short;
         height = p_long;
       } else if (side === "b-l") {
         //if the port is on the bottom-left side
-        corner_x = node.x - node.radius / 3 - p_short_r;
-        corner_y = node.y + node.radius - p_long_r;
+        corner_x = node.abs_x - node.radius / 3 - p_short_r;
+        corner_y = node.abs_y + node.radius - p_long_r;
         width = p_short;
         height = p_long;
       } else if (side === "b-r") {
         //if the port is on the bottom-right side
-        corner_x = node.x + node.radius / 3 - p_short_r;
-        corner_y = node.y + node.radius - p_long_r;
+        corner_x = node.abs_x + node.radius / 3 - p_short_r;
+        corner_y = node.abs_y + node.radius - p_long_r;
         width = p_short;
         height = p_long;
       }
