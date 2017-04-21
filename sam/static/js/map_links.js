@@ -24,9 +24,8 @@ function link_comparator(a, b) {
     //determine value of a and b
     var centerx = (rect.width - 2 * tx) / (2 * g_scale);
     var centery = (rect.height - 2 * ty) / (2 * g_scale);
-
-    var aNode = findNode(a);
-    var bNode = findNode(b);
+    var aNode = find_by_addr(a);
+    var bNode = find_by_addr(b);
     if (aNode === null || bNode === null) {
         return 0;
     }
@@ -93,7 +92,7 @@ function GET_links_callback(result) {
     //  add the new inputs/outputs to that node
 
     Object.keys(result).forEach(function (address) {
-        var node = findNode(address);
+        var node = find_by_addr(address);
         node.inputs = result[address].inputs;
         node.outputs = result[address].outputs;
         //position links
@@ -106,10 +105,43 @@ function GET_links_callback(result) {
         //colorize links (map_render::color_links)
         color_links(node.inputs);
         color_links(node.outputs);
+        fix_link_pointers(node);
     });
     ports.request_submit();
     updateRenderRoot();
     render_all();
+}
+
+function fix_link_pointers(node) {
+  //for each output:
+  //  assign link.src as node
+  //  find common root
+  //  assign link.dst as first child of common root.
+  node.outputs.forEach(function (link_in) {
+    link_in.src = node;
+    let dest = find_by_range(link_in.dst_start, link_in.dst_end);
+    let root = find_common_root(node, dest);
+    if (root == null) {
+      link_in.dst = dest;
+    } else {
+      link_in.dst = find_step_closer(root, dest);
+    }
+  });
+  //for each input:
+  //  assign link.dst as node
+  //  find common root
+  //  assign link.src as first child of common root.
+  //
+  node.inputs.forEach(function (link_in) {
+    link_in.dst = node;
+    let source = find_by_range(link_in.src_start, link_in.src_end);
+    let root = find_common_root(node, source);
+    if (root == null) {
+      link_in.src = source;
+    } else {
+      link_in.src = find_step_closer(root, source);
+    }
+  });
 }
 
 function link_closestEmptyPort(dest, src, used) {

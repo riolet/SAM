@@ -175,9 +175,6 @@ function init_canvas(c, cx) {
 
 function currentSubnet(scale) {
     "use strict";
-    if (config.flat) {
-        return 32;
-    }
 
     if (scale < zNodes16) {
         return 8;

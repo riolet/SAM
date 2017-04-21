@@ -174,6 +174,8 @@ function onScreen(x, y, scale) {
             filtered.push(node);
         }
     });
+    //unfilter
+    //filtered = visible;
     filtered.sort(function (a, b) {
         return b.subnet - a.subnet;
     });
@@ -304,7 +306,7 @@ function renderLinks(node, scale, faded) {
                     && link.src_end === link.dst_end) {
                 drawLoopArrow(node, scale);
             } else {
-                let src = find_by_range(link['src_start'], link['src_end'])
+                let src = link["src"];
                 let out_pos = get_outbound_link_point(src, node.x, node.y)
                 let in_pos = get_inbound_link_point(node, src.x, src.y, link.port)
                 drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
@@ -328,7 +330,7 @@ function renderLinks(node, scale, faded) {
             if (link.src_start === link.dst_start && link.src_end === link.dst_end) {
                 drawLoopArrow(node, scale);
             } else {
-                let dest = find_by_range(link['dst_start'], link['dst_end'])
+                let dest = link["dst"];
                 let out_pos = get_outbound_link_point(node, dest.x, dest.y)
                 let in_pos = get_inbound_link_point(dest, node.x, node.y, link.port)
                 drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
@@ -645,10 +647,10 @@ function render(x, y, scale) {
     ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (Object.keys(m_nodes).length === 0) {
+    if (Object.keys(renderCollection).length === 0) {
         ctx.fillStyle = renderConfig.labelColorError;
         ctx.font = "3em sans";
-        var size = ctx.measureText("No data available");
+        var size = ctx.measureText("No connections to display.");
         ctx.fillText("No data available", rect.width / 2 - size.width / 2, rect.height / 2);
         return;
     }
@@ -664,5 +666,6 @@ function render(x, y, scale) {
 
 function render_all() {
     "use strict";
-    render(tx, ty, g_scale);
+    requestAnimationFrame(function () {render(tx, ty, g_scale);});
+    //render(tx, ty, g_scale);
 }

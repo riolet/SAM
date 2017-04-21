@@ -57,7 +57,7 @@ function GET_nodes(parents, callback) {
     }
     request.address = parents.map(function (parent) {
       parent.childrenLoaded = true;
-      return parent.address;
+      return parent.address + "/" + parent.subnet;
     }).join(",");
   }
   request.flat = config.flat;
@@ -167,6 +167,7 @@ function checkLoD() {
       nodesToLoad.push(node);
     }
   });
+  console.log("loading more details for ", nodesToLoad);
   if (nodesToLoad.length > 0) {
     GET_nodes(nodesToLoad);
     updateRenderRoot();
@@ -178,7 +179,7 @@ function GET_details(node, callback) {
     "use strict";
 
     var requestData = {
-        "address": node.address,
+        "address": node.address + "/" + node.subnet,
         "filter": config.filter,
         "tstart": config.tstart,
         "tend": config.tend,
@@ -235,7 +236,7 @@ function GET_details_sorted(node, component, order, callback) {
     "use strict";
 
     var requestData = {
-        "address": node.address,
+        "address": node.address + "/" + node.subnet,
         "filter": config.filter,
         "tstart": config.tstart,
         "tend": config.tend,
