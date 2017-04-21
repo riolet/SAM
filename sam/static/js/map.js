@@ -175,7 +175,12 @@ function init_canvas(c, cx) {
 
 function currentSubnet(scale) {
   "use strict";
-  /*
+
+  if (config.flat) {
+    let subnet = Math.ceil(5.79621 * Math.log(scale) + 29.5316);
+    return Math.max(Math.min(subnet, 32), 0);
+  }
+
   if (scale < zNodes16) {
       return 8;
   }
@@ -186,10 +191,7 @@ function currentSubnet(scale) {
       return 24;
   }
   return 32;
-  */
-  let subnet = Math.floor(5.79621 * Math.log(scale) + 29.5316);
-
-  return Math.max(Math.min(subnet, 32), 0);
+  
 }
 
 function removeChildren(element) {
