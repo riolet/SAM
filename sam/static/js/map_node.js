@@ -238,6 +238,7 @@ function offset_node(node, rel_dx, rel_dy) {
   node.rel_x += rel_dx;
   node.rel_y += rel_dy;
   update_pos_tree(node, node.parent);
+  render_all();
 }
 
 function set_node_name(node, name) {
@@ -545,4 +546,93 @@ function node_print_tree(collection, prestring, poststring_func) {
   });
 }
 
+/*
+-------------------------- node rearranging tactics -------------------------
+*/
 
+function find_center_node() {
+  "use strict";
+  let center = null;
+  let best = -1;
+  Object.keys(m_nodes).forEach(function (key) {
+    let node = m_nodes[key];
+    let connectivity = node.inputs.length + node.outputs.length;
+    if (connectivity > best) {
+      best = connectivity;
+      center = node;
+    }
+  });
+  return center;
+}
+
+function get_all_attached_nodes(node) {
+  "use strict";
+  let attached = [];
+  node.outputs.forEach(function (l_in) {
+    attached.push(l_in.dst);
+  });
+  node.inputs.forEach(function (l_in) {
+    attached.push(l_in.dst);
+  });
+  return attached;
+}
+
+function remove_duplicates(nodelist) {
+  "use strict";
+  return nodelist.filter(function(item, pos, ary) {
+    return !pos || (item.address + item.subnet) != (ary[pos - 1].address + ary[pos - 1].subnet);
+  });
+}
+
+function remove_item(list, item) {
+  let index = list.indexOf(item);
+  if (index !== -1) {
+    list.splice(index, 1);
+  }
+}
+
+function move_to_center(node) {
+  "use strict";
+  offset_node(node, -node.rel_x, -node.rel_y);
+}
+
+function get_bbox() {
+  "use strict";
+  var left = -tx / g_scale;
+  var right = (rect.width - tx) / g_scale;
+  var top = -ty / g_scale;
+  var bottom = (rect.height - ty) / g_scale;
+  return {"left": left, "top": top, "right": right, "bottom": bottom};
+}
+
+function arrange_nodes_evenly(nodelist) {
+  "use strict";
+  // 0 rad is to the right.
+  // pi/2 rad is down.
+  let len = nodelist.length;
+  let bbox = get_bbox();
+  let rx = (bbox.right - bbox.left) / 2;
+  let ry = (bbox.bottom - bbox.top) / 2;
+  rx *= 0.8;
+  ry *= 0.8;
+
+  nodelist.forEach(function (node, i, ary) {
+    let x = Math.sin(i / len * 2 * Math.PI);
+    let y = Math.cos(i / len * 2 * Math.PI);
+    offset_node(node, x * rx - node.rel_x, y * ry - node.rel_y);
+  });
+}
+
+function circle_arrangement() {
+  "use strict";
+  let center = find_center_node();
+  move_to_center(center);
+  let attached = get_all_attached_nodes(center);
+  attached.sort(function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
+  attached = remove_duplicates(attached);
+  
+  remove_item(attached, center);
+
+  arrange_nodes_evenly(attached);
+  render_all();
+}
