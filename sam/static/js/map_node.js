@@ -327,7 +327,6 @@ function insert_node(record) {
 // `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
 function node_update(response) {
     "use strict";
-    console.log("node response received!");
     Object.keys(response).forEach(function (parent_address) {
         if (parent_address === "flat") {
           m_nodes = {};
@@ -344,8 +343,6 @@ function node_update(response) {
             resetViewport(m_nodes);
           }
         } else {
-          console.log("adding children of ", parent_address);
-          console.log("  details: ", response[parent_address]);
           response[parent_address].forEach(function (record) {
             insert_node(record);
           });
@@ -354,6 +351,28 @@ function node_update(response) {
     link_request_submit();
     updateRenderRoot();
     render_all();
+}
+
+function normalize_addr(addr) {
+  "use strict";
+  let ip_subnet = addr.split("/");
+  let ip = ip_subnet[0];
+  let ip_segs = ip.split(".");
+
+  //determine subnet
+  let subnet = 0;
+  if (ip_subnet.length > 1) {
+    subnet = Number(ip_subnet[1]);
+  } else {
+    subnet = ip_segs.length * 8;
+  }
+
+  //determine ip range start
+  while (ip_segs.length < 4) {
+    ip_segs.push(0);
+  }
+  addr = ip_segs.join(".");
+  return addr + "/" + subnet;
 }
 
 function find_by_addr(address) {

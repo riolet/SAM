@@ -167,7 +167,6 @@ function checkLoD() {
       nodesToLoad.push(node);
     }
   });
-  console.log("loading more details for ", nodesToLoad);
   if (nodesToLoad.length > 0) {
     GET_nodes(nodesToLoad);
     updateRenderRoot();
