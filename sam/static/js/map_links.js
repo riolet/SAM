@@ -122,9 +122,9 @@ function fix_link_pointers(node) {
     let dest = find_by_range(link_in.dst_start, link_in.dst_end);
     let root = find_common_root(node, dest);
     if (root == null) {
-      link_in.dst = dest;
+      link_in.dst = find_step_closer(m_nodes, dest);
     } else {
-      link_in.dst = find_step_closer(root, dest);
+      link_in.dst = find_step_closer(root.children, dest);
     }
   });
   //for each input:
@@ -137,9 +137,9 @@ function fix_link_pointers(node) {
     let source = find_by_range(link_in.src_start, link_in.src_end);
     let root = find_common_root(node, source);
     if (root == null) {
-      link_in.src = source;
+      link_in.src = find_step_closer(m_nodes, source);
     } else {
-      link_in.src = find_step_closer(root, source);
+      link_in.src = find_step_closer(root.children, source);
     }
   });
 }

@@ -48,12 +48,17 @@ class Links:
 
     def get_links(self, addresses, timerange, port, protocol, flat):
         result = {}
+        print("getting links for {}".format(addresses))
         for address in addresses:
             ip_start, ip_end = sam.common.determine_range_string(address)
             result[address] = {}
             if flat:
-                result[address]['inputs'] = self._get_links_flat(ip_start, True, timerange, port, protocol)
-                result[address]['outputs'] = self._get_links_flat(ip_start, False, timerange, port, protocol)
+                if ip_start == ip_end:
+                    result[address]['inputs'] = self._get_links_flat(ip_start, True, timerange, port, protocol)
+                    result[address]['outputs'] = self._get_links_flat(ip_start, False, timerange, port, protocol)
+                else:
+                    result[address]['inputs'] = self._get_links_flat_group(ip_start, ip_end, True, timerange, port, protocol)
+                    result[address]['outputs'] = self._get_links_flat_group(ip_start, ip_end, False, timerange, port, protocol)
             else:
                 result[address]['inputs'] = self._get_links(ip_start, ip_end, True, timerange, port, protocol)
                 result[address]['outputs'] = self._get_links(ip_start, ip_end, False, timerange, port, protocol)
@@ -93,6 +98,36 @@ class Links:
         if where:
             where = "    AND " + where
         return where
+
+    def _get_links_flat_group(self, ip, ip_end, inbound, timerange, port, protocol):
+        where = self.build_where_clause(timerange, port, protocol, flat=True)
+
+        select = "src AS 'src_start', src AS 'src_end', dst AS 'dst_start', dst AS 'dst_end', port,  " \
+                 "SUM(links) AS 'links', " \
+                 "SUM(bytes_sent) + SUM(COALESCE(bytes_received, 0)) AS 'bytes', " \
+                 "SUM(packets_sent) + SUM(COALESCE(packets_received, 0)) AS 'packets', " \
+                 "GROUP_CONCAT(DISTINCT protocol) AS 'protocols'"
+        group_by = "GROUP BY src, dst, port"
+
+        if inbound:
+            query = """
+                    SELECT {select}
+                    FROM {table}
+                    WHERE dst BETWEEN {ip_start} AND {ip_end}
+                     {where}
+                    {group_by}
+                    """.format(where=where, select=select, group_by=group_by, table=self.table_links, ip_start=int(ip), ip_end = int(ip_end))
+        else:
+            query = """
+                    SELECT {select}
+                    FROM {table}
+                    WHERE src BETWEEN {ip_start} AND {ip_end}
+                     {where}
+                    {group_by}
+                    """.format(where=where, select=select, group_by=group_by, table=self.table_links, ip_start=int(ip), ip_end = int(ip_end))
+
+        rows = list(self.db.query(query))
+        return rows
 
     def _get_links_flat(self, ip, inbound, timerange, port, protocol):
         where = self.build_where_clause(timerange, port, protocol, flat=True)

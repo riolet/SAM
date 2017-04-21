@@ -460,16 +460,16 @@ function find_common_root(nodeA, nodeB) {
   return root;
 }
 
-function find_step_closer(root, target) {
+function find_step_closer(collection, target) {
   //console.log("one step closer: ", root, target);
-  let m_keys = Object.keys(root.children);
+  let m_keys = Object.keys(collection);
   m_keys.sort(function(a, b){return a-b});
   let high = m_keys.length - 1;
   let low = 0;
   let mid;
   while (low <= high) {
     mid = Math.floor(low + (high-low) / 2);
-    let node = root.children[m_keys[mid]];
+    let node =collection[m_keys[mid]];
     //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
     if (node.ipstart <= target.ipstart && target.ipend <= node.ipend) {
       return node;
