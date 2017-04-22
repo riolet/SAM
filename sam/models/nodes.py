@@ -230,6 +230,7 @@ class WhoisService(threading.Thread):
                     self.n_model.set_alias(address, name)
                     netname, ipstart, ipend, subnet = whois.get_network()
                     #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
+                    subnet = subnet / 8 * 8;
                     if subnet in (8, 16, 24):
                         self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
                 except:

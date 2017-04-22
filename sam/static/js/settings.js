@@ -578,7 +578,6 @@ function POST_ds_livechange(e) {
     "use strict";
     var active = e.target.checked;
     var ds = getSelectedDS();
-    console.log("Toggling autorefresh of " + ds + " to " + active);
     POST_AJAX({"command":"ds_live", "ds":ds, "is_active":active});
 }
 
@@ -597,6 +596,13 @@ function POST_ds_intervalchange(e) {
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
         POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});
     }
+}
+
+function POST_ds_flatchange(e) {
+    "use strict";
+    var active = e.target.checked;
+    var ds = getSelectedDS();
+    POST_AJAX({"command":"ds_flat", "ds":ds, "is_flat":active});
 }
 
 function POST_ds_selection(ds) {
@@ -691,5 +697,8 @@ function init() {
     });
     foreach(document.getElementsByClassName("ds_interval"), function(entity) {
         entity.onchange = POST_ds_intervalchange
+    });
+    foreach(document.getElementsByClassName("ds_flat"), function(entity) {
+        entity.onchange = POST_ds_flatchange
     });
 }

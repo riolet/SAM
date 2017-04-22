@@ -109,6 +109,7 @@ function GET_links_callback(result) {
     });
     ports.request_submit();
     updateRenderRoot();
+    circle_arrangement();
     render_all();
 }
 

@@ -630,9 +630,7 @@ function circle_arrangement() {
   let attached = get_all_attached_nodes(center);
   attached.sort(function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
   attached = remove_duplicates(attached);
-  
   remove_item(attached, center);
-
   arrange_nodes_evenly(attached);
   render_all();
 }
