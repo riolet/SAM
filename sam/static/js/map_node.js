@@ -511,7 +511,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   //move node
   node.rel_x += rel_dx;
   node.rel_y += rel_dy;
-  update_pos_tree(node, node.parent);
+  nodes.update_pos_tree(node, node.parent);
   render_all();
 }
   nodes.get_name = function (node) {
@@ -578,15 +578,15 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     return attached;
   }
   circle.sorted_unique = function (coll, sort_func) {
-    coll.sort(sortfunc);
-    return nodelist.filter(function(item, pos, ary) {
+    coll.sort(sort_func);
+    return coll.filter(function(item, pos, ary) {
       return !pos || (item.address + item.subnet) != (ary[pos - 1].address + ary[pos - 1].subnet);
     });
   }
   circle.remove_item = function (coll, item) {
-    let index = list.indexOf(item);
+    let index = coll.indexOf(item);
     if (index !== -1) {
-      list.splice(index, 1);
+      coll.splice(index, 1);
     }
   }
   circle.move_to_center = function (node) {
@@ -603,7 +603,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     // 0 rad is to the right.
     // pi/2 rad is down.
     let len = node_coll.length;
-    let bbox = get_bbox();
+    let bbox = circle.get_bbox();
     let rx = (bbox.right - bbox.left) / 2;
     let ry = (bbox.bottom - bbox.top) / 2;
     rx *= 0.8;
@@ -619,10 +619,10 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
 
-    let attached = get_all_attached_nodes(center);
+    let attached = circle.get_all_attached_nodes(center);
     attached = circle.sorted_unique(attached, function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
     circle.remove_item(attached, center);
-    arrange_nodes_evenly(attached);
+    circle.arrange_nodes_evenly(attached);
     render_all();
   }
 
