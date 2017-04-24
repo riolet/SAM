@@ -325,7 +325,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.set_name = function (node, name) {
     let oldName = node.alias;
     if (oldName === name) {
-        return;
+      return;
     }
     this.POST_name(node.address, name);
     node.alias = name;
@@ -333,9 +333,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   }
   nodes.submit_alias_CB = function (event) {
     if (event.keyCode === 13 || event.type === "blur") {
-        var newName = document.getElementById("node_alias_edit");
-        set_node_name(m_selection["selection"], newName.value);
-        return true;
+      var newName = document.getElementById("node_alias_edit");
+      set_node_name(m_selection["selection"], newName.value);
+      return true;
     }
     return false;
 }
@@ -370,107 +370,107 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     var x = 0;
     var y = 0;
     if (side === 't-l') {
-        x = node.abs_x - node.radius / 3;
-        y = node.abs_y - node.radius * 7 / 5;
+      x = node.abs_x - node.radius / 3;
+      y = node.abs_y - node.radius * 7 / 5;
     } else if (side === 't-r') {
-        x = node.abs_x + node.radius / 3;
-        y = node.abs_y - node.radius * 7 / 5;
+      x = node.abs_x + node.radius / 3;
+      y = node.abs_y - node.radius * 7 / 5;
     } else if (side === 'b-l') {
-        x = node.abs_x - node.radius / 3;
-        y = node.abs_y + node.radius * 7 / 5;
+      x = node.abs_x - node.radius / 3;
+      y = node.abs_y + node.radius * 7 / 5;
     } else if (side === 'b-r') {
-        x = node.abs_x + node.radius / 3;
-        y = node.abs_y + node.radius * 7 / 5;
+      x = node.abs_x + node.radius / 3;
+      y = node.abs_y + node.radius * 7 / 5;
     } else if (side === 'l-t') {
-        x = node.abs_x - node.radius * 7 / 5;
-        y = node.abs_y - node.radius / 3;
+      x = node.abs_x - node.radius * 7 / 5;
+      y = node.abs_y - node.radius / 3;
     } else if (side === 'l-b') {
-        x = node.abs_x - node.radius * 7 / 5;
-        y = node.abs_y + node.radius / 3;
+      x = node.abs_x - node.radius * 7 / 5;
+      y = node.abs_y + node.radius / 3;
     } else if (side === 'r-t') {
-        x = node.abs_x + node.radius * 7 / 5;
-        y = node.abs_y - node.radius / 3;
+      x = node.abs_x + node.radius * 7 / 5;
+      y = node.abs_y - node.radius / 3;
     } else if (side === 'r-b') {
-        x = node.abs_x + node.radius * 7 / 5;
-        y = node.abs_y + node.radius / 3;
+      x = node.abs_x + node.radius * 7 / 5;
+      y = node.abs_y + node.radius / 3;
     }
     return [x, y];
   }
   nodes.nearest_corner = function (node, x1, y1) {
-      var x = 0;
-      var y = 0;
-      if (x1 < node.abs_x) {
-          x = node.abs_x - node.radius;
-      } else {
-          x = node.abs_x + node.radius;
-      }
-      if (y1 < node.abs_y) {
-          y = node.abs_y - node.radius;
-      } else {
-          y = node.abs_y + node.radius;
-      }
+    var x = 0;
+    var y = 0;
+    if (x1 < node.abs_x) {
+      x = node.abs_x - node.radius;
+    } else {
+      x = node.abs_x + node.radius;
+    }
+    if (y1 < node.abs_y) {
+      y = node.abs_y - node.radius;
+    } else {
+      y = node.abs_y + node.radius;
+    }
 
-      return [x, y];
+    return [x, y];
   }
   nodes.delta_to_dest = function (node, x1, y1) {
-      let dx = node.abs_x - x1;
-      let dy = node.abs_y - y1;
-      var x = 0;
-      var y = 0;
-      if (Math.abs(dx) > Math.abs(dy)) {
-          //arrow is more horizontal than vertical
-          if (dx < 0) {
-              //leftward flowing
-              x = node.abs_x + node.radius;
-              y = node.abs_y - node.radius * 0.2;
-          } else {
-              //rightward flowing
-              x = node.abs_x - node.radius;
-              y = node.abs_y + node.radius * 0.2;
-          }
+    let dx = node.abs_x - x1;
+    let dy = node.abs_y - y1;
+    var x = 0;
+    var y = 0;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      //arrow is more horizontal than vertical
+      if (dx < 0) {
+        //leftward flowing
+        x = node.abs_x + node.radius;
+        y = node.abs_y - node.radius * 0.2;
       } else {
-          //arrow is more vertical than horizontal
-          if (dy < 0) {
-              //upward flowing
-              y = node.abs_y + node.radius;
-              x = node.abs_x + node.radius * 0.2;
-          } else {
-              //downward flowing
-              y = node.abs_y - node.radius;
-              x = node.abs_x - node.radius * 0.2;
-          }
+        //rightward flowing
+        x = node.abs_x - node.radius;
+        y = node.abs_y + node.radius * 0.2;
       }
-      return [x, y];
+    } else {
+      //arrow is more vertical than horizontal
+      if (dy < 0) {
+        //upward flowing
+        y = node.abs_y + node.radius;
+        x = node.abs_x + node.radius * 0.2;
+      } else {
+        //downward flowing
+        y = node.abs_y - node.radius;
+        x = node.abs_x - node.radius * 0.2;
+      }
+    }
+    return [x, y];
   }
   nodes.delta_to_src = function (node, x2, y2) {
-      let dx = node.abs_x - x2;
-      let dy = node.abs_y - y2;
-      var x = 0;
-      var y = 0;
-      if (Math.abs(dx) > Math.abs(dy)) {
-          //arrow is more horizontal than vertical
-          if (dx < 0) {
-              //leftward flowing
-              x = node.abs_x + node.radius;
-              y = node.abs_y + node.radius * 0.2;
-          } else {
-              //rightward flowing
-              x = node.abs_x - node.radius;
-              y = node.abs_y - node.radius * 0.2;
-          }
+    let dx = node.abs_x - x2;
+    let dy = node.abs_y - y2;
+    var x = 0;
+    var y = 0;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      //arrow is more horizontal than vertical
+      if (dx < 0) {
+        //leftward flowing
+        x = node.abs_x + node.radius;
+        y = node.abs_y + node.radius * 0.2;
       } else {
-          //arrow is more vertical than horizontal
-          if (dy < 0) {
-              //upward flowing
-              y = node.abs_y + node.radius;
-              x = node.abs_x - node.radius * 0.2;
-          } else {
-              //downward flowing
-              y = node.abs_y - node.radius;
-              x = node.abs_x + node.radius * 0.2;
-          }
+        //rightward flowing
+        x = node.abs_x - node.radius;
+        y = node.abs_y - node.radius * 0.2;
       }
-      return [x, y];
+    } else {
+      //arrow is more vertical than horizontal
+      if (dy < 0) {
+        //upward flowing
+        y = node.abs_y + node.radius;
+        x = node.abs_x - node.radius * 0.2;
+      } else {
+        //downward flowing
+        y = node.abs_y - node.radius;
+        x = node.abs_x + node.radius * 0.2;
+      }
+    }
+    return [x, y];
   }
   nodes.get_inbound_link_point = function (node, x1, y1, port) {
     //given a line from (x1, y1) to this node, where should it connect?
@@ -496,24 +496,24 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
   }
   nodes.update_pos_tree = function (node, parent) {
-  if (parent) {
-    node.abs_x = node.rel_x + parent.abs_x;
-    node.abs_y = node.rel_y + parent.abs_y;
-  } else {
-    node.abs_x = node.rel_x;
-    node.abs_y = node.rel_y;
+    if (parent) {
+      node.abs_x = node.rel_x + parent.abs_x;
+      node.abs_y = node.rel_y + parent.abs_y;
+    } else {
+      node.abs_x = node.rel_x;
+      node.abs_y = node.rel_y;
+    }
+    Object.keys(node.children).forEach(function (k) {
+      nodes.update_pos_tree(node.children[k], node);
+    });
   }
-  Object.keys(node.children).forEach(function (k) {
-    nodes.update_pos_tree(node.children[k], node);
-  });
-}
   nodes.offset = function (node, rel_dx, rel_dy) {
-  //move node
-  node.rel_x += rel_dx;
-  node.rel_y += rel_dy;
-  nodes.update_pos_tree(node, node.parent);
-  render_all();
-}
+    //move node
+    node.rel_x += rel_dx;
+    node.rel_y += rel_dy;
+    nodes.update_pos_tree(node, node.parent);
+    render_all();
+  }
   nodes.get_name = function (node) {
     if (node.alias.length === 0) {
       if (config.flat) {
@@ -526,13 +526,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
   }
   nodes.flat_scale = function () {
-  "use strict";
-  let constant_size = 20 / g_scale;
+    let constant_size = 20 / g_scale;
 
-  renderCollection.forEach(function (node) {
-    node.radius = Math.max(constant_size, node.radius_orig);
-  });
-}
+    renderCollection.forEach(function (node) {
+      node.radius = Math.max(constant_size, node.radius_orig);
+    });
+  }
   nodes.get_address = function (node) {
     var add = node.address;
     var missing_terms = 4 - add.split(".").length;
