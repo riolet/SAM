@@ -132,6 +132,9 @@ class Details(base.Headless):
             components = components.split(',')
 
         self.page_size = page_size
+        print("---")
+        print("Creating details model with ds {}".format(ds))
+        print("---")
         self.detailsModel = sam.models.details.Details(common.db, self.user.viewing, ds, address, (tstart, tend), port, page_size)
 
         request = {

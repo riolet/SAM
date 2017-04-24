@@ -599,6 +599,14 @@ function POST_ds_intervalchange(e) {
     }
 }
 
+function POST_ds_flatchange(e) {
+    "use strict";
+    let flat = e.target.checked;
+    let ds = getSelectedDS();
+    console.log("Toggling flat mode of " + ds + " to " + flat);
+    POST_AJAX({"command":"ds_flat", "ds":ds, "is_flat":flat});
+}
+
 function POST_ds_selection(ds) {
     "use strict";
     POST_AJAX({"command":"ds_select", "ds":ds});
@@ -691,5 +699,8 @@ function init() {
     });
     foreach(document.getElementsByClassName("ds_interval"), function(entity) {
         entity.onchange = POST_ds_intervalchange
+    });
+    foreach(document.getElementsByClassName("ds_flat"), function(entity) {
+        entity.onchange = POST_ds_flatchange
     });
 }

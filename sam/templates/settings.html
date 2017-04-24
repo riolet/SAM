@@ -45,6 +45,15 @@ $ disabled = "" if user.may_post() else "disabled"
                     <div class="ui transparent left icon $disabled input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
                   </td>
                 </tr>
+                <tr>
+                  <td class="right aligned">Flat mode (map view):</td>
+                  <td>
+                    <div class="ui toggle $disabled checkbox">
+                      <input class="ds_flat" name="public" type="checkbox" $('checked=""' if ds['flat'] else '')>
+                      <label>&nbsp;</label>
+                    </div>
+                  </td>
+                </tr>
                 </tbody>
               </table>
             </div>
