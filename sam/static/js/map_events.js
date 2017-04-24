@@ -138,7 +138,7 @@ function keydown(event) {
     }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
-        resetViewport(m_nodes);
+        resetViewport(nodes.nodes);
         updateRenderRoot();
         resetViewport(renderCollection);
         render_all();
@@ -167,7 +167,7 @@ function applysearch() {
   let searchElement = document.getElementById("search");
   let addr = searchElement.value;
   let normalized_addr = normalize_addr(addr);
-  let nearest = find_by_addr(addr);
+  let nearest = nodes.find_by_addr(addr);
 
   //if we got nothing, give up.
   if (nearest == null) {
@@ -188,7 +188,7 @@ function applysearch() {
     render_all();
   } else {
     //try to load children and repeat.
-    GET_nodes([nearest], applysearch);
+    nodes.GET_request(config.ds, config.flat, [nearest], applysearch);
   }
 }
 
@@ -281,8 +281,8 @@ function updateFlat(new_flatness) {
         return;
     }
     config.flat = new_flatness;
-    m_nodes = {};
-    GET_nodes(null);
+    nodes.nodes = {};
+    nodes.GET_request(config.ds, config.flat, null);
 }
 
 function updateConfig() {

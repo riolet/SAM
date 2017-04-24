@@ -1,11 +1,3 @@
-// Function(jqXHR jqXHR, String textStatus, String errorThrown)
-function onNotLoadData(xhr, textStatus, errorThrown) {
-    "use strict";
-    console.error("Failed to load data: " + errorThrown);
-    console.log("\tText Status: " + textStatus);
-}
-
-
 function GET_settings(ds, successCallback) {
     "use strict";
     if (typeof(successCallback) !== "function") {
@@ -16,7 +8,7 @@ function GET_settings(ds, successCallback) {
         type: "GET",
         data: {"headless": 1, 'ds': ds},
         dataType: "json",
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: successCallback
     });
 }
@@ -31,80 +23,9 @@ function GET_timerange(successCallback) {
     type: "GET",
     data: {"q": "timerange", 'ds': config.ds},
     dataType: "json",
-    error: onNotLoadData,
+    error: generic_ajax_failure,
     success: successCallback
   });
-}
-
-/*
-Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
-parents: either an array of nodes, or null.
-    if a list of nodes, retrieves the children of the nodes that don't have children loaded
-    if null, retreives the top-level nodes. (the /8 subnet)
-callback: if is a function, call it when done importing.
-ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
-*/
-function GET_nodes(parents, callback) {
-  "use strict";
-  var request = {}
-  if (parents !== null) {
-    //filter out parents with children already loaded
-    parents = parents.filter(function (parent) {
-        return !parent.childrenLoaded;
-    });
-    if (parents.length == 0) {
-      return;
-    }
-    request.address = parents.map(function (parent) {
-      parent.childrenLoaded = true;
-      return parent.address + "/" + parent.subnet;
-    }).join(",");
-  }
-  request.flat = config.flat;
-  request.ds = config.ds;
-  $.ajax({
-    url: "/nodes",
-    type: "GET",
-    data: request,
-    dataType: "json",
-    error: onNotLoadData,
-    success: function (response) {
-      node_update(response);
-      if (typeof callback === "function") {
-        callback(response);
-      } else {
-        updateRenderRoot();
-        render_all();
-      }
-    }
-  });
-}
-
-function reportErrors(response) {
-    if (response.hasOwnProperty("result")) {
-        console.log("Result: " + response.result);
-    }
-}
-
-/**
- * Update a node alias on the server.
- *
- * @param address  node address, "192.168"
- * @param name  the new name to use for that address
- */
-function POST_node_alias(address, name) {
-    "use strict";
-    var request = {
-      "node": address,
-      "alias": name
-    }
-    $.ajax({
-        url: "/nodes",
-        type: "POST",
-        data: request,
-        error: onNotLoadData,
-        success: reportErrors
-    });
 }
 
 function GET_links(addrs) {
@@ -124,7 +45,7 @@ function GET_links(addrs) {
         url: "/links",
         type: "GET",
         data: requestData,
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: GET_links_callback
     });
 }
@@ -135,8 +56,8 @@ function POST_portinfo(request) {
         url: "/portinfo",
         type: "POST",
         data: request,
-        error: onNotLoadData,
-        success: reportErrors
+        error: generic_ajax_failure,
+        success: generic_ajax_success
     });
 }
 
@@ -148,7 +69,7 @@ function GET_portinfo(port, callback) {
         type: "GET",
         data: requestData,
         dataType: "json",
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: function (response) {
             ports.private.GET_response(response);
 
@@ -161,14 +82,14 @@ function GET_portinfo(port, callback) {
 
 function checkLoD() {
   "use strict";
-  var nodesToLoad = [];
+  let nodesToLoad = [];
   renderCollection.forEach(function (node) {
     if (node.subnet < currentSubnet(g_scale)) {
       nodesToLoad.push(node);
     }
   });
   if (nodesToLoad.length > 0) {
-    GET_nodes(nodesToLoad);
+    nodes.GET_request(config.ds, config.flat, nodesToLoad);
     updateRenderRoot();
     render_all();
   }
@@ -192,7 +113,7 @@ function GET_details(node, callback) {
         //dataType: "json",
         type: "GET",
         data: requestData,
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: function (result) {
             node.details["unique_in"] = result.unique_in;
             node.details["unique_out"] = result.unique_out;
@@ -250,7 +171,7 @@ function GET_details_sorted(node, component, order, callback) {
         //dataType: "json",
         type: "GET",
         data: requestData,
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: function (result) {
             var index;
             Object.keys(result).forEach(function (part) {

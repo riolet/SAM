@@ -680,15 +680,10 @@ function clear_quick_info() {
 /*******************
    AJAX Connection
  *******************/
-function onNotLoadData(xhr, textStatus, errorThrown) {
+function generic_ajax_failure(xhr, textStatus, errorThrown) {
     "use strict";
-    console.error("Failed to load data: " + errorThrown);
+    console.error("Server error: " + errorThrown);
     console.log("\tText Status: " + textStatus);
-}
-
-function ajax_error(x, s, e) {
-    console.error("Server error: " + e);
-    console.log("\tText Status: " + s);
 }
 
 function header_sort_callback(event) {
@@ -730,7 +725,7 @@ function hostname_edit_callback(event) {
                 url: "/nodes",
                 type: "POST",
                 data: request,
-                error: ajax_error,
+                error: generic_ajax_failure,
                 success: function (r) {
                     if (r.hasOwnProperty("result")) {
                         console.log("Result: " + r.result);
@@ -750,7 +745,7 @@ function tag_change_callback(new_tags) {
         url: "/nodes",
         type: "POST",
         data: request,
-        error: ajax_error,
+        error: generic_ajax_failure,
         success: function (r) {
             if (r.hasOwnProperty("result")) {
                 console.log("Result: " + r.result);
@@ -769,7 +764,7 @@ function env_change_callback(new_env) {
         url: "/nodes",
         type: "POST",
         data: request,
-        error: ajax_error,
+        error: generic_ajax_failure,
         success: function (r) {
             if (r.hasOwnProperty("result")) {
                 console.log("Result: " + r.result);
@@ -805,7 +800,7 @@ function GET_data(ip, part, order, callback) {
         url: "/details",
         type: "GET",
         data: request,
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: callback
     });
 }

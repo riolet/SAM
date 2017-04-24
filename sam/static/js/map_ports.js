@@ -29,7 +29,7 @@
 
 ;(function () {
     "use strict";
-    var ports = {};
+    let ports = {};
     // Member variables
     ports.ports = [];
     ports.display_callback = null;

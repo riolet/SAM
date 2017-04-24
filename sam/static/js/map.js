@@ -120,7 +120,7 @@ function init() {
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
           slider_init(config);
-          GET_nodes(null);
+          nodes.GET_request(config.ds, config.flat, null);
         });
         init_configbuttons();
     });
@@ -198,4 +198,43 @@ function removeChildren(element) {
     while (element.firstChild) {
         element.removeChild(element.firstChild);
     }
+}
+
+function normalize_addr(addr) {
+  "use strict";
+  let ip_subnet = addr.split("/");
+  let ip = ip_subnet[0];
+  let ip_segs = ip.split(".");
+
+  //determine subnet
+  let subnet = 0;
+  if (ip_subnet.length > 1) {
+    subnet = Number(ip_subnet[1]);
+  } else {
+    subnet = ip_segs.length * 8;
+  }
+
+  //determine ip range start
+  while (ip_segs.length < 4) {
+    ip_segs.push(0);
+  }
+  addr = ip_segs.join(".");
+  return addr + "/" + subnet;
+}
+
+// Function(jqXHR jqXHR, String textStatus, String errorThrown)
+function generic_ajax_failure(xhr, textStatus, errorThrown) {
+    "use strict";
+    console.error("Failed to load data: " + errorThrown);
+    console.log("\tText Status: " + textStatus);
+}
+
+function generic_ajax_success(response) {
+    if (response.hasOwnProperty("result")) {
+        console.log("Result: " + response.result);
+    }
+}
+
+function ip_ntos(ip) {
+  return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
 }

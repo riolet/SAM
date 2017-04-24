@@ -108,7 +108,7 @@ function create_slider(tmin, tmax, tstart, tend) {
     }
   });
   dateSlider.noUiSlider.on('end', function(){
-    sel_remove_all(m_nodes);
+    sel_remove_all(nodes.nodes);
     sel_set_selection(m_selection.selection)
     links_reset();
     updateRenderRoot();
@@ -174,7 +174,7 @@ function recreate_slider(tmin, tmax, tstart, tend) {
     }
   });
   dateSlider.noUiSlider.on('end', function(){
-    sel_remove_all(m_nodes);
+    sel_remove_all(nodes.nodes);
     sel_set_selection(m_selection.selection)
     links_reset();
     updateRenderRoot();

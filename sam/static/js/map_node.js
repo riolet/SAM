@@ -1,4 +1,8 @@
-var m_nodes = {};
+/*
+------------------------------------
+            Node Object
+------------------------------------
+*/
 
 function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     "use strict";
@@ -31,21 +35,338 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     link_request_add(address.toString() + "/" + subnet);
 }
 
-function get_node_name(node) {
-    "use strict";
-    if (node.alias.length === 0) {
-      if (config.flat) {
-        return node.address.toString();
-      } else {
-        return determine_number(node).toString();
-      }
-    } else {
-        return node.alias;
+/*
+------------------------------------
+            `nodes` namespace
+------------------------------------
+*/
+
+;(function () {
+  "use strict";
+  let nodes = {};
+  nodes.nodes = {};
+  nodes.layouts = {};
+
+  //what is rendered:
+  // node_print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
+  //relative and absolute position
+  // node_print_tree(nodes.nodes, "", function (n) {return "rel(" + n.rel_x + ", " + n.rel_y + "), abs(" + n.abs_x + ", " + n.abs_y + ")";})
+  nodes.print_tree = function(collection, prestring, poststring_func) {
+    if (!prestring) {
+      prestring = "";
     }
+    let col_keys = Object.keys(collection);
+    col_keys.sort(function(a, b){return a-b});
+    col_keys.forEach(function (key, i, ary) {
+      let node = collection[key];
+      var post = "";
+      if (typeof(poststring_func) == "function") {
+        post = poststring_func(node);
+      }
+
+      if (i == ary.length - 1) {
+        console.log("%s`---%s %s", prestring, node.address, post);
+      } else {
+        console.log('%s+---%s %s', prestring, node.address, post);
+      }
+      if (Object.keys(node.children).length != 0) {
+        if (i == ary.length - 1) {
+          node_print_tree(node.children, prestring + "    ", poststring_func);
+        } else {
+          node_print_tree(node.children, prestring + "|   ", poststring_func);
+        }
+      }
+    });
+  }
+
+  nodes.find_by_addr = function (address) {
+    let ip_subnet = address.split("/");
+    let ip = ip_subnet[0];
+    let start = 0;
+    let end = 0;
+    let subnet = -1;
+    if (ip_subnet.length == 2) {
+      subnet = +ip_subnet[1];
+    }
+
+    let ip_segs = ip.split(".");
+    if (subnet == -1) {
+      subnet = ip_segs.length * 8;
+    } else {
+      if (subnet <= 24) { ip_segs.pop(); }
+      if (subnet <= 16) { ip_segs.pop(); }
+      if (subnet <= 8) { ip_segs.pop(); }
+    }
+
+    if (ip_segs.length == 4) {
+        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256 + Number(ip_segs[3]);;
+        end = start;
+    } else if (ip_segs.length == 3) {
+        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256;
+        end = start + 255;
+    } else if (ip_segs.length == 2) {
+        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536;
+        end = start + 65535;
+    } else if (ip_segs.length == 1) {
+        start = Number(ip_segs[0]) * 16777216;
+        end = start + 16777215;
+    } else {
+      return null;
+    }
+    //console.log("searching for '%s'", address);
+    return nodes.find_by_range(start, end);
+  }
+  nodes.find_by_range = function (start, end, node_coll) {
+    if (!node_coll) {
+      node_coll = nodes.nodes;
+    }
+    //console.log("  searching by ", start, "..", end, " in ", coll);
+    let m_keys = Object.keys(node_coll);
+    m_keys.sort(function(a, b){return a-b});
+    let high = m_keys.length - 1;
+    let low = 0;
+    let mid;
+    while (low <= high) {
+      mid = Math.floor(low + (high-low) / 2);
+      let node = node_coll[m_keys[mid]];
+      //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
+      if (node.ipstart == start && end == node.ipend) {
+        return node;
+      } else if (node.ipstart <= start && end <= node.ipend) {
+        let finer =nodes.find_by_range(start, end, node.children);
+        if (finer === null) {
+          return node;
+        } else {
+          return finer;
+        }
+      } else if (node.ipend < end) {
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return null;
+  }
+  nodes.find_common_root = function (nodeA, nodeB) {
+    var root = nodeB.parent;
+    while (root != null) {
+      if (nodeA.ipstart < root.ipstart || nodeA.ipend > root.ipend) {
+        root = root.parent;
+      } else {
+        break;
+      }
+    }
+    return root;
+  }
+  nodes.find_step_closer = function (node_coll, target) {
+    let m_keys = Object.keys(node_coll);
+    m_keys.sort(function(a, b){return a-b});
+    let high = m_keys.length - 1;
+    let low = 0;
+    let mid;
+    while (low <= high) {
+      mid = Math.floor(low + (high-low) / 2);
+      let node = node_coll[m_keys[mid]];
+      //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
+      if (node.ipstart <= target.ipstart && target.ipend <= node.ipend) {
+        return node;
+      } else if (node.ipend < target.ipend) {
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return null;
+  }
+
+  nodes.insert = function (record, flat) {
+    //create node
+    let address = ip_ntos(record.ipstart);
+    let node = new Node(record.alias, address, record.ipstart, record.ipend, record.subnet, record.x, record.y, record.radius);
+    if (flat) {
+      node.childrenLoaded = true;
+    }
+    //console.log("installing node ", address);
+
+    //find parents
+    let parentColl = this.nodes;
+    let parent = null;
+    let old_parentColl = null;
+    while (old_parentColl !== parentColl) {
+      old_parentColl = parentColl;
+      let index = -1;
+      let m_keys = Object.keys(parentColl);
+      m_keys.sort(function(a, b){return a-b});
+      for(let i = 0; i < m_keys.length; i += 1) {
+        if (m_keys[i] > node.ipstart) {
+          break;
+        }
+        index = i;
+      }
+      if (index >= 0 && node.ipend <= parentColl[m_keys[index]].ipend) {
+        //console.log("    parent: ", parentColl[m_keys[index]].address);
+        parent = parentColl[m_keys[index]];
+        parentColl = parent.children;
+      }
+    }
+    node.parent = parent;
+    if (parent) {
+      node.rel_x = node.abs_x - parent.abs_x;
+      node.rel_y = node.abs_y - parent.abs_y;
+    }
+
+    //console.log("  searching for children in range %s..%s", node.ipstart, node.ipend);
+    //find children within parent collection
+    let children = {};
+    let m_keys = Object.keys(parentColl);
+    m_keys.sort(function(a, b){return a-b});
+    for(let i = 0; i < m_keys.length; i += 1) {
+      let child = parentColl[m_keys[i]];
+      if (node.ipstart <= child.ipstart && child.ipend <= node.ipend) {
+        //console.log("    child added: ", child.address);
+        node.children[child.ipstart] = child;
+        child.parent = node;
+        child.rel_x = child.abs_x - node.abs_x;
+        child.rel_y = child.abs_x - node.abs_x;
+        delete parentColl[m_keys[i]];
+      }
+    }
+
+    //insert at that point in the tree.
+    parentColl[node.ipstart] = node;
+    //node_print_tree(nodes.nodes, "", function (n) {return "(" + n.abs_x + ", " + n.abs_y + ")";})
+  }
+  nodes.GET_response = function (response) {
+    Object.keys(response).forEach(function (parent_address) {
+      if (parent_address === "flat") {
+        nodes.nodes = {};
+        response[parent_address].forEach(function (record) {
+          nodes.insert(record, true);
+        });
+      } else if (parent_address === "_") {
+        //must be a call using null, update everything
+        nodes.nodes = {};
+        response[parent_address].forEach(function (record) {
+          nodes.insert(record, false);
+        });
+        if (subnetLabel == "") { //resets view if we aren't zoomed in.
+          resetViewport(nodes.nodes);
+        }
+      } else {
+        response[parent_address].forEach(function (record) {
+          nodes.insert(record, false);
+        });
+      }
+    });
+    link_request_submit();
+    updateRenderRoot();
+    render_all();
+  }
+  /*
+    Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
+    parents: either an array of nodes, or null.
+        if a list of nodes, retrieves the children of the nodes that don't have children loaded
+        if null, retreives the top-level nodes. (the /8 subnet)
+    callback: if is a function, call it when done importing.
+    ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
+  */
+  nodes.GET_request = function (ds, flat, parents, callback) {
+    var request = {}
+    if (parents !== null) {
+      //filter out parents with children already loaded
+      parents = parents.filter(function (parent) {
+          return !parent.childrenLoaded;
+      });
+      if (parents.length == 0) {
+        return;
+      }
+      request.address = parents.map(function (parent) {
+        parent.childrenLoaded = true;
+        return parent.address + "/" + parent.subnet;
+      }).join(",");
+    }
+    request.flat = flat;
+    request.ds = ds;
+    $.ajax({
+      url: "/nodes",
+      type: "GET",
+      data: request,
+      dataType: "json",
+      error: generic_ajax_failure,
+      success: function (response) {
+        nodes.GET_response(response);
+        if (typeof callback === "function") {
+          callback(response);
+        } else {
+          updateRenderRoot();
+          render_all();
+        }
+      }
+    });
+  }
+  /*
+    Update a node alias on the server.
+    @param address  node address, "192.168"
+    @param name  the new name to use for that address
+  */
+  nodes.POST_name = function (address, name) {
+    var request = {
+      "node": address,
+      "alias": name
+    }
+    $.ajax({
+      url: "/nodes",
+      type: "POST",
+      data: request,
+      error: onNotLoadData,
+      success: reportErrors
+    });
+  }
+  nodes.set_name = function (node, name) {
+    let oldName = node.alias;
+    if (oldName === name) {
+        return;
+    }
+    this.POST_name(node.address, name);
+    node.alias = name;
+    render_all();
+  }
+  nodes.submit_alias_CB = function (event) {
+    if (event.keyCode === 13 || event.type === "blur") {
+        var newName = document.getElementById("node_alias_edit");
+        set_node_name(m_selection["selection"], newName.value);
+        return true;
+    }
+    return false;
 }
 
-function port_to_pos(node, side) {
-    "use strict";
+  /**
+   * Determine the last given number in this node's dotted decimal address.
+   * ex: this node is 192.168.174.0/24,
+   *     this returns 174 because it's the right-most number in the subnet.
+   *
+   * @param node object returned from the server. Different from Node object in javascript.
+   *      should contain [ "connections", "alias", "radius", "y", "x", "ip8", "children" ] or more
+   * @returns a subnet-local Number address
+   */
+  nodes.determine_number = function (node) {
+    var size = parseInt(node.ipend) - parseInt(node.ipstart)
+    if (size === 0) {
+      return node.ipstart % 256;
+    }
+    if (size === 255) {
+      return node.ipstart / 256 % 256;
+    }
+    if (size === 65535) {
+      return node.ipstart / 65536 % 256;
+    }
+    if (size === 16777215) {
+      return node.ipstart / 16777216 % 256;
+    }
+    console.error("failed to determine size (" + size + ") when " + node.ipend + " - " + node.ipstart + ".");
+    return undefined
+  }
+  nodes.port_to_pos = function (node, side) {
     var x = 0;
     var y = 0;
     if (side === 't-l') {
@@ -74,153 +395,107 @@ function port_to_pos(node, side) {
         y = node.abs_y + node.radius / 3;
     }
     return [x, y];
-}
+  }
+  nodes.nearest_corner = function (node, x1, y1) {
+      var x = 0;
+      var y = 0;
+      if (x1 < node.abs_x) {
+          x = node.abs_x - node.radius;
+      } else {
+          x = node.abs_x + node.radius;
+      }
+      if (y1 < node.abs_y) {
+          y = node.abs_y - node.radius;
+      } else {
+          y = node.abs_y + node.radius;
+      }
 
-function nearest_corner(node, x1, y1) {
-    "use strict";
-    var x = 0;
-    var y = 0;
-    if (x1 < node.abs_x) {
-        x = node.abs_x - node.radius;
+      return [x, y];
+  }
+  nodes.delta_to_dest = function (node, x1, y1) {
+      let dx = node.abs_x - x1;
+      let dy = node.abs_y - y1;
+      var x = 0;
+      var y = 0;
+      if (Math.abs(dx) > Math.abs(dy)) {
+          //arrow is more horizontal than vertical
+          if (dx < 0) {
+              //leftward flowing
+              x = node.abs_x + node.radius;
+              y = node.abs_y - node.radius * 0.2;
+          } else {
+              //rightward flowing
+              x = node.abs_x - node.radius;
+              y = node.abs_y + node.radius * 0.2;
+          }
+      } else {
+          //arrow is more vertical than horizontal
+          if (dy < 0) {
+              //upward flowing
+              y = node.abs_y + node.radius;
+              x = node.abs_x + node.radius * 0.2;
+          } else {
+              //downward flowing
+              y = node.abs_y - node.radius;
+              x = node.abs_x - node.radius * 0.2;
+          }
+      }
+      return [x, y];
+  }
+  nodes.delta_to_src = function (node, x2, y2) {
+      let dx = node.abs_x - x2;
+      let dy = node.abs_y - y2;
+      var x = 0;
+      var y = 0;
+      if (Math.abs(dx) > Math.abs(dy)) {
+          //arrow is more horizontal than vertical
+          if (dx < 0) {
+              //leftward flowing
+              x = node.abs_x + node.radius;
+              y = node.abs_y + node.radius * 0.2;
+          } else {
+              //rightward flowing
+              x = node.abs_x - node.radius;
+              y = node.abs_y - node.radius * 0.2;
+          }
+      } else {
+          //arrow is more vertical than horizontal
+          if (dy < 0) {
+              //upward flowing
+              y = node.abs_y + node.radius;
+              x = node.abs_x - node.radius * 0.2;
+          } else {
+              //downward flowing
+              y = node.abs_y - node.radius;
+              x = node.abs_x + node.radius * 0.2;
+          }
+      }
+      return [x, y];
+  }
+  nodes.get_inbound_link_point = function (node, x1, y1, port) {
+    //given a line from (x1, y1) to this node, where should it connect?
+    if (node.ports.hasOwnProperty(port)) {
+      //get the port connection point
+      return nodes.port_to_pos(node, node.ports[port]);
+    } else if (node.subnet == 32) {
+      //get the nearest corner (because the ports are all taken)
+      return nodes.nearest_corner(node, x1, y1);
     } else {
-        x = node.abs_x + node.radius;
+      //get the closest side and offset a little bit
+      return nodes.delta_to_dest(node, x1, y1);
     }
-    if (y1 < node.abs_y) {
-        y = node.abs_y - node.radius;
+  }
+  nodes.get_outbound_link_point = function (node, x2, y2) {
+    //given a line from this node to (x2, y2), where should it connect?
+    if (node.subnet == 32) {
+      //get the nearest corner (because the ports are all taken)
+      return nodes.nearest_corner(node, x2, y2);
     } else {
-        y = node.abs_y + node.radius;
+      //get the closest side and offset a little bit
+      return nodes.delta_to_src(node, x2, y2);
     }
-
-    return [x, y];
-}
-
-function delta_to_dest(node, x1, y1) {
-    "use strict";
-    let dx = node.abs_x - x1;
-    let dy = node.abs_y - y1;
-    var x = 0;
-    var y = 0;
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //leftward flowing
-            x = node.abs_x + node.radius;
-            y = node.abs_y - node.radius * 0.2;
-        } else {
-            //rightward flowing
-            x = node.abs_x - node.radius;
-            y = node.abs_y + node.radius * 0.2;
-        }
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //upward flowing
-            y = node.abs_y + node.radius;
-            x = node.abs_x + node.radius * 0.2;
-        } else {
-            //downward flowing
-            y = node.abs_y - node.radius;
-            x = node.abs_x - node.radius * 0.2;
-        }
-    }
-    return [x, y];
-}
-
-function delta_to_src(node, x2, y2) {
-    "use strict";
-    let dx = node.abs_x - x2;
-    let dy = node.abs_y - y2;
-    var x = 0;
-    var y = 0;
-    if (Math.abs(dx) > Math.abs(dy)) {
-        //arrow is more horizontal than vertical
-        if (dx < 0) {
-            //leftward flowing
-            x = node.abs_x + node.radius;
-            y = node.abs_y + node.radius * 0.2;
-        } else {
-            //rightward flowing
-            x = node.abs_x - node.radius;
-            y = node.abs_y - node.radius * 0.2;
-        }
-    } else {
-        //arrow is more vertical than horizontal
-        if (dy < 0) {
-            //upward flowing
-            y = node.abs_y + node.radius;
-            x = node.abs_x - node.radius * 0.2;
-        } else {
-            //downward flowing
-            y = node.abs_y - node.radius;
-            x = node.abs_x + node.radius * 0.2;
-        }
-    }
-    return [x, y];
-}
-
-function get_inbound_link_point(node, x1, y1, port) {
-  "use strict";
-  //given a line from (x1, y1) to this node, where should it connect?
-  if (node.ports.hasOwnProperty(port)) {
-    //get the port connection point
-    return port_to_pos(node, node.ports[port]);
-  } else if (node.subnet == 32) {
-    //get the nearest corner (because the ports are all taken)
-    return nearest_corner(node, x1, y1);
-  } else {
-    //get the closest side and offset a little bit
-    return delta_to_dest(node, x1, y1);
   }
-}
-
-function get_outbound_link_point(node, x2, y2) {
-  "use strict";
-  //given a line from this node to (x2, y2), where should it connect?
-  if (node.subnet == 32) {
-    //get the nearest corner (because the ports are all taken)
-    return nearest_corner(node, x2, y2);
-  } else {
-    //get the closest side and offset a little bit
-    return delta_to_src(node, x2, y2);
-  }
-}
-
-function node_flat_scale() {
-  "use strict";
-  let constant_size = 20 / g_scale;
-  
-  renderCollection.forEach(function (node) {
-    node.radius = Math.max(constant_size, node.radius_orig);
-  });
-}
-
-function get_node_address(node) {
-    "use strict";
-    var add = node.address;
-    var missing_terms = 4 - add.split(".").length;
-    while (missing_terms > 0) {
-        add += ".0";
-        missing_terms -= 1;
-    }
-    if (node.subnet < 32) {
-        add += "/" + node.subnet;
-    }
-    return add;
-}
-
-function works(q) {
-  if (q === null || q === undefined) {
-    console.log("q is null or undefined");
-  }
-  if (q) {
-    console.log("if (q) works");
-  }
-  if (typeof(q) === "number") {
-    console.log("q is a number");
-  }
-}
-
-function update_pos_tree(node, parent) {
+  nodes.update_pos_tree = function (node, parent) {
   if (parent) {
     node.abs_x = node.rel_x + parent.abs_x;
     node.abs_y = node.rel_y + parent.abs_y;
@@ -229,410 +504,128 @@ function update_pos_tree(node, parent) {
     node.abs_y = node.rel_y;
   }
   Object.keys(node.children).forEach(function (k) {
-    update_pos_tree(node.children[k], node);
+    nodes.update_pos_tree(node.children[k], node);
   });
 }
-
-function offset_node(node, rel_dx, rel_dy) {
+  nodes.offset = function (node, rel_dx, rel_dy) {
   //move node
   node.rel_x += rel_dx;
   node.rel_y += rel_dy;
   update_pos_tree(node, node.parent);
   render_all();
 }
-
-function set_node_name(node, name) {
-    "use strict";
-    var oldName = node.alias;
-    if (oldName === name) {
-        return;
-    }
-    POST_node_alias(node.address, name);
-    node.alias = name;
-    render_all();
-}
-
-function node_alias_submit(event) {
-    "use strict";
-    if (event.keyCode === 13 || event.type === "blur") {
-        var newName = document.getElementById("node_alias_edit");
-        set_node_name(m_selection["selection"], newName.value);
-        return true;
-    }
-    return false;
-}
-
-/**
- * Determine the last given number in this node's dotted decimal address.
- * ex: this node is 192.168.174.0/24,
- *     this returns 174 because it's the right-most number in the subnet.
- *
- * @param node object returned from the server. Different from Node object in javascript.
- *      should contain [ "connections", "alias", "radius", "y", "x", "ip8", "children" ] or more
- * @returns a subnet-local Number address
- */
-function determine_number(node) {
-    "use strict";
-    var size = parseInt(node.ipend) - parseInt(node.ipstart)
-    if (size === 0) {
-        return node.ipstart % 256;
-    }
-    if (size === 255) {
-        return node.ipstart / 256 % 256;
-    }
-    if (size === 65535) {
-        return node.ipstart / 65536 % 256;
-    }
-    if (size === 16777215) {
-        return node.ipstart / 16777216 % 256;
-    }
-    console.error("failed to determine size (" + size + ") when " + node.ipend + " - " + node.ipstart + ".");
-    return undefined
-}
-
-function ip_to_string(ip) {
-  return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
-}
-
-function insert_node(record) {
-  "use strict";
-  //create node
-  let address = ip_to_string(record.ipstart);
-  let node = new Node(record.alias, address, record.ipstart, record.ipend, record.subnet, record.x, record.y, record.radius);
-  if (config.flat) {
-    node.childrenLoaded = true;
-  }
-  //console.log("installing node ", address);
-
-  //find parents
-  let parentColl = m_nodes;
-  let parent = null;
-  let old_parentColl = null;
-  while (old_parentColl !== parentColl) {
-    old_parentColl = parentColl;
-    let index = -1;
-    let m_keys = Object.keys(parentColl);
-    m_keys.sort(function(a, b){return a-b});
-    for(let i = 0; i < m_keys.length; i += 1) {
-      if (m_keys[i] > node.ipstart) {
-        break;
+  nodes.get_name = function (node) {
+    if (node.alias.length === 0) {
+      if (config.flat) {
+        return node.address.toString();
+      } else {
+        return nodes.determine_number(node).toString();
       }
-      index = i;
-    }
-    if (index >= 0 && node.ipend <= parentColl[m_keys[index]].ipend) {
-      //console.log("    parent: ", parentColl[m_keys[index]].address);
-      parent = parentColl[m_keys[index]];
-      parentColl = parent.children;
+    } else {
+        return node.alias;
     }
   }
-  node.parent = parent;
-  if (parent) {
-    node.rel_x = node.abs_x - parent.abs_x;
-    node.rel_y = node.abs_y - parent.abs_y;
-  }
-  
-  //console.log("  searching for children in range %s..%s", node.ipstart, node.ipend);
-  //find children within parent collection
-  let children = {};
-  let m_keys = Object.keys(parentColl);
-  m_keys.sort(function(a, b){return a-b});
-  for(let i = 0; i < m_keys.length; i += 1) {
-    let child = parentColl[m_keys[i]];
-    if (node.ipstart <= child.ipstart && child.ipend <= node.ipend) {
-      //console.log("    child added: ", child.address);
-      node.children[child.ipstart] = child;
-      child.parent = node;
-      child.rel_x = child.abs_x - node.abs_x;
-      child.rel_y = child.abs_x - node.abs_x;
-      delete parentColl[m_keys[i]];
-    }
-  }
-  
-  //insert at that point in the tree.
-  parentColl[node.ipstart] = node;
-  //node_print_tree(m_nodes, "", function (n) {return "(" + n.abs_x + ", " + n.abs_y + ")";})
-}
+  nodes.flat_scale = function () {
+  "use strict";
+  let constant_size = 20 / g_scale;
 
-// `response` should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
-function node_update(response) {
-    "use strict";
-    Object.keys(response).forEach(function (parent_address) {
-        if (parent_address === "flat") {
-          m_nodes = {};
-          response[parent_address].forEach(function (record) {
-            insert_node(record);
-          });
-        } else if (parent_address === "_") {
-          //must be a call using null, update everything
-          m_nodes = {};
-          response[parent_address].forEach(function (record) {
-            insert_node(record);
-          });
-          if (subnetLabel == "") { //resets view if we aren't zoomed in.
-            resetViewport(m_nodes);
-          }
-        } else {
-          response[parent_address].forEach(function (record) {
-            insert_node(record);
-          });
-        }
+  renderCollection.forEach(function (node) {
+    node.radius = Math.max(constant_size, node.radius_orig);
+  });
+}
+  nodes.get_address = function (node) {
+    var add = node.address;
+    var missing_terms = 4 - add.split(".").length;
+    while (missing_terms > 0) {
+        add += ".0";
+        missing_terms -= 1;
+    }
+    if (node.subnet < 32) {
+      add += "/" + node.subnet;
+    }
+    return add;
+  }
+
+  // Export ports instance to global scope
+  window.nodes = nodes;
+})();
+
+;(function () {
+  "use strict";
+  let circle = {};
+
+  circle.find_center_node = function (node_coll) {
+    let center = null;
+    let best = -1;
+    Object.keys(node_coll).forEach(function (key) {
+      let node = node_coll[key];
+      let connectivity = node.inputs.length + node.outputs.length;
+      if (connectivity > best) {
+        best = connectivity;
+        center = node;
+      }
     });
-    link_request_submit();
-    updateRenderRoot();
+    return center;
+  }
+  circle.get_all_attached_nodes = function (node) {
+    let attached = [];
+    node.outputs.forEach(function (l_in) {
+      attached.push(l_in.dst);
+    });
+    node.inputs.forEach(function (l_in) {
+      attached.push(l_in.dst);
+    });
+    return attached;
+  }
+  circle.sorted_unique = function (coll, sort_func) {
+    coll.sort(sortfunc);
+    return nodelist.filter(function(item, pos, ary) {
+      return !pos || (item.address + item.subnet) != (ary[pos - 1].address + ary[pos - 1].subnet);
+    });
+  }
+  circle.remove_item = function (coll, item) {
+    let index = list.indexOf(item);
+    if (index !== -1) {
+      list.splice(index, 1);
+    }
+  }
+  circle.move_to_center = function (node) {
+    nodes.offset(node, -node.rel_x, -node.rel_y);
+  }
+  circle.get_bbox = function () {
+    let left = -tx / g_scale;
+    let right = (rect.width - tx) / g_scale;
+    let top = -ty / g_scale;
+    let bottom = (rect.height - ty) / g_scale;
+    return {"left": left, "top": top, "right": right, "bottom": bottom};
+  }
+  circle.arrange_nodes_evenly = function (node_coll) {
+    // 0 rad is to the right.
+    // pi/2 rad is down.
+    let len = node_coll.length;
+    let bbox = get_bbox();
+    let rx = (bbox.right - bbox.left) / 2;
+    let ry = (bbox.bottom - bbox.top) / 2;
+    rx *= 0.8;
+    ry *= 0.8;
+
+    node_coll.forEach(function (node, i, ary) {
+      let x = Math.sin(i / len * 2 * Math.PI);
+      let y = Math.cos(i / len * 2 * Math.PI);
+      nodes.offset(node, x * rx - node.rel_x, y * ry - node.rel_y);
+    });
+  }
+  circle.layout = function (node_coll) {
+    let center = circle.find_center_node(node_coll);
+    circle.move_to_center(center);
+
+    let attached = get_all_attached_nodes(center);
+    attached = circle.sorted_unique(attached, function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
+    circle.remove_item(attached, center);
+    arrange_nodes_evenly(attached);
     render_all();
-}
-
-function normalize_addr(addr) {
-  "use strict";
-  let ip_subnet = addr.split("/");
-  let ip = ip_subnet[0];
-  let ip_segs = ip.split(".");
-
-  //determine subnet
-  let subnet = 0;
-  if (ip_subnet.length > 1) {
-    subnet = Number(ip_subnet[1]);
-  } else {
-    subnet = ip_segs.length * 8;
   }
 
-  //determine ip range start
-  while (ip_segs.length < 4) {
-    ip_segs.push(0);
-  }
-  addr = ip_segs.join(".");
-  return addr + "/" + subnet;
-}
-
-function find_by_addr(address) {
-  "use strict";
-  let ip_subnet = address.split("/");
-  let ip = ip_subnet[0];
-  let start = 0;
-  let end = 0;
-  let subnet = -1;
-  if (ip_subnet.length == 2) {
-    subnet = +ip_subnet[1];
-  }
-  
-  let ip_segs = ip.split(".");
-  if (subnet == -1) {
-    subnet = ip_segs.length * 8;
-  } else {
-    if (subnet <= 24) { ip_segs.pop(); }
-    if (subnet <= 16) { ip_segs.pop(); }
-    if (subnet <= 8) { ip_segs.pop(); }
-  }
-  
-  if (ip_segs.length == 4) {
-      start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256 + Number(ip_segs[3]);;
-      end = start;
-  } else if (ip_segs.length == 3) {
-      start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256;
-      end = start + 255;
-  } else if (ip_segs.length == 2) {
-      start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536;
-      end = start + 65535;
-  } else if (ip_segs.length == 1) {
-      start = Number(ip_segs[0]) * 16777216;
-      end = start + 16777215;
-  } else {
-    return null;
-  }
-  //console.log("searching for '%s'", address);
-  return find_by_range(start, end);
-}
-
-function find_by_range(start, end, coll) {
-  "use strict";
-  if (!coll) {
-    coll = m_nodes;
-  }
-  //console.log("  searching by ", start, "..", end, " in ", coll);
-  let m_keys = Object.keys(coll);
-  m_keys.sort(function(a, b){return a-b});
-  let high = m_keys.length - 1;
-  let low = 0;
-  let mid;
-  while (low <= high) {
-    mid = Math.floor(low + (high-low) / 2);
-    let node = coll[m_keys[mid]];
-    //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
-    if (node.ipstart == start && end == node.ipend) {
-      return node;
-    } else if (node.ipstart <= start && end <= node.ipend) {
-      let finer = find_by_range(start, end, node.children);
-      if (finer === null) {
-        return node;
-      } else {
-        return finer;
-      }
-    } else if (node.ipend < end) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return null;
-}
-
-function find_common_root(nodeA, nodeB) {
-  //console.log("find common root: ", nodeA, nodeB);
-  var root = nodeB.parent;
-  while (root != null) {
-    if (nodeA.ipstart < root.ipstart || nodeA.ipend > root.ipend) {
-      root = root.parent;
-    } else {
-      break;
-    }
-  }
-  return root;
-}
-
-function find_step_closer(collection, target) {
-  //console.log("one step closer: ", root, target);
-  let m_keys = Object.keys(collection);
-  m_keys.sort(function(a, b){return a-b});
-  let high = m_keys.length - 1;
-  let low = 0;
-  let mid;
-  while (low <= high) {
-    mid = Math.floor(low + (high-low) / 2);
-    let node =collection[m_keys[mid]];
-    //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
-    if (node.ipstart <= target.ipstart && target.ipend <= node.ipend) {
-      return node;
-    } else if (node.ipend < target.ipend) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return null;
-}
-
-//what is rendered:
-// node_print_tree(m_nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
-//subnet and should it be rendered
-// node_print_tree(m_nodes, "", function (n) {return " @" + n.subnet + (currentSubnet(g_scale) < n.subnet ? " (further in)" : (currentSubnet(g_scale) > n.subnet ? " (further out)" : " (perfect)"));});
-// relative and absolute position
-// node_print_tree(m_nodes, "", function (n) {return "rel(" + n.rel_x + ", " + n.rel_y + "), abs(" + n.abs_x + ", " + n.abs_y + ")";})
-
-function node_print_tree(collection, prestring, poststring_func) {
-  if (!prestring) {
-    prestring = "";
-  }
-  let col_keys = Object.keys(collection);
-  col_keys.sort(function(a, b){return a-b});
-  col_keys.forEach(function (key, i, ary) {
-    let node = collection[key];
-    var post = "";
-    if (typeof(poststring_func) == "function") {
-      post = poststring_func(node);
-    }
-    
-    if (i == ary.length - 1) {
-      console.log("%s`---%s %s", prestring, node.address, post);
-    } else {
-      console.log('%s+---%s %s', prestring, node.address, post);
-    }
-    if (Object.keys(node.children).length != 0) {
-      if (i == ary.length - 1) {
-        node_print_tree(node.children, prestring + "    ", poststring_func);
-      } else {
-        node_print_tree(node.children, prestring + "|   ", poststring_func);
-      }
-    }
-  });
-}
-
-/*
--------------------------- node rearranging tactics -------------------------
-*/
-
-function find_center_node() {
-  "use strict";
-  let center = null;
-  let best = -1;
-  Object.keys(m_nodes).forEach(function (key) {
-    let node = m_nodes[key];
-    let connectivity = node.inputs.length + node.outputs.length;
-    if (connectivity > best) {
-      best = connectivity;
-      center = node;
-    }
-  });
-  return center;
-}
-
-function get_all_attached_nodes(node) {
-  "use strict";
-  let attached = [];
-  node.outputs.forEach(function (l_in) {
-    attached.push(l_in.dst);
-  });
-  node.inputs.forEach(function (l_in) {
-    attached.push(l_in.dst);
-  });
-  return attached;
-}
-
-function remove_duplicates(nodelist) {
-  "use strict";
-  return nodelist.filter(function(item, pos, ary) {
-    return !pos || (item.address + item.subnet) != (ary[pos - 1].address + ary[pos - 1].subnet);
-  });
-}
-
-function remove_item(list, item) {
-  let index = list.indexOf(item);
-  if (index !== -1) {
-    list.splice(index, 1);
-  }
-}
-
-function move_to_center(node) {
-  "use strict";
-  offset_node(node, -node.rel_x, -node.rel_y);
-}
-
-function get_bbox() {
-  "use strict";
-  var left = -tx / g_scale;
-  var right = (rect.width - tx) / g_scale;
-  var top = -ty / g_scale;
-  var bottom = (rect.height - ty) / g_scale;
-  return {"left": left, "top": top, "right": right, "bottom": bottom};
-}
-
-function arrange_nodes_evenly(nodelist) {
-  "use strict";
-  // 0 rad is to the right.
-  // pi/2 rad is down.
-  let len = nodelist.length;
-  let bbox = get_bbox();
-  let rx = (bbox.right - bbox.left) / 2;
-  let ry = (bbox.bottom - bbox.top) / 2;
-  rx *= 0.8;
-  ry *= 0.8;
-
-  nodelist.forEach(function (node, i, ary) {
-    let x = Math.sin(i / len * 2 * Math.PI);
-    let y = Math.cos(i / len * 2 * Math.PI);
-    offset_node(node, x * rx - node.rel_x, y * ry - node.rel_y);
-  });
-}
-
-function circle_arrangement() {
-  "use strict";
-  let center = find_center_node();
-  move_to_center(center);
-  let attached = get_all_attached_nodes(center);
-  attached.sort(function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
-  attached = remove_duplicates(attached);
-  
-  remove_item(attached, center);
-
-  arrange_nodes_evenly(attached);
-  render_all();
-}
+  //install layout
+  nodes.layouts['Circle'] = circle;
+})();
