@@ -259,8 +259,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
     link_request_submit();
-    updateRenderRoot();
-    render_all();
   }
   /*
     Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
@@ -297,9 +295,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         nodes.GET_response(response);
         if (typeof callback === "function") {
           callback(response);
-        } else {
-          updateRenderRoot();
-          render_all();
         }
       }
     });
@@ -329,7 +324,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     this.POST_name(node.address, name);
     node.alias = name;
-    render_all();
   }
   nodes.submit_alias_CB = function (event) {
     if (event.keyCode === 13 || event.type === "blur") {
@@ -512,7 +506,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     node.rel_x += rel_dx;
     node.rel_y += rel_dy;
     nodes.update_pos_tree(node, node.parent);
-    render_all();
   }
   nodes.get_name = function (node) {
     if (node.alias.length === 0) {
@@ -622,7 +615,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     attached = circle.sorted_unique(attached, function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
     circle.remove_item(attached, center);
     circle.arrange_nodes_evenly(attached);
-    render_all();
   }
 
   //install layout

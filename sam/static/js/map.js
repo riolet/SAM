@@ -120,7 +120,10 @@ function init() {
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
           slider_init(config);
-          nodes.GET_request(config.ds, config.flat, null);
+          nodes.GET_request(config.ds, config.flat, null, function (response) {
+            updateRenderRoot();
+            render_all();
+          });
         });
         init_configbuttons();
     });

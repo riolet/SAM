@@ -89,7 +89,7 @@ function mousemove(event) {
     }
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
-    render(tx + mx - mdownx, ty + my - mdowny, g_scale);
+    requestAnimationFrame(function () {render(tx + mx - mdownx, ty + my - mdowny, g_scale);});
 }
 
 function wheel(event) {
@@ -282,7 +282,10 @@ function updateFlat(new_flatness) {
     }
     config.flat = new_flatness;
     nodes.nodes = {};
-    nodes.GET_request(config.ds, config.flat, null);
+    nodes.GET_request(config.ds, config.flat, null, function () {
+      updateRenderRoot();
+      render_all();
+    });
 }
 
 function updateConfig() {

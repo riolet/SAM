@@ -89,9 +89,10 @@ function checkLoD() {
     }
   });
   if (nodesToLoad.length > 0) {
-    nodes.GET_request(config.ds, config.flat, nodesToLoad);
-    updateRenderRoot();
-    render_all();
+    nodes.GET_request(config.ds, config.flat, nodesToLoad, function () {
+      updateRenderRoot();
+      render_all();
+    });
   }
 }
 
