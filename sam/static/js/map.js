@@ -120,6 +120,11 @@ function init() {
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
           slider_init(config);
+          if (config.flat) {
+            nodes.layout = "Circle";
+          } else {
+            nodes.layout = "Address";
+          }
           nodes.GET_request(config.ds, config.flat, null, function (response) {
             updateRenderRoot();
             render_all();

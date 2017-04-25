@@ -46,6 +46,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   let nodes = {};
   nodes.nodes = {};
   nodes.layouts = {};
+  nodes.layout = "Address"
 
   //what is rendered:
   // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
@@ -258,6 +259,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         });
       }
     });
+    //Not needed because do_layout is called after the links load.
+    //nodes.do_layout();
     link_request_submit();
   }
   /*
@@ -537,9 +540,75 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     return add;
   }
+  nodes.do_layout = function (node_coll) {
+    node_coll = node_coll || nodes.nodes;
+    nodes.layouts[nodes.layout].layout(node_coll);
+  }
+  nodes.set_layout = function (style) {
+    nodes.layout = style;
+    nodes.do_layout(nodes.nodes);
+  }
 
   // Export ports instance to global scope
   window.nodes = nodes;
+})();
+
+/*
+------------------------- address layout ----------------------
+*/
+
+;(function () {
+  "use strict";
+  let address = {};
+
+  address.recursive_placement = function (side_length, segments) {
+    let seg = Number(segments.pop());
+    let spacing = side_length / 15;
+    let offset = side_length / 2;
+    let x = -offset + (seg % 16) * spacing;
+    let y = +offset - (Math.floor(seg / 16)) * spacing;
+    if (seg.length > 0) {
+      let blah = address.recursive_placement(side_length / 16, segments);
+      return {
+        'x': x + blah.x,
+        'y': y + blah.y
+      };
+    } else {
+      return {
+        'x': x,
+        'y': y
+      };
+    }
+  };
+  address.get_segment_difference = function (parent_subnet, subnet, address) {
+    let start = parent_subnet / 8;
+    let end = subnet / 8;
+    let segments = ip_ntos(address).split(".");
+    let fragments = segments.slice(start, end);
+    return fragments;
+  };
+  address.arrange_collection = function (node_coll, parent_radius, parent_subnet) {
+    //arrange network by dotted decimal address.
+    let side_length = Math.sqrt(Math.pow(parent_radius*2, 2) / 2);
+    Object.keys(node_coll).forEach(function (key) {
+      let node = node_coll[key];
+      let segments = address.get_segment_difference(parent_subnet, node.subnet, node.ipstart);
+      segments.reverse() //so that they pop off the end in the right order.
+      let offset = address.recursive_placement(side_length, segments)
+      nodes.set_relative_pos(node, offset.x, offset.y);
+      if (Object.keys(node.children).length > 0) {
+        address.arrange_collection(node.children, node.radius_orig);
+      }
+    });
+  };
+  address.layout = function (node_coll, subnet, radius) {
+    subnet = subnet || 0;
+    radius = radius || 331776;
+    address.arrange_collection(node_coll, radius, subnet);
+  };
+
+  //install layout
+  nodes.layouts['Address'] = address;
 })();
 
 /*

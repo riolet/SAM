@@ -108,6 +108,7 @@ function GET_links_callback(result) {
         fix_link_pointers(node);
     });
     ports.request_submit();
+    nodes.do_layout();
     updateRenderRoot();
     render_all();
 }
