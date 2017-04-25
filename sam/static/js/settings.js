@@ -600,9 +600,9 @@ function POST_ds_intervalchange(e) {
 
 function POST_ds_flatchange(e) {
     "use strict";
-    var active = e.target.checked;
-    var ds = getSelectedDS();
-    POST_AJAX({"command":"ds_flat", "ds":ds, "is_flat":active});
+    let flat = e.target.checked;
+    let ds = getSelectedDS();
+    POST_AJAX({"command":"ds_flat", "ds":ds, "is_flat":flat});
 }
 
 function POST_ds_selection(ds) {

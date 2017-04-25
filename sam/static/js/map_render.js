@@ -157,7 +157,7 @@ function onScreenRecursive(left, right, top, bottom, collection, subnet) {
 }
 
 //build a collection of all nodes currently visible in the window.
-function onScreen(x, y, scale) {
+function onScreen(coll, x, y, scale) {
     "use strict";
     var left = -x / scale;
     var right = (rect.width - x) / scale;
@@ -165,7 +165,7 @@ function onScreen(x, y, scale) {
     var bottom = (rect.height - y) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, m_nodes, currentSubnet(scale));
+    visible = onScreenRecursive(left, right, top, bottom, coll, currentSubnet(scale));
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
     }
@@ -214,11 +214,11 @@ function resetViewport(collection, fill) {
 
 function updateRenderRoot() {
     "use strict";
-    renderCollection = onScreen(tx, ty, g_scale);
+    renderCollection = onScreen(nodes.nodes, tx, ty, g_scale);
     subnetLabel = getSubnetLabel();
     //console.log("updateRenderRoot: ", "updating: ", renderCollection.length, " nodes in collection");
     if (config.flat) {
-        node_flat_scale();
+        nodes.flat_scale();
     }
 }
 
@@ -309,8 +309,8 @@ function renderLinks(node, scale, faded) {
                 drawLoopArrow(node, scale);
             } else {
                 let src = link["src"];
-                let out_pos = get_outbound_link_point(src, node.abs_x, node.abs_y)
-                let in_pos = get_inbound_link_point(node, src.abs_x, src.abs_y, link.port)
+                let out_pos = nodes.get_outbound_link_point(src, node.abs_x, node.abs_y)
+                let in_pos = nodes.get_inbound_link_point(node, src.abs_x, src.abs_y, link.port)
                 drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
             }
             ctx.stroke();
@@ -333,8 +333,8 @@ function renderLinks(node, scale, faded) {
                 drawLoopArrow(node, scale);
             } else {
                 let dest = link["dst"];
-                let out_pos = get_outbound_link_point(node, dest.abs_x, dest.abs_y)
-                let in_pos = get_inbound_link_point(dest, node.abs_x, node.abs_y, link.port)
+                let out_pos = nodes.get_outbound_link_point(node, dest.abs_x, dest.abs_y)
+                let in_pos = nodes.get_inbound_link_point(dest, node.abs_x, node.abs_y, link.port)
                 drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
             }
             ctx.stroke();
@@ -447,7 +447,7 @@ function renderLabels(node, x, y, scale) {
     }
     //Draw node labels here
     ctx.font = "1.5em sans";
-    var text = get_node_name(node);
+    var text = nodes.get_name(node);
     var size = ctx.measureText(text);
     var px = node.abs_x * scale + x - size.width / 2;
     var py;

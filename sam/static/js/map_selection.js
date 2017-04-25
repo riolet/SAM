@@ -68,9 +68,9 @@ function sel_remove_all(collection) {
 
 function sel_build_title(node) {
   "use strict";
-  var s_name = get_node_name(node);
-  var s_address = get_node_address(node);
-  var s_name_edit_callback = node_alias_submit;
+  var s_name = nodes.get_name(node);
+  var s_address = nodes.get_address(node);
+  var s_name_edit_callback = nodes.alias_submit_CB;
 
   var titles = document.createElement("div")
   var input_group = document.createElement("div");
@@ -262,7 +262,7 @@ function sel_panel_height() {
 }
 
 function sel_create_link(node) {
-    var address = get_node_address(node);
+    var address = nodes.get_address(node);
     var link = "/metadata#ip=" + address + "&ds=" + config.ds;
     if (window.location.pathname.substr(1,4) === "demo") {
       link = "/demo" + link

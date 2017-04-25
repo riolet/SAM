@@ -72,7 +72,7 @@ class Details:
             LEFT JOIN (
                 SELECT $start AS 's1'
                 , COUNT(DISTINCT dst) AS 'unique_out_ip'
-                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE src BETWEEN $start AND $end) AS `temp1`) AS 'unique_out_conn'
+                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM {links_table} WHERE src BETWEEN $start AND $end) AS `temp1`) AS 'unique_out_conn'
                 , SUM(links) AS 'total_out'
                 , SUM(bytes_sent) AS 'b_s'
                 , SUM(bytes_received) AS 'b_r'
@@ -90,7 +90,7 @@ class Details:
             LEFT JOIN (
                 SELECT $start AS 's1'
                 , COUNT(DISTINCT src) AS 'unique_in_ip'
-                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM s1_ds1_Links WHERE dst BETWEEN $start AND $end) AS `temp2`) AS 'unique_in_conn'
+                , (SELECT COUNT(1) FROM (SELECT DISTINCT src, dst, port FROM {links_table} WHERE dst BETWEEN $start AND $end) AS `temp2`) AS 'unique_in_conn'
                 , SUM(links) AS 'total_in'
                 , SUM(bytes_sent) AS 'b_s'
                 , SUM(bytes_received) AS 'b_r'

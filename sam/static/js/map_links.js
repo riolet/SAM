@@ -24,8 +24,8 @@ function link_comparator(a, b) {
     //determine value of a and b
     var centerx = (rect.width - 2 * tx) / (2 * g_scale);
     var centery = (rect.height - 2 * ty) / (2 * g_scale);
-    var aNode = find_by_addr(a);
-    var bNode = find_by_addr(b);
+    var aNode = nodes.find_by_addr(a);
+    var bNode = nodes.find_by_addr(b);
     if (aNode === null || bNode === null) {
         return 0;
     }
@@ -80,8 +80,8 @@ function link_remove_all(collection) {
 
 function links_reset() {
     "use strict";
-    link_remove_all(m_nodes);
-    link_request_add_all(m_nodes);
+    link_remove_all(nodes.nodes);
+    link_request_add_all(nodes.nodes);
     link_request_submit();
 }
 
@@ -92,7 +92,7 @@ function GET_links_callback(result) {
     //  add the new inputs/outputs to that node
 
     Object.keys(result).forEach(function (address) {
-        var node = find_by_addr(address);
+        var node = nodes.find_by_addr(address);
         node.inputs = result[address].inputs;
         node.outputs = result[address].outputs;
         //position links
@@ -120,12 +120,12 @@ function fix_link_pointers(node) {
   //  assign link.dst as first child of common root.
   node.outputs.forEach(function (link_in) {
     link_in.src = node;
-    let dest = find_by_range(link_in.dst_start, link_in.dst_end);
-    let root = find_common_root(node, dest);
+    let dest = nodes.find_by_range(link_in.dst_start, link_in.dst_end);
+    let root = nodes.find_common_root(node, dest);
     if (root == null) {
-      link_in.dst = find_step_closer(m_nodes, dest);
+      link_in.dst = nodes.find_step_closer(nodes.nodes, dest);
     } else {
-      link_in.dst = find_step_closer(root.children, dest);
+      link_in.dst = nodes.find_step_closer(root.children, dest);
     }
   });
   //for each input:
@@ -135,12 +135,12 @@ function fix_link_pointers(node) {
   //
   node.inputs.forEach(function (link_in) {
     link_in.dst = node;
-    let source = find_by_range(link_in.src_start, link_in.src_end);
-    let root = find_common_root(node, source);
+    let source = nodes.find_by_range(link_in.src_start, link_in.src_end);
+    let root = nodes.find_common_root(node, source);
     if (root == null) {
-      link_in.src = find_step_closer(m_nodes, source);
+      link_in.src = nodes.find_step_closer(nodes.nodes, source);
     } else {
-      link_in.src = find_step_closer(root.children, source);
+      link_in.src = nodes.find_step_closer(root.children, source);
     }
   });
 }
@@ -210,7 +210,7 @@ function link_processPorts(links, dest) {
             continue;
         }
         ports.request_add(links[j].port);
-        var source = find_by_range(links[j].src_start, links[j].src_end);
+        var source = nodes.find_by_range(links[j].src_start, links[j].src_end);
         choice = link_closestEmptyPort(dest, source, used);
         if (choice === undefined) {
             continue;
