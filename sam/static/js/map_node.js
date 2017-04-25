@@ -48,9 +48,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.layouts = {};
 
   //what is rendered:
-  // node_print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
+  // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
   //relative and absolute position
-  // node_print_tree(nodes.nodes, "", function (n) {return "rel(" + n.rel_x + ", " + n.rel_y + "), abs(" + n.abs_x + ", " + n.abs_y + ")";})
+  // nodes.print_tree(nodes.nodes, "", function (n) {return "rel(" + n.rel_x + ", " + n.rel_y + "), abs(" + n.abs_x + ", " + n.abs_y + ")";})
   nodes.print_tree = function(collection, prestring, poststring_func) {
     if (!prestring) {
       prestring = "";
@@ -501,10 +501,10 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       nodes.update_pos_tree(node.children[k], node);
     });
   }
-  nodes.offset = function (node, rel_dx, rel_dy) {
+  nodes.set_relative_pos = function (node, rel_dx, rel_dy) {
     //move node
-    node.rel_x += rel_dx;
-    node.rel_y += rel_dy;
+    node.rel_x = rel_dx;
+    node.rel_y = rel_dy;
     nodes.update_pos_tree(node, node.parent);
   }
   nodes.get_name = function (node) {
@@ -582,7 +582,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
   }
   circle.move_to_center = function (node) {
-    nodes.offset(node, -node.rel_x, -node.rel_y);
+    nodes.set_relative_pos(node, 0, 0);
   }
   circle.get_bbox = function () {
     let left = -tx / g_scale;
@@ -590,6 +590,28 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let top = -ty / g_scale;
     let bottom = (rect.height - ty) / g_scale;
     return {"left": left, "top": top, "right": right, "bottom": bottom};
+  }
+
+
+  circle.arrange_nodes_recursion = function (coll, radius) {
+    let count = Object.keys(coll).length;
+    if (count < 16) {
+      radius /= 2;
+    }
+    let n_per_side = Math.ceil(Math.sqrt(count));
+    let side_length = Math.sqrt(Math.pow(radius*2, 2) / 2);
+    let spacing = side_length / (n_per_side - 1);
+    let offset = side_length / 2;
+    Object.keys(coll).forEach(function (key, i, ary) {
+      let x = -offset + (i % n_per_side) * spacing;
+      let y = +offset - (Math.floor(i / n_per_side)) * spacing;
+      let node = coll[key];
+      nodes.set_relative_pos(node, x, y);
+
+      if (Object.keys(node.children).length > 0) {
+        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+      }
+    });
   }
   circle.arrange_nodes_evenly = function (node_coll) {
     // 0 rad is to the right.
@@ -604,9 +626,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     node_coll.forEach(function (node, i, ary) {
       let x = Math.sin(i / len * 2 * Math.PI);
       let y = Math.cos(i / len * 2 * Math.PI);
-      nodes.offset(node, x * rx - node.rel_x, y * ry - node.rel_y);
+      nodes.set_relative_pos(node, x * rx, y * ry);
+      if (Object.keys(node.children).length > 0) {
+        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+      }
     });
   }
+
+
   circle.layout = function (node_coll) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
