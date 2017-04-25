@@ -573,11 +573,19 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   }
   circle.get_all_attached_nodes = function (node) {
     let attached = [];
-    node.outputs.forEach(function (l_in) {
-      attached.push(l_in.dst);
+    let min = node.ipstart;
+    let max = node.ipend;
+    node.outputs.forEach(function (l_out) {
+      // only if the destination is outside the node, add it.
+      if (l_out.dst_end < min || max < l_out.dst_start) {
+        attached.push(l_out.dst);
+      }
     });
     node.inputs.forEach(function (l_in) {
-      attached.push(l_in.dst);
+      // only if the source is outside the node, add it.
+      if (l_in.src_end < min || max < l_in.src_start) {
+        attached.push(l_in.dst);
+      }
     });
     return attached;
   }
@@ -645,8 +653,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     ry *= 0.8;
 
     node_coll.forEach(function (node, i, ary) {
-      let x = Math.sin(i / len * 2 * Math.PI);
-      let y = Math.cos(i / len * 2 * Math.PI);
+      let x = Math.cos(i / len * 2 * Math.PI);
+      let y = Math.sin(i / len * 2 * Math.PI);
+      console.log("at ", i/len*2*Math.PI, " radians, placing ", node.alias, " (", node.address, ")");
       nodes.set_relative_pos(node, x * rx, y * ry);
       if (Object.keys(node.children).length > 0) {
         circle.arrange_nodes_recursion(node.children, node.radius_orig);
@@ -657,11 +666,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
     let attached = circle.get_all_attached_nodes(center);
-    attached = circle.sorted_unique(attached, function (a, b) {return b.src_start - a.src_start + b.src_end - a.src_end;});
+    attached = circle.sorted_unique(attached, function (a, b) { if (a.ipstart - b.ipstart == 0) return a.subnet - b.subnet; else return a.ipstart - b.ipstart;});
     circle.remove_item(attached, center);
     circle.arrange_nodes_evenly(attached);
+    circle.arrange_nodes_recursion(center.children, center.radius_orig);
   }
 
   //install layout
   nodes.layouts['Circle'] = circle;
+  window.circle = circle;
 })();
