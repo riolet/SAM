@@ -131,27 +131,28 @@ function getSubnetLabel() {
     return closest.address;
 }
 
-function onScreenRecursive(left, right, top, bottom, collection, subnet) {
+function onScreenRecursive(left, right, top, bottom, collection) {
     "use strict";
-    var selected = [];
-    var x;
-    var y;
-    var r;
-    Object.keys(collection).forEach(function (node) {
-        x = collection[node].abs_x;
-        y = collection[node].abs_y;
-        r = collection[node].radius * 2;
+    let selected = [];
+    let x;
+    let y;
+    let d;
+    Object.keys(collection).forEach(function (key) {
+      let node = collection[key];
+      x = node.abs_x;
+      y = node.abs_y;
+      d = node.radius * 2;
 
-        //if the position is on screen
-        if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
-            //add it.
-            selected.push(collection[node]);
-            //If it has children, and the current subnet is deeper than this node's subnet, 
-            if (collection[node].childrenLoaded && collection[node].subnet < subnet) {
-                //then recurse on this node's children.
-                selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children, subnet));
-            }
+      //if the position is on screen
+      if ((x + d) > left && (x - d) < right && (y + d) > top && (y - d) < bottom) {
+        //add it.
+        selected.push(node);
+        //If it has children, and is big enough on screen,
+        if (node.childrenLoaded && d / (bottom - top) > 0.6) {
+          //then recurse on this node's children.
+          selected = selected.concat(onScreenRecursive(left, right, top, bottom, node.children));
         }
+      }
     });
     return selected;
 }

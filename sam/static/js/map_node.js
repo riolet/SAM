@@ -50,7 +50,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   //what is rendered:
   // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
   //relative and absolute position
-  // nodes.print_tree(nodes.nodes, "", function (n) {return "rel(" + n.rel_x + ", " + n.rel_y + "), abs(" + n.abs_x + ", " + n.abs_y + ")";})
+  // nodes.print_tree(nodes.nodes, "", function (n) {return "rel(" + Math.floor(n.rel_x) + ", " + Math.floor(n.rel_y) + "), abs(" + Math.floor(n.abs_x) + ", " + Math.floor(n.abs_y) + ")";})
   nodes.print_tree = function(collection, prestring, poststring_func) {
     if (!prestring) {
       prestring = "";
@@ -71,9 +71,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
       if (Object.keys(node.children).length != 0) {
         if (i == ary.length - 1) {
-          node_print_tree(node.children, prestring + "    ", poststring_func);
+          nodes.print_tree(node.children, prestring + "    ", poststring_func);
         } else {
-          node_print_tree(node.children, prestring + "|   ", poststring_func);
+          nodes.print_tree(node.children, prestring + "|   ", poststring_func);
         }
       }
     });
@@ -542,6 +542,18 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   window.nodes = nodes;
 })();
 
+; (function () {
+  "use strict";
+  let grid = {};
+
+  grid.layout = function (node_coll) {
+    return null;
+  }
+
+  //install layout
+  nodes.layouts['Grid'] = grid;
+})();
+
 ;(function () {
   "use strict";
   let circle = {};
@@ -591,11 +603,20 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let bottom = (rect.height - ty) / g_scale;
     return {"left": left, "top": top, "right": right, "bottom": bottom};
   }
-
-
   circle.arrange_nodes_recursion = function (coll, radius) {
     let count = Object.keys(coll).length;
-    if (count < 16) {
+    if (count == 1) {
+      let node = coll[Object.keys(coll)[0]];
+      nodes.set_relative_pos(node, 0, 0);
+      if (Object.keys(node.children).length > 0) {
+        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+      }
+      return;
+    }
+    else if (count < 5) {
+      radius /= 4;
+    }
+    else if (count < 17) {
       radius /= 2;
     }
     let n_per_side = Math.ceil(Math.sqrt(count));
@@ -632,8 +653,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
   }
-
-
   circle.layout = function (node_coll) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
