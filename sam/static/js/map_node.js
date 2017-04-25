@@ -597,13 +597,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       let offset = address.recursive_placement(side_length, segments)
       nodes.set_relative_pos(node, offset.x, offset.y);
       if (Object.keys(node.children).length > 0) {
-        address.arrange_collection(node.children, node.radius_orig);
+        address.arrange_collection(node.children, node.radius_orig, node.subnet);
       }
     });
   };
   address.layout = function (node_coll, subnet, radius) {
     subnet = subnet || 0;
-    radius = radius || 331776;
+    radius = radius || 663552;
+    console.log("Address layout: ", subnet, ", ", radius, ", ", node_coll);
     address.arrange_collection(node_coll, radius, subnet);
   };
 
