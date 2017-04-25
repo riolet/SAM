@@ -328,8 +328,7 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
             }
 
-            // if connecting to self
-            //if (link.src_start === link.dst_start && link.src_end === link.dst_end) {
+            // if connecting to self or a child node, just draw a loopback arrow.
             if (node.ipstart <= link.dst.ipstart && link.dst.ipend <= node.ipend) {
                 drawLoopArrow(node, scale);
             } else {

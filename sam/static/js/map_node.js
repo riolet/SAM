@@ -555,7 +555,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       let node = coll[Object.keys(coll)[0]];
       nodes.set_relative_pos(node, 0, 0);
       if (Object.keys(node.children).length > 0) {
-        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+        grid.arrange_collection(node.children, node.radius_orig);
       }
       return;
     }
@@ -576,14 +576,22 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       nodes.set_relative_pos(node, x, y);
 
       if (Object.keys(node.children).length > 0) {
-        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+        grid.arrange_collection(node.children, node.radius_orig);
       }
     });
-  }
-
+  };
+  grid.get_bbox = function () {
+    let left = -tx / g_scale;
+    let right = (rect.width - tx) / g_scale;
+    let top = -ty / g_scale;
+    let bottom = (rect.height - ty) / g_scale;
+    return {"left": left, "top": top, "right": right, "bottom": bottom};
+  };
   grid.layout = function (node_coll) {
-    return null;
-  }
+    let bounds = grid.get_bbox();
+    let radius = Math.min(bounds.bottom - bounds.top, bounds.right - bounds.left) / 2;
+    grid.arrange_collection(node_coll, radius);
+  };
 
   //install layout
   nodes.layouts['Grid'] = grid;
@@ -608,7 +616,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
     return center;
-  }
+  };
   circle.get_all_attached_nodes = function (node) {
     let attached = [];
     let min = node.ipstart;
@@ -626,29 +634,29 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
     return attached;
-  }
+  };
   circle.sorted_unique = function (coll, sort_func) {
     coll.sort(sort_func);
     return coll.filter(function(item, pos, ary) {
       return !pos || (item.address + item.subnet) != (ary[pos - 1].address + ary[pos - 1].subnet);
     });
-  }
+  };
   circle.remove_item = function (coll, item) {
     let index = coll.indexOf(item);
     if (index !== -1) {
       coll.splice(index, 1);
     }
-  }
+  };
   circle.move_to_center = function (node) {
     nodes.set_relative_pos(node, 0, 0);
-  }
+  };
   circle.get_bbox = function () {
     let left = -tx / g_scale;
     let right = (rect.width - tx) / g_scale;
     let top = -ty / g_scale;
     let bottom = (rect.height - ty) / g_scale;
     return {"left": left, "top": top, "right": right, "bottom": bottom};
-  }
+  };
   circle.arrange_nodes_recursion = function (coll, radius) {
     let count = Object.keys(coll).length;
     if (count == 1) {
@@ -679,7 +687,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         circle.arrange_nodes_recursion(node.children, node.radius_orig);
       }
     });
-  }
+  };
   circle.arrange_nodes_evenly = function (node_coll) {
     // 0 rad is to the right.
     // pi/2 rad is down.
@@ -693,13 +701,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     node_coll.forEach(function (node, i, ary) {
       let x = Math.cos(i / len * 2 * Math.PI);
       let y = Math.sin(i / len * 2 * Math.PI);
-      console.log("at ", i/len*2*Math.PI, " radians, placing ", node.alias, " (", node.address, ")");
       nodes.set_relative_pos(node, x * rx, y * ry);
       if (Object.keys(node.children).length > 0) {
         circle.arrange_nodes_recursion(node.children, node.radius_orig);
       }
     });
-  }
+  };
   circle.layout = function (node_coll) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
@@ -708,7 +715,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     circle.remove_item(attached, center);
     circle.arrange_nodes_evenly(attached);
     circle.arrange_nodes_recursion(center.children, center.radius_orig);
-  }
+  };
 
   //install layout
   nodes.layouts['Circle'] = circle;
