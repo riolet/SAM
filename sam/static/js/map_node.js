@@ -41,12 +41,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 ------------------------------------
 */
 
-;(function () {
+(function () {
   "use strict";
   let nodes = {};
   nodes.nodes = {};
   nodes.layouts = {};
-  nodes.layout = "Address"
+  nodes.layout = "Address";
 
   //what is rendered:
   // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
@@ -57,21 +57,21 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       prestring = "";
     }
     let col_keys = Object.keys(collection);
-    col_keys.sort(function(a, b){return a-b});
+    col_keys.sort(function(a, b){return a-b;});
     col_keys.forEach(function (key, i, ary) {
       let node = collection[key];
-      var post = "";
-      if (typeof(poststring_func) == "function") {
+      let post = "";
+      if (typeof(poststring_func) === "function") {
         post = poststring_func(node);
       }
 
-      if (i == ary.length - 1) {
+      if (i === ary.length - 1) {
         console.log("%s`---%s %s", prestring, node.address, post);
       } else {
-        console.log('%s+---%s %s', prestring, node.address, post);
+        console.log("%s+---%s %s", prestring, node.address, post);
       }
-      if (Object.keys(node.children).length != 0) {
-        if (i == ary.length - 1) {
+      if (Object.keys(node.children).length !==0) {
+        if (i === ary.length - 1) {
           nodes.print_tree(node.children, prestring + "    ", poststring_func);
         } else {
           nodes.print_tree(node.children, prestring + "|   ", poststring_func);
@@ -86,12 +86,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let start = 0;
     let end = 0;
     let subnet = -1;
-    if (ip_subnet.length == 2) {
-      subnet = +ip_subnet[1];
+    if (ip_subnet.length === 2) {
+      subnet = Number(ip_subnet[1]);
     }
 
     let ip_segs = ip.split(".");
-    if (subnet == -1) {
+    if (subnet === -1) {
       subnet = ip_segs.length * 8;
     } else {
       if (subnet <= 24) { ip_segs.pop(); }
@@ -99,16 +99,16 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       if (subnet <= 8) { ip_segs.pop(); }
     }
 
-    if (ip_segs.length == 4) {
-        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256 + Number(ip_segs[3]);;
+    if (ip_segs.length === 4) {
+        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256 + Number(ip_segs[3]);
         end = start;
-    } else if (ip_segs.length == 3) {
+    } else if (ip_segs.length === 3) {
         start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256;
         end = start + 255;
-    } else if (ip_segs.length == 2) {
+    } else if (ip_segs.length === 2) {
         start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536;
         end = start + 65535;
-    } else if (ip_segs.length == 1) {
+    } else if (ip_segs.length === 1) {
         start = Number(ip_segs[0]) * 16777216;
         end = start + 16777215;
     } else {
@@ -123,7 +123,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     //console.log("  searching by ", start, "..", end, " in ", coll);
     let m_keys = Object.keys(node_coll);
-    m_keys.sort(function(a, b){return a-b});
+    m_keys.sort(function(a, b){return a-b;});
     let high = m_keys.length - 1;
     let low = 0;
     let mid;
@@ -131,16 +131,21 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       mid = Math.floor(low + (high-low) / 2);
       let node = node_coll[m_keys[mid]];
       //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
-      if (node.ipstart == start && end == node.ipend) {
+      
+      //Match found.
+      if (node.ipstart === start && end === node.ipend) {
         return node;
-      } else if (node.ipstart <= start && end <= node.ipend) {
+      } 
+      //Parent of match found.
+      if (node.ipstart <= start && end <= node.ipend) {
         let finer =nodes.find_by_range(start, end, node.children);
         if (finer === null) {
           return node;
-        } else {
-          return finer;
         }
-      } else if (node.ipend < end) {
+        return finer;
+      }
+
+      if (node.ipend < end) {
         low = mid + 1;
       } else {
         high = mid - 1;
@@ -149,8 +154,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     return null;
   };
   nodes.find_common_root = function (nodeA, nodeB) {
-    var root = nodeB.parent;
-    while (root != null) {
+    let root = nodeB.parent;
+    while (root !==null) {
       if (nodeA.ipstart < root.ipstart || nodeA.ipend > root.ipend) {
         root = root.parent;
       } else {
@@ -161,7 +166,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.find_step_closer = function (node_coll, target) {
     let m_keys = Object.keys(node_coll);
-    m_keys.sort(function(a, b){return a-b});
+    m_keys.sort(function(a, b){return a-b;});
     let high = m_keys.length - 1;
     let low = 0;
     let mid;
@@ -169,9 +174,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       mid = Math.floor(low + (high-low) / 2);
       let node = node_coll[m_keys[mid]];
       //console.log("searching: %s<%s<%s. found %s", low, mid, high, node.address);
+      
+      // target found
       if (node.ipstart <= target.ipstart && target.ipend <= node.ipend) {
         return node;
-      } else if (node.ipend < target.ipend) {
+      } 
+      
+      if (node.ipend < target.ipend) {
         low = mid + 1;
       } else {
         high = mid - 1;
@@ -193,20 +202,22 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let parentColl = this.nodes;
     let parent = null;
     let old_parentColl = null;
+    let sort_func = function(a, b) {return a-b;};
     while (old_parentColl !== parentColl) {
       old_parentColl = parentColl;
       let index = -1;
-      let m_keys = Object.keys(parentColl);
-      m_keys.sort(function(a, b){return a-b});
-      for(let i = 0; i < m_keys.length; i += 1) {
-        if (m_keys[i] > node.ipstart) {
+      let p_keys = Object.keys(parentColl);
+      p_keys.sort(sort_func);
+      let i;
+      for(i = 0; i < p_keys.length; i += 1) {
+        if (p_keys[i] > node.ipstart) {
           break;
         }
         index = i;
       }
-      if (index >= 0 && node.ipend <= parentColl[m_keys[index]].ipend) {
-        //console.log("    parent: ", parentColl[m_keys[index]].address);
-        parent = parentColl[m_keys[index]];
+      if (index >= 0 && node.ipend <= parentColl[p_keys[index]].ipend) {
+        //console.log("    parent: ", parentColl[p_keys[index]].address);
+        parent = parentColl[p_keys[index]];
         parentColl = parent.children;
       }
     }
@@ -218,18 +229,18 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 
     //console.log("  searching for children in range %s..%s", node.ipstart, node.ipend);
     //find children within parent collection
-    let children = {};
     let m_keys = Object.keys(parentColl);
-    m_keys.sort(function(a, b){return a-b});
-    for(let i = 0; i < m_keys.length; i += 1) {
-      let child = parentColl[m_keys[i]];
+    m_keys.sort(sort_func);
+    let j;
+    for(j = 0; j < m_keys.length; j += 1) {
+      let child = parentColl[m_keys[j]];
       if (node.ipstart <= child.ipstart && child.ipend <= node.ipend) {
         //console.log("    child added: ", child.address);
         node.children[child.ipstart] = child;
         child.parent = node;
         child.rel_x = child.abs_x - node.abs_x;
         child.rel_y = child.abs_x - node.abs_x;
-        delete parentColl[m_keys[i]];
+        delete parentColl[m_keys[j]];
       }
     }
 
@@ -250,7 +261,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         response[parent_address].forEach(function (record) {
           nodes.insert(record, false);
         });
-        if (subnetLabel == "") { //resets view if we aren't zoomed in.
+        if (subnetLabel === "") { //resets view if we aren't zoomed in.
           resetViewport(nodes.nodes);
         }
       } else {
@@ -272,13 +283,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
   */
   nodes.GET_request = function (ds, flat, parents, callback) {
-    var request = {}
+    let request = {};
     if (parents !== null) {
       //filter out parents with children already loaded
       parents = parents.filter(function (parent) {
           return !parent.childrenLoaded;
       });
-      if (parents.length == 0) {
+      if (parents.length === 0) {
         return;
       }
       request.address = parents.map(function (parent) {
@@ -308,10 +319,10 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     @param name  the new name to use for that address
   */
   nodes.POST_name = function (address, name) {
-    var request = {
+    let request = {
       "node": address,
       "alias": name
-    }
+    };
     $.ajax({
       url: "/nodes",
       type: "POST",
@@ -330,8 +341,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.submit_alias_CB = function (event) {
     if (event.keyCode === 13 || event.type === "blur") {
-      var newName = document.getElementById("node_alias_edit");
-      set_node_name(m_selection["selection"], newName.value);
+      let newName = document.getElementById("node_alias_edit");
+      set_node_name(m_selection.selection, newName.value);
       return true;
     }
     return false;
@@ -347,7 +358,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
    * @returns a subnet-local Number address
    */
   nodes.determine_number = function (node) {
-    var size = parseInt(node.ipend) - parseInt(node.ipstart)
+    let size = parseInt(node.ipend) - parseInt(node.ipstart);
     if (size === 0) {
       return node.ipstart % 256;
     }
@@ -361,41 +372,41 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       return node.ipstart / 16777216 % 256;
     }
     console.error("failed to determine size (" + size + ") when " + node.ipend + " - " + node.ipstart + ".");
-    return undefined
+    return undefined;
   };
   nodes.port_to_pos = function (node, side) {
-    var x = 0;
-    var y = 0;
-    if (side === 't-l') {
+    let x = 0;
+    let y = 0;
+    if (side === "t-l") {
       x = node.abs_x - node.radius / 3;
       y = node.abs_y - node.radius * 7 / 5;
-    } else if (side === 't-r') {
+    } else if (side === "t-r") {
       x = node.abs_x + node.radius / 3;
       y = node.abs_y - node.radius * 7 / 5;
-    } else if (side === 'b-l') {
+    } else if (side === "b-l") {
       x = node.abs_x - node.radius / 3;
       y = node.abs_y + node.radius * 7 / 5;
-    } else if (side === 'b-r') {
+    } else if (side === "b-r") {
       x = node.abs_x + node.radius / 3;
       y = node.abs_y + node.radius * 7 / 5;
-    } else if (side === 'l-t') {
+    } else if (side === "l-t") {
       x = node.abs_x - node.radius * 7 / 5;
       y = node.abs_y - node.radius / 3;
-    } else if (side === 'l-b') {
+    } else if (side === "l-b") {
       x = node.abs_x - node.radius * 7 / 5;
       y = node.abs_y + node.radius / 3;
-    } else if (side === 'r-t') {
+    } else if (side === "r-t") {
       x = node.abs_x + node.radius * 7 / 5;
       y = node.abs_y - node.radius / 3;
-    } else if (side === 'r-b') {
+    } else if (side === "r-b") {
       x = node.abs_x + node.radius * 7 / 5;
       y = node.abs_y + node.radius / 3;
     }
     return [x, y];
   };
   nodes.nearest_corner = function (node, x1, y1) {
-    var x = 0;
-    var y = 0;
+    let x = 0;
+    let y = 0;
     if (x1 < node.abs_x) {
       x = node.abs_x - node.radius;
     } else {
@@ -412,8 +423,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.delta_to_dest = function (node, x1, y1) {
     let dx = node.abs_x - x1;
     let dy = node.abs_y - y1;
-    var x = 0;
-    var y = 0;
+    let x = 0;
+    let y = 0;
     if (Math.abs(dx) > Math.abs(dy)) {
       //arrow is more horizontal than vertical
       if (dx < 0) {
@@ -442,8 +453,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.delta_to_src = function (node, x2, y2) {
     let dx = node.abs_x - x2;
     let dy = node.abs_y - y2;
-    var x = 0;
-    var y = 0;
+    let x = 0;
+    let y = 0;
     if (Math.abs(dx) > Math.abs(dy)) {
       //arrow is more horizontal than vertical
       if (dx < 0) {
@@ -474,7 +485,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     if (node.ports.hasOwnProperty(port)) {
       //get the port connection point
       return nodes.port_to_pos(node, node.ports[port]);
-    } else if (node.subnet == 32) {
+    } else if (node.subnet === 32) {
       //get the nearest corner (because the ports are all taken)
       return nodes.nearest_corner(node, x1, y1);
     } else {
@@ -484,7 +495,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.get_outbound_link_point = function (node, x2, y2) {
     //given a line from this node to (x2, y2), where should it connect?
-    if (node.subnet == 32) {
+    if (node.subnet === 32) {
       //get the nearest corner (because the ports are all taken)
       return nodes.nearest_corner(node, x2, y2);
     } else {
@@ -529,8 +540,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   nodes.get_address = function (node) {
-    var add = node.address;
-    var missing_terms = 4 - add.split(".").length;
+    let add = node.address;
+    let missing_terms = 4 - add.split(".").length;
     while (missing_terms > 0) {
         add += ".0";
         missing_terms -= 1;
@@ -551,13 +562,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 
   // Export ports instance to global scope
   window.nodes = nodes;
-})();
+}());
 
 /*
 ------------------------- address layout ----------------------
 */
 
-  ;(function () {
+(function () {
   "use strict";
   let address = {};
 
@@ -570,13 +581,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     if (seg.length > 0) {
       let blah = address.recursive_placement(side_length / 16, segments);
       return {
-        'x': x + blah.x,
-        'y': y + blah.y
+        "x": x + blah.x,
+        "y": y + blah.y
       };
     } else {
       return {
-        'x': x,
-        'y': y
+        "x": x,
+        "y": y
       };
     }
   };
@@ -593,8 +604,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     Object.keys(node_coll).forEach(function (key) {
       let node = node_coll[key];
       let segments = address.get_segment_difference(parent_subnet, node.subnet, node.ipstart);
-      segments.reverse() //so that they pop off the end in the right order.
-      let offset = address.recursive_placement(side_length, segments)
+      segments.reverse(); //so that they pop off the end in the right order.
+      let offset = address.recursive_placement(side_length, segments);
       nodes.set_relative_pos(node, offset.x, offset.y);
       if (Object.keys(node.children).length > 0) {
         address.arrange_collection(node.children, node.radius_orig, node.subnet);
@@ -608,37 +619,35 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
 
   //install layout
-  nodes.layouts['Address'] = address;
-})();
+  nodes.layouts.Address = address;
+}());
 
 /*
 ------------------------- grid layout ----------------------
 */
-; (function () {
+(function () {
   "use strict";
   let grid = {};
 
   grid.arrange_collection = function (coll, radius) {
     let count = Object.keys(coll).length;
-    if (count == 1) {
-      let node = coll[Object.keys(coll)[0]];
-      nodes.set_relative_pos(node, 0, 0);
-      if (Object.keys(node.children).length > 0) {
-        grid.arrange_collection(node.children, node.radius_orig);
+    if (count === 1) {
+      let child = coll[Object.keys(coll)[0]];
+      nodes.set_relative_pos(child, 0, 0);
+      if (Object.keys(child.children).length > 0) {
+        grid.arrange_collection(child.children, child.radius_orig);
       }
       return;
-    }
-    else if (count < 5) {
+    } else if (count < 5) {
       radius /= 4;
-    }
-    else if (count < 17) {
+    } else if (count < 17) {
       radius /= 2;
     }
     let n_per_side = Math.ceil(Math.sqrt(count));
     let side_length = Math.sqrt(Math.pow(radius*2, 2) / 2);
     let spacing = side_length / (n_per_side - 1);
     let offset = side_length / 2;
-    Object.keys(coll).forEach(function (key, i, ary) {
+    Object.keys(coll).forEach(function (key, i) {
       let x = -offset + (i % n_per_side) * spacing;
       let y = +offset - (Math.floor(i / n_per_side)) * spacing;
       let node = coll[key];
@@ -663,13 +672,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
 
   //install layout
-  nodes.layouts['Grid'] = grid;
-})();
+  nodes.layouts.Grid = grid;
+}());
 
 /*
 ------------------------- circle layout ----------------------
 */
-;(function () {
+(function () {
   "use strict";
   let circle = {};
 
@@ -707,7 +716,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   circle.sorted_unique = function (coll, sort_func) {
     coll.sort(sort_func);
     return coll.filter(function(item, pos, ary) {
-      return !pos || (item.address + item.subnet) != (ary[pos - 1].address + ary[pos - 1].subnet);
+      return !pos || (item.address + item.subnet) !== (ary[pos - 1].address + ary[pos - 1].subnet);
     });
   };
   circle.remove_item = function (coll, item) {
@@ -728,25 +737,25 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   circle.arrange_nodes_recursion = function (coll, radius) {
     let count = Object.keys(coll).length;
-    if (count == 1) {
-      let node = coll[Object.keys(coll)[0]];
-      nodes.set_relative_pos(node, 0, 0);
-      if (Object.keys(node.children).length > 0) {
-        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+    if (count === 1) {
+      let child = coll[Object.keys(coll)[0]];
+      nodes.set_relative_pos(child, 0, 0);
+      if (Object.keys(child.children).length > 0) {
+        circle.arrange_nodes_recursion(child.children, child.radius_orig);
       }
       return;
     }
-    else if (count < 5) {
+    
+    if (count < 5) {
       radius /= 4;
-    }
-    else if (count < 17) {
+    } else if (count < 17) {
       radius /= 2;
     }
     let n_per_side = Math.ceil(Math.sqrt(count));
     let side_length = Math.sqrt(Math.pow(radius*2, 2) / 2);
     let spacing = side_length / (n_per_side - 1);
     let offset = side_length / 2;
-    Object.keys(coll).forEach(function (key, i, ary) {
+    Object.keys(coll).forEach(function (key, i) {
       let x = -offset + (i % n_per_side) * spacing;
       let y = +offset - (Math.floor(i / n_per_side)) * spacing;
       let node = coll[key];
@@ -780,12 +789,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
     let attached = circle.get_all_attached_nodes(center);
-    attached = circle.sorted_unique(attached, function (a, b) { if (a.ipstart - b.ipstart == 0) return a.subnet - b.subnet; else return a.ipstart - b.ipstart;});
+    attached = circle.sorted_unique(attached, function (a, b) { if (a.ipstart - b.ipstart === 0) { return a.subnet - b.subnet; } else { return a.ipstart - b.ipstart;}});
     circle.remove_item(attached, center);
     circle.arrange_nodes_evenly(attached);
     circle.arrange_nodes_recursion(center.children, center.radius_orig);
   };
 
   //install layout
-  nodes.layouts['Circle'] = circle;
-})();
+  nodes.layouts.Circle = circle;
+}());
