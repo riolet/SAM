@@ -305,8 +305,7 @@ function renderLinks(node, scale, faded) {
             }
 
             // if connecting to self
-            if (link.src_start === link.dst_start
-                    && link.src_end === link.dst_end) {
+            if (node.ipstart <= link.src.ipstart && link.src.ipend <= node.ipend) {
                 drawLoopArrow(node, scale);
             } else {
                 let src = link["src"];
@@ -330,7 +329,8 @@ function renderLinks(node, scale, faded) {
             }
 
             // if connecting to self
-            if (link.src_start === link.dst_start && link.src_end === link.dst_end) {
+            //if (link.src_start === link.dst_start && link.src_end === link.dst_end) {
+            if (node.ipstart <= link.dst.ipstart && link.dst.ipend <= node.ipend) {
                 drawLoopArrow(node, scale);
             } else {
                 let dest = link["dst"];

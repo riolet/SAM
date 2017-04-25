@@ -542,9 +542,44 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   window.nodes = nodes;
 })();
 
+/*
+------------------------- grid layout ----------------------
+*/
 ; (function () {
   "use strict";
   let grid = {};
+
+  grid.arrange_collection = function (coll, radius) {
+    let count = Object.keys(coll).length;
+    if (count == 1) {
+      let node = coll[Object.keys(coll)[0]];
+      nodes.set_relative_pos(node, 0, 0);
+      if (Object.keys(node.children).length > 0) {
+        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+      }
+      return;
+    }
+    else if (count < 5) {
+      radius /= 4;
+    }
+    else if (count < 17) {
+      radius /= 2;
+    }
+    let n_per_side = Math.ceil(Math.sqrt(count));
+    let side_length = Math.sqrt(Math.pow(radius*2, 2) / 2);
+    let spacing = side_length / (n_per_side - 1);
+    let offset = side_length / 2;
+    Object.keys(coll).forEach(function (key, i, ary) {
+      let x = -offset + (i % n_per_side) * spacing;
+      let y = +offset - (Math.floor(i / n_per_side)) * spacing;
+      let node = coll[key];
+      nodes.set_relative_pos(node, x, y);
+
+      if (Object.keys(node.children).length > 0) {
+        circle.arrange_nodes_recursion(node.children, node.radius_orig);
+      }
+    });
+  }
 
   grid.layout = function (node_coll) {
     return null;
@@ -554,6 +589,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.layouts['Grid'] = grid;
 })();
 
+/*
+------------------------- circle layout ----------------------
+*/
 ;(function () {
   "use strict";
   let circle = {};
@@ -674,5 +712,4 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 
   //install layout
   nodes.layouts['Circle'] = circle;
-  window.circle = circle;
 })();
