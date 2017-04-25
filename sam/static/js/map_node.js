@@ -78,7 +78,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         }
       }
     });
-  }
+  };
 
   nodes.find_by_addr = function (address) {
     let ip_subnet = address.split("/");
@@ -116,7 +116,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     //console.log("searching for '%s'", address);
     return nodes.find_by_range(start, end);
-  }
+  };
   nodes.find_by_range = function (start, end, node_coll) {
     if (!node_coll) {
       node_coll = nodes.nodes;
@@ -147,7 +147,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     }
     return null;
-  }
+  };
   nodes.find_common_root = function (nodeA, nodeB) {
     var root = nodeB.parent;
     while (root != null) {
@@ -158,7 +158,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     }
     return root;
-  }
+  };
   nodes.find_step_closer = function (node_coll, target) {
     let m_keys = Object.keys(node_coll);
     m_keys.sort(function(a, b){return a-b});
@@ -178,7 +178,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     }
     return null;
-  }
+  };
 
   nodes.insert = function (record, flat) {
     //create node
@@ -236,7 +236,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     //insert at that point in the tree.
     parentColl[node.ipstart] = node;
     //node_print_tree(nodes.nodes, "", function (n) {return "(" + n.abs_x + ", " + n.abs_y + ")";})
-  }
+  };
   nodes.GET_response = function (response) {
     Object.keys(response).forEach(function (parent_address) {
       if (parent_address === "flat") {
@@ -262,7 +262,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     //Not needed because do_layout is called after the links load.
     //nodes.do_layout();
     link_request_submit();
-  }
+  };
   /*
     Retrieves the children of the given nodes and imports them. Optionally calls a callback when done.
     parents: either an array of nodes, or null.
@@ -301,7 +301,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         }
       }
     });
-  }
+  };
   /*
     Update a node alias on the server.
     @param address  node address, "192.168"
@@ -319,7 +319,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       error: onNotLoadData,
       success: reportErrors
     });
-  }
+  };
   nodes.set_name = function (node, name) {
     let oldName = node.alias;
     if (oldName === name) {
@@ -327,7 +327,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     this.POST_name(node.address, name);
     node.alias = name;
-  }
+  };
   nodes.submit_alias_CB = function (event) {
     if (event.keyCode === 13 || event.type === "blur") {
       var newName = document.getElementById("node_alias_edit");
@@ -335,7 +335,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       return true;
     }
     return false;
-}
+  };
 
   /**
    * Determine the last given number in this node's dotted decimal address.
@@ -362,7 +362,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     console.error("failed to determine size (" + size + ") when " + node.ipend + " - " + node.ipstart + ".");
     return undefined
-  }
+  };
   nodes.port_to_pos = function (node, side) {
     var x = 0;
     var y = 0;
@@ -392,7 +392,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       y = node.abs_y + node.radius / 3;
     }
     return [x, y];
-  }
+  };
   nodes.nearest_corner = function (node, x1, y1) {
     var x = 0;
     var y = 0;
@@ -408,7 +408,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
 
     return [x, y];
-  }
+  };
   nodes.delta_to_dest = function (node, x1, y1) {
     let dx = node.abs_x - x1;
     let dy = node.abs_y - y1;
@@ -438,7 +438,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     }
     return [x, y];
-  }
+  };
   nodes.delta_to_src = function (node, x2, y2) {
     let dx = node.abs_x - x2;
     let dy = node.abs_y - y2;
@@ -468,7 +468,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     }
     return [x, y];
-  }
+  };
   nodes.get_inbound_link_point = function (node, x1, y1, port) {
     //given a line from (x1, y1) to this node, where should it connect?
     if (node.ports.hasOwnProperty(port)) {
@@ -481,7 +481,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       //get the closest side and offset a little bit
       return nodes.delta_to_dest(node, x1, y1);
     }
-  }
+  };
   nodes.get_outbound_link_point = function (node, x2, y2) {
     //given a line from this node to (x2, y2), where should it connect?
     if (node.subnet == 32) {
@@ -491,7 +491,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       //get the closest side and offset a little bit
       return nodes.delta_to_src(node, x2, y2);
     }
-  }
+  };
   nodes.update_pos_tree = function (node, parent) {
     if (parent) {
       node.abs_x = node.rel_x + parent.abs_x;
@@ -503,13 +503,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     Object.keys(node.children).forEach(function (k) {
       nodes.update_pos_tree(node.children[k], node);
     });
-  }
+  };
   nodes.set_relative_pos = function (node, rel_dx, rel_dy) {
     //move node
     node.rel_x = rel_dx;
     node.rel_y = rel_dy;
     nodes.update_pos_tree(node, node.parent);
-  }
+  };
   nodes.get_name = function (node) {
     if (node.alias.length === 0) {
       if (config.flat) {
@@ -520,14 +520,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     } else {
         return node.alias;
     }
-  }
+  };
   nodes.flat_scale = function () {
     let constant_size = 20 / g_scale;
 
     renderCollection.forEach(function (node) {
       node.radius = Math.max(constant_size, node.radius_orig);
     });
-  }
+  };
   nodes.get_address = function (node) {
     var add = node.address;
     var missing_terms = 4 - add.split(".").length;
@@ -539,15 +539,15 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       add += "/" + node.subnet;
     }
     return add;
-  }
+  };
   nodes.do_layout = function (node_coll) {
     node_coll = node_coll || nodes.nodes;
     nodes.layouts[nodes.layout].layout(node_coll);
-  }
+  };
   nodes.set_layout = function (style) {
     nodes.layout = style;
     nodes.do_layout(nodes.nodes);
-  }
+  };
 
   // Export ports instance to global scope
   window.nodes = nodes;
@@ -557,7 +557,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 ------------------------- address layout ----------------------
 */
 
-;(function () {
+  ;(function () {
   "use strict";
   let address = {};
 
@@ -604,7 +604,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   address.layout = function (node_coll, subnet, radius) {
     subnet = subnet || 0;
     radius = radius || 663552;
-    console.log("Address layout: ", subnet, ", ", radius, ", ", node_coll);
     address.arrange_collection(node_coll, radius, subnet);
   };
 
