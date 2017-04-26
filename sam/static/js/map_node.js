@@ -327,8 +327,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       url: "/nodes",
       type: "POST",
       data: request,
-      error: onNotLoadData,
-      success: reportErrors
+      error: generic_ajax_failure,
+      success: generic_ajax_success
     });
   };
   nodes.set_name = function (node, name) {
@@ -336,13 +336,13 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     if (oldName === name) {
       return;
     }
-    this.POST_name(node.address, name);
+    nodes.POST_name(node.address, name);
     node.alias = name;
   };
   nodes.submit_alias_CB = function (event) {
     if (event.keyCode === 13 || event.type === "blur") {
       let newName = document.getElementById("node_alias_edit");
-      set_node_name(m_selection.selection, newName.value);
+      nodes.set_name(m_selection.selection, newName.value);
       return true;
     }
     return false;
