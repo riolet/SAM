@@ -51,6 +51,6 @@ function updateCall() {
     updateTimeConfig(range);
 
     slider_init();
-    GET_nodes(null);
+    nodes.GET_request(config.ds, config.flat, null);
   });
 }

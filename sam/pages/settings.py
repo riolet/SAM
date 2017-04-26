@@ -19,10 +19,10 @@ def nice_name(s):
 
 
 class Settings(base.HeadlessPost):
-    recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_new",
-                           "ds_rm", "ds_select", "rm_hosts", "rm_tags",
-                           "rm_envs", "rm_conns", "upload", "del_live_key",
-                           "add_live_key"]
+    recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_flat",
+                           "ds_new", "ds_rm", "ds_select", "rm_hosts",
+                           "rm_tags", "rm_envs", "rm_conns", "upload",
+                           "del_live_key", "add_live_key"]
 
     def __init__(self):
         super(Settings, self).__init__()
@@ -71,7 +71,7 @@ class Settings(base.HeadlessPost):
         if command not in self.recognized_commands:
             raise errors.MalformedRequest("Unrecognized command: '{0}'".format(command))
 
-        if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval', 'upload', 'add_live_key'):
+        if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval', 'ds_flat', 'upload', 'add_live_key'):
             ds = self.decode_datasource(data.get('ds'))
             if not ds:
                 raise errors.RequiredKey('datasource', 'ds')
@@ -93,6 +93,13 @@ class Settings(base.HeadlessPost):
             except ValueError:
                 raise errors.MalformedRequest("Could not interpret auto-refresh interval from '{0}'"
                                               .format(repr(data.get('interval'))))
+
+        elif command == 'ds_flat':
+            flat = data.get('is_flat')
+            if flat is None:
+                request['is_flat'] = None
+            else:
+                request['is_flat'] = flat == 'true'
 
         elif command == 'ds_new':
             request['name'] = data.get('name')
@@ -116,6 +123,7 @@ class Settings(base.HeadlessPost):
         rename DS	"ds_name"		(ds, name)
         toggle ar	"ds_live"		(ds, is_active)
         ar interv	"ds_interval"	(ds, interval)
+        flat view   "ds_flat"       (ds, is_flat)
         new datas	"ds_new"		(name)
         remove ds	"ds_rm"			(ds)
         select ds   "ds_select"     (ds)
@@ -138,6 +146,9 @@ class Settings(base.HeadlessPost):
             self.dsModel.set(request['ds'], ar_active=db_active)
         elif command == 'ds_interval':
             self.dsModel.set(request['ds'], ar_interval=request['interval'])
+        elif command == 'ds_flat':
+            ds_flat = 1 if request['is_flat'] else 0
+            self.dsModel.set(request['ds'], flat=ds_flat)
         elif command == 'ds_new':
             self.dsModel.create_datasource(request['name'])
         elif command == 'ds_rm':

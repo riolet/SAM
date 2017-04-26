@@ -120,7 +120,15 @@ function init() {
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
           slider_init(config);
-          GET_nodes(null);
+          if (config.flat) {
+            nodes.layout = "Circle";
+          } else {
+            nodes.layout = "Address";
+          }
+          nodes.GET_request(config.ds, config.flat, null, function (response) {
+            updateRenderRoot();
+            render_all();
+          });
         });
         init_configbuttons();
     });
@@ -174,128 +182,67 @@ function init_canvas(c, cx) {
 }
 
 function currentSubnet(scale) {
-    "use strict";
-    if (config.flat) {
-        return 32;
-    }
+  "use strict";
 
-    if (scale < zNodes16) {
-        return 8;
-    }
-    if (scale < zNodes24) {
-        return 16;
-    }
-    if (scale < zNodes32) {
-        return 24;
-    }
-    return 32;
-}
+  if (config.flat) {
+    let subnet = Math.ceil(5.79621 * Math.log(scale) + 29.5316);
+    return Math.max(Math.min(subnet, 32), 0);
+  }
 
-function find_by_range(ipstart, ipend) {
-    if (config.flat) {
-      return m_nodes[ipstart];
-    }
-    var segments;
-    var range = ipend - ipstart;
-    if (range === 16777215) {
-        segments = 1;
-    } else if (range === 65535) {
-        segments = 2;
-    } else if (range === 255) {
-        segments = 3;
-    } else if (range === 0) {
-        segments = 4;
-    } else {
-        console.error("invalid ip range? (ipstart=" + ipstart + ", ipend=" + ipend + ")");
-    }
-
-    ips = [(ipstart & 0xff000000) >> 24];
-    if (ips[0] < 0) {
-        ips[0] = 256 + ips[0];
-    }
-
-    if (segments > 1) {
-        ips[1] = (ipstart & 0xff0000) >> 16;
-    } else {
-        ips[1] = undefined;
-    }
-    if (segments > 2) {
-        ips[2] = (ipstart & 0xff00) >> 8;
-    } else {
-        ips[2] = undefined;
-    }
-    if (segments > 3) {
-        ips[3] = (ipstart & 0xff);
-    } else {
-        ips[3] = undefined;
-    }
-
-    return findNode(ips[0], ips[1], ips[2], ips[3]);
-}
-
-function findNode(ip8, ip16, ip24, ip32) {
-    "use strict";
-    if (typeof ip8 === "string") {
-        var ips = ip8.split(".");
-        if (ips.length == 1) {
-            ip8 = Number(ips[0]);
-        } else if (ips.length == 2) {
-            ip8 = Number(ips[0]);
-            ip16 = Number(ips[1]);
-        } else if (ips.length == 3) {
-            ip8 = Number(ips[0]);
-            ip16 = Number(ips[1]);
-            ip24 = Number(ips[2]);
-        } else if (ips.length == 4) {
-            ip8 = Number(ips[0]);
-            ip16 = Number(ips[1]);
-            ip24 = Number(ips[2]);
-            ip32 = Number(ips[3]);
-        }
-    }
-    if (ip8 === undefined) {
-        ip8 = -1;
-    }
-    if (ip16 === undefined) {
-        ip16 = -1;
-    }
-    if (ip24 === undefined) {
-        ip24 = -1;
-    }
-    if (ip32 === undefined) {
-        ip32 = -1;
-    }
-
-    if (config.flat) {
-      var ip = ip8 * 16777216 + ip16 * 65536 + ip24 * 256 + ip32;
-      if (m_nodes.hasOwnProperty(ip)) {
-        return m_nodes[ip]
-      } else {
-        return null;
-      }
-    }
-
-    if (m_nodes.hasOwnProperty(ip8)) {
-        if (m_nodes[ip8].children.hasOwnProperty(ip16)) {
-            if (m_nodes[ip8].children[ip16].children.hasOwnProperty(ip24)) {
-                if (m_nodes[ip8].children[ip16].children[ip24].children.hasOwnProperty(ip32)) {
-                    return m_nodes[ip8].children[ip16].children[ip24].children[ip32];
-                } else {
-                    return m_nodes[ip8].children[ip16].children[ip24];
-                }
-            } else {
-                return m_nodes[ip8].children[ip16];
-            }
-        } else {
-            return m_nodes[ip8];
-        }
-    } else {
-        return null;
-    }
+  if (scale < zNodes16) {
+      return 8;
+  }
+  if (scale < zNodes24) {
+      return 16;
+  }
+  if (scale < zNodes32) {
+      return 24;
+  }
+  return 32;
+  
 }
 
 function removeChildren(element) {
     while (element.firstChild) {
         element.removeChild(element.firstChild);
     }
+}
+
+function normalize_addr(addr) {
+  "use strict";
+  let ip_subnet = addr.split("/");
+  let ip = ip_subnet[0];
+  let ip_segs = ip.split(".");
+
+  //determine subnet
+  let subnet = 0;
+  if (ip_subnet.length > 1) {
+    subnet = Number(ip_subnet[1]);
+  } else {
+    subnet = ip_segs.length * 8;
+  }
+
+  //determine ip range start
+  while (ip_segs.length < 4) {
+    ip_segs.push(0);
+  }
+  addr = ip_segs.join(".");
+  return addr + "/" + subnet;
+}
+
+// Function(jqXHR jqXHR, String textStatus, String errorThrown)
+function generic_ajax_failure(xhr, textStatus, errorThrown) {
+    "use strict";
+    console.error("Failed to load data: " + errorThrown);
+    console.log("\tText Status: " + textStatus);
+}
+
+function generic_ajax_success(response) {
+    if (response.hasOwnProperty("result")) {
+        console.log("Result: " + response.result);
+    }
+}
+
+function ip_ntos(ip) {
+  return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
 }

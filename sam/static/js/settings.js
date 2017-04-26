@@ -238,7 +238,7 @@ function markupRow(td1_child, td2_child) {
 }
 
 function addDSTab(ds) {
-    //ds.id, ds.name, ds.ar_active, ds.ar_interval
+    //ds.id, ds.name, ds.ar_active, ds.ar_interval, ds.flat
 
     //add tab
     let tabholder = document.getElementById("ds_tabs");
@@ -270,10 +270,13 @@ function addDSTab(ds) {
     tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, " ", POST_ds_livechange));
+    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput("ds_live", ds.ar_active, " ", POST_ds_livechange));
     tbody.appendChild(tr);
 
     tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
+    tbody.appendChild(tr);
+
+    tr = markupRow(document.createTextNode("Flat mode (map view):"), markupCheckboxInput("ds_flat", ds.ar_active, " ", POST_ds_flatchange));
     tbody.appendChild(tr);
 
     table.appendChild(tbody);
@@ -578,7 +581,6 @@ function POST_ds_livechange(e) {
     "use strict";
     var active = e.target.checked;
     var ds = getSelectedDS();
-    console.log("Toggling autorefresh of " + ds + " to " + active);
     POST_AJAX({"command":"ds_live", "ds":ds, "is_active":active});
 }
 
@@ -597,6 +599,13 @@ function POST_ds_intervalchange(e) {
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
         POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});
     }
+}
+
+function POST_ds_flatchange(e) {
+    "use strict";
+    let flat = e.target.checked;
+    let ds = getSelectedDS();
+    POST_AJAX({"command":"ds_flat", "ds":ds, "is_flat":flat});
 }
 
 function POST_ds_selection(ds) {
@@ -691,5 +700,8 @@ function init() {
     });
     foreach(document.getElementsByClassName("ds_interval"), function(entity) {
         entity.onchange = POST_ds_intervalchange
+    });
+    foreach(document.getElementsByClassName("ds_flat"), function(entity) {
+        entity.onchange = POST_ds_flatchange
     });
 }

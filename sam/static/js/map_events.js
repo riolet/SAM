@@ -28,10 +28,10 @@ function distanceSquared(x1, y1, x2, y2) {
 //Helper for pick. Determines if a coordinate is within a node's bounding box
 function contains(node, x, y) {
     "use strict";
-    return x < node.x + node.radius
-            && x > node.x - node.radius
-            && y < node.y + node.radius
-            && y > node.y - node.radius;
+    return x < node.abs_x + node.radius
+            && x > node.abs_x - node.radius
+            && y < node.abs_y + node.radius
+            && y > node.abs_y - node.radius;
 }
 
 //For onMouseUp, returns node if a node was clicked on, else null.
@@ -41,7 +41,7 @@ function pick(x, y, scale) {
     var bestDist = +Infinity;
     var tempDist = 0;
     renderCollection.forEach(function (node) {
-        tempDist = distanceSquared(x, y, node.x, node.y);
+        tempDist = distanceSquared(x, y, node.abs_x, node.abs_y);
         if (tempDist < node.radius*node.radius) {
         //if (contains(node, x, y)) {
             if (tempDist < bestDist || node.subnet > best.subnet) {
@@ -89,7 +89,7 @@ function mousemove(event) {
     }
     mx = event.clientX - rect.left;
     my = event.clientY - rect.top;
-    render(tx + mx - mdownx, ty + my - mdowny, g_scale);
+    requestAnimationFrame(function () {render(tx + mx - mdownx, ty + my - mdowny, g_scale);});
 }
 
 function wheel(event) {
@@ -138,7 +138,7 @@ function keydown(event) {
     }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
-        resetViewport(m_nodes);
+        resetViewport(nodes.nodes);
         updateRenderRoot();
         resetViewport(renderCollection);
         render_all();
@@ -163,94 +163,41 @@ function onfilter() {
 }
 
 function applysearch() {
-    "use strict";
-    var searchElement = document.getElementById("search");
-    var ips = searchElement.value.split(".");
-    var segment;
-    var subnet = null;
-    var i = 0;
+  "use strict";
+  let searchElement = document.getElementById("search");
+  let addr = searchElement.value;
+  let normalized_addr = normalize_addr(addr);
+  let nearest = nodes.find_by_addr(addr);
 
-    //validate ip address numbers
-   /* if (ips.length > 4 || ips.every(function (val) {
-        var n = Number(val);
-        return Number.isNaN(n) || n < 0 || n > 255;
-        })) {
-        searchElement.classList.add("error");
-    } else {
-        searchElement.classList.remove("error");
-    }*/
-
-    for (i = 0; i < ips.length; i += 1) {
-        if (ips[i] === "") {
-            continue;
-        }
-        segment = Number(ips[i]);
-        if (Number.isNaN(segment) || segment < 0 || segment > 255) {
-            break;
-        }
-        if (subnet === null) {
-            if (m_nodes.hasOwnProperty(segment)) {
-                subnet = m_nodes[segment];
-            } else {
-                break;
-            }
-        } else {
-            if (subnet.childrenLoaded === false && subnet.subnet < 32) {
-                //load more and restart when loading is complete.
-                GET_nodes([subnet], applysearch);
-                return;
-            }
-            if (subnet.children.hasOwnProperty(segment)) {
-                subnet = subnet.children[segment];
-            } else {
-                break;
-            }
-        }
-    }
-
-    if (subnet === null) {
-        return;
-    }
-
-    resetViewport([subnet], 0.2);
-    sel_set_selection(subnet);
+  //if we got nothing, give up.
+  if (nearest == null) {
+    //pass
+  }
+  //if we have a perfect match:
+  else if (nearest.address + "/" + nearest.subnet == normalized_addr) {
+    resetViewport([nearest], 0.2);
+    sel_set_selection(nearest);
     updateRenderRoot();
     render_all();
-}
-function flatsearch() {
-    "use strict";
-    let searchElement = document.getElementById("search");
-    let target = searchElement.value;
-    let ips = target.split(".");
-
-    if (ips.length !== 4) {
-        return;
-    }
-
-    console.log('ips ', ips);
-    let address = parseInt(ips[0]) * 16777216 + parseInt(ips[1]) * 65536 + parseInt(ips[2]) * 256 + parseInt(ips[3]);
-    console.log('seeking address ', address);
-    let node = m_nodes[address];
-    if (!node) {
-        console.log("Address not found: ", target);
-        return;
-    }
-
-    resetViewport([node], 0.2);
-    sel_set_selection(node);
+  }
+  //we have an imperfect match. Are there more children to load?
+  else if (nearest.childrenLoaded) {
+    resetViewport([nearest], 0.2);
+    sel_set_selection(nearest);
     updateRenderRoot();
     render_all();
+  } else {
+    //try to load children and repeat.
+    nodes.GET_request(config.ds, config.flat, [nearest], applysearch);
+  }
 }
+
 function onsearch() {
-    "use strict";
-    if (g_timer !== null) {
-        clearTimeout(g_timer);
-    }
-    if (config.flat) {
-        g_timer = setTimeout(flatsearch, 700);
-    } else {
-        g_timer = setTimeout(applysearch, 700);
-    }
+  "use strict";
+  if (g_timer !== null) {
+    clearTimeout(g_timer);
+  }
+  g_timer = setTimeout(applysearch, 700);
 }
 
 function onResize() {
@@ -330,12 +277,20 @@ function updateLwSelection() {
 }
 
 function updateFlat(new_flatness) {
-    if (config.flat === new_flatness) {
-        return;
-    }
-    config.flat = new_flatness;
-    m_nodes = {};
-    GET_nodes(null);
+  if (config.flat === new_flatness) {
+      return;
+  }
+  config.flat = new_flatness;
+  if (config.flat) {
+    nodes.layout = "Circle";
+  } else {
+    nodes.layout = "Address";
+  }
+  nodes.nodes = {};
+  nodes.GET_request(config.ds, config.flat, null, function () {
+    updateRenderRoot();
+    render_all();
+  });
 }
 
 function updateConfig() {

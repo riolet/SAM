@@ -20,6 +20,10 @@ class Nodes(object):
         self.sub = subscription
         self.table_nodes = 's{acct}_Nodes'.format(acct=self.sub)
         self.table_tags = 's{acct}_Tags'.format(acct=self.sub)
+        if self.db.dbname == 'mysql':
+            self.divop = 'DIV'
+        else:
+            self.divop = '/'
 
     def set_alias(self, address, alias):
         """
@@ -134,15 +138,73 @@ class Nodes(object):
 
     def get_flat_nodes(self, ds):
         link_model = Links(self.db, self.sub, ds)
-        query = """SELECT ipstart, ipend, subnet, alias, env, x, y, radius
-FROM {t_nodes} AS `n`
-  JOIN (SELECT src AS 'ip' from {t_links}
-        UNION
-        SELECT dst AS 'ip' from {t_links}) AS `lnks`
-  ON `lnks`.ip = `n`.ipstart
-WHERE `n`.ipstart=`n`.ipend OR alias IS NOT NULL;""".format(t_nodes=self.table_nodes, t_links=link_model.table_links)
-        nodes = list(self.db.query(query))
-        return nodes
+
+        view_name = "s{sub}_nodes_view".format(sub=self.sub)
+
+        create_view = """
+        CREATE VIEW {v_nodes} AS SELECT DISTINCT ipstart, ipend, subnet, alias, env, x, y, radius
+        FROM {t_nodes} AS `n`
+          JOIN (SELECT src AS 'ip' from {t_links}
+                UNION
+                SELECT dst AS 'ip' from {t_links}) AS `lnks`
+          ON `lnks`.ip BETWEEN `n`.ipstart AND `n`.ipend
+        WHERE (`n`.ipstart=`n`.ipend OR alias IS NOT NULL)
+        ORDER BY ipstart ASC, ipend ASC;""".format(t_nodes=self.table_nodes,
+                                                   t_links=link_model.table_links, v_nodes=view_name)
+
+        q_main = """SELECT ipstart, ipend, subnet, alias, env, x, y, radius
+        FROM {v_nodes} AS `n`;""".format(v_nodes=view_name)
+
+        q_groups = """
+        SELECT `us`.ipstart, `us`.ipend, `us`.subnet, `us`.alias, n.env, n.x, n.y, n.radius
+        FROM (SELECT u8.ipstart * 16777216 AS 'ipstart', u8.ipstart * 16777216 + 16777215 AS 'ipend', 8 AS 'subnet', u8.alias AS 'alias'
+          FROM (SELECT ipstart {div} 16777216 AS 'ipstart', MAX(alias) AS 'alias', COUNT(1) AS 'hosts', COUNT(DISTINCT alias) AS 'aliases'
+            FROM {v_nodes}
+            GROUP BY ipstart {div} 16777216
+            HAVING aliases = 1 AND hosts > 1
+          ) AS `u8`
+          UNION
+          SELECT u16.ipstart * 65536 AS 'ipstart', u16.ipstart * 65536 + 65535 AS 'ipend', 16 AS 'subnet', u16.alias AS 'alias'
+          FROM (SELECT ipstart {div} 65536 AS 'ipstart', MAX(alias) AS 'alias', COUNT(1) AS 'hosts', COUNT(DISTINCT alias) AS 'aliases'
+            FROM {v_nodes}
+            GROUP BY ipstart {div} 65536
+            HAVING aliases = 1 AND hosts > 1
+          ) AS `u16`
+          UNION
+          SELECT u24.ipstart * 256 AS 'ipstart', u24.ipstart * 256 + 255 AS 'ipend', 24 AS 'subnet', u24.alias AS 'alias'
+          FROM (SELECT ipstart {div} 256 AS 'ipstart', MAX(alias) AS 'alias', COUNT(1) AS 'hosts', COUNT(DISTINCT alias) AS 'aliases'
+            FROM {v_nodes}
+            GROUP BY ipstart {div} 256
+            HAVING aliases = 1 AND hosts > 1
+          ) AS `u24`
+        ) AS `us`
+        JOIN {t_nodes} AS `n`
+          ON n.ipstart = us.ipstart AND n.ipend = us.ipend
+        ORDER BY `us`.subnet ASC;""".format(v_nodes=view_name, t_nodes=self.table_nodes, div=self.divop)
+
+        q_drop = "DROP VIEW IF EXISTS {v_nodes}".format(v_nodes=view_name)
+
+        t = self.db.transaction()
+        try:
+            # drop view
+            self.db.query(q_drop)
+
+            # create view
+            self.db.query(create_view)
+
+            # run selects
+            main_rows = list(self.db.query(q_main))
+            group_rows = list(self.db.query(q_groups))
+
+            # drop view
+            self.db.query(q_drop)
+        except:
+            t.rollback()
+            raise
+        else:
+            t.commit()
+        return merge_groups(main_rows, group_rows)
+
 
     def get_children(self, address):
         ip_start, ip_end = common.determine_range_string(address)
@@ -197,6 +259,29 @@ WHERE `n`.ipstart=`n`.ipend OR alias IS NOT NULL;""".format(t_nodes=self.table_n
         return deleted
 
 
+def merge_groups(main, groups):
+    keepers = {}
+    nodes = []
+    for node in main:
+        if node['subnet'] == 32:
+            nodes.append(node)
+        else:
+            keepers[node['ipstart']] = node
+    keys = [v['ipstart'] for v in keepers.values()]
+    for node in groups:
+        if (node['ipstart'] & 0xff000000) in keepers:
+            continue
+        elif (node['ipstart'] & 0xffff0000) in keepers:
+            continue
+        elif (node['ipstart'] & 0xffffff00) in keepers:
+            continue
+        if any([node['ipstart'] <= k <= node['ipend'] for k in keys]):
+            continue
+        keepers[node['ipstart']] = node
+    nodes.extend(keepers.values())
+    return nodes
+
+
 class WhoisService(threading.Thread):
     def __init__(self, db, sub, *args, **kwargs):
         super(WhoisService, self).__init__(*args, **kwargs)
@@ -220,19 +305,21 @@ class WhoisService(threading.Thread):
         print("starting whois run")
         while self.alive:
             self.missing = self.get_missing()
-            while self.missing:
+            while len(self.missing) > 0:
                 address = self.missing.pop()
-                try:
-                    whois = sam.models.whois.Whois(address)
-                    name = whois.get_name()
-                    print('WHOIS: "{}" -> {}'.format(whois.query, name))
-                    self.n_model.set_alias(address, name)
-                    netname, ipstart, ipend, subnet = whois.get_network()
-                    #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
-                    if subnet in (8, 16, 24):
-                        self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
-                except:
-                    continue
+                if address:
+                    try:
+                        whois = sam.models.whois.Whois(address)
+                        name = whois.get_name()
+                        print('WHOIS: "{}" -> {}'.format(whois.query, name))
+                        self.n_model.set_alias(address, name)
+                        netname, ipstart, ipend, subnet = whois.get_network()
+                        #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
+                        #subnet = subnet / 8 * 8
+                        if subnet in (8, 16, 24):
+                            self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
+                    except:
+                        continue
                 if not self.alive:
                     break
             time.sleep(5)
