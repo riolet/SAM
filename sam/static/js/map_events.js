@@ -277,15 +277,20 @@ function updateLwSelection() {
 }
 
 function updateFlat(new_flatness) {
-    if (config.flat === new_flatness) {
-        return;
-    }
-    config.flat = new_flatness;
-    nodes.nodes = {};
-    nodes.GET_request(config.ds, config.flat, null, function () {
-      updateRenderRoot();
-      render_all();
-    });
+  if (config.flat === new_flatness) {
+      return;
+  }
+  config.flat = new_flatness;
+  if (config.flat) {
+    nodes.layout = "Circle";
+  } else {
+    nodes.layout = "Address";
+  }
+  nodes.nodes = {};
+  nodes.GET_request(config.ds, config.flat, null, function () {
+    updateRenderRoot();
+    render_all();
+  });
 }
 
 function updateConfig() {

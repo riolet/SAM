@@ -553,7 +553,17 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.do_layout = function (node_coll) {
     node_coll = node_coll || nodes.nodes;
-    nodes.layouts[nodes.layout].layout(node_coll);
+    let aspect = rect.width / rect.height;
+    let size_x;
+    let size_y;
+    if (aspect > 1.0) {
+      size_x = aspect * 663552;
+      size_y = 663552;
+    } else {
+      size_x = 663552;
+      size_y = 663552 / aspect;
+    }
+    nodes.layouts[nodes.layout].layout(node_coll, 0, size_x, size_y);
   };
   nodes.set_layout = function (style) {
     nodes.layout = style;
@@ -577,7 +587,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let spacing = side_length / 15;
     let offset = side_length / 2;
     let x = -offset + (seg % 16) * spacing;
-    let y = +offset - (Math.floor(seg / 16)) * spacing;
+    let y = -offset + (Math.floor(seg / 16)) * spacing;
     if (seg.length > 0) {
       let blah = address.recursive_placement(side_length / 16, segments);
       return {
@@ -612,9 +622,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
   };
-  address.layout = function (node_coll, subnet, radius) {
+  address.layout = function (node_coll, subnet, size_x, size_y) {
     subnet = subnet || 0;
-    radius = radius || 663552;
+    let radius = Math.min(size_x, size_y);
     address.arrange_collection(node_coll, radius, subnet);
   };
 
@@ -649,7 +659,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let offset = side_length / 2;
     Object.keys(coll).forEach(function (key, i) {
       let x = -offset + (i % n_per_side) * spacing;
-      let y = +offset - (Math.floor(i / n_per_side)) * spacing;
+      let y = -offset + (Math.floor(i / n_per_side)) * spacing;
       let node = coll[key];
       nodes.set_relative_pos(node, x, y);
 
@@ -658,16 +668,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
   };
-  grid.get_bbox = function () {
-    let left = -tx / g_scale;
-    let right = (rect.width - tx) / g_scale;
-    let top = -ty / g_scale;
-    let bottom = (rect.height - ty) / g_scale;
-    return {"left": left, "top": top, "right": right, "bottom": bottom};
-  };
-  grid.layout = function (node_coll) {
-    let bounds = grid.get_bbox();
-    let radius = Math.min(bounds.bottom - bounds.top, bounds.right - bounds.left) / 2;
+  grid.layout = function (node_coll, subnet, size_x, size_y) {
+    subnet = subnet || 0;
+    let radius = Math.min(size_x, size_y);
     grid.arrange_collection(node_coll, radius);
   };
 
@@ -728,13 +731,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   circle.move_to_center = function (node) {
     nodes.set_relative_pos(node, 0, 0);
   };
-  circle.get_bbox = function () {
-    let left = -tx / g_scale;
-    let right = (rect.width - tx) / g_scale;
-    let top = -ty / g_scale;
-    let bottom = (rect.height - ty) / g_scale;
-    return {"left": left, "top": top, "right": right, "bottom": bottom};
-  };
   circle.arrange_nodes_recursion = function (coll, radius) {
     let count = Object.keys(coll).length;
     if (count === 1) {
@@ -766,17 +762,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
   };
-  circle.arrange_nodes_evenly = function (node_coll) {
+  circle.arrange_nodes_evenly = function (node_coll, rx, ry) {
     // 0 rad is to the right.
     // pi/2 rad is down.
     let len = node_coll.length;
-    let bbox = circle.get_bbox();
-    let rx = (bbox.right - bbox.left) / 2;
-    let ry = (bbox.bottom - bbox.top) / 2;
     rx *= 0.8;
     ry *= 0.8;
 
-    node_coll.forEach(function (node, i, ary) {
+    node_coll.forEach(function (node, i) {
       let x = Math.cos(i / len * 2 * Math.PI);
       let y = Math.sin(i / len * 2 * Math.PI);
       nodes.set_relative_pos(node, x * rx, y * ry);
@@ -785,13 +778,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
   };
-  circle.layout = function (node_coll) {
+  circle.layout = function (node_coll, subnet, size_x, size_y) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
     let attached = circle.get_all_attached_nodes(center);
     attached = circle.sorted_unique(attached, function (a, b) { if (a.ipstart - b.ipstart === 0) { return a.subnet - b.subnet; } else { return a.ipstart - b.ipstart;}});
     circle.remove_item(attached, center);
-    circle.arrange_nodes_evenly(attached);
+    subnet = subnet || 0;
+    circle.arrange_nodes_evenly(attached, size_x / 2, size_y / 2);
     circle.arrange_nodes_recursion(center.children, center.radius_orig);
   };
 
