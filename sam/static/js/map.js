@@ -34,7 +34,8 @@ var config = {
     "protocol": "all",
     "ds": null,
     "linewidth": "links",
-    "flat": false
+    "flat": false,
+    "initial_zoom": false
 };
 
 //Constants.  Used for zoom levels in map::currentSubnet and map_render::opacity
@@ -126,6 +127,7 @@ function init() {
             nodes.layout = "Address";
           }
           nodes.GET_request(config.ds, config.flat, null, function (response) {
+            resetViewport(nodes.nodes);
             updateRenderRoot();
             render_all();
           });

@@ -34,7 +34,13 @@ class Nodes(base.HeadlessPost):
     """
     def __init__(self):
         base.HeadlessPost.__init__(self)
+        self.flatmode_tolerance = 256
         self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+
+    def check_flat_tolerance(self):
+        endpoints = self.nodesModel.get_all_endpoints()
+        count = len(endpoints)
+        return count <= self.flatmode_tolerance
 
     def decode_get_request(self, data):
         addresses = []
@@ -59,7 +65,10 @@ class Nodes(base.HeadlessPost):
     def perform_get_command(self, request):
         self.require_group('read')
         if request['flat']:
-            response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
+            if self.check_flat_tolerance():
+                response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
+            else:
+                response = {'error': 'Flat mode is not supported once a graphs has exceeded {} hosts.'.format(self.flatmode_tolerance)}
         elif len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:
