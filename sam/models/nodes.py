@@ -180,12 +180,15 @@ class Nodes(object):
         ) AS `us`
         JOIN {t_nodes} AS `n`
           ON n.ipstart = us.ipstart AND n.ipend = us.ipend
-        ORDER BY subnet ASC;""".format(v_nodes=view_name, t_nodes=self.table_nodes, div=self.divop)
+        ORDER BY `us`.subnet ASC;""".format(v_nodes=view_name, t_nodes=self.table_nodes, div=self.divop)
 
-        q_drop = "DROP VIEW {v_nodes}".format(v_nodes=view_name)
+        q_drop = "DROP VIEW IF EXISTS {v_nodes}".format(v_nodes=view_name)
 
         t = self.db.transaction()
         try:
+            # drop view
+            self.db.query(q_drop)
+
             # create view
             self.db.query(create_view)
 
