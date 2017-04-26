@@ -302,20 +302,21 @@ class WhoisService(threading.Thread):
         print("starting whois run")
         while self.alive:
             self.missing = self.get_missing()
-            while self.missing:
+            while len(self.missing) > 0:
                 address = self.missing.pop()
-                try:
-                    whois = sam.models.whois.Whois(address)
-                    name = whois.get_name()
-                    print('WHOIS: "{}" -> {}'.format(whois.query, name))
-                    self.n_model.set_alias(address, name)
-                    netname, ipstart, ipend, subnet = whois.get_network()
-                    #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
-                    subnet = subnet / 8 * 8;
-                    if subnet in (8, 16, 24):
-                        self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
-                except:
-                    continue
+                if address:
+                    try:
+                        whois = sam.models.whois.Whois(address)
+                        name = whois.get_name()
+                        print('WHOIS: "{}" -> {}'.format(whois.query, name))
+                        self.n_model.set_alias(address, name)
+                        netname, ipstart, ipend, subnet = whois.get_network()
+                        #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
+                        #subnet = subnet / 8 * 8
+                        if subnet in (8, 16, 24):
+                            self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
+                    except:
+                        continue
                 if not self.alive:
                     break
             time.sleep(5)
