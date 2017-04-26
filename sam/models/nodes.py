@@ -139,7 +139,7 @@ class Nodes(object):
     def get_flat_nodes(self, ds):
         link_model = Links(self.db, self.sub, ds)
 
-        view_name = "s{sub}_nodes_view".format(sub=self.sub)
+        view_name = "s{sub}_ds{ds}_nodes_view".format(sub=self.sub, ds=ds)
 
         create_view = """
         CREATE VIEW {v_nodes} AS SELECT DISTINCT ipstart, ipend, subnet, alias, env, x, y, radius
@@ -204,7 +204,6 @@ class Nodes(object):
         else:
             t.commit()
         return merge_groups(main_rows, group_rows)
-
 
     def get_children(self, address):
         ip_start, ip_end = common.determine_range_string(address)

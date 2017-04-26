@@ -250,7 +250,23 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.GET_response = function (response) {
     Object.keys(response).forEach(function (parent_address) {
-      if (parent_address === "flat") {
+      if (parent_address == 'error') {
+        //unclick the config.flat button.
+        if (config.flat) {
+          let btn_flat = document.getElementById("flat")
+          btn_flat.click();
+        }
+        //pop up box explaining issue.
+        let modal = document.getElementById("popup_modal");
+        let modalTitle = document.getElementById("popup_title");
+        let modalMsg = document.getElementById("popup_text");
+        modalTitle.innerHTML = "";
+        modalTitle.appendChild(document.createTextNode("Not Supported"));
+        modalMsg.innerHTML = "";
+        modalMsg.appendChild(document.createTextNode(response.error));
+        $(modal).modal("show");
+
+      } else if (parent_address === "flat") {
         nodes.nodes = {};
         response[parent_address].forEach(function (record) {
           nodes.insert(record, true);

@@ -110,6 +110,10 @@ function GET_links_callback(result) {
     ports.request_submit();
     nodes.do_layout();
     updateRenderRoot();
+    if (!config.initial_zoom) {
+      resetViewport(nodes.nodes);
+      config.initial_zoom = true;
+    }
     render_all();
 }
 

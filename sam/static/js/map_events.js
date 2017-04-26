@@ -281,12 +281,16 @@ function updateFlat(new_flatness) {
       return;
   }
   config.flat = new_flatness;
+  config.initial_zoom = false;
   if (config.flat) {
     nodes.layout = "Circle";
   } else {
     nodes.layout = "Address";
   }
   nodes.nodes = {};
+  if (m_link_timer) {
+    clearTimeout(m_link_timer);
+  }
   nodes.GET_request(config.ds, config.flat, null, function () {
     updateRenderRoot();
     render_all();
