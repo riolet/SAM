@@ -90,7 +90,7 @@ class PaloAltoImporter(BaseImporter):
         else:
             dictionary['packets_sent'] = None
             dictionary['packets_received'] = split_data[PaloAltoImporter.TotalPackets]
-        dictionary['duration'] = split_data[PaloAltoImporter.TimeElapsed]
+        dictionary['duration'] = max(split_data[PaloAltoImporter.TimeElapsed], 1)
         return 0
 
 
