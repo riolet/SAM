@@ -109,7 +109,9 @@ def load_plugins():
 
     # Much of sam.common gets initialized the first time it's loaded.
     # Plugins change the initialization data, prompting this reload.
+    import web
     import sam.common
+    web.config.debug = constants.debug
     reload(sam.common)
 
 
