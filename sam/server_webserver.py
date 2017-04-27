@@ -2,7 +2,7 @@ import sys
 import os
 import posixpath
 import urllib
-sys.path.append(os.path.dirname(__file__))  # could be executed from any directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))  # could be executed from any directory
 from sam import constants
 import web
 web.config.debug = constants.debug  # must preceed import common
