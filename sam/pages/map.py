@@ -3,7 +3,7 @@ import base
 from sam import common
 
 
-class Map(base.Headed):
+class Map(base.headed):
     def __init__(self):
         base.Headed.__init__(self, "Map", header=True, footer=False)
         self.scripts = ['/static/js/map.js',

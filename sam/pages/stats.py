@@ -18,7 +18,7 @@ def decimal_default(obj):
     raise TypeError
 
 
-class Stats(base.Headed):
+class Stats(base.headed):
     pageTitle = "Stats"
 
     def __init__(self):

@@ -225,7 +225,7 @@ class Columns(object):
         return headers
 
 
-class Table(base.Headed):
+class Table(base.headed):
     default_page = 1
     default_page_size = 10
     default_sort_column = 0

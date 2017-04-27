@@ -6,7 +6,7 @@ from sam import common
 # This class is for getting the aliases for a port number
 
 
-class Portinfo(base.HeadlessPost):
+class Portinfo(base.headless_post):
     """
     The expected GET data includes:
         'port': comma-seperated list of port numbers

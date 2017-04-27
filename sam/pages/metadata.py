@@ -5,7 +5,7 @@ import base
 from sam import common
 
 
-class Metadata(base.Headed):
+class Metadata(base.headed):
     def __init__(self):
         super(Metadata, self).__init__("Host Details", True, False)
         self.scripts = ["/static/js/metadata.js",

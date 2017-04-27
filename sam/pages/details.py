@@ -60,7 +60,7 @@ def si_formatting(f, places=2):
     return format_string.format(val=f, prefix=u'G')
 
 
-class Details(base.Headless):
+class Details(base.headless):
     """
     The expected GET data includes:
         'address': dotted-decimal IP addresses.

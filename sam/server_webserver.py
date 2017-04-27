@@ -11,6 +11,10 @@ from sam import integrity
 
 
 class StaticApp(web.httpserver.StaticApp):
+
+    def set_translate_path_base(self, base):
+        self.base_path = base
+
     def translate_path(self, path):
         """Translate a /-separated PATH to the local filename syntax.
 
@@ -32,7 +36,7 @@ class StaticApp(web.httpserver.StaticApp):
         ### This is changed because os.getcwd() will give local files instead of package files.
         ### this is the only change:
         # path = os.getcwd()
-        path = constants.base_path
+        path = self.base_path
 
         for word in words:
             if os.path.dirname(word) or word in (os.curdir, os.pardir):
@@ -42,6 +46,50 @@ class StaticApp(web.httpserver.StaticApp):
         if trailing_slash:
             path += '/'
         return path
+
+    def __iter__(self):
+        environ = self.environ
+
+        self.path = environ.get('PATH_INFO', '')
+        self.client_address = environ.get('REMOTE_ADDR','-'), \
+                              environ.get('REMOTE_PORT','-')
+        self.command = environ.get('REQUEST_METHOD', '-')
+
+        from cStringIO import StringIO
+        self.wfile = StringIO() # for capturing error
+
+        base_paths = [os.path.join(constants.plugins['root'], pspath) for pspath in constants.plugin_static]
+        base_paths.append(constants.base_path)
+
+        for base_path in base_paths:
+            self.set_translate_path_base(base_path)
+            try:
+                path = self.translate_path(self.path)
+                etag = '"%s"' % os.path.getmtime(path)
+                client_etag = environ.get('HTTP_IF_NONE_MATCH')
+                self.send_header('ETag', etag)
+                if etag == client_etag:
+                    self.send_response(304, "Not Modified")
+                    self.start_response(self.status, self.headers)
+                    raise StopIteration
+            except OSError:
+                continue # Probably a 404. Check the next path.
+            break # Didn't error; must have found the file. stop looping.
+
+        f = self.send_head()
+        self.start_response(self.status, self.headers)
+
+        if f:
+            block_size = 16 * 1024
+            while True:
+                buf = f.read(block_size)
+                if not buf:
+                    break
+                yield buf
+            f.close()
+        else:
+            value = self.wfile.getvalue()
+            yield value
 
 
 def check_database():
@@ -73,7 +121,6 @@ def runwsgi(func, port):
 
 
 def start_wsgi():
-    global application
     app = web.application(constants.urls, globals())
     check_database()
     create_session(app)

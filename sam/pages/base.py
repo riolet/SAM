@@ -26,15 +26,19 @@ class Page(object):
     def require_any_group(self, groups):
         if self.user.any_group(groups):
             return True
-        raise web.seeother(constants.access_control['login_url'])
+        raise web.seeother(constants.find_url(constants.access_control['login_page']))
 
     def require_all_groups(self, groups):
         if self.user.all_groups(groups):
             return True
-        raise web.seeother(constants.access_control['login_url'])
+        target = constants.find_url(constants.access_control['login_page'])
+        raise web.seeother(target)
 
 
-class Headed(Page):
+page = Page
+
+
+class Headed(page):
     def __init__(self, title, header, footer):
         super(Headed, self).__init__()
         self.scripts = []
@@ -44,22 +48,25 @@ class Headed(Page):
         self.footer = footer
 
     def render(self, page, *args, **kwargs):
-        head = str(common.render._head(self.page_title, stylesheets=self.styles, scripts=self.scripts))
+        head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
         if self.header:
-            header = str(common.render._header(constants.navbar, self.page_title, self.user, constants.debug))
+            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.user, constants.debug, constants.access_control['active']))
         else:
             header = ''
-        page = str(getattr(common.render, page)(*args, **kwargs))
+        page = str(common.renderer.render(page, *args, **kwargs))
         if self.footer:
-            footer = str(common.render._footer())
+            footer = str(common.renderer.render('_footer'))
         else:
             footer = ''
-        tail = str(common.render._tail())
+        tail = str(common.renderer.render('_tail'))
 
         return head+header+page+footer+tail
 
 
-class Headless(Page):
+headed = Headed
+
+
+class Headless(page):
     def __init__(self):
         super(Headless, self).__init__()
         self.request = None
@@ -96,6 +103,7 @@ class Headless(Page):
         except to handle exceptions differently.
         :return: HTTP response data
         """
+        self.require_group('read')
         try:
             self.request = self.decode_get_request(self.inbound)
             self.response = self.perform_get_command(self.request)
@@ -111,7 +119,10 @@ class Headless(Page):
         raise web.nomethod()
 
 
-class HeadlessPost(Headless):
+headless = Headless
+
+
+class HeadlessPost(headless):
     def __init__(self):
         super(HeadlessPost, self).__init__()
 
@@ -149,8 +160,8 @@ class HeadlessPost(Headless):
         except to handle exceptions differently.
         :return: HTTP response data
         """
-
         self.require_ownership()
+        self.require_all_groups(['read', 'write'])
 
         try:
             self.request = self.decode_post_request(self.inbound)
@@ -163,3 +174,6 @@ class HeadlessPost(Headless):
         web.header("Content-Type", "application/json")
         if self.outbound:
             return json.dumps(self.outbound, default=decimal_default)
+
+
+headless_post = HeadlessPost

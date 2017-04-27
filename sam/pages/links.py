@@ -5,7 +5,7 @@ from sam import errors
 from sam import common
 
 
-class Links(base.Headless):
+class Links(base.headless):
     def __init__(self):
         base.Headless.__init__(self)
         self.default_tstart = 1

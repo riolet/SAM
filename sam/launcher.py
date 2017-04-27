@@ -74,10 +74,8 @@ def main(argv=None):
     if parsed_args['target'] not in valid_targets:
         print("Invalid target")
         sys.exit(1)
-
     if parsed_args['whois']:
         constants.use_whois = True
-
     if parsed_args['local']:
         launch_localmode(parsed_args)
     elif parsed_args['target'] == 'webserver':
@@ -92,18 +90,42 @@ def main(argv=None):
         print("Error determining what to launch.")
 
 
+def load_plugins():
+    plugin_path = os.path.abspath(constants.plugins['root'])
+    if not os.path.isdir(plugin_path):
+        return
+    sys.path.append(plugin_path)
+    plugin_names = constants.plugins['enabled']
+    if plugin_names == ['ALL']:
+        plugin_names = os.listdir(plugin_path)
+        plugin_names = filter(lambda x: os.path.isdir(os.path.join(plugin_path, x)), plugin_names)
+    for plugin in plugin_names:
+        try:
+            mod = importlib.import_module(plugin)
+            mod.sam_installer.install()
+        except:
+            print("Failed to load {}".format(plugin))
+            raise
+
+    # Much of sam.common gets initialized the first time it's loaded.
+    # Plugins change the initialization data, prompting this reload.
+    import sam.common
+    reload(sam.common)
+
+
 def launch_webserver(args):
-    import server_webserver
+    load_plugins()
+    import sam.server_webserver
     if args['wsgi']:
         print('launching wsgi webserver')
         global application
-        application = server_webserver.start_wsgi()
+        application = sam.server_webserver.start_wsgi()
     else:
         port = args['port']
         if port is None:
             port = constants.webserver['listen_port']
         print('launching dev webserver on {}'.format(port))
-        server_webserver.start_server(port=port)
+        sam.server_webserver.start_server(port=port)
         print('webserver shut down.')
 
 

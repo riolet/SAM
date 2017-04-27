@@ -18,7 +18,7 @@ def nice_name(s):
     return s.title()
 
 
-class Settings(base.HeadlessPost):
+class Settings(base.headless_post):
     recognized_commands = ["ds_name", "ds_live", "ds_interval", "ds_flat",
                            "ds_new", "ds_rm", "ds_select", "rm_hosts",
                            "rm_tags", "rm_envs", "rm_conns", "upload",
