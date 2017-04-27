@@ -3,12 +3,12 @@ from sam.pages import base
 import web
 
 
-class Logout(base.Headless):
+class Logout(base.headless):
     def perform_get_command(self, request):
         self.session.kill()
 
     def encode_get_response(self, response):
-        raise web.seeother(constants.access_control['login_url'])
+        raise web.seeother(constants.find_url(constants.access_control['login_page']))
 
     def decode_get_request(self, data):
         pass

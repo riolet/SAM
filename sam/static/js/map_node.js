@@ -47,6 +47,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.nodes = {};
   nodes.layouts = {};
   nodes.layout = "Address";
+  nodes.endpoint = "./nodes"
 
   //what is rendered:
   // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
@@ -316,7 +317,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     request.flat = flat;
     request.ds = ds;
     $.ajax({
-      url: "/nodes",
+      url: nodes.endpoint,
       type: "GET",
       data: request,
       dataType: "json",
@@ -340,7 +341,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       "alias": name
     };
     $.ajax({
-      url: "/nodes",
+      url: nodes.endpoint,
       type: "POST",
       data: request,
       error: generic_ajax_failure,

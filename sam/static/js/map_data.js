@@ -4,7 +4,7 @@ function GET_settings(ds, successCallback) {
         return;
     }
     $.ajax({
-        url: "/settings",
+        url: "./settings",
         type: "GET",
         data: {"headless": 1, 'ds': ds},
         dataType: "json",
@@ -19,7 +19,7 @@ function GET_timerange(successCallback) {
       return;
   }
   $.ajax({
-    url: "/stats",
+    url: "./stats",
     type: "GET",
     data: {"q": "timerange", 'ds': config.ds},
     dataType: "json",
@@ -42,7 +42,7 @@ function GET_links(addrs) {
       requestData.flat = true;
     }
     $.ajax({
-        url: "/links",
+        url: "./links",
         type: "GET",
         data: requestData,
         error: generic_ajax_failure,
@@ -53,7 +53,7 @@ function GET_links(addrs) {
 function POST_portinfo(request) {
     "use strict";
     $.ajax({
-        url: "/portinfo",
+        url: "./portinfo",
         type: "POST",
         data: request,
         error: generic_ajax_failure,
@@ -65,7 +65,7 @@ function GET_portinfo(port, callback) {
     "use strict";
     var requestData = {"port": port.join(",")};
     $.ajax({
-        url: "/portinfo",
+        url: "./portinfo",
         type: "GET",
         data: requestData,
         dataType: "json",
@@ -110,7 +110,7 @@ function GET_details(node, callback) {
         };
 
     $.ajax({
-        url: "/details",
+        url: "./details",
         //dataType: "json",
         type: "GET",
         data: requestData,
@@ -168,7 +168,7 @@ function GET_details_sorted(node, component, order, callback) {
         };
 
     $.ajax({
-        url: "/details",
+        url: "./details",
         //dataType: "json",
         type: "GET",
         data: requestData,

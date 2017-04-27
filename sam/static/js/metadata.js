@@ -176,11 +176,7 @@ function buildKeyMultiValueRows(key, values) {
 function build_link(address, subnet) {
     "use strict";
     var text = address + "/" + subnet;
-    var link = "/metadata#ip=" + text + "&ds=" + g_ds;
-    if (window.location.pathname.substr(1,4) === "demo") {
-      link = "/demo" + link
-    }
-
+    var link = "./metadata#ip=" + text + "&ds=" + g_ds;
     var icon = document.createElement("I");
     icon.className = "tasks icon";
 
@@ -722,7 +718,7 @@ function hostname_edit_callback(event) {
             input.dataset.content = new_name;
             var request = {"node": ip, "alias": new_name};
             $.ajax({
-                url: "/nodes",
+                url: "./nodes",
                 type: "POST",
                 data: request,
                 error: generic_ajax_failure,
@@ -742,7 +738,7 @@ function tag_change_callback(new_tags) {
     var ip = getIP_Subnet().normal;
     var request = {"node": ip, "tags": new_tags};
     $.ajax({
-        url: "/nodes",
+        url: "./nodes",
         type: "POST",
         data: request,
         error: generic_ajax_failure,
@@ -761,7 +757,7 @@ function env_change_callback(new_env) {
     }
     var request = {"node": ip, "env": new_env};
     $.ajax({
-        url: "/nodes",
+        url: "./nodes",
         type: "POST",
         data: request,
         error: generic_ajax_failure,
@@ -779,10 +775,10 @@ function POST_tags(ip, tags, callback) {
     var request = {"address": minimizeIP(ip),
             "tags": tags};
     $.ajax({
-        url: "/details/" + part,
+        url: "./details/" + part,
         type: "GET",
         data: request,
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: GET_page_callback
     });
 }
@@ -797,7 +793,7 @@ function GET_data(ip, part, order, callback) {
         "ds": g_ds
     };
     $.ajax({
-        url: "/details",
+        url: "./details",
         type: "GET",
         data: request,
         error: generic_ajax_failure,
@@ -827,10 +823,10 @@ function GET_page(ip, part, page, order) {
             "component": part,
             "ds": g_ds};
     $.ajax({
-        url: "/details",
+        url: "./details",
         type: "GET",
         data: request,
-        error: onNotLoadData,
+        error: generic_ajax_failure,
         success: GET_page_callback
     });
 }

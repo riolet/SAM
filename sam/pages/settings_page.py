@@ -15,7 +15,7 @@ def nice_name(s):
     return s.title()
 
 
-class SettingsPage(base.Headed):
+class SettingsPage(base.headed):
     def __init__(self):
         super(SettingsPage, self).__init__("Settings", True, True)
         self.styles = ["/static/css/general.css"]

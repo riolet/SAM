@@ -498,7 +498,7 @@ function AjaxSuccess(response) {
 function POST_AJAX(command, successCallback) {
     "use strict";
     $.ajax({
-        url: "/settings",
+        url: "./settings",
         type: "POST",
         data: command,
         error: AjaxError,

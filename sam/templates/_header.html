@@ -1,4 +1,4 @@
-$def with (menuItems, selected, user, debug)
+$def with (menuItems, selected, user, debug, use_login)
 <div class="ui inverted main menu" id="navbar">
     <div class="header item">
         <a href="/"><img class="logo ui middle aligned spaced image" width="32px" height="32px" src="/static/img/logo_light.png">Systems Architecture Mapper</a>
@@ -11,5 +11,23 @@ $def with (menuItems, selected, user, debug)
             <a class="item $active" href="$menuItem['link']">
                 <i class="$menuItem['icon'] icon"></i>
                 $menuItem['name']
+            </a>
+    $if use_login:
+        $if user.logged_in:
+            <div class="ui simple float right dropdown item">
+                <i class="user icon"></i>
+                $if user.name:
+                    $user.name
+                $else:
+                    $user.email
+                <i class="dropdown icon"></i>
+                <div class="menu">
+                    <a class="item" href="./logout">Log out</a>
+                </div>
+            </div>
+        $else:
+            <a class="right floated item $active" href="./login">
+                <i class="user icon"></i>
+                Log in
             </a>
 </div>

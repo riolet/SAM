@@ -7,7 +7,7 @@ from sam import common
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
 
-class Nodes(base.HeadlessPost):
+class Nodes(base.headless_post):
     """
     The expected GET data includes:
         'address': comma-seperated list of dotted-decimal IP addresses.

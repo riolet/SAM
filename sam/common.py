@@ -143,6 +143,30 @@ def sqlite_udf(db):
                                                lambda a, b, c, d: a << 24 | b << 16 | c << 8 | d)
 
 
+class MultiRender(object):
+    def __init__(self, default):
+        default_path = os.path.join(constants.base_path, default)
+        # plugin_paths = [os.path.join(constants.plugins['root'], path) for path in plugins]
+        self.default_renderer = web.template.render(default_path)
+        self.bare_paths = []
+        self.plugin_renderers = []
+
+    def render(self, page, *args, **kwargs):
+        for renderer in self.plugin_renderers:
+            try:
+                return getattr(renderer, page)(*args, **kwargs)
+            except:
+                continue
+        return getattr(self.default_renderer, page)(*args, **kwargs)
+
+    def install_plugin_template_path(self, path):
+        if path in self.bare_paths:
+            return
+        self.bare_paths.append(path)
+        plugin_path = os.path.join(constants.plugins['root'], path)
+        self.plugin_renderers.append(web.template.render(plugin_path))
+
+
 def get_db(config):
     db = None
     db_quiet = None
@@ -177,7 +201,11 @@ def db_concat(db, *args):
 
 
 # tell renderer where to look for templates
-render = web.template.render(os.path.join(constants.base_path, 'templates/'))
+renderer = MultiRender(constants.default_template)
+for extra in constants.plugin_templates:
+    renderer.install_plugin_template_path(extra)
+
+# get the database connection
 db, db_quiet = get_db(constants.dbconfig.copy())
 
 # Configure session storage. Session variable is filled in from server.py

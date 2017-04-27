@@ -1,12 +1,16 @@
 from sam import constants
 import base
-import ldap3
 from sam import errors
-import ldap3.core.exceptions
+try:
+    import ldap3
+    import ldap3.core.exceptions
+    ldap_loaded = True
+except:
+    ldap_loaded = False
 import web
 
 
-class Login_LDAP(base.Headed):
+class Login_LDAP(base.headed):
     def __init__(self):
         super(Login_LDAP, self).__init__('Login', False, True)
         self.styles = ["/static/css/general.css"]
@@ -18,8 +22,13 @@ class Login_LDAP(base.Headed):
     def GET(self):
         if self.user.logged_in:
             raise web.seeother('./map')
+        if not ldap_loaded:
+            print("ERROR: ldap3 library not installed.")
+            print("       install ldap3 with pip:")
+            print("       `pip install ldap3`")
+            return self.render('login', constants.find_url(constants.access_control['login_page']), ['LDAP module not installed. Cannot perform login.'])
 
-        return self.render('login', constants.access_control['login_url'])
+        return self.render('login', constants.find_url(constants.access_control['login_page']))
 
     # ======== Post
 
@@ -28,8 +37,6 @@ class Login_LDAP(base.Headed):
         password = data.get('password', None)
         user = data.get('user', None)
         # validate they exist
-        print('password "{}" user "{}"'.format(password, user))
-        print('errors {}'.format(self.errors))
         if password is None or len(password) == 0:
             self.errors.append("Password may not be blank.")
         if user is None or len(user) == 0:
@@ -42,15 +49,20 @@ class Login_LDAP(base.Headed):
             'password': password
         }
 
-    def decode_connection_string(self, cstring):
+    @staticmethod
+    def decode_connection_string(cstring):
         server_address, _, namespace = cstring.rpartition('/')
         return server_address, namespace
 
     def perform_post_command(self, request):
         # submit credentials to LDAP server.
+        if not ldap_loaded:
+            self.errors.append('LDAP module not installed. Cannot perform login.')
+            raise errors.AuthenticationError('LDAP module not installed. Install by `pip install ldap3`.')
         user = "UID={user},{namespace}".format(user=request['user'], namespace=self.namespace)  # 'uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org'
         password = request['password']  # 'Secret123'
         server = ldap3.Server(self.server_address)
+
         try:
             conn = ldap3.Connection(server, user, password, auto_bind=True)
             conn.unbind()
@@ -84,6 +96,6 @@ class Login_LDAP(base.Headed):
             print("Error logging in: {}".format(e.message))
             if not self.errors:
                 self.errors.append("Login failed.")
-            return self.render('login', constants.access_control['login_url'], self.errors)
+            return self.render('login', constants.find_url(constants.access_control['login_page']), self.errors)
 
         raise web.seeother('./map')

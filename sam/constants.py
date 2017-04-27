@@ -9,9 +9,14 @@ datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 config = ConfigEnvy('SAM')
 debug = config.get('debug', 'debug', default='False').lower() == 'true'
 
+plugins = {
+    'root': config.get('plugins', 'root'),
+    'enabled': [p.strip() for p in config.get('plugins', 'enabled').split(',') if p.strip()]
+}
+
 access_control = {
     'active': config.get('access_control', 'active', default='False').lower() == 'true',
-    'login_url': config.get('access_control', 'login_url', default='/login_LDAP')
+    'login_page': config.get('access_control', 'login_page', default='sam.pages.login.Login_LDAP')
 }
 
 LDAP = {
@@ -45,7 +50,6 @@ local = {
     'server_port':      config.get('local', 'webserver_port'),
 }
 
-
 def enable_local_mode():
     access_control['active'] = False
     dbconfig['db'] = local['db']
@@ -61,6 +65,25 @@ def enable_local_mode():
 # to make sure config is not being read from anymore
 del config
 
+# plugins with templates should append them here.
+# Plugin template folders are searched first, followed by the default template folder.
+# example addition:
+#     >>> sam.constants.plugin_templates.append( os.path.join('myplugin', 'mytemplatefolder') )
+plugin_templates = []
+default_template = 'templates/'
+
+# plugins adding statically served files should be included here.
+# Static files must be in a plugin folder called 'static'.
+# Example:
+# static file:
+#     >>> /plugins/myplugin/static/img/thing.png
+# example addition:
+#     >>> sam.constants.plugin_templates.append( 'myplugin' ) )
+# html link:
+#     "/static/img/thing.png"
+plugin_static = []
+default_static = 'static/'
+
 urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'sam.pages.map.Map',
@@ -73,40 +96,45 @@ urls = [
     '/settings', 'sam.pages.settings.Settings',
     '/settings_page', 'sam.pages.settings_page.SettingsPage',
     '/table', 'sam.pages.table.Table',
-
-    '/login_LDAP', 'sam.pages.login.Login_LDAP',
+    '/login', access_control['login_page'],
     '/logout', 'sam.pages.logout.Logout',
 ]
+
+def find_url(target):
+    for i in range(len(urls)/2):
+        if urls[i*2+1] == target:
+            return urls[i*2]
+    return None
 
 navbar = [
     {
         "name": "Map",
         "icon": "sitemap",
-        "link": "/map",
+        "link": "./map",
         "group": "any"
     },
     {
         "name": "Table View",
         "icon": "table",
-        "link": "/table",
+        "link": "./table",
         "group": "any"
     },
     {
         "name": "Host Details",
         "icon": "tasks",
-        "link": "/metadata",
+        "link": "./metadata",
         "group": "any"
     },
     {
         "name": "Stats",
         "icon": "filter",
-        "link": "/stats",
+        "link": "./stats",
         "group": "any"
     },
     {
         "name": "Settings",
         "icon": "settings",
-        "link": "/settings_page",
+        "link": "./settings_page",
         "group": "any"
     }
 ]
