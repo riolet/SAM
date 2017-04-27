@@ -5,7 +5,6 @@ import time
 import cPickle
 from sam import constants
 import web
-web.config.debug = constants.debug
 from sam import common
 import threading
 import sam.models.livekeys
@@ -297,5 +296,4 @@ BUFFERS = MemoryBuffers()
 # to persist the thread reference between invocations
 IMPORTER_THREAD = None
 
-if __name__ == "__main__":
-    application = start_wsgi()
+application = start_wsgi()
