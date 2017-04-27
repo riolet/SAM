@@ -92,9 +92,11 @@ $ disabled = "" if user.may_post() else "disabled"
     <!-- Live Updates -->
     <h3 class="ui header">Live Updates</h3>
     <p>Live updates are a way to connect your router or gateway directly to the database.</p>
-    <p>To enable this, you need to run a collector on your local network which will translate network data and open a secure connection to our cloud server.</p>
-    <p>The live collector needs to be configured to point at our server and when you run it, you need to supply an access key, and what format to expect.</p>
-    <p>Live collector access keys grant access to upload network data (syslog lines) directly into your database.</p>
+    <p>To enable this, you need to run a collector process on your local network which will receive and translate network data.
+      Once translated, the collector opens a secure connection the aggregator, another program that processes the data
+      and imports it into your database.  From there it can be viewed through the webserver.</p>
+    <p>The live collector needs to be configured (by environment variables) to use a particular format, access key, and socket.</p>
+    <p>Live collector access keys are used by the aggregator to authenticate access from collectors before writing to the database.</p>
     <div class="field">
       <table class="ui compact celled collapsing table">
         <thead>
