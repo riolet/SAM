@@ -99,11 +99,11 @@ def test_exists_settings_page():
         assert req.status == "405 Method Not Allowed"
 
 
-def test_exists_login_LDAP():
+def test_exists_login():
     with db_connection.env(login_active=True):
-        req = app.request('/login_LDAP', 'GET')
+        req = app.request('/login', 'GET')
         assert req.status == "200 OK"
-        req = app.request('/login_LDAP', 'POST')
+        req = app.request('/login', 'POST')
         assert req.status == "200 OK"
 
 
