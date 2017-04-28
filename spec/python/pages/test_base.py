@@ -29,29 +29,29 @@ def test_headed():
         p.styles = ['1', '2']
         p.scripts = ['3', '4']
         p.render('testPage', 'arg1', 'arg2', start=12, end=15)
-        calls = common.render.calls
-        assert calls[0] == ('_head', ('TestTitle',), {'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
-        assert calls[1] == ('_header', (constants.navbar, 'TestTitle', p.user, constants.debug), {})
-        assert calls[2] == ('testPage', ('arg1', 'arg2'), {'start': 12, 'end': 15})
-        assert calls[3] == ('_footer', (), {})
-        assert calls[4] == ('_tail', (), {})
+        calls = common.renderer.calls
+        assert calls[0] == ('render', ('_head', 'TestTitle'), {'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
+        assert calls[1] == ('render', ('_header', constants.navbar, 'TestTitle', p.user, constants.debug, False), {})
+        assert calls[2] == ('render', ('testPage', 'arg1', 'arg2'), {'start': 12, 'end': 15})
+        assert calls[3] == ('render', ('_footer', ), {})
+        assert calls[4] == ('render', ('_tail', ), {})
 
-        common.render.clear()
+        common.renderer.clear()
         p = sam.pages.base.Headed('TestTitle', True, False)
         p.render('testPage')
-        calls = [x[0] for x in common.render.calls]
+        calls = [x[1][0] for x in common.renderer.calls]
         assert calls == ['_head', '_header', 'testPage', '_tail']
 
-        common.render.clear()
+        common.renderer.clear()
         p = sam.pages.base.Headed('TestTitle', False, False)
         p.render('testPage')
-        calls = [x[0] for x in common.render.calls]
+        calls = [x[1][0] for x in common.renderer.calls]
         assert calls == ['_head', 'testPage', '_tail']
 
-        common.render.clear()
+        common.renderer.clear()
         p = sam.pages.base.Headed('TestTitle', False, True)
         p.render('testPage')
-        calls = [x[0] for x in common.render.calls]
+        calls = [x[1][0] for x in common.renderer.calls]
         assert calls == ['_head', 'testPage', '_footer', '_tail']
 
 

@@ -12,11 +12,11 @@ def test_render():
         p = sam.pages.login.Login_LDAP()
         common.session.clear()
         dummy = p.GET()
-        calls = common.render.calls
-        assert calls[0] == ('_head', ('Login',), {'stylesheets': ['/static/css/general.css'], 'scripts': []})
-        assert calls[1] == ('login', (constants.access_control['login_url'],), {})
-        assert calls[2] == ('_footer', (), {})
-        assert calls[3] == ('_tail', (), {})
+        calls = common.renderer.calls
+        assert calls[0] == ('render', ('_head', 'Login',), {'stylesheets': ['/static/css/general.css'], 'scripts': []})
+        assert calls[1] == ('render', ('login', '/login',), {})
+        assert calls[2] == ('render', ('_footer', ), {})
+        assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"
 
 

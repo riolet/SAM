@@ -10,10 +10,10 @@ def test_render():
         p = sam.pages.map.Map()
         common.session.clear()
         dummy = p.GET()
-        calls = common.render.calls
+        calls = common.renderer.calls
         page_title = 'Map'
-        assert calls[0] == ('_head', (page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
-        assert calls[1] == ('_header', (constants.navbar, page_title, p.user, constants.debug), {})
-        assert calls[2] == ('map', ([(1, u'default'), (2, u'short'), (3, u'live')],), {})
-        assert calls[3] == ('_tail', (), {})
+        assert calls[0] == ('render', ('_head', page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
+        assert calls[1] == ('render', ('_header', constants.navbar, page_title, p.user, constants.debug, False), {})
+        assert calls[2] == ('render', ('map', [(1, u'default'), (2, u'short'), (3, u'live')],), {})
+        assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"
