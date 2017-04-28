@@ -3,14 +3,15 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
 import time
 import cPickle
+import threading
 from sam import constants
 import web
-from sam import common
-import threading
+import sam.common
 import sam.models.livekeys
 import sam.models.nodes
-from sam import preprocess
 import sam.importers.import_base
+import sam.preprocess
+import sam.httpserver
 
 
 """
@@ -123,7 +124,7 @@ class DatabaseInserter(threading.Thread):
                 # import any lines into Syslog
                 self.buffer_to_syslog(buff)
 
-                processor = preprocess.Preprocessor(common.db_quiet, buff.sub, buff.ds)
+                processor = sam.preprocess.Preprocessor(sam.common.db_quiet, buff.sub, buff.ds)
                 rows = processor.count_syslog()
 
                 if rows >= self.SIZE_QUOTA:
@@ -171,7 +172,7 @@ class DatabaseInserter(threading.Thread):
     @staticmethod
     def run_preprocessor(sub_id, ds):
         print("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub_id, ds))
-        processor = preprocess.Preprocessor(common.db_quiet, sub_id, ds)
+        processor = sam.preprocess.Preprocessor(sam.common.db_quiet, sub_id, ds)
         processor.run_all()
 
     def buffer_to_syslog(self, buff):
@@ -221,7 +222,7 @@ class Aggregator(object):
         if version != "1.0":
             return {}, 'Version not compatible. Recieved {0}, expected {1}. Access Denied'.format(version, '1.0')
 
-        key_model = sam.models.livekeys.LiveKeys(common.db_quiet, 0)
+        key_model = sam.models.livekeys.LiveKeys(sam.common.db_quiet, 0)
         access = key_model.validate(access_key)
         return access, ''
 
@@ -268,7 +269,7 @@ class Aggregator(object):
 
 
 def start_server(port=None):
-    common.load_plugins()
+    sam.common.load_plugins()
 
     if port == None:
         port = constants.aggregator['listen_port']
@@ -276,22 +277,17 @@ def start_server(port=None):
     urls = ['/', 'Aggregator']
     app = web.application(urls, globals(), autoreload=False)
     try:
-        runwsgi(app.wsgifunc(), port)
+        sam.httpserver.runwsgi(app.wsgifunc(sam.httpserver.PluginStaticMiddleware), port)
     finally:
         print("{} shutting down.".format(sys.argv[0]))
 
 
-def runwsgi(func, port):
-    server_addr = web.validip(port)
-    return web.httpserver.runsimple(func, server_addr)
-
-
 def start_wsgi():
     global application
-    common.load_plugins()
+    sam.common.load_plugins()
     urls = ['/', 'Aggregator']
     app = web.application(urls, globals())
-    return app.wsgifunc()
+    return app.wsgifunc(sam.httpserver.PluginStaticMiddleware)
 
 
 # buffer to pass data between threads
