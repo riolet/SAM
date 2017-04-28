@@ -14,7 +14,16 @@
   * `ALL` (the default) is a special keyword meaning to scan the plugin folder for subfolders and attempt to install each as a plugin.
   * If blank, no plugins are installed.
 
-### Static files
+## Importers
+
+* If your plugin adds an importer for a new format, include the following in your install script:
+    * `sam.constants.plugin_importers.append('<plugin>')`
+    * where `<plugin>` is the name of your plugin
+* All importers must be in a subfolder called `importers` that is an importable python module. (has an `__init__.py`)
+* All importers must have a global `class_` variable whose value is your importer class
+* All importers should inherit from `sam.importers.import_base.BaseImporter`, often only needing to override the translate function
+
+## Static files
 * If your plugin defines static files, include the following in your install script:
     * `sam.constants.plugin_static.append('<plugin>')`
     * where `<plugin>` is the name of your plugin.
@@ -22,7 +31,7 @@
     * For example: `<script src="/my_plugin/static/js/composite.js">`.
 * Static files can not overload existing static files. To replace existing content, change the path linking to it. 
 
-### Template files
+## Template files
 * If your plugin provides template files, include the following in your install script:
     * `sam.constants.plugin_templates.append(os.path.join('<plugin>', '<local-path-to-templates'))`
     * where `<plugin>` is the name of your plugin.
@@ -37,7 +46,7 @@ class Composite(sam.pages.base.Headed):
 ```
 * Note: templates can be used to override existing templates. Plugin folders are scanned for templates first in the order they are loaded.
 
-### Endpoints
+## Endpoints
 * If your plugin provides new endpoints, include the following in your install script for each endpoint:
     * `sam.constants.urls.extend([ '<url-pattern>', '<handler-class>' ])`
     * where `<url-pattern>` is the url pattern with any capturing groups needed. [Webpy url pattern-matching description](http://webpy.org/cookbook/url_handling)
@@ -62,7 +71,7 @@ sam.constants.navbar.append({
 * and `link` is the url to your page.
 * Note: `group` is reserved for future use.
 
-### Overriding other features
+## Overriding other features
 * Overriding other features in SAM is done so at your own risk. 
 * Simply import the relevant class and reassign it your replacement.
 * For example, a complete plugin that disables all POST requests:
