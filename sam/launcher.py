@@ -46,7 +46,6 @@ def main(argv=None):
         'dest': 'default',
         'sub': constants.demo['id']
     }
-    valid_formats = ['tcpdump', 'nfdump', 'paloalto', 'tshark', 'asa', 'aws', 'none']
     valid_targets = ['aggregator', 'collector', 'webserver', 'import']
 
     parsed_args = defaults.copy()
@@ -68,9 +67,6 @@ def main(argv=None):
         if key == '--sub':
             parsed_args['sub'] = val
 
-    if parsed_args['format'] not in valid_formats:
-        print("Invalid format")
-        sys.exit(1)
     if parsed_args['target'] not in valid_targets:
         print("Invalid target")
         sys.exit(1)
@@ -134,6 +130,7 @@ def launch_aggregator(args):
 def launch_importer(parsed, args):
     import common
     import sam.importers.import_base
+    common.load_plugins()
     datasource = parsed['dest']
     subscription_id = parsed['sub']
     format = parsed['format']
@@ -153,7 +150,9 @@ def launch_importer(parsed, args):
             print("Could not read datasource. Exiting.")
             return
     importer = sam.importers.import_base.get_importer(format, subscription_id, ds_id)
-
+    if not importer:
+        print("Could not find importer for given format. ({})".format(format))
+        return
     if importer.validate_file(args[0]):
         importer.import_file(args[0])
     else:
