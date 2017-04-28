@@ -1,6 +1,59 @@
 import os
+import sys
+import importlib
 import web
 from sam import constants
+
+
+def load_plugins():
+    plugin_path = os.path.abspath(constants.plugins['root'])
+    if not os.path.isdir(plugin_path):
+        return
+    sys.path.append(plugin_path)
+
+    plugin_names = constants.plugins['enabled']
+    loaded = constants.plugins['loaded']
+    if plugin_names == ['ALL']:
+        plugin_names = os.listdir(plugin_path)
+        plugin_names = filter(lambda x: os.path.isdir(os.path.join(plugin_path, x)), plugin_names)
+    for plugin in plugin_names:
+        # don't install plugins multiple times. They may not be idempotent.
+        if plugin in loaded:
+            continue
+        try:
+            mod = importlib.import_module(plugin)
+            mod.sam_installer.install()
+            loaded.append(plugin)
+        except:
+            print("Failed to load {}".format(plugin))
+            raise
+
+    constants.plugins['loaded'] = loaded
+    print("navbar: {}".format(constants.navbar))
+    # Globals in sam.common get initialized based on data in constants.
+    # Plugins change the initialization data, prompting this re-init:
+
+    init_globals()
+
+
+def init_globals():
+    # This function reinitializes the globals that common.py provides.
+    # it is needed if the configuration changes after this module has been loaded. (i.e. a plugin loads.)
+    global renderer
+    global session_store
+    global db
+    global db_quiet
+
+    renderer = MultiRender(constants.default_template)
+    for extra in constants.plugin_templates:
+        renderer.install_plugin_template_path(extra)
+
+    web.config.debug = constants.debug
+    web.config.session_parameters['cookie_path'] = "/"
+
+    db, db_quiet = get_db(constants.dbconfig.copy())
+
+    session_store = web.session.DBStore(db_quiet, 'sessions')
 
 
 def parse_sql_string(script, replacements):
@@ -201,14 +254,12 @@ def db_concat(db, *args):
 
 
 # tell renderer where to look for templates
-renderer = MultiRender(constants.default_template)
-for extra in constants.plugin_templates:
-    renderer.install_plugin_template_path(extra)
-
-# get the database connection
-db, db_quiet = get_db(constants.dbconfig.copy())
-
-# Configure session storage. Session variable is filled in from server.py
-web.config.session_parameters['cookie_path'] = "/"
-session_store = web.session.DBStore(db_quiet, 'sessions')
+renderer = None
+# database connections
+db = None
+db_quiet = None
+# session storage. Session variable is filled in from server.py
+session_store = None
 session = None
+
+init_globals()

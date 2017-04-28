@@ -2,10 +2,9 @@ import sys
 import os
 import posixpath
 import urllib
-sys.path.append(os.path.dirname(__file__))  # could be executed from any directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))  # could be executed from any directory
 from sam import constants
 import web
-web.config.debug = constants.debug  # must preceed import common
 from sam import common
 from sam import integrity
 
@@ -58,8 +57,9 @@ class StaticApp(web.httpserver.StaticApp):
         from cStringIO import StringIO
         self.wfile = StringIO() # for capturing error
 
-        base_paths = [os.path.join(constants.plugins['root'], pspath) for pspath in constants.plugin_static]
-        base_paths.append(constants.base_path)
+        # base_paths = [os.path.join(constants.plugins['root'], pspath) for pspath in constants.plugin_static]
+        # base_paths.append(constants.base_path)
+        base_paths = [constants.plugins['root'], constants.base_path]
 
         for base_path in base_paths:
             self.set_translate_path_base(base_path)
@@ -92,6 +92,28 @@ class StaticApp(web.httpserver.StaticApp):
             yield value
 
 
+class PluginStaticMiddleware:
+    """WSGI middleware for serving static files."""
+
+    def __init__(self, app):
+        self.app = app
+        self.prefixes = ['/{}/static'.format(plugin) for plugin in constants.plugins['loaded']]
+
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO', '')
+        path = self.normpath(path)
+        for plugin_static_dir in self.prefixes:
+            if path.startswith(plugin_static_dir):
+                return StaticApp(environ, start_response)
+        return self.app(environ, start_response)
+
+    def normpath(self, path):
+        path2 = posixpath.normpath(urllib.unquote(path))
+        if path.endswith("/"):
+            path2 += "/"
+        return path2
+
+
 def check_database():
     # Validate the database format
     if not integrity.check_and_fix_integrity():
@@ -108,11 +130,12 @@ def create_session(app):
 
 
 def start_server(port):
+    common.load_plugins()
     web.httpserver.StaticApp = StaticApp
     app = web.application(constants.urls, globals())
     check_database()
     create_session(app)
-    runwsgi(app.wsgifunc(), port)
+    runwsgi(app.wsgifunc(PluginStaticMiddleware), port)
 
 
 def runwsgi(func, port):
@@ -121,11 +144,11 @@ def runwsgi(func, port):
 
 
 def start_wsgi():
+    common.load_plugins()
     app = web.application(constants.urls, globals())
     check_database()
     create_session(app)
-    return app.wsgifunc()
+    return app.wsgifunc(PluginStaticMiddleware)
 
 
-if __name__ == "__main__":
-    application = start_wsgi()
+application = start_wsgi()

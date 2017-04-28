@@ -90,33 +90,7 @@ def main(argv=None):
         print("Error determining what to launch.")
 
 
-def load_plugins():
-    plugin_path = os.path.abspath(constants.plugins['root'])
-    if not os.path.isdir(plugin_path):
-        return
-    sys.path.append(plugin_path)
-    plugin_names = constants.plugins['enabled']
-    if plugin_names == ['ALL']:
-        plugin_names = os.listdir(plugin_path)
-        plugin_names = filter(lambda x: os.path.isdir(os.path.join(plugin_path, x)), plugin_names)
-    for plugin in plugin_names:
-        try:
-            mod = importlib.import_module(plugin)
-            mod.sam_installer.install()
-        except:
-            print("Failed to load {}".format(plugin))
-            raise
-
-    # Much of sam.common gets initialized the first time it's loaded.
-    # Plugins change the initialization data, prompting this reload.
-    import web
-    import sam.common
-    web.config.debug = constants.debug
-    reload(sam.common)
-
-
 def launch_webserver(args):
-    load_plugins()
     import sam.server_webserver
     if args['wsgi']:
         print('launching wsgi webserver')

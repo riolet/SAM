@@ -1,12 +1,10 @@
 import os
 import sys
-
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
 import time
 import cPickle
 from sam import constants
 import web
-web.config.debug = constants.debug
 from sam import common
 import threading
 import sam.models.livekeys
@@ -270,6 +268,8 @@ class Aggregator(object):
 
 
 def start_server(port=None):
+    common.load_plugins()
+
     if port == None:
         port = constants.aggregator['listen_port']
 
@@ -288,6 +288,7 @@ def runwsgi(func, port):
 
 def start_wsgi():
     global application
+    common.load_plugins()
     urls = ['/', 'Aggregator']
     app = web.application(urls, globals())
     return app.wsgifunc()
@@ -298,5 +299,4 @@ BUFFERS = MemoryBuffers()
 # to persist the thread reference between invocations
 IMPORTER_THREAD = None
 
-if __name__ == "__main__":
-    application = start_wsgi()
+application = start_wsgi()
