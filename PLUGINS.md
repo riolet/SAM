@@ -57,10 +57,10 @@ sam.constants.navbar.append({
     "group": "any"
 })
 ```
-    * where `name` is the name shown on the nav bar
-    * and `icon` is the icon accompanying (selected from [this list](https://semantic-ui.com/elements/icon.html))
-    * and `link` is the url to your page.
-    * Note: `group` is reserved for future use.
+* where `name` is the name shown on the nav bar
+* and `icon` is the icon accompanying (selected from [this list](https://semantic-ui.com/elements/icon.html))
+* and `link` is the url to your page.
+* Note: `group` is reserved for future use.
 
 ### Overriding other features
 * Overriding other features in SAM is done so at your own risk. 
