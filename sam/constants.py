@@ -11,7 +11,8 @@ debug = config.get('debug', 'debug', default='False').lower() == 'true'
 
 plugins = {
     'root': config.get('plugins', 'root'),
-    'enabled': [p.strip() for p in config.get('plugins', 'enabled').split(',') if p.strip()]
+    'enabled': [p.strip() for p in config.get('plugins', 'enabled').split(',') if p.strip()],
+    'loaded': []
 }
 
 access_control = {

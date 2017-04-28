@@ -268,6 +268,8 @@ class Aggregator(object):
 
 
 def start_server(port=None):
+    common.load_plugins()
+
     if port == None:
         port = constants.aggregator['listen_port']
 
@@ -286,6 +288,7 @@ def runwsgi(func, port):
 
 def start_wsgi():
     global application
+    common.load_plugins()
     urls = ['/', 'Aggregator']
     app = web.application(urls, globals())
     return app.wsgifunc()
