@@ -133,6 +133,7 @@ def launch_aggregator(args):
 
 def launch_importer(parsed, args):
     import common
+    import sam.importers.import_base
     datasource = parsed['dest']
     subscription_id = parsed['sub']
     format = parsed['format']
@@ -141,21 +142,17 @@ def launch_importer(parsed, args):
         print("Please specify one source file. Exiting.")
         return
 
-    importer = get_importer(format)
-    if importer is None:
-        return
-    importer.set_subscription(subscription_id)
-    from sam.models.datasources import Datasources
-    d_model = Datasources(common.db_quiet, {}, subscription_id)
     try:
-        dsid = int(datasource)
+        ds_id = int(datasource)
     except (TypeError, ValueError):
         try:
-            dsid = d_model.name_to_id(datasource)
+            from sam.models.datasources import Datasources
+            d_model = Datasources(common.db_quiet, {}, subscription_id)
+            ds_id = d_model.name_to_id(datasource)
         except:
             print("Could not read datasource. Exiting.")
             return
-    importer.set_datasource(dsid)
+    importer = sam.importers.import_base.get_importer(format, subscription_id, ds_id)
 
     if importer.validate_file(args[0]):
         importer.import_file(args[0])
@@ -164,30 +161,8 @@ def launch_importer(parsed, args):
         return
 
     from sam.preprocess import Preprocessor
-    processor = Preprocessor(common.db_quiet, subscription_id, dsid)
+    processor = Preprocessor(common.db_quiet, subscription_id, ds_id)
     processor.run_all()
-
-
-def get_importer(importer_name):
-    if importer_name.startswith("import_"):
-        importer_name = importer_name[7:]
-    i = importer_name.rfind(".py")
-    if i != -1:
-        importer_name = importer_name[:i]
-
-    # attempt to import the module
-    fullname = "sam.importers.import_{0}".format(importer_name)
-    try:
-        module = importlib.import_module(fullname)
-        instance = module._class()
-    except ImportError:
-        print("Cannot find importer {0}".format(importer_name))
-        instance = None
-    except AttributeError:
-        traceback.print_exc()
-        print("Cannot instantiate importer. Is _class defined?")
-        instance = None
-    return instance
 
 
 def create_local_settings(db, sub):
