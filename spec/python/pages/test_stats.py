@@ -16,17 +16,17 @@ def test_render():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
         p = sam.pages.stats.Stats()
         dummy = p.GET()
-        calls = common.render.calls
+        calls = common.renderer.calls
         page_title = 'Stats'
-        assert calls[0] == ('_head', (page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
-        assert calls[1] == ('_header', (constants.navbar, page_title, p.user, constants.debug), {})
-        assert calls[2][0] == 'stats'
-        segments = calls[2][1][0]
+        assert calls[0] == ('render', ('_head', page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
+        assert calls[1] == ('render', ('_header', constants.navbar, page_title, p.user, constants.debug, False), {})
+        assert calls[2][1][0] == 'stats'
+        segments = calls[2][1][1]
         section_headers = [x[0] for x in segments]
         assert section_headers == ['Overall', 'Datasource: default', 'Datasource: short', 'Datasource: live']
         assert calls[2][2] == {}
-        assert calls[3] == ('_footer', (), {})
-        assert calls[4] == ('_tail', (), {})
+        assert calls[3] == ('render', ('_footer', ), {})
+        assert calls[4] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNoneNone"
 
 

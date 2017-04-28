@@ -10,19 +10,15 @@ def test_render():
         p = sam.pages.metadata.Metadata()
         common.session.clear()
         dummy = p.GET()
-        calls = common.render.calls
+        calls = common.renderer.calls
         page_title = 'Host Details'
         tags = []
         envs = {'dev', 'inherit', 'production'}
         dses = [{'flat': 0, 'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 1L, 'name': u'default'},
                 {'flat': 0, 'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 2L, 'name': u'short'},
                 {'flat': 0, 'subscription': 1L, 'ar_active': 0, 'ar_interval': 300L, 'id': 3L, 'name': u'live'}]
-        assert calls[0] == ('_head', (page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
-        assert calls[1] == ('_header', (constants.navbar, page_title, p.user, constants.debug), {})
-        print("  Calls[2]  ".center(50, '-'))
-        for ds in calls[2][1][2]:
-            print ds
-        print("  Calls[2]  ".center(50, '-'))
-        assert calls[2] == ('metadata', (tags, envs, dses), {})
-        assert calls[3] == ('_tail', (), {})
+        assert calls[0] == ('render', ('_head', page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
+        assert calls[1] == ('render', ('_header', constants.navbar, page_title, p.user, constants.debug, False), {})
+        assert calls[2] == ('render', ('metadata', tags, envs, dses), {})
+        assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"

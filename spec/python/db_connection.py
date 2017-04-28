@@ -53,7 +53,7 @@ class env(object):
         self.input_real = web.input
         self.active_old = sam.constants.access_control['active']
         self.session = sam.common.session
-        self.render = sam.common.render
+        self.renderer = sam.common.renderer
 
         self.mock_input = mock_input
         self.mock_login = login_active
@@ -70,7 +70,7 @@ class env(object):
         if self.mock_session:
             sam.common.session = Session()
         if self.mock_render:
-            sam.common.render = Mocker()
+            sam.common.renderer = Mocker()
 
     def __exit__(self, type, value, traceback):
         if self.mock_input:
@@ -80,7 +80,7 @@ class env(object):
         if self.mock_session:
             sam.common.session = self.session
         if self.mock_render:
-            sam.common.render = self.render
+            sam.common.renderer = self.renderer
 
 
 def make_timestamp(timestring):
