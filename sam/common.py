@@ -29,10 +29,9 @@ def load_plugins():
             raise
 
     constants.plugins['loaded'] = loaded
-    print("navbar: {}".format(constants.navbar))
+    
     # Globals in sam.common get initialized based on data in constants.
     # Plugins change the initialization data, prompting this re-init:
-
     init_globals()
 
 
