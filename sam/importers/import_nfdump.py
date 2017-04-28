@@ -169,7 +169,7 @@ Usage:
         return 0
 
 
-_class = NFDumpImporter
+class_ = NFDumpImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":

@@ -94,7 +94,7 @@ class PaloAltoImporter(BaseImporter):
         return 0
 
 
-_class = PaloAltoImporter
+class_ = PaloAltoImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":

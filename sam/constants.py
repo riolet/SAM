@@ -84,6 +84,8 @@ default_template = 'templates/'
 #     "/static/img/thing.png"
 plugin_static = []
 
+plugin_importers = []
+
 urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'sam.pages.map.Map',

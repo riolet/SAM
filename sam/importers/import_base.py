@@ -2,6 +2,7 @@ import sys
 import os
 import sam.constants
 import traceback
+import importlib
 common = None
 Datasources = None
 
@@ -289,4 +290,56 @@ Usage:
                 raise AssertionError("Failed to fix problem multiple times. Aborting.")
 
 
-_class = BaseImporter
+class_ = BaseImporter
+
+
+def get_importer(import_format, sub_id, ds_id):
+    """
+    :param import_format: The format you're trying to import. must match file name. 
+                   examples: paloalto, tcpdump, nfdump, tshark, ...
+     :type import_format: unicode
+    :param sub_id: subscription id
+     :type sub_id: int
+    :param ds_id: datasource id
+     :type sub_id: int
+    :return: importer instance or None
+     :rtype: BaseImporter or None
+    """
+    module_ = None
+    importer = None
+
+    # normalize format name
+    import_format = import_format.lower()
+    if import_format.startswith("import_"):
+        import_format = import_format[7:]
+    i = import_format.rfind(".py")
+    if i != -1:
+        import_format = import_format[:i]
+
+    # try to load the importer from plugin libraries
+    for path in sam.constants.plugin_importers:
+        fullname = "{path}.importers.import_{format}".format(path=path, format=import_format)
+        try:
+            module_ = importlib.import_module(fullname)
+        except ImportError:
+            continue
+        break
+
+    # if the above failed, attempt to import it from the default library
+    if not module_:
+        fullname = "sam.importers.import_{0}".format(import_format)
+        try:
+            module_ = importlib.import_module(fullname)
+        except ImportError:
+            pass
+
+    # instantiate the importer class
+    if module_:
+        try:
+            importer = module_.class_()
+            importer.set_subscription(sub_id)
+            importer.set_datasource(ds_id)
+        except:
+            print("Error instantiating importer for {}. Is module.class_ defined?".format(import_format))
+
+    return importer

@@ -101,3 +101,6 @@ temp.*
 
 # certificates and keys
 *.pem
+
+# don't include plugins by default
+plugins_omit/

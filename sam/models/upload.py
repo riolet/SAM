@@ -1,3 +1,4 @@
+from sam.importers import import_base
 import importlib
 from sam import preprocess
 import web
@@ -21,23 +22,7 @@ class Uploader(object):
         self.log_format = log_format.lower()
         self.importer = None
         self.preprocessor = None
-        self.get_importer()
-
-    def get_importer(self):
-        try:
-            try:
-                m_importer = importlib.import_module("sam.importers." + self.log_format)
-            except ImportError:
-                m_importer = importlib.import_module("sam.importers.import_" + self.log_format)
-            classes = filter(lambda x: x.endswith("Importer") and x != "BaseImporter", dir(m_importer))
-            class_ = getattr(m_importer, classes[0])
-            self.importer = class_()
-            self.importer.subscription = self.sub
-            self.importer.datasource = self.ds
-        except Exception as e:
-            print("Error acquiring importer.")
-            print(e.message)
-            self.importer = None
+        self.importer = import_base.get_importer(self.log_format, self.sub, self.ds)
 
     def run_import(self, data):
         if self.importer is None:
