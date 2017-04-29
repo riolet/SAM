@@ -26,13 +26,13 @@ class Page(object):
     def require_any_group(self, groups):
         if self.user.any_group(groups):
             return True
-        raise web.seeother(constants.find_url(constants.access_control['login_page']))
+        raise web.seeother('/login')
 
     def require_all_groups(self, groups):
         if self.user.all_groups(groups):
             return True
-        target = constants.find_url(constants.access_control['login_page'])
-        raise web.seeother(target)
+
+        raise web.seeother('/login')
 
 
 page = Page

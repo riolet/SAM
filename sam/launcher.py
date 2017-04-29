@@ -93,6 +93,11 @@ def launch_webserver(args):
         global application
         application = sam.server_webserver.start_wsgi()
     else:
+        if constants.access_control['local_tls']:
+            from web.wsgiserver import CherryPyWSGIServer
+            CherryPyWSGIServer.ssl_certificate = constants.access_control['local_tls_cert']
+            CherryPyWSGIServer.ssl_private_key = constants.access_control['local_tls_key']
+
         port = args['port']
         if port is None:
             port = constants.webserver['listen_port']

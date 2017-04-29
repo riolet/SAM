@@ -17,7 +17,10 @@ plugins = {
 
 access_control = {
     'active': config.get('access_control', 'active', default='False').lower() == 'true',
-    'login_page': config.get('access_control', 'login_page', default='sam.pages.login.Login_LDAP')
+    'login_page': config.get('access_control', 'login_page', default='sam.pages.login.Login_LDAP'),
+    'local_tls': config.get('access_control', 'local_tls'),
+    'local_tls_cert': config.get('access_control', 'local_tls_cert'),
+    'local_tls_key': config.get('access_control', 'local_tls_key')
 }
 
 LDAP = {
@@ -63,27 +66,9 @@ def enable_local_mode():
     global localmode
     localmode = True
 
-# to make sure config is not being read from anymore
-del config
 
-# plugins with templates should append them here.
-# Plugin template folders are searched first, followed by the default template folder.
-# example addition:
-#     >>> sam.constants.plugin_templates.append( os.path.join('myplugin', 'mytemplatefolder') )
 plugin_templates = []
-default_template = 'templates/'
-
-# plugins adding statically served files should be included here.
-# Static files must be in a plugin folder called 'static'.
-# Example:
-# static file:
-#     >>> /plugins/myplugin/static/img/thing.png
-# example addition:
-#     >>> sam.constants.plugin_templates.append( 'myplugin' ) )
-# html link:
-#     "/static/img/thing.png"
 plugin_static = []
-
 plugin_importers = []
 
 urls = [

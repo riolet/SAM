@@ -29,7 +29,6 @@ def load_plugins():
             raise
 
     constants.plugins['loaded'] = loaded
-    
     # Globals in sam.common get initialized based on data in constants.
     # Plugins change the initialization data, prompting this re-init:
     init_globals()
@@ -43,7 +42,7 @@ def init_globals():
     global db
     global db_quiet
 
-    renderer = MultiRender(constants.default_template)
+    renderer = MultiRender('templates/')
     for extra in constants.plugin_templates:
         renderer.install_plugin_template_path(extra)
 
