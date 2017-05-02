@@ -26,13 +26,12 @@ class Page(object):
     def require_any_group(self, groups):
         if self.user.any_group(groups):
             return True
-        raise web.seeother(constants.find_url(constants.access_control['login_page']))
+        raise web.seeother(constants.access_control['login_url'])
 
     def require_all_groups(self, groups):
         if self.user.all_groups(groups):
             return True
-
-        raise web.seeother(constants.find_url(constants.access_control['login_page']))
+        raise web.seeother(constants.access_control['login_url'])
 
 
 page = Page
@@ -50,7 +49,7 @@ class Headed(page):
     def render(self, page, *args, **kwargs):
         head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
         if self.header:
-            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.user, constants.debug, constants.access_control['active']))
+            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.user, constants.debug, constants.access_control))
         else:
             header = ''
         page = str(common.renderer.render(page, *args, **kwargs))

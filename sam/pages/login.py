@@ -26,9 +26,9 @@ class Login_LDAP(base.headed):
             print("ERROR: ldap3 library not installed.")
             print("       install ldap3 with pip:")
             print("       `pip install ldap3`")
-            return self.render('login', constants.find_url(constants.access_control['login_page']), ['LDAP module not installed. Cannot perform login.'])
+            return self.render('login', constants.access_control['login_url'], ['LDAP module not installed. Cannot perform login.'])
 
-        return self.render('login', constants.find_url(constants.access_control['login_page']))
+        return self.render('login', constants.access_control['login_url'])
 
     # ======== Post
 
@@ -96,6 +96,6 @@ class Login_LDAP(base.headed):
             print("Error logging in: {}".format(e.message))
             if not self.errors:
                 self.errors.append("Login failed.")
-            return self.render('login', constants.find_url(constants.access_control['login_page']), self.errors)
+            return self.render('login', constants.access_control['login_url'], self.errors)
 
         raise web.seeother('./map')

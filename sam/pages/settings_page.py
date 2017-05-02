@@ -35,12 +35,7 @@ class SettingsPage(base.headed):
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        print("--==-- SETTINGS PAGE: GET")
-        print("Logged in.")
-        print("Session is a {0.__class__}".format(common.session))
-        pprint.pprint(dict(common.session))
-        print("--==-- SETTINGS PAGE: GET")
-        # self.require_group('read')
+        self.require_group('read')
         self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.user.viewing)
         self.dsModel = sam.models.datasources.Datasources(common.db, self.session, self.user.viewing)
         self.livekeyModel = sam.models.livekeys.LiveKeys(common.db, self.user.viewing)

@@ -31,6 +31,13 @@ def load_plugins():
     constants.plugins['loaded'] = loaded
     # Globals in sam.common get initialized based on data in constants.
     # Plugins change the initialization data, prompting this re-init:
+
+    constants.urls = []
+    constants.urls.extend(constants.plugin_urls)
+    constants.urls.extend([constants.access_control['login_url'], constants.access_control['login_target']])
+    constants.urls.extend([constants.access_control['logout_url'], constants.access_control['logout_target']])
+    constants.urls.extend(constants.default_urls)
+
     init_globals()
 
 
