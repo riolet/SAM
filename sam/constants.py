@@ -27,14 +27,13 @@ access_control = {
     'local_tls_key':   config.get('access_control', 'local_tls_key')
 }
 
-LDAP = {
-    'connection_string': config.get('LDAP', 'connection_string', default='')
+subscription = {
+    'default-name':  config.get('subscription', 'name'),
+    'default-email': config.get('subscription', 'email')
 }
 
-demo = {
-    'id': 1,
-    'email': 'sam@example.com',
-    'name': 'SAM',
+LDAP = {
+    'connection_string': config.get('LDAP', 'connection_string', default='')
 }
 
 collector = dict(config.items('collector'))

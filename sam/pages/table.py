@@ -254,7 +254,7 @@ class Table(base.headed):
         fs = []
         ds = None
         if "filters" in data:
-            ds, fs = sam.models.filters.readEncoded(data["filters"])
+            ds, fs = sam.models.filters.readEncoded(common.db, data["filters"])
         return ds, fs
 
     @staticmethod

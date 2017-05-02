@@ -44,7 +44,7 @@ def main(argv=None):
         'whois': False,
         'wsgi': False,
         'dest': 'default',
-        'sub': constants.demo['id']
+        'sub': None
     }
     valid_targets = ['aggregator', 'collector', 'webserver', 'import']
 
@@ -86,9 +86,9 @@ def main(argv=None):
         print("Error determining what to launch.")
 
 
-def launch_webserver(args):
+def launch_webserver(parsed):
     import sam.server_webserver
-    if args['wsgi']:
+    if parsed['wsgi']:
         print('launching wsgi webserver')
         global application
         application = sam.server_webserver.start_wsgi()
@@ -98,7 +98,7 @@ def launch_webserver(args):
             CherryPyWSGIServer.ssl_certificate = constants.access_control['local_tls_cert']
             CherryPyWSGIServer.ssl_private_key = constants.access_control['local_tls_key']
 
-        port = args['port']
+        port = parsed['port']
         if port is None:
             port = constants.webserver['listen_port']
         print('launching dev webserver on {}'.format(port))
@@ -106,25 +106,25 @@ def launch_webserver(args):
         print('webserver shut down.')
 
 
-def launch_collector(args):
+def launch_collector(parsed):
     import server_collector
-    port = args.get('port', None)
+    port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
-    print('launching collector on {}'.format(args['port']))
+    print('launching collector on {}'.format(parsed['port']))
     collector = server_collector.Collector()
-    collector.run(port=args['port'], format=args['format'])
+    collector.run(port=parsed['port'], format=parsed['format'])
     print('collector shut down.')
 
 
-def launch_aggregator(args):
+def launch_aggregator(parsed):
     import server_aggregator
-    if args['wsgi']:
+    if parsed['wsgi']:
         print("launching wsgi aggregator")
         global application
         application = server_aggregator.start_wsgi()
     else:
-        port = args.get('port', None)
+        port = parsed.get('port', None)
         if port is None:
             port = constants.aggregator['listen_port']
         print('launching dev aggregator on {}'.format(port))
@@ -135,9 +135,12 @@ def launch_aggregator(args):
 def launch_importer(parsed, args):
     import common
     import sam.importers.import_base
+    import sam.models.subscriptions
     common.load_plugins()
     datasource = parsed['dest']
-    subscription_id = parsed['sub']
+
+    sub_model = sam.models.subscriptions.Subscriptions(common.db_quiet)
+    subscription_id = sub_model.decode_sub(parsed['sub'])
     format = parsed['format']
 
     if len(args) != 1:
@@ -208,19 +211,21 @@ def launch_whois_service(db, sub):
     return whois
 
 
-def launch_localmode(args):
+def launch_localmode(parsed):
     import server_collector
 
     # enable local mode
     constants.enable_local_mode()
     import common
+    import sam.models.subscriptions
     db = common.db_quiet
-    sub_id = constants.demo['id']
+    sub_model = sam.models.subscriptions.Subscriptions(db)
+    sub_id = sub_model.decode_sub(parsed['sub'])
     check_database()
     access_key = create_local_settings(db, sub_id)
 
     # launch aggregator process
-    aggArgs = args.copy()
+    aggArgs = parsed.copy()
     aggArgs.pop('port')
     p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(aggArgs,))
     p_aggregator.start()
@@ -229,7 +234,7 @@ def launch_localmode(args):
     #    pipe stdin into the collector
     def spawn_coll(stdin):
         collector = server_collector.Collector()
-        collector.run_streamreader(stdin, format=args['format'], access_key=access_key)
+        collector.run_streamreader(stdin, format=parsed['format'], access_key=access_key)
     newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
         p_collector = multiprocessing.Process(target=spawn_coll, args=(newstdin,))
@@ -238,7 +243,7 @@ def launch_localmode(args):
         newstdin.close()  # close in the parent
 
     # launch whois service (if requested)
-    if args['whois']:
+    if parsed['whois']:
         print("Starting whois service")
         import models.nodes
         whois_thread = models.nodes.WhoisService(db, sub_id)
@@ -247,7 +252,7 @@ def launch_localmode(args):
         whois_thread = None
 
     # launch webserver locally.
-    launch_webserver(args)
+    launch_webserver(parsed)
 
     # pressing ctrl-C sends SIGINT to all child processes. The shutdown order is not guaranteed.
     print("joining collector")
@@ -258,10 +263,11 @@ def launch_localmode(args):
     p_aggregator.join()
     print("aggregator joined")
 
-    if args['whois']:
+    if parsed['whois']:
         print('joining whois')
-        if whois_thread and whois_thread.is_alive():
-            whois_thread.shutdown()
+        if whois_thread:
+            if whois_thread.is_alive():
+                whois_thread.shutdown()
             whois_thread.join()
         print('whois joined')
 

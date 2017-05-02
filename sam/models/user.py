@@ -1,14 +1,22 @@
+import web
+from sam import common
+from sam.models.subscriptions import Subscriptions
 from sam import constants
 
 
 class User(object):
     def __init__(self, session):
         self.session = session
-        # if not already logged in and
-        # access control is disabled, auto-login as a default user
-        if not self.logged_in and constants.access_control['active'] is False:
-            self.session = {}
-            self.login_simple('SAM')
+        # if access control is disabled, and login state
+        # is anything other than logged in on the 'auto' plan, log in again.
+        if constants.access_control['active'] is False and not self.logged_in or self.plan != 'auto':
+            if '_datasources' in self.session:
+                del self.session._datasources
+            if '_settings' in self.session:
+                del self.session._settings
+            sub_model = Subscriptions(common.db_quiet)
+            sub = sub_model.get_by_email(constants.subscription['default-email'])
+            self.login_simple('SAM', sub['subscription'])
 
     def login(self, email, name, subscription, groups, plan, active):
         self.email = email
@@ -20,8 +28,8 @@ class User(object):
         self.plan = plan
         self.plan_active = active
 
-    def login_simple(self, name):
-        self.login(name, name, constants.demo['id'], 'read write admin', 'admin', True)
+    def login_simple(self, name, subscription):
+        self.login(name, name, subscription, 'read write admin', 'auto', True)
 
     @property
     def email(self):
@@ -73,7 +81,7 @@ class User(object):
 
     @property
     def viewing(self):
-        return self.session.get('view_subscription', constants.demo['id'])
+        return self.session.get('view_subscription', None)
 
     @viewing.setter
     def viewing(self, value):

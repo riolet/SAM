@@ -1,15 +1,16 @@
+import re
 import json
+import decimal
 from sam import constants
 import web
 from sam import common
-import re
-import sam.models.settings
-import sam.models.links
-import sam.models.datasources
-import sam.models.nodes
-import base
 from sam import errors
-import decimal
+from sam.models.settings import Settings
+from sam.models.links import Links
+from sam.models.datasources import Datasources
+from sam.models.nodes import Nodes
+from sam.models.subscriptions import Subscriptions
+from sam.pages import base
 
 
 def decimal_default(obj):
@@ -82,8 +83,8 @@ class Stats(base.headed):
         return stats
 
     def overall_stats(self):
-        # ds_model = sam.models.datasources.Datasources(self.session, self.sub)
-        node_model = sam.models.nodes.Nodes(common.db, self.sub)
+        # ds_model = Datasources(self.session, self.sub)
+        node_model = Nodes(common.db, self.sub)
         stats = []
         stats.append(('Total hosts recorded', len(node_model.get_all_endpoints())))
 
@@ -115,10 +116,10 @@ class Stats(base.headed):
     def perform_get_command(self, request):
         self.require_group('read')
         if request['query'] == 'timerange':
-            linksModel = sam.models.links.Links(common.db, self.sub, request['ds'])
+            linksModel = Links(common.db, self.sub, request['ds'])
             return linksModel.get_timerange()
         elif request['query'] == 'protocols':
-            linksModel = sam.models.links.Links(common.db, self.sub, request['ds'])
+            linksModel = Links(common.db, self.sub, request['ds'])
             return linksModel.get_protocol_list()
         else:
             raise errors.MalformedRequest("Query not recognized.")
@@ -129,8 +130,9 @@ class Stats(base.headed):
     def headless_get(self):
         self.sub = self.user.viewing
         if self.sub is None:
-            self.sub = constants.demo['id']
-        self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.sub)
+            sub_model = Subscriptions(common.db)
+            self.sub = sub_model.get_by_email(constants.subscription['default-email'])
+        self.settingsModel = Settings(common.db, self.session, self.sub)
 
         try:
             self.request = self.decode_get_request(self.inbound)
@@ -144,12 +146,13 @@ class Stats(base.headed):
     def headed_get(self):
         self.require_group('read')
         self.sub = self.user.viewing
-        self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.sub)
+        print("Subscription is {}".format(self.sub))
+        self.settingsModel = Settings(common.db, self.session, self.sub)
         self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)
 
         segments = []
         segments.append(('Overall', self.overall_stats()))
-        ds_model = sam.models.datasources.Datasources(common.db, self.session, self.sub)
+        ds_model = Datasources(common.db, self.session, self.sub)
         for ds_id in ds_model.ds_ids:
             section_name = 'Datasource: {0}'.format(ds_model.datasources[ds_id]['name'])
             segments.append((section_name, self.ds_stats(ds_id)))

@@ -39,6 +39,13 @@ class Subscriptions:
         rows = self.db.select(Subscriptions.table, where='subscription=$sid', vars=qvars)
         return rows.first()
 
+    def set(self, sub_id, **kwargs):
+        qvars = {
+            'sub': sub_id,
+        }
+        rows_updated = self.db.update(Subscriptions.table, "subscription=$sub", vars=qvars, **kwargs)
+        return rows_updated == 1
+
     def create_subscription_tables(self, sub_id):
         replacements = {"acct": sub_id}
         if self.db.dbname == 'mysql':
@@ -51,8 +58,45 @@ class Subscriptions:
         portsModel.reset()
 
     def create_default_subscription(self):
-        email = constants.demo['email']
-        name = constants.demo['name']
+        email = constants.subscription['default-email']
+        name = constants.subscription['default-name']
         plan = 'admin'
         active = True
         self.db.insert(self.table, email=email, name=name, plan=plan, groups='read write admin', active=active)
+
+    def decode_sub(self, key):
+        """
+        :param key: a subscription id (string or int) or an email address that identify a subscription
+        :type key: int or unicode
+        :return: Subscription id (integer) or None on failure
+        :rtype: int or None
+        """
+        subs = self.get_all()
+        numbers = {sub['subscription'] for sub in subs}
+
+        error_response = None
+        response = error_response
+        sub_num = -1
+        try:
+            sub_num = int(key)
+        except:
+            sought_sub = None
+            for sub in subs:
+                if sub['email'] == key:
+                    sought_sub = sub
+                    break
+            if sought_sub:
+                sub_num = sought_sub['subscription']
+
+        if sub_num in numbers:
+            response = sub_num
+        elif constants.access_control['active'] is False:
+            sought_sub = None
+            for sub in subs:
+                if sub['email'] == constants.subscription['default-email']:
+                    sought_sub = sub
+                    break
+            if sought_sub:
+                response = sought_sub['subscription']
+
+        return response

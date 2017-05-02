@@ -297,7 +297,7 @@ filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,T
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 
-def readEncoded(filterString):
+def readEncoded(db, filterString):
     """
     :param filterString:
      :type filterString: unicode
@@ -313,7 +313,7 @@ def readEncoded(filterString):
         ds = int(ds_match.group())
     else:
         user = User(sam.common.session)
-        settings_model = Settings({}, user.viewing)
+        settings_model = Settings(db, {}, user.viewing)
         ds = settings_model['datasource']
 
     for encodedFilter in fstrings[1:]:
