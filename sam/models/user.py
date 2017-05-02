@@ -4,6 +4,10 @@ from sam import constants
 class User(object):
     def __init__(self, session):
         self.session = session
+        print("~ ~ ~ ~ ~")
+        print("User initialized with a {0.__class__}".format(session))
+        print("User session: {}".format(dict(session)))
+        print("~ ~ ~ ~ ~")
 
         # if not already logged in and
         # access control is disabled, auto-login as a default user
@@ -126,3 +130,17 @@ class User(object):
         has_plan = self.plan is not None and self.plan != 'none' and self.plan != ''
         plan_active = self.plan_active is True
         return exists and owns and has_plan and plan_active
+
+    def to_dict(self):
+        dict_form = {
+            'name': self.name,
+            'email': self.email,
+            'logged_in': self.logged_in,
+            'plan_active': self.plan_active,
+            'plan': self.plan,
+            'subscription': self.subscription,
+            'viewing': self.viewing,
+            'groups': self.groups,
+            'may_post': self.may_post()
+        }
+        return dict_form

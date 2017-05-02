@@ -48,10 +48,11 @@ def init_globals():
 
     web.config.debug = constants.debug
     web.config.session_parameters['cookie_path'] = "/"
+    web.config.session_parameters['cookie_domain'] = "/"
 
     db, db_quiet = get_db(constants.dbconfig.copy())
 
-    session_store = web.session.DBStore(db_quiet, 'sessions')
+    session_store = web.session.DBStore(db, 'sessions')
 
 
 def parse_sql_string(script, replacements):
