@@ -4,11 +4,6 @@ from sam import constants
 class User(object):
     def __init__(self, session):
         self.session = session
-        print("~ ~ ~ ~ ~")
-        print("User initialized with a {0.__class__}".format(session))
-        print("User session: {}".format(dict(session)))
-        print("~ ~ ~ ~ ~")
-
         # if not already logged in and
         # access control is disabled, auto-login as a default user
         if not self.logged_in and constants.access_control['active'] is False:

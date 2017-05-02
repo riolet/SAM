@@ -18,7 +18,7 @@ plugins = {
 access_control = {
     'active': config.get('access_control', 'active', default='False').lower() == 'true',
     'login_page': config.get('access_control', 'login_page', default='sam.pages.login.Login_LDAP'),
-    'local_tls': config.get('access_control', 'local_tls'),
+    'local_tls': config.get('access_control', 'local_tls', default='False').lower() == 'true',
     'local_tls_cert': config.get('access_control', 'local_tls_cert'),
     'local_tls_key': config.get('access_control', 'local_tls_key')
 }

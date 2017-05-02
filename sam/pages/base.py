@@ -47,8 +47,6 @@ class Headed(page):
         self.header = header
         self.footer = footer
 
-        self.session[title] = self.session.get(title, 0) + 1
-
     def render(self, page, *args, **kwargs):
         head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
         if self.header:

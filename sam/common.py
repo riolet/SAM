@@ -47,12 +47,12 @@ def init_globals():
         renderer.install_plugin_template_path(extra)
 
     web.config.debug = constants.debug
+    web.config._session = None  # erase any erroneous session creation.
     web.config.session_parameters['cookie_path'] = "/"
-    web.config.session_parameters['cookie_domain'] = "/"
 
     db, db_quiet = get_db(constants.dbconfig.copy())
 
-    session_store = web.session.DBStore(db, 'sessions')
+    session_store = web.session.DBStore(db_quiet, 'sessions')
 
 
 def parse_sql_string(script, replacements):
