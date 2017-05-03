@@ -1,33 +1,3 @@
-function GET_settings(ds, successCallback) {
-    "use strict";
-    if (typeof(successCallback) !== "function") {
-        return;
-    }
-    $.ajax({
-        url: "./settings",
-        type: "GET",
-        data: {"headless": 1, 'ds': ds},
-        dataType: "json",
-        error: generic_ajax_failure,
-        success: successCallback
-    });
-}
-
-function GET_timerange(successCallback) {
-  "use strict";
-  if (typeof(successCallback) !== "function") {
-      return;
-  }
-  $.ajax({
-    url: "./stats",
-    type: "GET",
-    data: {"q": "timerange", 'ds': config.ds},
-    dataType: "json",
-    error: generic_ajax_failure,
-    success: successCallback
-  });
-}
-
 function GET_links(addrs) {
     "use strict";
     var requestData = {

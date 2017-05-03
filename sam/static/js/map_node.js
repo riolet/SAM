@@ -46,8 +46,18 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   let nodes = {};
   nodes.nodes = {};
   nodes.layouts = {};
-  nodes.layout = "Address";
+  nodes.layout_flat = false;
+  nodes.layout_arrangement = "la_address";
   nodes.endpoint = "./nodes"
+
+  nodes.init = function (flat) {
+    nodes.layout_flat = flat;
+    if (flat) {
+      nodes.layout_arrangement = "la_circle";
+    } else {
+      nodes.layout_arrangement = "la_address";
+    }
+  }
 
   //what is rendered:
   // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});

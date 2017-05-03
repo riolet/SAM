@@ -3,7 +3,9 @@ body {
     font-size: 100%;
 }
 
-
+#navbar {
+  border-radius: 0;
+}
 
 .tab.segment {
     margin-top: 0em;

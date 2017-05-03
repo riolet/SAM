@@ -1,7 +1,3 @@
-var canvas;
-var ctx;
-var rect; //render region on screen
-
 //global transform coordinates, with initial values
 var tx = 0;
 var ty = 0;
@@ -51,8 +47,408 @@ var g_chunkSize = 40;
 //for filtering and searching
 var g_timer = null;
 
-function init() {
+(function () {
+  "use strict";
+  let controller = {
+    canvas: null,
+    ctx: null,
+    rect: {},
+    datasources: [],
+    settings: {},
+    autorefresh: false,
+    autorefresh_period: 0,
+    stats_endpoint: "./stats",
+    settings_endpoint: "./settings"
+  };
+
+  controller.canvas = null;
+  controller.ctx = null;
+  controller.rect = {};
+
+  controller.init = function() {
+    //get ctx/canvas reference
+    //update screen rect reference
+    controller.init_window();
+
+    //initialize selection, sidebar, ports, demo plugins
+    sel_init();
+    map_settings.init();
+    ports.display_callback = function() {
+        render_all();
+        sel_update_display();
+    };
+    controller.init_demo();
+
+    //add ip_search to settings panel
+    map_settings.add_object(null, null, map_settings.create_input("search", "Find an IP address. e.g. 192.168.0.12", "search", "Find IP...", onsearch));
+    //add port_filter to settings panel
+    map_settings.add_object(null, null, map_settings.create_input("filter", "Filter by port number. Try: 80", "search", "Filter by port...", onfilter));
+    //add protocol_filter to settings panel
+    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Filter by protocol. Try: UDP", "search", "Filter by protocol...", onProtocolFilter));
+
+    //get settings && get datasources
+    //   add data sources to settings panel
+    //   add refresh-enabled to settings panel
+    //   get timerange for datasource (start/end time)
+    //      create/update timerange slider
+    //      trigger the get-node sequence
+    // http://api.jquery.com/jQuery.when/
+    $.when(controller.GET_settings()).done(function (result) {
+      let btn_list = []
+      controller.datasources.forEach(function (ds) {
+        btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.datasource==controller.ds, cb));
+      });
+      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
+
+      controller.init_button(controller.datasource.flat, "address");
+
+      $.when(controller.GET_timerange(controller.ds)).done(function (result) {
+        nodes.init(controller.datasource.flat);
+        nodes.GET_request(config.ds, config.flat, null, function (response) {
+          resetViewport(nodes.nodes);
+          updateRenderRoot();
+          render_all();
+        });
+      });
+
+      map_settings.rebuild();
+    });
+
+  }
+
+  controller.init_buttons = function (isFlat, layout) {
+    let btn_list;
+    //(id, icon_name, tooltip, active, callback)
+
+    btn_list = [
+      map_settings.create_iconbutton(null, "area chart", "Number of Occurrences", true, cb),
+      map_settings.create_iconbutton(null, "bar chart", "Bytes Transferred", false, cb),
+      map_settings.create_iconbutton(null, "line chart", "Packets Transmitted", false, cb)
+    ];
+    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, cb));
+
+    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_clients", "desktop", "Show Pure Clients", config.show_clients, cb));
+    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_servers", "server", "Show Pure Servers", config.show_servers, cb));
+    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_in", "sign in", "Show Inbound Connections", config.show_in, cb));
+    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_out", "sign out", "Show Outbound Connections", config.show_out, cb));
+
+    btn_list = [
+      map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, cb),
+      map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", isFlat, cb)
+    ];
+    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, cb));
+
+    btn_list = [
+      map_settings.create_iconbutton("la_address", "qrcode", "Address", layout=="la_address", cb),
+      map_settings.create_iconbutton("la_grid", "table", "Grid", layout=="la_grid", cb),
+      map_settings.create_iconbutton("la_circle", "maximize", "Circle", layout=="la_circle", cb)
+    ];
+    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, cb));
+  }
+
+  controller.init_demo = function () {
+    if (window.location.pathname.substr(1,4) === "demo") {
+      let msgbox = document.getElementById("demo_msg");
+      $(msgbox).transition("fade");
+    }
+    $('.message .close')
+      .on('click', function() {
+        $(this)
+          .closest('.message')
+          .transition('fade');
+    });
+  };
+
+  controller.init_window = function () {
+    controller.canvas = document.getElementById("canvas");
+    controller.ctx = controller.canvas.getContext("2d");
+
+    let navBarHeight = $("#navbar").height();
+    $("#output").css("top", navBarHeight);
+    controller.canvas.width = window.innerWidth;
+    controller.canvas.height = window.innerHeight - navBarHeight;
+    controller.ctx.lineJoin = "bevel";
+
+    //Event listeners for detecting clicks and zooms
+    controller.canvas.addEventListener("mousedown", mousedown);
+    controller.canvas.addEventListener("mousemove", mousemove);
+    controller.canvas.addEventListener("mouseup", mouseup);
+    controller.canvas.addEventListener("mouseout", mouseup);
+    controller.canvas.addEventListener("wheel", wheel);
+    window.addEventListener("keydown", keydown, false);
+
+    rect = controller.canvas.getBoundingClientRect();
+    tx = rect.width / 2;
+    ty = rect.height / 2;
+  };
+
+  controller.GET_settings = function (ds, successCallback) {
     "use strict";
+    if (typeof(successCallback) !== "function") {
+        return;
+    }
+    let request = $.ajax({
+      url: controller.settings_endpoint,
+      type: "GET",
+      data: {"headless": 1},
+      dataType: "json",
+      error: generic_ajax_failure,
+      success: function (settings) {
+        console.log("Settings received: ", settings);
+        controller.settings = settings;
+        controller.datasources = settings.datasources;
+        controller.datasource = settings.datasources[settings.datasource];
+        controller.ds = settings.datasource;
+
+        controller.autorefresh = (controller.datasource.ar_active === 1);
+        controller.autorefresh_period = controller.datasource.ar_interval;
+        setAutoUpdate();
+
+        if (typeof(successCallback) == "function") {
+          successCallback(response);
+        }
+      }
+    });
+
+    return request;
+  }
+
+  controller.GET_timerange = function (ds, successCallback) {
+    "use strict";
+    let request = $.ajax({
+      url: controller.stats_endpoint,
+      type: "GET",
+      data: {"q": "timerange", 'ds': ds},
+      dataType: "json",
+      error: generic_ajax_failure,
+      success: function (response) {
+        if (range.min == range.max) {
+          config.tmin = range.min - 300;
+          config.tmax = range.max;
+        } else {
+          config.tmin = range.min;
+          config.tmax = range.max;
+        }
+        config.tend = config.tmax;
+        config.tstart = config.tmax - 300;
+        slider_init(config);
+
+        if (typeof(successCallback) == "function") {
+          successCallback(response);
+        }
+      }
+    });
+
+    return request;
+  };
+
+  window.controller = controller
+});
+
+(function () {
+  "use strict";
+  let map_settings = {};
+  map_settings.structure = {objects: [], children: {}};
+
+  map_settings.reset = function () {
+    map_settings.structure = {objects: [], children: {}};
+  }
+
+  map_settings.clear_html = function (accordion) {
+    accordion.innerHTML = "";
+
+  };
+
+  map_settings.make_html = function (parent, structure) {
+    structure.objects.forEach( function (item) {
+      parent.appendChild(item);
+    });
+
+    Object.keys(structure.children).forEach(function (key) {
+      let cat = structure.children[key];
+
+      let titleDiv = document.createElement("DIV");
+      titleDiv.className = "title"
+      let ddi = document.createElement("I");
+      ddi.className = "dropdown icon";
+      titleDiv.appendChild(ddi);
+      titleDiv.appendChild(document.createTextNode(key));
+      let contentDiv = document.createElement("DIV");
+      contentDiv.className = "content";
+
+      map_settings.make_html(contentDiv, cat);
+
+      parent.appendChild(titleDiv);
+      parent.appendChild(contentDiv);
+    });
+  };
+
+  map_settings.init = function (accordion) {
+    $(accordion).accordion({
+      exclusive: false,
+      animateChildren: false
+    });
+  };
+
+  map_settings.rebuild = function () {
+    let accordion = document.getElementById("mapconfig");
+    map_settings.clear_html(accordion);
+    map_settings.make_html(accordion, map_settings.structure);
+    map_settings.init(accordion);
+  };
+
+  map_settings.add_category = function (cat) {
+    if (map_settings.structure.children.hasOwnProperty(cat)) {
+      return;
+    }
+    map_settings.structure.children[cat] = {objects: [], children: {}};
+  };
+
+  map_settings.add_subcategory = function (cat, subcat) {
+    if (!map_settings.structure.children.hasOwnProperty(cat)) {
+      map_settings.add_category(cat);
+    }
+    if (map_settings.structure.children[cat].children.hasOwnProperty(subcat)) {
+      return;
+    }
+    map_settings.structure.children[cat].children[subcat] = {objects: [], children: {}};
+  };
+
+  map_settings.add_object = function (cat, subcat, obj) {
+    if (cat) {
+      if (!map_settings.structure.children.hasOwnProperty(cat)) {
+        map_settings.add_category(cat);
+      }
+      if (subcat) {
+        if (!map_settings.structure.children[cat].children.hasOwnProperty(subcat)) {
+          map_settings.add_subcategory(cat, subcat);
+        }
+        map_settings.structure.children[cat].children[subcat].objects.push(obj);
+      } else {
+        map_settings.structure.children[cat].objects.push(obj);
+      }
+    } else {
+      map_settings.structure.objects.push(obj);
+    }
+  };
+
+  map_settings.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
+    //create button
+    let btn = document.createElement("BUTTON");
+    btn.className = "ui icon inverted button";
+    if (active) {
+      btn.classList.add("active");
+    }
+    if (id) {
+      btn.id = id;
+    }
+    // .dataset[...] is for the tooltip.
+    btn.dataset["tooltip"] = tooltip;
+    btn.dataset["inverted"] = true;
+    btn.dataset["position"] = "top left";
+    btn.dataset["delay"] = "500";
+
+    let icon = document.createElement("I");
+    icon.className = icon_name + " icon";
+    btn.appendChild(icon);
+    if (typeof(callback) === "function") {
+      btn.onclick = callback;
+    }
+
+    return btn;
+  };
+
+  map_settings.create_togglebutton = function (id, icon_name, tooltip, active, callback) {
+    let btn = map_settings.create_iconbutton(id, icon_name, tooltip, active, null);
+    btn.onclick = function (e_click) {
+      btn.classList.toggle('active');
+      if (typeof(callback) === "function") {
+        callback(e_click);
+      }
+    };
+
+    return btn;
+  };
+
+  map_settings.create_buttongroup = function (btnlist, callback) {
+    let group = document.createElement("DIV");
+    group.className = "ui icon buttons";
+
+    let handler = {
+      activate: function(e_click) {
+        $(this)
+          .addClass('active')
+          .siblings()
+          .removeClass('active')
+        ;
+        if (typeof(callback) === "function") {
+          callback(e_click);
+        }
+      }
+    }
+
+    btnlist.forEach(function (item) {
+      item.onclick = handler.activate;
+      group.appendChild(item);
+    });
+
+    return group;
+  };
+
+  map_settings.create_input = function (id, label_text, icon_name, placeholder, callback) {
+    let div = document.createElement("DIV");
+    let icon = document.createElement("I");
+    let label = document.createElement("LABEL");
+    let input = document.createElement("INPUT");
+
+    div.classList = "ui inverted fluid icon input";
+    label.appendChild(document.createTextNode(label_text));
+    label.classList = "configlabel";
+    label.htmlFor = id;
+    input.id = id;
+    input.placeholder = placeholder;
+    input.type="text";
+    if (typeof(callback) == "function") {
+      input.oninput = callback;
+    }
+    icon.classList = icon_name + " icon";
+
+    input.dataset["tooltip"] = "pizza sparks";
+    input.dataset["inverted"] = true;
+    input.dataset["position"] = "top left";
+    input.dataset["delay"] = "500";
+
+    div.appendChild(label);
+    div.appendChild(input);
+    div.appendChild(icon);
+
+    return div;
+  };
+
+  map_settings.init = function () {
+    //sidebar init
+    $('.ui.sidebarholder .ui.sidebar')
+      .sidebar({
+        context: $('.ui.sidebarholder'),
+        dimPage: false,
+        closable: false,
+        transition: 'push'
+      })
+      .sidebar('attach events', '.drawer-toggle')
+    ;
+  };
+
+  //install layout
+  window.map_settings = map_settings;
+}());
+
+function init() {
+  controller.init();
+}
+
+function init_old() {
+    "use strict";
+    /*
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     init_canvas(canvas, ctx);
@@ -61,7 +457,8 @@ function init() {
     tx = rect.width / 2;
     ty = rect.height / 2;
 
-    window.addEventListener("keydown", keydown, false);
+
+
 
     sel_init();
 
@@ -77,8 +474,6 @@ function init() {
     searchElement.value = "";
     searchElement.oninput = onsearch;
 
-    sel_panel_height();
-    $(".ui.accordion").accordion();
     $("#settings_menu").dropdown({
         action: updateConfig
     });
@@ -96,6 +491,17 @@ function init() {
           .transition('fade');
     });
 
+    //sidebar init
+    $('.ui.sidebartest .ui.sidebar')
+      .sidebar({
+        context: $('.ui.sidebartest'),
+        dimPage: false,
+        closable: false,
+        transition: 'push'
+      })
+      .sidebar('attach events', '.drawer-toggle')
+    ;
+
     //configure ports
     ports.display_callback = function() {
         render_all();
@@ -106,10 +512,11 @@ function init() {
     GET_settings(null, function (settings) {
         config.update = (settings.datasources[settings.datasource].ar_active === 1);
         config.update_interval = settings.datasources[settings.datasource].ar_interval;
+    */
         config.flat = (settings.datasources[settings.datasource].flat === 1);
+    /*
         config.ds = "ds" + settings.datasource;
         setAutoUpdate();
-
         GET_timerange(function (range) {
           if (range.min == range.max) {
             config.tmin = range.min - 300;
@@ -121,6 +528,7 @@ function init() {
           config.tend = config.tmax;
           config.tstart = config.tmax - 300;
           slider_init(config);
+
           if (config.flat) {
             nodes.layout = "Circle";
           } else {
@@ -132,7 +540,9 @@ function init() {
             render_all();
           });
         });
+        init_settings();
         init_configbuttons();
+        */
     });
 }
 
@@ -154,6 +564,42 @@ function init_toggleButton(id, ontext, offtext, isOn) {
     });
 }
 
+function cb(param) {
+  console.log("Clicked!", param);
+}
+
+function init_settings() {
+  let btn_list;
+  //(id, icon_name, tooltip, active, callback)
+
+  btn_list = [
+    map_settings.create_iconbutton(null, "area chart", "Number of Occurrences", true, cb),
+    map_settings.create_iconbutton(null, "bar chart", "Bytes Transferred", false, cb),
+    map_settings.create_iconbutton(null, "line chart", "Packets Transmitted", false, cb)
+  ];
+  map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, cb));
+
+  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_clients", "desktop", "Show Pure Clients", config.show_clients, cb));
+  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_servers", "server", "Show Pure Servers", config.show_servers, cb));
+  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_in", "sign in", "Show Inbound Connections", config.show_in, cb));
+  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_out", "sign out", "Show Outbound Connections", config.show_out, cb));
+
+  btn_list = [
+    map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", config.flat==false, cb),
+    map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", config.flat==true, cb)
+  ];
+  map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, cb));
+
+  btn_list = [
+    map_settings.create_iconbutton("la_address", "qrcode", "Address", true, cb),
+    map_settings.create_iconbutton("la_grid", "table", "Grid", false, cb),
+    map_settings.create_iconbutton("la_circle", "maximize", "Circle", false, cb)
+  ];
+  map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, cb));
+
+  map_settings.rebuild();
+}
+
 function init_configbuttons() {
     init_toggleButton("show_clients", "Clients Shown", "Clients Hidden", config.show_clients);
     init_toggleButton("show_servers", "Servers Shown", "Servers Hidden", config.show_servers);
@@ -166,21 +612,6 @@ function init_configbuttons() {
     document.getElementById("links").classList.add("active");
     let active_ds = document.getElementById(config.ds);
     active_ds.classList.add("active");
-}
-
-function init_canvas(c, cx) {
-    var navBarHeight = $("#navbar").height();
-    $("#output").css("top", navBarHeight);
-    c.width = window.innerWidth;
-    c.height = window.innerHeight - navBarHeight;
-    cx.lineJoin = "bevel";
-
-    //Event listeners for detecting clicks and zooms
-    c.addEventListener("mousedown", mousedown);
-    c.addEventListener("mousemove", mousemove);
-    c.addEventListener("mouseup", mouseup);
-    c.addEventListener("mouseout", mouseup);
-    c.addEventListener("wheel", wheel);
 }
 
 function currentSubnet(scale) {

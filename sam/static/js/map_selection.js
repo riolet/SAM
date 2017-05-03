@@ -11,6 +11,8 @@ function sel_init() {
     m_selection["conn_in"] = document.getElementById("conn_in");
     m_selection["conn_out"] = document.getElementById("conn_out");
     m_selection["ports_in"] = document.getElementById("ports_in");
+    sel_panel_height();
+    $(document.getElementById("selectionInfo")).accordion();
 }
 
 function sel_set_selection(node) {
