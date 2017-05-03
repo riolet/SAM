@@ -19,6 +19,7 @@ access_control = {
     'active':          config.get('access_control', 'active', default='False').lower() == 'true',
     'login_url':       config.get('access_control', 'login_url'),
     'login_target':    config.get('access_control', 'login_target'),
+    'login_redirect':  config.get('access_control', 'login_redirect'),
     'logout_url':      config.get('access_control', 'logout_url'),
     'logout_target':   config.get('access_control', 'logout_target'),
     'logout_redirect': config.get('access_control', 'logout_redirect'),

@@ -146,7 +146,6 @@ class Stats(base.headed):
     def headed_get(self):
         self.require_group('read')
         self.sub = self.user.viewing
-        print("Subscription is {}".format(self.sub))
         self.settingsModel = Settings(common.db, self.session, self.sub)
         self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)
 

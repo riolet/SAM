@@ -6,7 +6,7 @@ import web
 class Logout(base.headless):
     def __init__(self):
         super(Logout, self).__init__()
-        self.logout_redirect = '/'
+        self.logout_redirect = constants.access_control['logout_redirect']
 
     def decode_get_request(self, data):
         if 'logout_redirect' in data:
