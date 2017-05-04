@@ -59,7 +59,7 @@ function checkLoD() {
     }
   });
   if (nodesToLoad.length > 0) {
-    nodes.GET_request(config.ds, config.flat, nodesToLoad, function () {
+    nodes.GET_request(nodesToLoad, function () {
       updateRenderRoot();
       render_all();
     });
@@ -76,7 +76,7 @@ function GET_details(node, callback) {
         "tend": config.tend,
         "order": "-links",
         "simple": true,
-        "ds": config.ds
+        "ds": controller.ds
         };
 
     $.ajax({
@@ -134,7 +134,7 @@ function GET_details_sorted(node, component, order, callback) {
         "order": order,
         "simple": true,
         "component": component,
-        "ds": config.ds
+        "ds": controller.ds
         };
 
     $.ajax({
