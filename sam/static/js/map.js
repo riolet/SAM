@@ -47,9 +47,10 @@ var g_chunkSize = 40;
 //for filtering and searching
 var g_timer = null;
 
+// controller
 (function () {
   "use strict";
-  let controller = {
+  let self = {
     canvas: null,
     ctx: null,
     rect: {},
@@ -61,22 +62,22 @@ var g_timer = null;
     settings_endpoint: "./settings"
   };
 
-  controller.init = function() {
-    console.log("CONTROLLER", "init");
+  self.init = function() {
+    console.log("self", "init");
     //get ctx/canvas reference
     //update screen rect reference
-    controller.init_window();
+    self.init_window();
 
     //initialize selection, sidebar, ports, demo plugins
     sel_init();
     map_settings.init();
-    //map_settings.add_object(null, null, controller.init_timeslider());
+    //map_settings.add_object(null, null, self.init_timeslider());
 
     ports.display_callback = function() {
         render_all();
         sel_update_display();
     };
-    controller.init_demo();
+    self.init_demo();
 
     // add ip_search to settings panel
     map_settings.add_object(null, null, map_settings.create_input("search", "Search", "search", "Find IP...", "Find an IP address. e.g. 192.168.0.12", onsearch));
@@ -85,7 +86,7 @@ var g_timer = null;
     // add protocol_filter to settings panel
     map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "exchange", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
     // auto-refresh
-    map_settings.add_object("Datasource", null, map_settings.create_iconbutton("autorefresh", "reload", "Autorefresh the node map", false, cb));
+    map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", false, null), cb));
 
     // display intermediate menu.
     map_settings.rebuild();
@@ -96,19 +97,19 @@ var g_timer = null;
     //   get timerange for datasource (start/end time)
     //      create/update timerange slider
     //      trigger the get-node sequence
-    controller.GET_settings(null, function (result) {
-      console.log("CONTROLLER", "init", "get_settings is 'done'");
+    self.GET_settings(null, function (result) {
+      console.log("self", "init", "get_settings is 'done'");
       let btn_list = []
-      controller.datasources.forEach(function (ds) {
-        btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.id==controller.ds, cb));
+      self.datasources.forEach(function (ds) {
+        btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.id==self.ds, cb));
       });
       map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
 
-      controller.GET_timerange(controller.ds, function (result) {
-        console.log("CONTROLLER", "init", "get_timerange is 'done'");
-        console.log("controller.datasource is ", controller.datasource);
-        nodes.set_datasource(controller.datasource);
-        controller.init_buttons(nodes.layout_flat, nodes.layout_arrangement);
+      self.GET_timerange(self.ds, function (result) {
+        console.log("self", "init", "get_timerange is 'done'");
+        console.log("self.datasource is ", self.datasource);
+        nodes.set_datasource(self.datasource);
+        self.init_buttons(nodes.layout_flat, nodes.layout_arrangement);
 
         nodes.GET_request(null, function (response) {
           resetViewport(nodes.nodes);
@@ -118,56 +119,9 @@ var g_timer = null;
         map_settings.rebuild();
       });
     });
-  }
+  };
 
-  controller.init_timeslider = function () {
-    /*
-    <div class="item" id="time_box">
-      <p>Time Range</p>
-      <div class="slider-box">
-        <div id="slider-date"></div>
-      </div>
-      <p><input class="slider-input" id="input-start" value="2016-06-19 19:00"> From</p>
-      <p><input class="slider-input" id="input-end" value="2016-06-20 08:00"> To</p>
-    </div>
-    */
-    let div3 = document.createElement("DIV");
-    div3.id="slider-date";
-
-    let div2 = document.createElement("DIV");
-    div2.className = "slider-box";
-    div2.appendChild(div3);
-
-    let p1 = document.createElement("P");
-    p1.appendChild(document.createTextNode("Time Range"));
-
-    let div1 = document.createElement("DIV");
-    div1.className = "item";
-    div1.id = "time_box";
-    div1.appendChild(p1);
-    div1.appendChild(div2)
-
-    let p2 = document.createElement("P");
-    let input1 = document.createElement("INPUT");
-    input1.className = "slider-input";
-    input1.id = "input-start";
-    input1.value = "2016-06-19 19:00";
-    p2.appendChild(input1);
-    p2.appendChild(document.createTextNode(" From"));
-    div1.appendChild(p2);
-
-    let p3 = document.createElement("P");
-    let input2 = document.createElement("INPUT");
-    input2.className = "slider-input";
-    input2.id = "input-end";
-    input2.value = "2016-06-20 08:00";
-    p3.appendChild(input2);
-    p3.appendChild(document.createTextNode(" To"));
-    div1.appendChild(p3);
-    return div1;
-  }
-
-  controller.init_buttons = function (isFlat, layout) {
+  self.init_buttons = function (isFlat, layout) {
     let btn_list;
     //(id, icon_name, tooltip, active, callback)
 
@@ -176,28 +130,28 @@ var g_timer = null;
       map_settings.create_iconbutton(null, "bar chart", "Bytes Transferred", false, cb),
       map_settings.create_iconbutton(null, "line chart", "Packets Transmitted", false, cb)
     ];
-    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, cb));
+    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "icon", cb));
 
-    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_clients", "desktop", "Show Pure Clients", config.show_clients, cb));
-    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_servers", "server", "Show Pure Servers", config.show_servers, cb));
-    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_in", "sign in", "Show Inbound Connections", config.show_in, cb));
-    map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("show_out", "sign out", "Show Outbound Connections", config.show_out, cb));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", config.show_clients, null), cb));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", config.show_servers, null), cb));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_in", "sign in", "Show Inbound Connections", config.show_in, null), cb));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_out", "sign out", "Show Outbound Connections", config.show_out, null), cb));
 
     btn_list = [
       map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, cb),
       map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", isFlat, cb)
     ];
-    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, cb));
+    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, "icon", cb));
 
     btn_list = [
       map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="la_Address", cb),
       map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="la_Grid", cb),
       map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="la_Circle", cb)
     ];
-    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, cb));
-  }
+    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", cb));
+  };
 
-  controller.init_demo = function () {
+  self.init_demo = function () {
     if (window.location.pathname.substr(1,4) === "demo") {
       let msgbox = document.getElementById("demo_msg");
       $(msgbox).transition("fade");
@@ -210,27 +164,27 @@ var g_timer = null;
     });
   };
 
-  controller.init_window = function () {
-    controller.canvas = document.getElementById("canvas");
-    controller.ctx = controller.canvas.getContext("2d");
+  self.init_window = function () {
+    self.canvas = document.getElementById("canvas");
+    self.ctx = self.canvas.getContext("2d");
 
     let navBarHeight = $("#navbar").height();
     $("#output").css("top", navBarHeight);
-    controller.canvas.width = window.innerWidth;
-    controller.canvas.height = window.innerHeight - navBarHeight;
-    controller.ctx.lineJoin = "bevel";
-    controller.rect = controller.canvas.getBoundingClientRect();
+    self.canvas.width = window.innerWidth;
+    self.canvas.height = window.innerHeight - navBarHeight;
+    self.ctx.lineJoin = "bevel";
+    self.rect = self.canvas.getBoundingClientRect();
 
-    tx = controller.rect.width / 2;
-    ty = controller.rect.height / 2;
+    tx = self.rect.width / 2;
+    ty = self.rect.height / 2;
 
     //Event listeners for detecting clicks and zooms
     /*
-    controller.canvas.addEventListener("mousedown", mousedown);
-    controller.canvas.addEventListener("mousemove", mousemove);
-    controller.canvas.addEventListener("mouseup", mouseup);
-    controller.canvas.addEventListener("mouseout", mouseup);
-    controller.canvas.addEventListener("wheel", wheel);
+    self.canvas.addEventListener("mousedown", mousedown);
+    self.canvas.addEventListener("mousemove", mousemove);
+    self.canvas.addEventListener("mouseup", mouseup);
+    self.canvas.addEventListener("mouseout", mouseup);
+    self.canvas.addEventListener("wheel", wheel);
     */
     let pusher = document.getElementsByClassName("pusher")[0];
     pusher.addEventListener("mousedown", mousedown);
@@ -242,30 +196,30 @@ var g_timer = null;
     window.addEventListener("keydown", keydown, false);
   };
 
-  controller.GET_settings = function (ds, successCallback) {
-    console.log("CONTROLLER", "GET_settings");
+  self.GET_settings = function (ds, successCallback) {
+    console.log("self", "GET_settings");
     if (typeof(successCallback) !== "function") {
         return;
     }
     let request = $.ajax({
-      url: controller.settings_endpoint,
+      url: self.settings_endpoint,
       type: "GET",
       data: {"headless": 1},
       dataType: "json",
       error: generic_ajax_failure,
       success: function (settings) {
-        console.log("CONTROLLER", "GET_settings", "response");
+        console.log("self", "GET_settings", "response");
         console.log("Settings received: ", settings);
-        controller.settings = settings;
-        controller.datasources = []
+        self.settings = settings;
+        self.datasources = []
         Object.keys(settings.datasources).forEach( function (key) {
-          controller.datasources.push(settings.datasources[key]);
+          self.datasources.push(settings.datasources[key]);
         });
-        controller.datasource = settings.datasources[settings.datasource];
-        controller.ds = settings.datasource;
+        self.datasource = settings.datasources[settings.datasource];
+        self.ds = settings.datasource;
 
-        controller.autorefresh = (controller.datasource.ar_active === 1);
-        controller.autorefresh_period = controller.datasource.ar_interval;
+        self.autorefresh = (self.datasource.ar_active === 1);
+        self.autorefresh_period = self.datasource.ar_interval;
         setAutoUpdate();
 
         if (typeof(successCallback) == "function") {
@@ -275,18 +229,18 @@ var g_timer = null;
     });
 
     return request;
-  }
+  };
 
-  controller.GET_timerange = function (ds, successCallback) {
-    console.log("CONTROLLER", "GET_timerange");
+  self.GET_timerange = function (ds, successCallback) {
+    console.log("self", "GET_timerange");
     let request = $.ajax({
-      url: controller.stats_endpoint,
+      url: self.stats_endpoint,
       type: "GET",
       data: {"q": "timerange", 'ds': ds},
       dataType: "json",
       error: generic_ajax_failure,
       success: function (range) {
-        console.log("CONTROLLER", "GET_timerange", "response");
+        console.log("self", "GET_timerange", "response");
         if (range.min == range.max) {
           config.tmin = range.min - 300;
           config.tmax = range.max;
@@ -307,24 +261,24 @@ var g_timer = null;
     return request;
   };
 
-  window.controller = controller
+  window.controller = self;
 }());
 
+// map_settings
 (function () {
   "use strict";
-  let map_settings = {};
-  map_settings.structure = {objects: [], children: {}};
+  let self = {};
+  self.structure = {objects: [], children: {}};
 
-  map_settings.reset = function () {
-    map_settings.structure = {objects: [], children: {}};
-  }
-
-  map_settings.clear_html = function (accordion) {
-    accordion.innerHTML = "";
-
+  self.reset = function () {
+    self.structure = {objects: [], children: {}};
   };
 
-  map_settings.make_html = function (parent, structure) {
+  self.clear_html = function (accordion) {
+    accordion.innerHTML = "";
+  };
+
+  self.make_html = function (parent, structure) {
     structure.objects.forEach( function (item) {
       parent.appendChild(item);
     });
@@ -341,63 +295,63 @@ var g_timer = null;
       let contentDiv = document.createElement("DIV");
       contentDiv.className = "content";
 
-      map_settings.make_html(contentDiv, cat);
+      self.make_html(contentDiv, cat);
 
       parent.appendChild(titleDiv);
       parent.appendChild(contentDiv);
     });
   };
 
-  map_settings.init_accordion = function (accordion) {
+  self.init_accordion = function (accordion) {
     $(accordion).accordion({
       exclusive: false,
       animateChildren: false
     });
   };
 
-  map_settings.rebuild = function () {
+  self.rebuild = function () {
     let accordion = document.getElementById("mapconfig");
-    map_settings.clear_html(accordion);
-    map_settings.make_html(accordion, map_settings.structure);
-    map_settings.init_accordion(accordion);
+    self.clear_html(accordion);
+    self.make_html(accordion, self.structure);
+    self.init_accordion(accordion);
   };
 
-  map_settings.add_category = function (cat) {
-    if (map_settings.structure.children.hasOwnProperty(cat)) {
+  self.add_category = function (cat) {
+    if (self.structure.children.hasOwnProperty(cat)) {
       return;
     }
-    map_settings.structure.children[cat] = {objects: [], children: {}};
+    self.structure.children[cat] = {objects: [], children: {}};
   };
 
-  map_settings.add_subcategory = function (cat, subcat) {
-    if (!map_settings.structure.children.hasOwnProperty(cat)) {
-      map_settings.add_category(cat);
+  self.add_subcategory = function (cat, subcat) {
+    if (!self.structure.children.hasOwnProperty(cat)) {
+      self.add_category(cat);
     }
-    if (map_settings.structure.children[cat].children.hasOwnProperty(subcat)) {
+    if (self.structure.children[cat].children.hasOwnProperty(subcat)) {
       return;
     }
-    map_settings.structure.children[cat].children[subcat] = {objects: [], children: {}};
+    self.structure.children[cat].children[subcat] = {objects: [], children: {}};
   };
 
-  map_settings.add_object = function (cat, subcat, obj) {
+  self.add_object = function (cat, subcat, obj) {
     if (cat) {
-      if (!map_settings.structure.children.hasOwnProperty(cat)) {
-        map_settings.add_category(cat);
+      if (!self.structure.children.hasOwnProperty(cat)) {
+        self.add_category(cat);
       }
       if (subcat) {
-        if (!map_settings.structure.children[cat].children.hasOwnProperty(subcat)) {
-          map_settings.add_subcategory(cat, subcat);
+        if (!self.structure.children[cat].children.hasOwnProperty(subcat)) {
+          self.add_subcategory(cat, subcat);
         }
-        map_settings.structure.children[cat].children[subcat].objects.push(obj);
+        self.structure.children[cat].children[subcat].objects.push(obj);
       } else {
-        map_settings.structure.children[cat].objects.push(obj);
+        self.structure.children[cat].objects.push(obj);
       }
     } else {
-      map_settings.structure.objects.push(obj);
+      self.structure.objects.push(obj);
     }
   };
 
-  map_settings.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
+  self.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
     btn.className = "ui icon inverted button";
@@ -423,8 +377,7 @@ var g_timer = null;
     return btn;
   };
 
-  map_settings.create_togglebutton = function (id, icon_name, tooltip, active, callback) {
-    let btn = map_settings.create_iconbutton(id, icon_name, tooltip, active, null);
+  self.btn_toggleable = function (btn, callback) {
     btn.onclick = function (e_click) {
       btn.classList.toggle('active');
       if (typeof(callback) === "function") {
@@ -435,9 +388,9 @@ var g_timer = null;
     return btn;
   };
 
-  map_settings.create_buttongroup = function (btnlist, callback) {
+  self.create_buttongroup = function (btnlist, css_classes, callback) {
     let group = document.createElement("DIV");
-    group.className = "ui icon buttons";
+    group.className = "ui buttons " + css_classes;
 
     let handler = {
       activate: function(e_click) {
@@ -460,7 +413,7 @@ var g_timer = null;
     return group;
   };
 
-  map_settings.create_input = function (id, label_text, icon_name, placeholder, tooltip, callback) {
+  self.create_input = function (id, label_text, icon_name, placeholder, tooltip, callback) {
     let outer_div = document.createElement("DIV");
     let div = document.createElement("DIV");
     let icon = document.createElement("I");
@@ -493,7 +446,7 @@ var g_timer = null;
     return outer_div;
   };
 
-  map_settings.init = function () {
+  self.init = function () {
     //sidebar init
     $('.ui.sidebarholder .ui.sidebar')
       .sidebar({
@@ -507,129 +460,11 @@ var g_timer = null;
   };
 
   //install layout
-  window.map_settings = map_settings;
+  window.map_settings = self;
 }());
 
 function init() {
   controller.init();
-}
-
-function init_old() {
-    "use strict";
-    /*
-    canvas = document.getElementById("canvas");
-    ctx = canvas.getContext("2d");
-    init_canvas(canvas, ctx);
-
-    rect = canvas.getBoundingClientRect();
-    tx = rect.width / 2;
-    ty = rect.height / 2;
-
-
-
-
-    sel_init();
-
-    var filterElement = document.getElementById("filter");
-    filterElement.oninput = onfilter;
-    config.filter = filterElement.value;
-
-    filterElement = document.getElementById("proto_filter");
-    filterElement.oninput = onProtocolFilter;
-    config.protocol = filterElement.value;
-
-    var searchElement = document.getElementById("search");
-    searchElement.value = "";
-    searchElement.oninput = onsearch;
-
-    $("#settings_menu").dropdown({
-        action: updateConfig
-    });
-    $(".input.icon").popup();
-
-    // for "demo data" message box
-    if (window.location.pathname.substr(1,4) === "demo") {
-      let msgbox = document.getElementById("demo_msg");
-      $(msgbox).transition("fade");
-    }
-    $('.message .close')
-      .on('click', function() {
-        $(this)
-          .closest('.message')
-          .transition('fade');
-    });
-
-    //sidebar init
-    $('.ui.sidebartest .ui.sidebar')
-      .sidebar({
-        context: $('.ui.sidebartest'),
-        dimPage: false,
-        closable: false,
-        transition: 'push'
-      })
-      .sidebar('attach events', '.drawer-toggle')
-    ;
-
-    //configure ports
-    ports.display_callback = function() {
-        render_all();
-        sel_update_display();
-    };
-
-    //retrieve config settings
-    GET_settings(null, function (settings) {
-        config.update = (settings.datasources[settings.datasource].ar_active === 1);
-        config.update_interval = settings.datasources[settings.datasource].ar_interval;
-    */
-        config.flat = (settings.datasources[settings.datasource].flat === 1);
-    /*
-        config.ds = "ds" + settings.datasource;
-        setAutoUpdate();
-        GET_timerange(function (range) {
-          if (range.min == range.max) {
-            config.tmin = range.min - 300;
-            config.tmax = range.max;
-          } else {
-            config.tmin = range.min;
-            config.tmax = range.max;
-          }
-          config.tend = config.tmax;
-          config.tstart = config.tmax - 300;
-          slider_init(config);
-
-          if (config.flat) {
-            nodes.layout = "Circle";
-          } else {
-            nodes.layout = "Address";
-          }
-          nodes.GET_request(config.ds, config.flat, null, function (response) {
-            resetViewport(nodes.nodes);
-            updateRenderRoot();
-            render_all();
-          });
-        });
-        init_settings();
-        init_configbuttons();
-    });
-        */
-}
-
-function init_toggleButton(id, ontext, offtext, isOn) {
-    var toggleButton = document.getElementById(id);
-    toggleButton.innerHTML = "";
-    if (isOn) {
-        toggleButton.appendChild(document.createTextNode(ontext));
-        toggleButton.classList.add("active");
-    } else {
-        toggleButton.appendChild(document.createTextNode(offtext));
-        toggleButton.classList.remove("active");
-    }
-    $(toggleButton).state({
-        text: {
-            inactive: offtext,
-            active  : ontext
-        }
-    });
 }
 
 function cb(param) {

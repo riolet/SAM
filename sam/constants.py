@@ -107,7 +107,7 @@ navbar = [
     },
     {
         "name": "Table View",
-        "icon": "table",
+        "icon": "list layout",
         "link": "./table",
         "group": "any"
     },
