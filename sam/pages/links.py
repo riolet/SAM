@@ -34,7 +34,7 @@ class Links(base.headless):
             raise errors.MalformedRequest("Could not read time range ('tstart', 'tend')")
 
         protocol = data.get('protocol', None)
-        if protocol == 'ALL' or protocol == '':
+        if protocol and (protocol.upper() == 'ALL' or protocol == ''):
             protocol = None
 
         if 'ds' in data:

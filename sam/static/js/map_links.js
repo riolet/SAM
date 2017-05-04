@@ -22,8 +22,8 @@ function dist_between_squared(x1, y1, x2, y2) {
 function link_comparator(a, b) {
     "use strict";
     //determine value of a and b
-    var centerx = (rect.width - 2 * tx) / (2 * g_scale);
-    var centery = (rect.height - 2 * ty) / (2 * g_scale);
+    var centerx = (controller.rect.width - 2 * tx) / (2 * g_scale);
+    var centery = (controller.rect.height - 2 * ty) / (2 * g_scale);
     var aNode = nodes.find_by_addr(a);
     var bNode = nodes.find_by_addr(b);
     if (aNode === null || bNode === null) {

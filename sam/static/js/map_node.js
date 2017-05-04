@@ -43,19 +43,30 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 
 (function () {
   "use strict";
-  let nodes = {};
-  nodes.nodes = {};
-  nodes.layouts = {};
-  nodes.layout_flat = false;
-  nodes.layout_arrangement = "la_address";
-  nodes.endpoint = "./nodes"
-
-  nodes.init = function (flat) {
+  let nodes = {
+    nodes: {},
+    layouts: {},
+    layout_flat: false,
+    layout_arrangement: "la_address",
+    endpoint: "./nodes",
+    ds: null
+  };
+  nodes.set_datasource = function (ds) {
+    if (ds.datasource !== nodes.ds) {
+      nodes.ds = ds.id;
+      nodes.set_flat(ds.flat);
+      nodes.clear();
+    }
+  }
+  nodes.clear = function() {
+    nodes.nodes = {};
+  }
+  nodes.set_flat = function (flat) {
     nodes.layout_flat = flat;
     if (flat) {
-      nodes.layout_arrangement = "la_circle";
+      nodes.layout_arrangement = "la_Circle";
     } else {
-      nodes.layout_arrangement = "la_address";
+      nodes.layout_arrangement = "la_Address";
     }
   }
 
@@ -309,7 +320,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     callback: if is a function, call it when done importing.
     ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
   */
-  nodes.GET_request = function (ds, flat, parents, callback) {
+  nodes.GET_request = function (parents, callback) {
     let request = {};
     if (parents !== null) {
       //filter out parents with children already loaded
@@ -324,8 +335,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         return parent.address + "/" + parent.subnet;
       }).join(",");
     }
-    request.flat = flat;
-    request.ds = ds;
+    request.flat = nodes.layout_flat;
+    request.ds = nodes.ds;
+    console.log("sending GET request, ", request);
     $.ajax({
       url: nodes.endpoint,
       type: "GET",
@@ -580,7 +592,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.do_layout = function (node_coll) {
     node_coll = node_coll || nodes.nodes;
-    let aspect = rect.width / rect.height;
+    let aspect = controller.rect.width / controller.rect.height;
     let size_x;
     let size_y;
     if (aspect > 1.0) {
@@ -590,7 +602,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       size_x = 663552;
       size_y = 663552 / aspect;
     }
-    nodes.layouts[nodes.layout].layout(node_coll, 0, size_x, size_y);
+    let layout_name = nodes.layout_arrangement.substr(3);
+    nodes.layouts[layout_name].layout(node_coll, 0, size_x, size_y);
   };
   nodes.set_layout = function (style) {
     nodes.layout = style;

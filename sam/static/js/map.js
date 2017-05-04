@@ -66,6 +66,7 @@ var g_timer = null;
   controller.rect = {};
 
   controller.init = function() {
+    console.log("CONTROLLER", "init");
     //get ctx/canvas reference
     //update screen rect reference
     controller.init_window();
@@ -92,19 +93,21 @@ var g_timer = null;
     //   get timerange for datasource (start/end time)
     //      create/update timerange slider
     //      trigger the get-node sequence
-    // http://api.jquery.com/jQuery.when/
-    $.when(controller.GET_settings()).done(function (result) {
+    controller.GET_settings(null, function (result) {
+      console.log("CONTROLLER", "init", "get_settings is 'done'");
       let btn_list = []
       controller.datasources.forEach(function (ds) {
         btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.datasource==controller.ds, cb));
       });
       map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
 
-      controller.init_button(controller.datasource.flat, "address");
+      controller.init_buttons(controller.datasource.flat, "address");
 
-      $.when(controller.GET_timerange(controller.ds)).done(function (result) {
-        nodes.init(controller.datasource.flat);
-        nodes.GET_request(config.ds, config.flat, null, function (response) {
+      controller.GET_timerange(controller.ds, function (result) {
+        console.log("CONTROLLER", "init", "get_timerange is 'done'");
+        console.log("controller.datasource is ", controller.datasource);
+        nodes.set_datasource(controller.datasource);
+        nodes.GET_request(null, function (response) {
           resetViewport(nodes.nodes);
           updateRenderRoot();
           render_all();
@@ -139,9 +142,9 @@ var g_timer = null;
     map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, cb));
 
     btn_list = [
-      map_settings.create_iconbutton("la_address", "qrcode", "Address", layout=="la_address", cb),
-      map_settings.create_iconbutton("la_grid", "table", "Grid", layout=="la_grid", cb),
-      map_settings.create_iconbutton("la_circle", "maximize", "Circle", layout=="la_circle", cb)
+      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="la_address", cb),
+      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="la_grid", cb),
+      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="la_circle", cb)
     ];
     map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, cb));
   }
@@ -168,6 +171,10 @@ var g_timer = null;
     controller.canvas.width = window.innerWidth;
     controller.canvas.height = window.innerHeight - navBarHeight;
     controller.ctx.lineJoin = "bevel";
+    controller.rect = controller.canvas.getBoundingClientRect();
+
+    tx = controller.rect.width / 2;
+    ty = controller.rect.height / 2;
 
     //Event listeners for detecting clicks and zooms
     controller.canvas.addEventListener("mousedown", mousedown);
@@ -176,14 +183,10 @@ var g_timer = null;
     controller.canvas.addEventListener("mouseout", mouseup);
     controller.canvas.addEventListener("wheel", wheel);
     window.addEventListener("keydown", keydown, false);
-
-    rect = controller.canvas.getBoundingClientRect();
-    tx = rect.width / 2;
-    ty = rect.height / 2;
   };
 
   controller.GET_settings = function (ds, successCallback) {
-    "use strict";
+    console.log("CONTROLLER", "GET_settings");
     if (typeof(successCallback) !== "function") {
         return;
     }
@@ -194,9 +197,13 @@ var g_timer = null;
       dataType: "json",
       error: generic_ajax_failure,
       success: function (settings) {
+        console.log("CONTROLLER", "GET_settings", "response");
         console.log("Settings received: ", settings);
         controller.settings = settings;
-        controller.datasources = settings.datasources;
+        controller.datasources = []
+        Object.keys(settings.datasources).forEach( function (key) {
+          controller.datasources.push(settings.datasources[key]);
+        });
         controller.datasource = settings.datasources[settings.datasource];
         controller.ds = settings.datasource;
 
@@ -205,7 +212,7 @@ var g_timer = null;
         setAutoUpdate();
 
         if (typeof(successCallback) == "function") {
-          successCallback(response);
+          successCallback(settings);
         }
       }
     });
@@ -214,14 +221,15 @@ var g_timer = null;
   }
 
   controller.GET_timerange = function (ds, successCallback) {
-    "use strict";
+    console.log("CONTROLLER", "GET_timerange");
     let request = $.ajax({
       url: controller.stats_endpoint,
       type: "GET",
       data: {"q": "timerange", 'ds': ds},
       dataType: "json",
       error: generic_ajax_failure,
-      success: function (response) {
+      success: function (range) {
+        console.log("CONTROLLER", "GET_timerange", "response");
         if (range.min == range.max) {
           config.tmin = range.min - 300;
           config.tmax = range.max;
@@ -234,7 +242,7 @@ var g_timer = null;
         slider_init(config);
 
         if (typeof(successCallback) == "function") {
-          successCallback(response);
+          successCallback(range);
         }
       }
     });
@@ -243,7 +251,7 @@ var g_timer = null;
   };
 
   window.controller = controller
-});
+}());
 
 (function () {
   "use strict";
@@ -542,8 +550,8 @@ function init_old() {
         });
         init_settings();
         init_configbuttons();
-        */
     });
+        */
 }
 
 function init_toggleButton(id, ontext, offtext, isOn) {

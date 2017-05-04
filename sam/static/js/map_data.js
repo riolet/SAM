@@ -6,9 +6,9 @@ function GET_links(addrs) {
         "protocol": config.protocol,
         "tstart": config.tstart,
         "tend": config.tend,
-        "ds": config.ds
+        "ds": controller.ds
     };
-    if (config.flat) {
+    if (controller.datasource.flat) {
       requestData.flat = true;
     }
     $.ajax({
