@@ -74,33 +74,6 @@ div.ui.message.transition {
     margin: 0;
 }
 
-
-
-#searchbar {
-    position: absolute;
-    top: 60px;
-    left: 400px;
-    z-index: 1;
-}
-#searchbar div.thin.item{
-    padding: 2px !important;
-}
-
-#searchbar button.active {
-    background: #2185D0 !important;
-}
-
-#searchbar button.active:hover {
-    background: #1170B0 !important;
-}
-
-#settings_menu .dropdown .ui.button {
-  text-align: left;
-  padding-top: 0.4em;
-  padding-bottom: 0.4em;
-}
-
-
 #pulltab {
   background-color: black;
   display: inline-block;
@@ -157,10 +130,20 @@ div.ui.message.transition {
   border-radius: .25em;
 }
 
-#mapconfig .textinput {
+#mapconfig .textinput, #time_box {
   margin: 0 0.5em;
 }
 
 #mapconfig input {
   display: block;
+}
+
+#sidebar input {
+  background-color: black;
+  color: rgba(255,255,255,0.5);
+}
+
+#time_box input, #time_box div.label {
+  margin: 0.2em 0;
+  padding: 0.2em;
 }
