@@ -1,5 +1,6 @@
 import re
 import os
+import numbers
 import sam.constants
 import web
 import sam.common
@@ -19,7 +20,7 @@ class Datasources:
         """
         :type db: web.DB
         :type session: dict
-        :type subscription: int
+        :type subscription: numbers.Integral
         :param db: 
         :param session: 
         :param subscription: 
@@ -34,9 +35,9 @@ class Datasources:
 
     @property
     def datasources(self):
-        if not self.storage.get(Datasources.SESSION_KEY):
+        if not self.storage.get(Datasources.SESSION_KEY) or not self.storage[Datasources.SESSION_KEY].get(self.sub):
             self.update_cache()
-        return self.storage[Datasources.SESSION_KEY]
+        return self.storage[Datasources.SESSION_KEY][self.sub]
 
     @property
     def ds_ids(self):
@@ -61,7 +62,11 @@ class Datasources:
         :return: data source id or None
         :rtype: int or None
         """
-        rows = self.db.select(Datasources.TABLE, what='id', where='name=$name', vars={'name': name}, limit=1)
+        qvars = {
+            'sub': self.sub,
+            'name': name
+        }
+        rows = self.db.select(Datasources.TABLE, what='id', where='subscription=$sub AND name=$name', vars=qvars, limit=1)
         answer = rows.first()
         if answer:
             return answer['id']
@@ -70,7 +75,9 @@ class Datasources:
 
     def update_cache(self):
         rows = self.db.select(Datasources.TABLE, where='subscription=$sub', vars={'sub': self.sub})
-        self.storage[Datasources.SESSION_KEY] = {ds['id']: ds for ds in rows}
+        if Datasources.SESSION_KEY not in self.storage:
+            self.storage[Datasources.SESSION_KEY] = {}
+        self.storage[Datasources.SESSION_KEY][self.sub] = {ds['id']: ds for ds in rows}
 
     def clear_cache(self):
         self.storage[Datasources.SESSION_KEY] = {}

@@ -20,7 +20,7 @@ class Login_LDAP(base.headed):
     # ======== Get
 
     def GET(self):
-        if self.user.logged_in:
+        if self.page.user.logged_in:
             raise web.seeother('./map')
         if not ldap_loaded:
             print("ERROR: ldap3 library not installed.")
@@ -74,7 +74,7 @@ class Login_LDAP(base.headed):
             raise errors.AuthenticationError("Invalid credentials.")
 
         # Assume authenticated at this point.
-        self.user.login_simple(user)
+        self.page.user.login_simple(user)
         return True
 
     def encode_post_response(self, response):
@@ -89,7 +89,7 @@ class Login_LDAP(base.headed):
         """
 
         try:
-            self.request = self.decode_post_request(self.inbound)
+            self.request = self.decode_post_request(self.page.inbound)
             self.response = self.perform_post_command(self.request)
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:

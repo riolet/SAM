@@ -1,6 +1,7 @@
 from sam import common
 import web
 import sam.models.datasources
+import numbers
 
 
 class Settings:
@@ -11,7 +12,7 @@ class Settings:
         """
         :type db: web.DB
         :type session: dict
-        :type subscription: int
+        :type subscription: numbers.Integral
         :param db: 
         :param session: 
         :param subscription: 
@@ -22,35 +23,37 @@ class Settings:
         self.storage = session
 
     def __getitem__(self, item):
-        if not self.storage.get(Settings.SESSION_KEY):
+        if not self.storage.get(Settings.SESSION_KEY) or not self.storage[Settings.SESSION_KEY].get(self.sub):
             self.update_cache()
-        return self.storage[Settings.SESSION_KEY][item]
+        return self.storage[Settings.SESSION_KEY][self.sub][item]
 
     def __setitem__(self, k, value):
-        if not self.storage.get(Settings.SESSION_KEY):
+        if not self.storage.get(Settings.SESSION_KEY) or not self.storage[Settings.SESSION_KEY].get(self.sub):
             self.update_cache()
-        if k not in self.storage[Settings.SESSION_KEY]:
+        if k not in self.storage[Settings.SESSION_KEY][self.sub]:
             raise KeyError("Cannot create new keys")
         else:
             # TODO: is there a better way to do this?
             self.set(**{k: value})
 
     def copy(self):
-        if not self.storage.get(Settings.SESSION_KEY):
+        if not self.storage.get(Settings.SESSION_KEY) or not self.storage[Settings.SESSION_KEY].get(self.sub):
             self.update_cache()
-        return self.storage[Settings.SESSION_KEY].copy()
+        return self.storage[Settings.SESSION_KEY][self.sub].copy()
 
     def keys(self):
-        if not self.storage.get(Settings.SESSION_KEY):
+        if not self.storage.get(Settings.SESSION_KEY) or not self.storage[Settings.SESSION_KEY].get(self.sub):
             self.update_cache()
-        return self.storage[Settings.SESSION_KEY].keys()
+        return self.storage[Settings.SESSION_KEY][self.sub].keys()
 
     def update_cache(self):
         rows = self.db.select(Settings.TABLE, where=self.where, limit=1).first()
-        if rows is None:
+        if Settings.SESSION_KEY not in self.storage:
             self.storage[Settings.SESSION_KEY] = {}
+        if rows is None:
+            self.storage[Settings.SESSION_KEY][self.sub] = {}
         else:
-            self.storage[Settings.SESSION_KEY] = dict(rows)
+            self.storage[Settings.SESSION_KEY][self.sub] = dict(rows)
 
     def clear_cache(self):
         self.storage[Settings.SESSION_KEY] = {}

@@ -13,7 +13,7 @@ class Logout(base.headless):
             self.logout_redirect = data['logout_redirect']
 
     def perform_get_command(self, request):
-        self.session.kill()
+        self.page.session.kill()
 
     def encode_get_response(self, response):
         raise web.seeother(self.logout_redirect)

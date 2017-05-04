@@ -26,7 +26,7 @@ class Portinfo(base.headless_post):
 
     def __init__(self):
         super(Portinfo, self).__init__()
-        self.portModel = sam.models.ports.Ports(common.db, self.user.viewing)
+        self.portModel = sam.models.ports.Ports(common.db, self.page.user.viewing)
 
     def decode_get_request(self, data):
         port_string = data.get('port')
@@ -40,8 +40,8 @@ class Portinfo(base.headless_post):
         return {'ports': ports}
 
     def perform_get_command(self, request):
-        self.require_group('read')
-        portModel = sam.models.ports.Ports(common.db, self.user.viewing)
+        self.page.require_group('read')
+        portModel = sam.models.ports.Ports(common.db, self.page.user.viewing)
         ports = portModel.get(request['ports'])
         return ports
 
@@ -67,7 +67,7 @@ class Portinfo(base.headless_post):
         return request
 
     def perform_post_command(self, request):
-        self.require_group('write')
+        self.page.require_group('write')
         port = request.pop('port')
         self.portModel.set(port, request)
         return 'success'

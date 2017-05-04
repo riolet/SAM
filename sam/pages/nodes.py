@@ -35,7 +35,7 @@ class Nodes(base.headless_post):
     def __init__(self):
         base.HeadlessPost.__init__(self)
         self.flatmode_tolerance = 256
-        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.page.user.viewing)
 
     def check_flat_tolerance(self):
         endpoints = self.nodesModel.get_all_endpoints()
@@ -63,7 +63,7 @@ class Nodes(base.headless_post):
         return {'addresses': addresses, 'flat': flat, 'ds': ds}
 
     def perform_get_command(self, request):
-        self.require_group('read')
+        self.page.require_group('read')
         if request['flat']:
             if self.check_flat_tolerance():
                 response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
@@ -98,7 +98,7 @@ class Nodes(base.headless_post):
         return request
 
     def perform_post_command(self, request):
-        self.require_group('write')
+        self.page.require_group('write')
         node = request.pop('node')
         for key, value in request.iteritems():
             if key == 'alias':

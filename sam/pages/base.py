@@ -10,7 +10,7 @@ import traceback
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):
-        return float(obj)
+        return obj.__float__()
     raise TypeError
 
 
@@ -33,13 +33,16 @@ class Page(object):
             return True
         raise web.seeother(constants.access_control['login_url'])
 
+    def require_ownership(self):
+        if not self.user.may_post():
+            raise web.unauthorized("Cannot modify data. Do you have an active account?")
 
 page = Page
 
 
-class Headed(page):
+class Headed(object):
     def __init__(self, title, header, footer):
-        super(Headed, self).__init__()
+        self.page = page()
         self.scripts = []
         self.styles = []
         self.page_title = title
@@ -49,7 +52,7 @@ class Headed(page):
     def render(self, page, *args, **kwargs):
         head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
         if self.header:
-            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.user, constants.debug, constants.access_control))
+            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, constants.access_control))
         else:
             header = ''
         page = str(common.renderer.render(page, *args, **kwargs))
@@ -65,9 +68,9 @@ class Headed(page):
 headed = Headed
 
 
-class Headless(page):
+class Headless(object):
     def __init__(self):
-        super(Headless, self).__init__()
+        self.page = page()
         self.request = None
         self.response = None
         self.outbound = None
@@ -102,9 +105,9 @@ class Headless(page):
         except to handle exceptions differently.
         :return: HTTP response data
         """
-        self.require_group('read')
+        self.page.require_group('read')
         try:
-            self.request = self.decode_get_request(self.inbound)
+            self.request = self.decode_get_request(self.page.inbound)
             self.response = self.perform_get_command(self.request)
             self.outbound = self.encode_get_response(self.response)
         except errors.MalformedRequest as e:
@@ -149,21 +152,17 @@ class HeadlessPost(headless):
         """
         raise NotImplementedError("Sub-class must implement this method")
 
-    def require_ownership(self):
-        if not self.user.may_post():
-            raise web.unauthorized("Cannot modify data. Do you have an active account?")
-
     def POST(self):
         """
         Entry point for POST requests to this endpoint.  Should not need to be overridden
         except to handle exceptions differently.
         :return: HTTP response data
         """
-        self.require_ownership()
-        self.require_all_groups(['read', 'write'])
+        self.page.require_ownership()
+        self.page.require_all_groups(['read', 'write'])
 
         try:
-            self.request = self.decode_post_request(self.inbound)
+            self.request = self.decode_post_request(self.page.inbound)
             self.response = self.perform_post_command(self.request)
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:
