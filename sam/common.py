@@ -32,12 +32,6 @@ def load_plugins():
     # Globals in sam.common get initialized based on data in constants.
     # Plugins change the initialization data, prompting this re-init:
 
-    constants.urls = []
-    constants.urls.extend(constants.plugin_urls)
-    constants.urls.extend([constants.access_control['login_url'], constants.access_control['login_target']])
-    constants.urls.extend([constants.access_control['logout_url'], constants.access_control['logout_target']])
-    constants.urls.extend(constants.default_urls)
-
     init_globals()
 
 
@@ -60,6 +54,12 @@ def init_globals():
     db, db_quiet = get_db(constants.dbconfig.copy())
 
     session_store = web.session.DBStore(db_quiet, 'sessions')
+
+    constants.urls = []
+    constants.urls.extend(constants.plugin_urls)
+    constants.urls.extend([constants.access_control['login_url'], constants.access_control['login_target']])
+    constants.urls.extend([constants.access_control['logout_url'], constants.access_control['logout_target']])
+    constants.urls.extend(constants.default_urls)
 
 
 def parse_sql_string(script, replacements):

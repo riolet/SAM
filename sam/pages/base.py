@@ -52,7 +52,7 @@ class Headed(object):
     def render(self, page, *args, **kwargs):
         head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
         if self.header:
-            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, constants.access_control))
+            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
         else:
             header = ''
         page = str(common.renderer.render(page, *args, **kwargs))
