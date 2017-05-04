@@ -16,18 +16,25 @@ plugins = {
 }
 
 access_control = {
-    'active': config.get('access_control', 'active', default='False').lower() == 'true',
-    'login_page': config.get('access_control', 'login_page', default='sam.pages.login.Login_LDAP')
+    'active':          config.get('access_control', 'active', default='False').lower() == 'true',
+    'login_url':       config.get('access_control', 'login_url'),
+    'login_target':    config.get('access_control', 'login_target'),
+    'login_redirect':  config.get('access_control', 'login_redirect'),
+    'logout_url':      config.get('access_control', 'logout_url'),
+    'logout_target':   config.get('access_control', 'logout_target'),
+    'logout_redirect': config.get('access_control', 'logout_redirect'),
+    'local_tls':       config.get('access_control', 'local_tls', default='False').lower() == 'true',
+    'local_tls_cert':  config.get('access_control', 'local_tls_cert'),
+    'local_tls_key':   config.get('access_control', 'local_tls_key')
+}
+
+subscription = {
+    'default-name':  config.get('subscription', 'name'),
+    'default-email': config.get('subscription', 'email')
 }
 
 LDAP = {
     'connection_string': config.get('LDAP', 'connection_string', default='')
-}
-
-demo = {
-    'id': 1,
-    'email': 'sam@example.com',
-    'name': 'SAM',
 }
 
 collector = dict(config.items('collector'))
@@ -51,6 +58,7 @@ local = {
     'server_port':      config.get('local', 'webserver_port'),
 }
 
+
 def enable_local_mode():
     access_control['active'] = False
     dbconfig['db'] = local['db']
@@ -63,30 +71,12 @@ def enable_local_mode():
     global localmode
     localmode = True
 
-# to make sure config is not being read from anymore
-del config
-
-# plugins with templates should append them here.
-# Plugin template folders are searched first, followed by the default template folder.
-# example addition:
-#     >>> sam.constants.plugin_templates.append( os.path.join('myplugin', 'mytemplatefolder') )
 plugin_templates = []
-default_template = 'templates/'
-
-# plugins adding statically served files should be included here.
-# Static files must be in a plugin folder called 'static'.
-# Example:
-# static file:
-#     >>> /plugins/myplugin/static/img/thing.png
-# example addition:
-#     >>> sam.constants.plugin_templates.append( 'myplugin' ) )
-# html link:
-#     "/static/img/thing.png"
 plugin_static = []
-
 plugin_importers = []
+plugin_urls = []
 
-urls = [
+default_urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'sam.pages.map.Map',
     '/stats', 'sam.pages.stats.Stats',
@@ -98,9 +88,9 @@ urls = [
     '/settings', 'sam.pages.settings.Settings',
     '/settings_page', 'sam.pages.settings_page.SettingsPage',
     '/table', 'sam.pages.table.Table',
-    '/login', access_control['login_page'],
-    '/logout', 'sam.pages.logout.Logout',
 ]
+urls = []
+
 
 def find_url(target):
     for i in range(len(urls)/2):

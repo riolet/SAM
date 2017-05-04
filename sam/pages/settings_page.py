@@ -6,6 +6,7 @@ import sam.models.settings
 import sam.models.datasources
 import sam.models.livekeys
 from sam import common
+import pprint
 
 
 def nice_name(s):
@@ -34,14 +35,14 @@ class SettingsPage(base.headed):
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        self.require_group('read')
-        self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.user.viewing)
-        self.dsModel = sam.models.datasources.Datasources(common.db, self.session, self.user.viewing)
-        self.livekeyModel = sam.models.livekeys.LiveKeys(common.db, self.user.viewing)
+        self.page.require_group('read')
+        self.settingsModel = sam.models.settings.Settings(common.db, self.page.session, self.page.user.viewing)
+        self.dsModel = sam.models.datasources.Datasources(common.db, self.page.session, self.page.user.viewing)
+        self.livekeyModel = sam.models.livekeys.LiveKeys(common.db, self.page.user.viewing)
 
         settings = self.settingsModel.copy()
         datasources = self.dsModel.sorted_list()
         importers = self.get_available_importers()
         livekeys = self.livekeyModel.read()
 
-        return self.render('settings', self.user, settings, datasources, livekeys, importers)
+        return self.render('settings', self.page.user, settings, datasources, livekeys, importers)

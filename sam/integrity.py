@@ -221,20 +221,22 @@ def fill_port_table(db):
 
 def check_default_subscription(db):
     """
-    :return: 0 if no problems, -1 if default subscription is missing, -2 if default subscription id is taken.
+    :return: 0 if no problems, -1 if default subscription is missing, -2 if default subscription is broken.
     """
     print("Checking default subscription")
     sub_model = Subscriptions(db)
     subs = sub_model.get_all()
     errors = -1
     for sub in subs:
-        if sub['subscription'] == constants.demo['id']:
-            if sub['plan'] == 'admin':
+        if sub['email'] == constants.subscription['default-email']:
+            if sub['plan'] != 'admin' \
+                    or sub['name'] != constants.subscription['default-name'] \
+                    or sub['active'] != 1:
+                errors = -2
+                print("\tDefault subscription malformed")
+            else:
                 errors = 0
                 print("\tDefault subscription confirmed")
-            else:
-                errors = -2
-                print("\tDefault subscription was misappropriated")
             break
     if errors == -1:
         print("\tDefault subscription is missing")
@@ -249,6 +251,13 @@ def fix_default_subscription(db, errors):
         print("\tCreating default subscription")
         sub_model = Subscriptions(db)
         sub_model.create_default_subscription()
+    elif errors == -2:
+        print("\tFixing default subscription")
+        sub_model = Subscriptions(db)
+        sub = sub_model.get_by_email(constants.subscription['default-email'])
+        succeeded = sub_model.set(sub['subscription'], plan='admin', active=1, name=constants.subscription['default-name'])
+        if not succeeded:
+            raise ValueError("Failed to fix default subscription")
     else:
         raise NotImplementedError("Cannot fix bad default subscription")
 

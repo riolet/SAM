@@ -16,8 +16,8 @@ class Metadata(base.headed):
         self.datasources = None
 
     def require_dses(self):
-        datasourceModel = sam.models.datasources.Datasources(common.db, self.session, self.user.viewing)
-        settingsModel = sam.models.settings.Settings(common.db, self.session, self.user.viewing)
+        datasourceModel = sam.models.datasources.Datasources(common.db, self.page.session, self.page.user.viewing)
+        settingsModel = sam.models.settings.Settings(common.db, self.page.session, self.page.user.viewing)
         datasources = datasourceModel.datasources.copy()
         default_ds = datasources.pop(settingsModel['datasource'])
 
@@ -25,8 +25,8 @@ class Metadata(base.headed):
         self.datasources = [default_ds] + datasources.values()
 
     def GET(self):
-        self.require_group('read')
-        nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+        self.page.require_group('read')
+        nodesModel = sam.models.nodes.Nodes(common.db, self.page.user.viewing)
         tag_list = nodesModel.get_tag_list()
         env_list = nodesModel.get_env_list()
 

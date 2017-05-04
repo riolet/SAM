@@ -29,9 +29,9 @@ def load_plugins():
             raise
 
     constants.plugins['loaded'] = loaded
-    
     # Globals in sam.common get initialized based on data in constants.
     # Plugins change the initialization data, prompting this re-init:
+
     init_globals()
 
 
@@ -43,16 +43,23 @@ def init_globals():
     global db
     global db_quiet
 
-    renderer = MultiRender(constants.default_template)
+    renderer = MultiRender('templates/')
     for extra in constants.plugin_templates:
         renderer.install_plugin_template_path(extra)
 
     web.config.debug = constants.debug
+    web.config._session = None  # erase any erroneous session creation.
     web.config.session_parameters['cookie_path'] = "/"
 
     db, db_quiet = get_db(constants.dbconfig.copy())
 
     session_store = web.session.DBStore(db_quiet, 'sessions')
+
+    constants.urls = []
+    constants.urls.extend(constants.plugin_urls)
+    constants.urls.extend([constants.access_control['login_url'], constants.access_control['login_target']])
+    constants.urls.extend([constants.access_control['logout_url'], constants.access_control['logout_target']])
+    constants.urls.extend(constants.default_urls)
 
 
 def parse_sql_string(script, replacements):
