@@ -70,6 +70,8 @@ var g_timer = null;
     //initialize selection, sidebar, ports, demo plugins
     sel_init();
     map_settings.init();
+    //map_settings.add_object(null, null, controller.init_timeslider());
+
     ports.display_callback = function() {
         render_all();
         sel_update_display();
@@ -79,9 +81,14 @@ var g_timer = null;
     // add ip_search to settings panel
     map_settings.add_object(null, null, map_settings.create_input("search", "Search", "search", "Find IP...", "Find an IP address. e.g. 192.168.0.12", onsearch));
     // add port_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("filter", "Port Filter", "search", "Filter by port...", "Filter by port number. Try: 80", onfilter));
+    map_settings.add_object(null, null, map_settings.create_input("filter", "Port Filter", "filter", "Filter by port...", "Filter by port number. Try: 80", onfilter));
     // add protocol_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "search", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
+    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "exchange", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
+    // auto-refresh
+    map_settings.add_object("Datasource", null, map_settings.create_iconbutton("autorefresh", "reload", "Autorefresh the node map", false, cb));
+
+    // display intermediate menu.
+    map_settings.rebuild();
 
     //get settings && get datasources
     //   add data sources to settings panel
@@ -97,22 +104,67 @@ var g_timer = null;
       });
       map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
 
-      controller.init_buttons(controller.datasource.flat, "address");
-
       controller.GET_timerange(controller.ds, function (result) {
         console.log("CONTROLLER", "init", "get_timerange is 'done'");
         console.log("controller.datasource is ", controller.datasource);
         nodes.set_datasource(controller.datasource);
+        controller.init_buttons(nodes.layout_flat, nodes.layout_arrangement);
+
         nodes.GET_request(null, function (response) {
           resetViewport(nodes.nodes);
           updateRenderRoot();
           render_all();
         });
+        map_settings.rebuild();
       });
-
-      map_settings.rebuild();
     });
+  }
 
+  controller.init_timeslider = function () {
+    /*
+    <div class="item" id="time_box">
+      <p>Time Range</p>
+      <div class="slider-box">
+        <div id="slider-date"></div>
+      </div>
+      <p><input class="slider-input" id="input-start" value="2016-06-19 19:00"> From</p>
+      <p><input class="slider-input" id="input-end" value="2016-06-20 08:00"> To</p>
+    </div>
+    */
+    let div3 = document.createElement("DIV");
+    div3.id="slider-date";
+
+    let div2 = document.createElement("DIV");
+    div2.className = "slider-box";
+    div2.appendChild(div3);
+
+    let p1 = document.createElement("P");
+    p1.appendChild(document.createTextNode("Time Range"));
+
+    let div1 = document.createElement("DIV");
+    div1.className = "item";
+    div1.id = "time_box";
+    div1.appendChild(p1);
+    div1.appendChild(div2)
+
+    let p2 = document.createElement("P");
+    let input1 = document.createElement("INPUT");
+    input1.className = "slider-input";
+    input1.id = "input-start";
+    input1.value = "2016-06-19 19:00";
+    p2.appendChild(input1);
+    p2.appendChild(document.createTextNode(" From"));
+    div1.appendChild(p2);
+
+    let p3 = document.createElement("P");
+    let input2 = document.createElement("INPUT");
+    input2.className = "slider-input";
+    input2.id = "input-end";
+    input2.value = "2016-06-20 08:00";
+    p3.appendChild(input2);
+    p3.appendChild(document.createTextNode(" To"));
+    div1.appendChild(p3);
+    return div1;
   }
 
   controller.init_buttons = function (isFlat, layout) {
@@ -138,9 +190,9 @@ var g_timer = null;
     map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, cb));
 
     btn_list = [
-      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="la_address", cb),
-      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="la_grid", cb),
-      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="la_circle", cb)
+      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="la_Address", cb),
+      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="la_Grid", cb),
+      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="la_Circle", cb)
     ];
     map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, cb));
   }

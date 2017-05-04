@@ -9,7 +9,7 @@ function link_request_add(address) {
 function link_request_add_all(collection) {
     "use strict";
     Object.keys(collection).forEach(function (node_name) {
-        link_request_add(collection[node_name].address)
+        link_request_add(nodes.get_address(collection[node_name]))
         link_request_add_all(collection[node_name].children);
     });
 }

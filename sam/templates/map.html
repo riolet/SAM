@@ -10,6 +10,14 @@ $def with (datasources)
   <div id="sidebar" class="ui sidebarholder">
     <div class="ui sidebar visible">
       <div class="ui inverted segment">
+        <div class="item" id="time_box">
+          <p>Time Range</p>
+          <div class="slider-box">
+            <div id="slider-date"></div>
+          </div>
+          <p><input class="slider-input" id="input-start" value="2016-06-19 19:00"> From</p>
+          <p><input class="slider-input" id="input-end" value="2016-06-20 08:00"> To</p>
+        </div>
         <div id="mapconfig" class="ui inverted accordion">
         </div>
       </div>
@@ -23,93 +31,6 @@ $def with (datasources)
     </div>
   </div>
   <canvas id="canvas"></canvas>
-  <!--
-  -----------------------------------------------------------
-  ---------------------- Settings  Panel --------------------
-  -----------------------------------------------------------
-  -->
-  <div id="searchbar">
-    <div class="ui icon menu">
-      <div id="settings_menu" class="ui left dropdown item">
-        <i class="setting icon large"></i>
-        <!--The settings menu -->
-        <div class="menu">
-          <div class="item" id="time_box">
-            <p>Time Range</p>
-            <div class="slider-box">
-              <div id="slider-date"></div>
-            </div>
-            <p><input class="slider-input" id="input-start" value="2016-06-19 19:00"> From</p>
-            <p><input class="slider-input" id="input-end" value="2016-06-20 08:00"> To</p>
-          </div>
-          <div class="item">
-            <div class="ui icon input" data-content="Filter by port number. Try: 80">
-              <input placeholder="Filter by port..." id="filter" type="text">
-              <i class="filter icon"></i>
-            </div>
-          </div>
-          <div class="item">
-            <div class="ui icon input" data-content="Filter by protocol. Try: UDP">
-              <input placeholder="Protocol" id="proto_filter" name="protocol" type="text">
-              <i class="exchange icon"></i>
-            </div>
-          </div>
-          <div class="ui dropdown item" style="display: flex">
-            Line width represents
-            <i class="dropdown icon"></i>
-            <div class="menu">
-              <div class="thin item">
-                <div class="ui four vertical buttons">
-                  <button class="ui lw toggle button" id="links">Number of occurences</button>
-                  <button class="ui lw toggle button" id="bytes">Bytes transferred</button>
-                  <button class="ui lw toggle button" id="packets">Packets transmitted</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="ui dropdown item" style="display: flex">
-            Show/Hide
-            <i class="dropdown icon"></i>
-            <div class="menu">
-              <div class="thin item">
-                <div class="ui four vertical buttons">
-                  <button class="ui toggle button" id="show_in"></button>
-                  <button class="ui toggle button" id="show_out"></button>
-                  <button class="ui toggle button" id="show_clients"></button>
-                  <button class="ui toggle button" id="show_servers"></button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="ui dropdown item" style="display: flex">
-            Data source
-            <i class="dropdown icon"></i>
-            <div class="menu">
-              <div class="thin item">
-                <div class="ui two vertical buttons">
-                  $for source in datasources:
-                    <button class="ui ds toggle button" id="ds$source[0]"><i class="cube icon"></i>$source[1]</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="thin item">
-            <div class="two ui buttons">
-              <button class="ui toggle button" id="update"></button>
-              <button class="ui toggle button" id="flat"></button>
-            </div>
-          </div>
-        </div>
-      </div> <!-- end menu -->
-      <!-- The actual search bar, not in the menu -->
-      <div class="ui item">
-        <div class="ui icon input" data-content="Find an IP address. e.g. 192.168.0.12">
-          <input placeholder="Find IP..." id="search" type="text">
-          <i class="search icon"></i>
-        </div>
-      </div>
-    </div>
-  </div>
   <!--
   -----------------------------------------------------------
   -----------------  Selection Details Panel  ---------------

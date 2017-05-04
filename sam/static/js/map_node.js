@@ -47,7 +47,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     nodes: {},
     layouts: {},
     layout_flat: false,
-    layout_arrangement: "la_address",
+    layout_arrangement: "la_Address",
     endpoint: "./nodes",
     ds: null
   };

@@ -151,6 +151,12 @@ div.ui.message.transition {
   color: rgba(255,255,255,0.5);
 }
 
+#mapconfig .title {
+  margin: 0.5em 0 0 0;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: .25em;
+}
+
 #mapconfig .textinput {
   margin: 0 0.5em;
 }
