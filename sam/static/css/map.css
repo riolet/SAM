@@ -144,3 +144,17 @@ div.ui.message.transition {
   padding: 0.5em 0em 0.5em 1.0em;
   background: rgba(255,255,255,0.05);
 }
+
+#mapconfig label {
+  margin-top: 1em;
+  display: block;
+  color: rgba(255,255,255,0.5);
+}
+
+#mapconfig .textinput {
+  margin: 0 0.5em;
+}
+
+#mapconfig input {
+  display: block;
+}

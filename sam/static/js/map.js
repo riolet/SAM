@@ -61,10 +61,6 @@ var g_timer = null;
     settings_endpoint: "./settings"
   };
 
-  controller.canvas = null;
-  controller.ctx = null;
-  controller.rect = {};
-
   controller.init = function() {
     console.log("CONTROLLER", "init");
     //get ctx/canvas reference
@@ -80,12 +76,12 @@ var g_timer = null;
     };
     controller.init_demo();
 
-    //add ip_search to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("search", "Find an IP address. e.g. 192.168.0.12", "search", "Find IP...", onsearch));
-    //add port_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("filter", "Filter by port number. Try: 80", "search", "Filter by port...", onfilter));
-    //add protocol_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Filter by protocol. Try: UDP", "search", "Filter by protocol...", onProtocolFilter));
+    // add ip_search to settings panel
+    map_settings.add_object(null, null, map_settings.create_input("search", "Search", "search", "Find IP...", "Find an IP address. e.g. 192.168.0.12", onsearch));
+    // add port_filter to settings panel
+    map_settings.add_object(null, null, map_settings.create_input("filter", "Port Filter", "search", "Filter by port...", "Filter by port number. Try: 80", onfilter));
+    // add protocol_filter to settings panel
+    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "search", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
 
     //get settings && get datasources
     //   add data sources to settings panel
@@ -97,7 +93,7 @@ var g_timer = null;
       console.log("CONTROLLER", "init", "get_settings is 'done'");
       let btn_list = []
       controller.datasources.forEach(function (ds) {
-        btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.datasource==controller.ds, cb));
+        btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.id==controller.ds, cb));
       });
       map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
 
@@ -300,7 +296,7 @@ var g_timer = null;
     });
   };
 
-  map_settings.init = function (accordion) {
+  map_settings.init_accordion = function (accordion) {
     $(accordion).accordion({
       exclusive: false,
       animateChildren: false
@@ -311,7 +307,7 @@ var g_timer = null;
     let accordion = document.getElementById("mapconfig");
     map_settings.clear_html(accordion);
     map_settings.make_html(accordion, map_settings.structure);
-    map_settings.init(accordion);
+    map_settings.init_accordion(accordion);
   };
 
   map_settings.add_category = function (cat) {
@@ -412,13 +408,15 @@ var g_timer = null;
     return group;
   };
 
-  map_settings.create_input = function (id, label_text, icon_name, placeholder, callback) {
+  map_settings.create_input = function (id, label_text, icon_name, placeholder, tooltip, callback) {
+    let outer_div = document.createElement("DIV");
     let div = document.createElement("DIV");
     let icon = document.createElement("I");
     let label = document.createElement("LABEL");
     let input = document.createElement("INPUT");
 
-    div.classList = "ui inverted fluid icon input";
+    outer_div.className = "textinput";
+    div.className = "ui inverted fluid icon input";
     label.appendChild(document.createTextNode(label_text));
     label.classList = "configlabel";
     label.htmlFor = id;
@@ -430,16 +428,17 @@ var g_timer = null;
     }
     icon.classList = icon_name + " icon";
 
-    input.dataset["tooltip"] = "pizza sparks";
-    input.dataset["inverted"] = true;
-    input.dataset["position"] = "top left";
-    input.dataset["delay"] = "500";
+    div.dataset["tooltip"] = tooltip;
+    div.dataset["inverted"] = true;
+    div.dataset["position"] = "top left";
+    div.dataset["delay"] = "500";
 
-    div.appendChild(label);
     div.appendChild(input);
     div.appendChild(icon);
+    outer_div.appendChild(label);
+    outer_div.appendChild(div);
 
-    return div;
+    return outer_div;
   };
 
   map_settings.init = function () {
@@ -583,38 +582,6 @@ function init_toggleButton(id, ontext, offtext, isOn) {
 
 function cb(param) {
   console.log("Clicked!", param);
-}
-
-function init_settings() {
-  let btn_list;
-  //(id, icon_name, tooltip, active, callback)
-
-  btn_list = [
-    map_settings.create_iconbutton(null, "area chart", "Number of Occurrences", true, cb),
-    map_settings.create_iconbutton(null, "bar chart", "Bytes Transferred", false, cb),
-    map_settings.create_iconbutton(null, "line chart", "Packets Transmitted", false, cb)
-  ];
-  map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, cb));
-
-  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_clients", "desktop", "Show Pure Clients", config.show_clients, cb));
-  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_servers", "server", "Show Pure Servers", config.show_servers, cb));
-  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_in", "sign in", "Show Inbound Connections", config.show_in, cb));
-  map_settings.add_object("Show/Hide", null, map_settings.create_togglebutton("ashow_out", "sign out", "Show Outbound Connections", config.show_out, cb));
-
-  btn_list = [
-    map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", config.flat==false, cb),
-    map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", config.flat==true, cb)
-  ];
-  map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, cb));
-
-  btn_list = [
-    map_settings.create_iconbutton("la_address", "qrcode", "Address", true, cb),
-    map_settings.create_iconbutton("la_grid", "table", "Grid", false, cb),
-    map_settings.create_iconbutton("la_circle", "maximize", "Circle", false, cb)
-  ];
-  map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, cb));
-
-  map_settings.rebuild();
 }
 
 function init_configbuttons() {
