@@ -177,11 +177,20 @@ var g_timer = null;
     ty = controller.rect.height / 2;
 
     //Event listeners for detecting clicks and zooms
+    /*
     controller.canvas.addEventListener("mousedown", mousedown);
     controller.canvas.addEventListener("mousemove", mousemove);
     controller.canvas.addEventListener("mouseup", mouseup);
     controller.canvas.addEventListener("mouseout", mouseup);
     controller.canvas.addEventListener("wheel", wheel);
+    */
+    let pusher = document.getElementsByClassName("pusher")[0];
+    pusher.addEventListener("mousedown", mousedown);
+    pusher.addEventListener("mousemove", mousemove);
+    pusher.addEventListener("mouseup", mouseup);
+    pusher.addEventListener("mouseout", mouseup);
+    pusher.addEventListener("wheel", wheel);
+
     window.addEventListener("keydown", keydown, false);
   };
 

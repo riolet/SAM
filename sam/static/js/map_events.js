@@ -14,8 +14,8 @@ function deselectText() {
 function mousedown(event) {
     "use strict";
     deselectText();
-    mdownx = event.clientX - rect.left;
-    mdowny = event.clientY - rect.top;
+    mdownx = event.clientX - controller.rect.left;
+    mdowny = event.clientY - controller.rect.top;
     ismdown = true;
 }
 
@@ -63,8 +63,8 @@ function mouseup(event) {
   }
 
   ismdown = false;
-  mx = event.clientX - rect.left;
-  my = event.clientY - rect.top;
+  mx = event.clientX - controller.rect.left;
+  my = event.clientY - controller.rect.top;
 
   if (mx === mdownx && my === mdowny) {
     //mouse hasn't moved. treat this as a "pick" operation
@@ -87,16 +87,16 @@ function mousemove(event) {
     if (ismdown === false) {
         return;
     }
-    mx = event.clientX - rect.left;
-    my = event.clientY - rect.top;
-    requestAnimationFrame(function () {render(tx + mx - mdownx, ty + my - mdowny, g_scale);});
+    mx = event.clientX - controller.rect.left;
+    my = event.clientY - controller.rect.top;
+    requestAnimationFrame(function () {render(controller.ctx, tx + mx - mdownx, ty + my - mdowny, g_scale);});
 }
 
 function wheel(event) {
   "use strict";
   //event is a WheelEvent
-  mx = event.clientX - rect.left;
-  my = event.clientY - rect.top;
+  mx = event.clientX - controller.rect.left;
+  my = event.clientY - controller.rect.top;
 
   if (event.deltaY < 0) { // Zoom in
     if (g_scale >= 60.0) {
@@ -204,7 +204,7 @@ function onResize() {
     "use strict";
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight - $("#navbar").height();
-    rect = canvas.getBoundingClientRect();
+    controller.rect = canvas.getBoundingClientRect();
     ctx.lineJoin = "bevel"; //seems to get reset on resize?
     render_all();
     checkLoD();
