@@ -47,7 +47,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     nodes: {},
     layouts: {},
     layout_flat: false,
-    layout_arrangement: "la_Address",
+    layout_arrangement: "Address",
     endpoint: "./nodes",
     ds: null
   };
@@ -64,9 +64,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.set_flat = function (flat) {
     nodes.layout_flat = flat;
     if (flat) {
-      nodes.layout_arrangement = "la_Circle";
+      nodes.layout_arrangement = "Circle";
     } else {
-      nodes.layout_arrangement = "la_Address";
+      nodes.layout_arrangement = "Address";
     }
   }
 
@@ -602,11 +602,19 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       size_x = 663552;
       size_y = 663552 / aspect;
     }
-    let layout_name = nodes.layout_arrangement.substr(3);
+    let layout_name = nodes.layout_arrangement;
     nodes.layouts[layout_name].layout(node_coll, 0, size_x, size_y);
   };
   nodes.set_layout = function (style) {
-    nodes.layout = style;
+    console.log("Set_Layout: ", style);
+    console.log("style is a ", typeof(style));
+    if (typeof(style) == "string") {
+      nodes.layout_arrangement = style;
+    } else if (typeof(style) == "object") {
+      nodes.layout_arrangement = style.target.id.substr(3);
+    } else {
+      return;
+    }
     nodes.do_layout(nodes.nodes);
   };
 
@@ -663,6 +671,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   address.layout = function (node_coll, subnet, size_x, size_y) {
+    console.log("arranging, address style!");
     subnet = subnet || 0;
     let radius = Math.min(size_x, size_y);
     address.arrange_collection(node_coll, radius, subnet);
@@ -709,6 +718,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   grid.layout = function (node_coll, subnet, size_x, size_y) {
+    console.log("arranging, grid style!");
     subnet = subnet || 0;
     let radius = Math.min(size_x, size_y);
     grid.arrange_collection(node_coll, radius);
@@ -819,6 +829,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   circle.layout = function (node_coll, subnet, size_x, size_y) {
+    console.log("arranging, circle style!");
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
     let attached = circle.get_all_attached_nodes(center);

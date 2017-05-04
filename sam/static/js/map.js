@@ -144,11 +144,11 @@ var g_timer = null;
     map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, "icon", cb));
 
     btn_list = [
-      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="la_Address", cb),
-      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="la_Grid", cb),
-      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="la_Circle", cb)
+      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="Address", null),
+      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="Grid", null),
+      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="Circle", null)
     ];
-    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", cb));
+    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", nodes.set_layout));
   };
 
   self.init_demo = function () {
