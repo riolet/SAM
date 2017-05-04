@@ -57,10 +57,10 @@ class Links(base.headless):
                 'flat': flat}
 
     def perform_get_command(self, request):
-        self.require_group('read')
+        self.page.require_group('read')
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
-        links = sam.models.links.Links(common.db, self.user.viewing, request['ds'])
+        links = sam.models.links.Links(common.db, self.page.user.viewing, request['ds'])
         return links.get_links(request['addresses'], timerange, request['port'], request['protocol'], request['flat'])
 
     def encode_get_response(self, response):

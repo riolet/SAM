@@ -24,8 +24,9 @@ class Map(base.headed):
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        self.require_group('read')
-        datasources = Datasources(common.db, self.session, self.user.viewing)
+        self.page.require_group('read')
+
+        datasources = Datasources(common.db, self.page.session, self.page.user.viewing)
         dses = [(k, v['name']) for k, v in datasources.datasources.iteritems()]
 
         return self.render('map', dses)

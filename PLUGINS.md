@@ -85,7 +85,7 @@ class DisabledPost(base.HeadlessPost):
     def POST(self):
         web.header("Content-Type", "application/json")
         fail_case = {'result': 'failure', 'message': 'Post operations disabled.'}
-        return json.dumps(fail_case, default=base.decimal_default)
+        return json.dumps(fail_case)
 
 def install():
     base.headless_post = DisabledPost

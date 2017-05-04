@@ -30,7 +30,6 @@ class Table:
 
     def get_table_info(self, clauses, page, page_size, order_by, order_dir):
         """
-        
         :param clauses: list of Filter objects
         :type clauses: list[ filters.Filter ]
         :param page: int; 0-based results page number
@@ -56,7 +55,6 @@ class Table:
             if where_clause:
                 where_clause = "WHERE " + where_clause
 
-
         having_clause = " AND ".join(clause.having(self.db) for clause in clauses if clause.having(self.db))
         if self.db.dbname == 'mysql':
             if having_clause:
@@ -66,7 +64,6 @@ class Table:
         else:
             if having_clause:
                 having_clause = "HAVING " + having_clause
-
 
         # ['address', 'alias', 'role', 'environment', 'tags', 'bytes', 'packets', 'protocols']
         cols = ['nodes.ipstart', 'nodes.alias', '(conn_in / (conn_in + conn_out))', 'env', 'CONCAT(tags, parent_tags)',

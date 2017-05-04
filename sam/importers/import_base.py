@@ -1,5 +1,6 @@
 import sys
 import os
+import numbers
 import sam.constants
 import traceback
 import importlib
@@ -35,8 +36,8 @@ Usage:
 """.format(sys.argv[0])
         self.dsModel = None
         self.subscription = None
-        self.datasource = None  # datasource id number
-        self.ds = None  # datasource name
+        self.ds_name = None  # datasource name
+        self.ds_id = None  # datasource id
         self.failed_attempts = 0
 
     @staticmethod
@@ -64,7 +65,7 @@ Usage:
             return
 
         try:
-            self.datasource = self.determine_datasource(argv)
+            self.determine_datasource(argv)
         except ValueError:
             print(self.instructions)
             return
@@ -75,12 +76,17 @@ Usage:
             print(self.instructions)
             return
 
-    @staticmethod
-    def determine_datasource(argv):
+    def determine_datasource(self, argv):
         if len(argv) >= 3 and len(argv[2]) > 1:
             requested_ds = argv[2]
         else:
             raise ValueError("Cannot determine datasource. Argv is {0}".format(repr(argv)))
+
+        try:
+            ds_id = int(requested_ds)
+            self.set_datasource_id(ds_id)
+        except:
+            self.set_datasource_name(requested_ds)
 
         return requested_ds
 
@@ -185,13 +191,21 @@ Usage:
     def set_subscription(self, sub):
         self.subscription = sub
 
-    def set_datasource(self, ds):
+    def set_datasource_id(self, ds_id):
         """
         :param ds: integer datasource id
-         :type ds: int
+         :type ds: numbers.Integral
         :return: None 
         """
-        self.datasource = ds
+        self.ds_id = int(ds_id)
+
+    def set_datasource_name(self, ds_name):
+        """
+        :param ds: integer datasource id
+         :type ds: basestring
+        :return: None 
+        """
+        self.ds_name = ds_name
 
     @staticmethod
     def reverse_connection(conn):
@@ -223,9 +237,6 @@ Usage:
         Returns:
             None
         """
-        if self.datasource is None:
-            raise ValueError("No data source specified. Import aborted.")
-
         global common
         global Datasources
         try:
@@ -237,7 +248,6 @@ Usage:
             import sam.integrity
             sam.integrity.check_and_fix_db_access(sam.constants.dbconfig.copy())
         try:
-            self.subscription = self.subscription or sam.constants.demo['id']
             self.dsModel = Datasources(common.db_quiet, {}, self.subscription)
             datasources = self.dsModel.datasources.values()
         except:
@@ -245,19 +255,16 @@ Usage:
             import sam.integrity
             sam.integrity.check_and_fix_integrity()
 
-        if not self.ds:
-            for datasource in self.dsModel.datasources.values():
-                # print("comparing {0} ({0.__class__}) to {1} ({1.__class__})".format(self.datasource, datasource['name']))
-                if datasource['name'] == self.datasource:
-                    self.ds = datasource['id']
-                    break
-                if unicode(datasource['id']) == unicode(self.datasource):
-                    self.ds = datasource['id']
-                    break
-            if self.ds is None:
-                raise ValueError()
+        if self.ds_id is None:
+            self.dsModel = Datasources(common.db_quiet, {}, self.subscription)
+            if self.ds_name:
+                self.ds_id = self.dsModel.name_to_id(self.ds_name)
+            if self.ds_id is None and len(self.dsModel.ds_ids) == 1:
+                self.ds_id = self.dsModel.ds_ids[0]
+            else:
+                raise ValueError("No datasource specified")
 
-        table_name = "s{acct}_ds{ds}_Syslog".format(acct=self.subscription, ds=self.ds)
+        table_name = "s{acct}_ds{ds}_Syslog".format(acct=self.subscription, ds=self.ds_id)
 
         try:
             truncated_rows = rows[:count]
@@ -338,8 +345,14 @@ def get_importer(import_format, sub_id, ds_id):
         try:
             importer = module_.class_()
             importer.set_subscription(sub_id)
-            importer.set_datasource(ds_id)
+            try:
+                importer.set_datasource_id(int(ds_id))
+            except:
+                importer.set_datasource_name(ds_id)
         except:
             print("Error instantiating importer for {}. Is module.class_ defined?".format(import_format))
+            raise
+    else:
+        raise ImportError("Unable to get find importer given format.")
 
     return importer

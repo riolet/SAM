@@ -16,6 +16,7 @@ def check_database():
 
 def create_session(app):
     # Create the session object
+
     if web.config.get('_session') is None:
         common.session = web.session.Session(app, common.session_store)
         web.config._session = common.session

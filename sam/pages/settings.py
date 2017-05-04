@@ -26,10 +26,10 @@ class Settings(base.headless_post):
 
     def __init__(self):
         super(Settings, self).__init__()
-        self.settingsModel = sam.models.settings.Settings(common.db, self.session, self.user.viewing)
-        self.dsModel = sam.models.datasources.Datasources(common.db, self.session, self.user.viewing)
-        self.livekeyModel = sam.models.livekeys.LiveKeys(common.db, self.user.viewing)
-        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+        self.settingsModel = sam.models.settings.Settings(common.db, self.page.session, self.page.user.viewing)
+        self.dsModel = sam.models.datasources.Datasources(common.db, self.page.session, self.page.user.viewing)
+        self.livekeyModel = sam.models.livekeys.LiveKeys(common.db, self.page.user.viewing)
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.page.user.viewing)
         self.linksModel = None
         self.uploadModel = None
 
@@ -71,7 +71,8 @@ class Settings(base.headless_post):
         if command not in self.recognized_commands:
             raise errors.MalformedRequest("Unrecognized command: '{0}'".format(command))
 
-        if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval', 'ds_flat', 'upload', 'add_live_key'):
+        if command in ('ds_rm', 'ds_select', 'rm_conns', 'ds_name', 'ds_live', 'ds_interval',
+                       'ds_flat', 'upload', 'add_live_key'):
             ds = self.decode_datasource(data.get('ds'))
             if not ds:
                 raise errors.RequiredKey('datasource', 'ds')
@@ -137,7 +138,7 @@ class Settings(base.headless_post):
 
         see also: self.recognized_commands
         """
-        self.require_group('write')
+        self.page.require_group('write')
         command = request['command']
         if command == 'ds_name':
             self.dsModel.set(request['ds'], name=request['name'])
@@ -162,14 +163,15 @@ class Settings(base.headless_post):
         elif command == 'rm_envs':
             self.nodesModel.delete_custom_envs()
         elif command == 'rm_conns':
-            self.linksModel = sam.models.links.Links(common.db, self.user.viewing, request['ds'])
+            self.linksModel = sam.models.links.Links(common.db, self.page.user.viewing, request['ds'])
             self.linksModel.delete_connections()
         elif command == 'upload':
             b64start = request['file'].find(",")
             if b64start == -1:
                 raise errors.MalformedRequest("Could not decode file")
             log_file = base64.b64decode(request['file'][b64start + 1:])
-            self.uploadModel = sam.models.upload.Uploader(common.db, self.user.viewing, request['ds'], request['format'])
+            self.uploadModel = sam.models.upload.Uploader(common.db, self.page.user.viewing,
+                                                          request['ds'], request['format'])
             self.uploadModel.import_log(log_file)
         elif command == 'add_live_key':
             self.livekeyModel.create(request['ds'])

@@ -20,15 +20,15 @@ class Login_LDAP(base.headed):
     # ======== Get
 
     def GET(self):
-        if self.user.logged_in:
+        if self.page.user.logged_in:
             raise web.seeother('./map')
         if not ldap_loaded:
             print("ERROR: ldap3 library not installed.")
             print("       install ldap3 with pip:")
             print("       `pip install ldap3`")
-            return self.render('login', constants.find_url(constants.access_control['login_page']), ['LDAP module not installed. Cannot perform login.'])
+            return self.render('login', constants.access_control['login_url'], ['LDAP module not installed. Cannot perform login.'])
 
-        return self.render('login', constants.find_url(constants.access_control['login_page']))
+        return self.render('login', constants.access_control['login_url'])
 
     # ======== Post
 
@@ -74,7 +74,7 @@ class Login_LDAP(base.headed):
             raise errors.AuthenticationError("Invalid credentials.")
 
         # Assume authenticated at this point.
-        self.user.login_simple(user)
+        self.page.user.login_simple(user)
         return True
 
     def encode_post_response(self, response):
@@ -89,13 +89,13 @@ class Login_LDAP(base.headed):
         """
 
         try:
-            self.request = self.decode_post_request(self.inbound)
+            self.request = self.decode_post_request(self.page.inbound)
             self.response = self.perform_post_command(self.request)
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:
             print("Error logging in: {}".format(e.message))
             if not self.errors:
                 self.errors.append("Login failed.")
-            return self.render('login', constants.find_url(constants.access_control['login_page']), self.errors)
+            return self.render('login', constants.access_control['login_url'], self.errors)
 
         raise web.seeother('./map')
