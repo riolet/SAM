@@ -119,7 +119,7 @@ var g_timer = null;
       map_settings.create_labelbutton("lw_bytes", "Byte Count", "Width based on number of Bytes transferred", false, null),
       map_settings.create_labelbutton("lw_packets", "Packet Count", "Width based on number of packets transmitted", false, null)
     ];
-    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "vertical", self.event_line_width));
+    map_settings.add_object("Line Width", null, map_settings.create_buttongroup(btn_list, "vertical", self.event_line_width));
 
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", true, null), self.event_show_buttons));
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", true, null), self.event_show_buttons));

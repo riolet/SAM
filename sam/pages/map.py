@@ -19,7 +19,7 @@ class Map(base.headed):
                         '/static/nouislider/nouislider.min.js']
         self.styles = ['/static/css/map.css',
                        '/static/css/timerange.css',
-                       '/static/nouislider/nouislider.css',
+                       '/static/nouislider/nouislider-dark.css',
                        '/static/nouislider/nouislider.pips.css']
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
