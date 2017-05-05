@@ -99,6 +99,14 @@ div.ui.message.transition {
   border-radius: 0;
 }
 
+#sidebar button:focus {
+  background: rgba(255,255,255,.2);
+}
+
+#sidebar button.active:focus {
+  background: white;
+}
+
 #sidebar .segment {
   border-radius: 0;
   padding: 0;
