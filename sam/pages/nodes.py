@@ -68,7 +68,7 @@ class Nodes(base.headless_post):
             if self.check_flat_tolerance():
                 response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
             else:
-                response = {'error': 'Flat mode is not supported once a graphs has exceeded {} hosts.'.format(self.flatmode_tolerance)}
+                response = {'error': 'Flat mode is not supported once a graph has exceeded {} hosts.'.format(self.flatmode_tolerance)}
         elif len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:
