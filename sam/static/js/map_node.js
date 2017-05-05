@@ -387,7 +387,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     if (oldName === name) {
       return;
     }
-    nodes.POST_name(node.address, name);
+    nodes.POST_name(nodes.get_address(node), name);
     node.alias = name;
   };
   nodes.submit_alias_CB = function (event) {

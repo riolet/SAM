@@ -155,10 +155,10 @@ class DatabaseInserter(threading.Thread):
         self.e_shutdown.set()
 
     @staticmethod
-    def run_importer(sub, ds, messages):
+    def run_importer(sub_id, ds_id, messages):
         importer = sam.importers.import_base.BaseImporter()
-        importer.set_subscription(sub)
-        importer.set_datasource(ds)
+        importer.set_subscription(sub_id)
+        importer.set_datasource_id(ds_id)
 
         for msg in messages:
             lines = msg['lines']

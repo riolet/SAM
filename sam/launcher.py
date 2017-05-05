@@ -219,9 +219,9 @@ def launch_localmode(parsed):
     import common
     import sam.models.subscriptions
     db = common.db_quiet
+    check_database()
     sub_model = sam.models.subscriptions.Subscriptions(db)
     sub_id = sub_model.decode_sub(parsed['sub'])
-    check_database()
     access_key = create_local_settings(db, sub_id)
 
     # launch aggregator process
