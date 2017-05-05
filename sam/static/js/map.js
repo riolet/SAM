@@ -16,8 +16,6 @@ var subnetLabel = "";
 
 //settings/options data
 var config = {
-    "update": true,
-    "update_interval": 60,
     "filter": "",
     "tmin": 1,  // range minimum
     "tmax": 2147483647,  // range maximum
@@ -76,8 +74,6 @@ var g_timer = null;
     map_settings.add_object(null, null, map_settings.create_input("filter", "Port Filter", "filter", "Filter by port...", "Filter by port number. Try: 80", onfilter));
     // add protocol_filter to settings panel
     map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "exchange", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
-    // auto-refresh
-    map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", false, null), cb));
 
     // display intermediate menu.
     map_settings.rebuild();
@@ -90,6 +86,10 @@ var g_timer = null;
     //      trigger the get-node sequence
     self.GET_settings(null, function (result) {
       let btn_list = []
+
+      // auto-refresh button
+      map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", self.autorefresh, null), self.event_auto_refresh));
+      // datasource buttons
       self.datasources.forEach(function (ds) {
         btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.id==self.ds, cb));
       });
@@ -251,6 +251,18 @@ var g_timer = null;
     }
     return element;
   };
+
+  self.event_auto_refresh = function (e_auto_refresh) {
+    let button = self.event_to_tag(e_auto_refresh, "BUTTON");
+    let active = button.classList.contains("active");
+    if (active) {
+      console.log("Enabling auto-refresh");
+    } else {
+      console.log("Disabling auto-refresh");
+    }
+    controller.autorefresh = active;
+    setAutoUpdate();
+  }
 
   self.event_line_width = function (e_lines_btn) {
     let element = self.event_to_tag(e_lines_btn, "BUTTON");
