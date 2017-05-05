@@ -24,7 +24,6 @@ var config = {
     "tstart": 1,  // window minimum
     "tend": 2147483647,  // window maximum
     "protocol": "all",
-    "linewidth": "links",
     "initial_zoom": false
 };
 
@@ -115,11 +114,11 @@ var g_timer = null;
     //(id, icon_name, tooltip, active, callback)
 
     btn_list = [
-      map_settings.create_iconbutton(null, "area chart", "Number of Occurrences", true, cb),
-      map_settings.create_iconbutton(null, "bar chart", "Bytes Transferred", false, cb),
-      map_settings.create_iconbutton(null, "line chart", "Packets Transmitted", false, cb)
+      map_settings.create_iconbutton("lw_links", "area chart", "Number of Occurrences", true, null),
+      map_settings.create_iconbutton("lw_bytes", "bar chart", "Bytes Transferred", false, null),
+      map_settings.create_iconbutton("lw_packets", "line chart", "Packets Transmitted", false, null)
     ];
-    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "icon", cb));
+    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "icon", self.event_line_width));
 
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", true, null), self.event_show_buttons));
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", true, null), self.event_show_buttons));
@@ -245,18 +244,43 @@ var g_timer = null;
     return request;
   };
 
+  self.event_to_tag = function (event, tagName) {
+    let element = event.target;
+    while (element && element.tagName !== tagName) {
+      element = element.parentElement;
+    }
+    return element;
+  };
+
+  self.event_line_width = function (e_lines_btn) {
+    let element = self.event_to_tag(e_lines_btn, "BUTTON");
+    if (!element) { return; }
+    var oldLW = renderConfig.linewidth;
+    var newLW = element.id.substr(3);
+    
+    if (newLW !== oldLW) {
+      // do special stuff
+      renderConfig.linewidth = newLW;
+      render_all();
+    }
+  };
+
   self.event_show_buttons = function (e_show_btn) {
-    let element = e_show_btn.target;
+    let element = self.event_to_tag(e_show_btn, "BUTTON");
+    if (!element) { return; }
     if (renderConfig.hasOwnProperty(element.id)) {
       renderConfig[element.id] = element.classList.contains("active");
     }
     updateRenderRoot();
     render_all();
-  }
+  };
 
   self.event_layout_mode = function (e_lm_btn) {
     // Event: layout mode (flat/heirarchical) button clicked.
-    let new_flat = e_lm_btn.target.id.substr(3) === "Flat";
+    let element = self.event_to_tag(e_lm_btn, "BUTTON");
+    if (!element) { return; }
+    
+    let new_flat = element.id.substr(3) === "Flat";
     let old_flat = nodes.layout_flat;
     if (new_flat !== old_flat) {
       if (m_link_timer) {
@@ -269,10 +293,13 @@ var g_timer = null;
         render_all();
       });
     }
-  }
+  };
 
   self.event_layout_arrangement = function (e_la_btn) {
-    let new_layout = e_la_btn.target.id.substr(3);
+    let element = self.event_to_tag(e_la_btn, "BUTTON");
+    if (!element) { return; }
+
+    let new_layout = element.id.substr(3);
     let old_layout = nodes.layout_arrangement;
     if (new_layout !== old_layout) {
       nodes.set_layout(new_layout);
@@ -280,7 +307,7 @@ var g_timer = null;
       updateRenderRoot();
       render_all();
     }
-  }
+  };
 
   window.controller = self;
 }());

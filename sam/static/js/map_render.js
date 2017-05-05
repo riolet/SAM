@@ -5,6 +5,7 @@ var renderConfig = {
   show_servers: true,
   show_inputs: true,
   show_outputs: true,
+  linewidth: "links",
 
   backgroundColor: "#F7F7F7",
   nodeColor: "#5555CC",
@@ -306,7 +307,7 @@ function renderLinks(ctx, node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
+                ctx.lineWidth = String(Math.round(link[renderConfig.linewidth])).length / scale;
             }
 
             // if connecting to self
@@ -330,7 +331,7 @@ function renderLinks(ctx, node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
+                ctx.lineWidth = String(Math.round(link[renderConfig.linewidth])).length / scale;
             }
 
             // if connecting to self or a child node, just draw a loopback arrow.

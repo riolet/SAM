@@ -672,7 +672,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   address.layout = function (node_coll, subnet, size_x, size_y) {
-    console.log("arranging, address style!");
     subnet = subnet || 0;
     let radius = Math.min(size_x, size_y);
     address.arrange_collection(node_coll, radius, subnet);
@@ -719,7 +718,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   grid.layout = function (node_coll, subnet, size_x, size_y) {
-    console.log("arranging, grid style!");
     subnet = subnet || 0;
     let radius = Math.min(size_x, size_y);
     grid.arrange_collection(node_coll, radius);
@@ -830,7 +828,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     });
   };
   circle.layout = function (node_coll, subnet, size_x, size_y) {
-    console.log("arranging, circle style!");
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
     let attached = circle.get_all_attached_nodes(center);

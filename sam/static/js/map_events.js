@@ -251,34 +251,6 @@ function updateDsSelection() {
   }
 }
 
-function updateLwSelection() {
-  "use strict";
-  //lw is line width
-  let lwbuttons = document.getElementsByClassName("lw button active");
-  let num_buttons = lwbuttons.length;
-  var oldLW = config.linewidth;
-  var newLW = config.linewidth;
-  if (num_buttons === 0) {
-    document.getElementById(newLW).classList.add("active");
-    return;
-  }
-  for(let i = num_buttons - 1; i >= 0; i -= 1) {
-    if (lwbuttons[i].id !== oldLW) {
-      newLW = lwbuttons[i].id;
-    }
-  }
-  if (newLW !== oldLW) {
-    // do special stuff
-    config.linewidth = newLW;
-    render_all();
-    for(let i = num_buttons - 1; i >= 0; i -= 1) {
-      if (lwbuttons[i].id !== newLW) {
-        lwbuttons[i].classList.remove("active");
-      }
-    }
-  }
-}
-
 function updateConfig() {
     "use strict";
     config.show_clients = document.getElementById("show_clients").classList.contains("active");
