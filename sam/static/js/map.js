@@ -91,9 +91,10 @@ var g_timer = null;
       map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", self.autorefresh, null), self.event_auto_refresh));
       // datasource buttons
       self.datasources.forEach(function (ds) {
-        btn_list.push(map_settings.create_iconbutton("ds_"+ds.id, "database", ds.name, ds.id==self.ds, null));
+        btn_list.push(map_settings.create_labeliconbutton("ds_"+ds.id, "database", ds.name, "Use the " + ds.name + " datasource", ds.id==self.ds, null));
       });
-      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, "icon", self.event_datasource));
+      map_settings.add_object("Datasources", null, map_settings.create_divider());
+      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, "vertical labeled icon", self.event_datasource));
 
       self.GET_timerange(self.ds, function (result) {
         nodes.set_datasource(self.datasource);
@@ -114,11 +115,11 @@ var g_timer = null;
     //(id, icon_name, tooltip, active, callback)
 
     btn_list = [
-      map_settings.create_iconbutton("lw_links", "area chart", "Number of Occurrences", true, null),
-      map_settings.create_iconbutton("lw_bytes", "bar chart", "Bytes Transferred", false, null),
-      map_settings.create_iconbutton("lw_packets", "line chart", "Packets Transmitted", false, null)
+      map_settings.create_labelbutton("lw_links", "Link Count", "Width based on number of occurrences", true, null),
+      map_settings.create_labelbutton("lw_bytes", "Byte Count", "Width based on number of Bytes transferred", false, null),
+      map_settings.create_labelbutton("lw_packets", "Packet Count", "Width based on number of packets transmitted", false, null)
     ];
-    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "icon", self.event_line_width));
+    map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "vertical", self.event_line_width));
 
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", true, null), self.event_show_buttons));
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", true, null), self.event_show_buttons));
@@ -248,7 +249,7 @@ var g_timer = null;
     //determine which datasource (ds) buttons are clicked.
     let element = self.event_to_tag(e_ds, "BUTTON");
     let old_ds = self.ds;
-    let new_ds = element.id.substr(3);
+    let new_ds = parseInt(element.id.substr(3));
     
     if (new_ds !== old_ds) {
       self.ds = new_ds;
@@ -256,12 +257,13 @@ var g_timer = null;
       for(i=0; i < self.datasources.length; i += 1) {
         if (self.datasources[i].id === new_ds) {
           self.datasource = self.datasources[i];
+          break;
         }
       }
       link_remove_all(nodes.nodes);
       config.initial_zoom = false;
       self.autorefresh = (self.datasource.ar_active === 1);
-      self.autorefresh_period = self.datasources.ar_interval;
+      self.autorefresh_period = self.datasource.ar_interval;
       let ar_btn = document.getElementById("autorefresh");
       if (self.autorefresh) {
         ar_btn.classList.add("active");
@@ -433,6 +435,33 @@ var g_timer = null;
     }
   };
 
+  self.create_labeliconbutton = function (id, icon_name, label, tooltip, active, callback) {
+    //create button
+    let btn = document.createElement("BUTTON");
+    btn.className = "ui icon inverted button";
+    if (active) {
+      btn.classList.add("active");
+    }
+    if (id) {
+      btn.id = id;
+    }
+    // .dataset[...] is for the tooltip.
+    btn.dataset["tooltip"] = tooltip;
+    btn.dataset["inverted"] = "true";
+    btn.dataset["position"] = "top left";
+    btn.dataset["delay"] = "500";
+
+    let icon = document.createElement("I");
+    icon.className = icon_name + " icon";
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode(label));
+    if (typeof(callback) === "function") {
+      btn.onclick = callback;
+    }
+
+    return btn;
+  };
+
   self.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
@@ -458,6 +487,38 @@ var g_timer = null;
 
     return btn;
   };
+
+  self.create_labelbutton = function (id, label, tooltip, active, callback) {
+    //create button
+    let btn = document.createElement("BUTTON");
+    btn.className = "ui inverted button";
+    if (active) {
+      btn.classList.add("active");
+    }
+    if (id) {
+      btn.id = id;
+    }
+    // .dataset[...] is for the tooltip.
+    btn.dataset["tooltip"] = tooltip;
+    btn.dataset["inverted"] = "true";
+    btn.dataset["position"] = "top left";
+    btn.dataset["delay"] = "500";
+
+    btn.appendChild(document.createTextNode(label));
+
+    if (typeof(callback) === "function") {
+      btn.onclick = callback;
+    }
+
+    return btn;
+  };
+
+  self.create_divider = function () {
+    //<div class="divider"></div>
+    let div = document.createElement("DIV");
+    div.className = "divider";
+    return div;
+  }
 
   self.btn_toggleable = function (btn, callback) {
     btn.onclick = function (e_click) {
