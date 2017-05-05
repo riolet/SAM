@@ -180,8 +180,7 @@ var g_timer = null;
     pusher.addEventListener("mouseup", mouseup);
     pusher.addEventListener("mouseout", mouseup);
     pusher.addEventListener("wheel", wheel);
-
-    window.addEventListener("keydown", keydown, false);
+    pusher.addEventListener("keydown", keydown, false);
   };
 
   self.GET_settings = function (ds, successCallback) {

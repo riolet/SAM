@@ -15,6 +15,7 @@ function mousedown(event) {
     "use strict";
     event.preventDefault();
     deselectText();
+    event.target.focus();
     mdownx = event.clientX - controller.rect.left;
     mdowny = event.clientY - controller.rect.top;
     ismdown = true;
@@ -135,10 +136,6 @@ function wheel(event) {
 
 function keydown(event) {
     "use strict";
-    //don't interfere with input dialogs
-    if (document.activeElement.localName !== "body") {
-        return;
-    }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
         resetViewport(nodes.nodes);
