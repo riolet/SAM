@@ -198,7 +198,6 @@ function resetViewport(collection, fill) {
         fill = 0.92;
     }
     var bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
-
     Object.keys(collection).forEach(function (nodeKey) {
         var node = collection[nodeKey];
         if (node.abs_x - node.radius_orig < bbox.left) {
@@ -214,8 +213,6 @@ function resetViewport(collection, fill) {
             bbox.bottom = node.abs_y + node.radius;
         }
     });
-    console.log("reseting viewport. Bbox is: top-left (%s, %s), bottom-right (%s, %s)", bbox.left, bbox.top, bbox.right, bbox.bottom);
-    console.log("         nodes: ", collection);
     var scaleA = fill * controller.rect.width / (bbox.right - bbox.left);
     var scaleB = fill * controller.rect.height / (bbox.bottom - bbox.top);
     g_scale = Math.min(scaleA, scaleB);

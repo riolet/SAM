@@ -315,8 +315,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         });
       }
     });
-    //Not needed because do_layout is called after the links load.
-    //nodes.do_layout();
+    //do_layout() is not needed because do_layout is called after the links load,
+    // but is enabled because this lets node search work properly (in Address and Grid layouts, not Circle.)
+    nodes.do_layout();
     link_request_submit();
   };
   /*

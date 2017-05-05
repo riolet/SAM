@@ -85,6 +85,28 @@ function links_reset() {
     link_request_submit();
 }
 
+function GET_links(addrs) {
+    "use strict";
+    var requestData = {
+        "address": addrs.join(","),
+        "filter": config.filter,
+        "protocol": config.protocol,
+        "tstart": config.tstart,
+        "tend": config.tend,
+        "ds": controller.ds
+    };
+    if (nodes.layout_flat) {
+      requestData.flat = true;
+    }
+    $.ajax({
+        url: "./links",
+        type: "GET",
+        data: requestData,
+        error: generic_ajax_failure,
+        success: GET_links_callback
+    });
+}
+
 function GET_links_callback(result) {
     "use strict";
     //for each node address in result:
