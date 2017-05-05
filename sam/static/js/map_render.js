@@ -1,6 +1,11 @@
 //rendering configuration settings
 // test at https://jsfiddle.net/tn7836so/
 var renderConfig = {
+  show_clients: true,
+  show_servers: true,
+  show_inputs: true,
+  show_outputs: true,
+
   backgroundColor: "#F7F7F7",
   nodeColor: "#5555CC",
   nodeColorFaded: "#95D5D9",
@@ -173,8 +178,8 @@ function onScreen(coll, x, y, scale) {
 
     var filtered = [];
     visible.forEach(function (node) {
-        if ((node.client === true && config.show_clients) ||
-                (node.server === true && config.show_servers) ||
+        if ((node.client === true && renderConfig.show_clients) ||
+                (node.server === true && renderConfig.show_servers) ||
                 (node.client === true && node.server === true)) {
             filtered.push(node);
         }
@@ -293,7 +298,7 @@ function drawArrow(ctx, x1, y1, x2, y2, scale, bIncoming) {
 function renderLinks(ctx, node, scale, faded) {
     "use strict";
     // inbound lines
-    if (config.show_in) {
+    if (renderConfig.show_inputs) {
         node.inputs.forEach(function (link) {
             ctx.beginPath();
             if (faded) {
@@ -317,7 +322,7 @@ function renderLinks(ctx, node, scale, faded) {
         });
     }
     // outbound lines
-    if (config.show_out) {
+    if (renderConfig.show_outputs) {
         node.outputs.forEach(function (link) {
             ctx.beginPath();
             if (faded) {

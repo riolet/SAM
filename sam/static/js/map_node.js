@@ -70,9 +70,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     nodes.layout_flat = flat;
     
     if (nodes.layout_flat) {
-      nodes.layout_arrangement = "Circle";
+      document.getElementById("la_Circle").click();
     } else {
-      nodes.layout_arrangement = "Address";
+      document.getElementById("la_Address").click();
     }
     nodes.clear();
   }

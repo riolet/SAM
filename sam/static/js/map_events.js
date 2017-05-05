@@ -13,6 +13,7 @@ function deselectText() {
 
 function mousedown(event) {
     "use strict";
+    event.preventDefault();
     deselectText();
     mdownx = event.clientX - controller.rect.left;
     mdowny = event.clientY - controller.rect.top;
@@ -61,6 +62,7 @@ function mouseup(event) {
   if (ismdown === false) {
     return;
   }
+  event.preventDefault();
 
   ismdown = false;
   mx = event.clientX - controller.rect.left;
@@ -85,8 +87,9 @@ function mouseup(event) {
 function mousemove(event) {
     "use strict";
     if (ismdown === false) {
-        return;
+      return;
     }
+    event.preventDefault();
     mx = event.clientX - controller.rect.left;
     my = event.clientY - controller.rect.top;
     requestAnimationFrame(function () {render(controller.ctx, tx + mx - mdownx, ty + my - mdowny, g_scale);});

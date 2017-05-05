@@ -16,10 +16,6 @@ var subnetLabel = "";
 
 //settings/options data
 var config = {
-    "show_clients": true,
-    "show_servers": true,
-    "show_in": true,
-    "show_out": true,
     "update": true,
     "update_interval": 60,
     "filter": "",
@@ -28,9 +24,7 @@ var config = {
     "tstart": 1,  // window minimum
     "tend": 2147483647,  // window maximum
     "protocol": "all",
-    "ds": null,
     "linewidth": "links",
-    "flat": false,
     "initial_zoom": false
 };
 
@@ -127,10 +121,10 @@ var g_timer = null;
     ];
     map_settings.add_object("Line width represents", null, map_settings.create_buttongroup(btn_list, "icon", cb));
 
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", config.show_clients, null), cb));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", config.show_servers, null), cb));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_in", "sign in", "Show Inbound Connections", config.show_in, null), cb));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_out", "sign out", "Show Outbound Connections", config.show_out, null), cb));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", true, null), self.event_show_buttons));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", true, null), self.event_show_buttons));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_inputs", "sign in", "Show Inbound Connections", true, null), self.event_show_buttons));
+    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_outputs", "sign out", "Show Outbound Connections", true, null), self.event_show_buttons));
 
     btn_list = [
       map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, null),
@@ -251,6 +245,15 @@ var g_timer = null;
     return request;
   };
 
+  self.event_show_buttons = function (e_show_btn) {
+    let element = e_show_btn.target;
+    if (renderConfig.hasOwnProperty(element.id)) {
+      renderConfig[element.id] = element.classList.contains("active");
+    }
+    updateRenderRoot();
+    render_all();
+  }
+
   self.event_layout_mode = function (e_lm_btn) {
     // Event: layout mode (flat/heirarchical) button clicked.
     let new_flat = e_lm_btn.target.id.substr(3) === "Flat";
@@ -273,6 +276,8 @@ var g_timer = null;
     let old_layout = nodes.layout_arrangement;
     if (new_layout !== old_layout) {
       nodes.set_layout(new_layout);
+      resetViewport(nodes.nodes);
+      updateRenderRoot();
       render_all();
     }
   }
