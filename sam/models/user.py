@@ -16,7 +16,7 @@ class User(object):
             if '_settings' in self.session:
                 del self.session._settings
             sub_model = Subscriptions(common.db_quiet)
-            sub = sub_model.get_by_email(constants.subscription['default-email'])
+            sub = sub_model.get_by_email(constants.subscription['default_email'])
             self.login_simple('SAM', sub['subscription'])
 
     def login(self, email, name, subscription, groups, plan, active):

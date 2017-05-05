@@ -189,61 +189,12 @@ function applysearch() {
     nodes.GET_request([nearest], applysearch);
   }
 }
-
 function onsearch() {
   "use strict";
   if (g_timer !== null) {
     clearTimeout(g_timer);
   }
   g_timer = setTimeout(applysearch, 700);
-}
-
-function onResize() {
-    "use strict";
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - $("#navbar").height();
-    controller.rect = canvas.getBoundingClientRect();
-    controller.ctx.lineJoin = "bevel"; //seems to get reset on resize?
-    render_all();
-    checkLoD();
-    sel_panel_height();
-}
-
-function updateDsSelection() {
-  "use strict";
-  //determine which datasource (ds) buttons are clicked.
-  var btns = document.getElementsByClassName("ds button active");
-  var oldDS = config.ds;
-  var newDS = config.ds;
-  var count = btns.length - 1;
-  if (count === -1) {
-    document.getElementById(newDS).classList.add("active");
-    return;
-  }
-  for(; count >= 0; count -= 1) {
-    if (btns[count].id !== oldDS) {
-      newDS = btns[count].id;
-    }
-  }
-  if (newDS !== oldDS) {
-    config.ds = newDS;
-    links_reset();
-    GET_settings(newDS, function (settings) {
-      let newDS_num = /^[^\d]+(\d+).*$/.exec(newDS)[1];
-      let datasource = settings.datasources[newDS_num]
-      config.update = (datasource.ar_active === 1);
-      config.update_interval = datasource.ar_interval;
-      config.flat = (datasource.flat === 1);
-      init_toggleButton("update", "Auto refresh", "No refresh", config.update);
-      setAutoUpdate();
-      updateCall();
-    });
-    for(count = btns.length - 1; count >= 0; count -= 1) {
-      if (btns[count].id !== newDS) {
-        btns[count].classList.remove("active");
-      }
-    }
-  }
 }
 
 function applyProtocolFilter() {
@@ -262,6 +213,17 @@ function onProtocolFilter() {
         clearTimeout(g_timer);
     }
     g_timer = setTimeout(applyProtocolFilter, 700);
+}
+
+function onResize() {
+    "use strict";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight - $("#navbar").height();
+    controller.rect = canvas.getBoundingClientRect();
+    controller.ctx.lineJoin = "bevel"; //seems to get reset on resize?
+    render_all();
+    checkLoD();
+    sel_panel_height();
 }
 
 (function () {

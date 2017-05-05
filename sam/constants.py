@@ -29,8 +29,8 @@ access_control = {
 }
 
 subscription = {
-    'default-name':  config.get('subscription', 'name'),
-    'default-email': config.get('subscription', 'email')
+    'default_name':  config.get('subscription', 'name'),
+    'default_email': config.get('subscription', 'email')
 }
 
 LDAP = {

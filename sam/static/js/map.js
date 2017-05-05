@@ -91,9 +91,9 @@ var g_timer = null;
       map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", self.autorefresh, null), self.event_auto_refresh));
       // datasource buttons
       self.datasources.forEach(function (ds) {
-        btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.id==self.ds, cb));
+        btn_list.push(map_settings.create_iconbutton("ds_"+ds.id, "database", ds.name, ds.id==self.ds, null));
       });
-      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
+      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, "icon", self.event_datasource));
 
       self.GET_timerange(self.ds, function (result) {
         nodes.set_datasource(self.datasource);
@@ -167,13 +167,6 @@ var g_timer = null;
     ty = self.rect.height / 2;
 
     //Event listeners for detecting clicks and zooms
-    /*
-    self.canvas.addEventListener("mousedown", mousedown);
-    self.canvas.addEventListener("mousemove", mousemove);
-    self.canvas.addEventListener("mouseup", mouseup);
-    self.canvas.addEventListener("mouseout", mouseup);
-    self.canvas.addEventListener("wheel", wheel);
-    */
     let pusher = document.getElementsByClassName("pusher")[0];
     pusher.addEventListener("mousedown", mousedown);
     pusher.addEventListener("mousemove", mousemove);
@@ -250,6 +243,36 @@ var g_timer = null;
     }
     return element;
   };
+
+  self.event_datasource = function (e_ds) {
+    //determine which datasource (ds) buttons are clicked.
+    let element = self.event_to_tag(e_ds, "BUTTON");
+    let old_ds = self.ds;
+    let new_ds = element.id.substr(3);
+    
+    if (new_ds !== old_ds) {
+      self.ds = new_ds;
+      let i;
+      for(i=0; i < self.datasources.length; i += 1) {
+        if (self.datasources[i].id === new_ds) {
+          self.datasource = self.datasources[i];
+        }
+      }
+      link_remove_all(nodes.nodes);
+      config.initial_zoom = false;
+      self.autorefresh = (self.datasource.ar_active === 1);
+      self.autorefresh_period = self.datasources.ar_interval;
+      let ar_btn = document.getElementById("autorefresh");
+      if (self.autorefresh) {
+        ar_btn.classList.add("active");
+      } else {
+        ar_btn.classList.remove("active");
+      }
+      nodes.set_flat(self.datasources.flat === 1);
+      setAutoUpdate();
+      updateCall();
+    }
+  }
 
   self.event_auto_refresh = function (e_auto_refresh) {
     let button = self.event_to_tag(e_auto_refresh, "BUTTON");
@@ -524,10 +547,6 @@ var g_timer = null;
 
 function init() {
   controller.init();
-}
-
-function cb(param) {
-  console.log("Clicked!", param);
 }
 
 function currentSubnet(scale) {
