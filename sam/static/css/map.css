@@ -6,6 +6,7 @@ body, html {
 
 #navbar {
   border-radius: 0;
+  background-color: #142230;
 }
 
 #output {
@@ -157,7 +158,7 @@ div.ui.message.transition {
 }
 
 #sidebar .input .label {
-  background-color: rgba(255,255,255,0.5);
+  background-color: #8f9ead;
   margin: 0.2em 0;
   padding: 0.4em;
   width: 4em;
