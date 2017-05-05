@@ -233,7 +233,7 @@ var g_timer = null;
         }
         config.tend = config.tmax;
         config.tstart = config.tmax - 300;
-        slider_init(config);
+        slider_init();
 
         if (typeof(successCallback) == "function") {
           successCallback(range);
@@ -423,7 +423,7 @@ var g_timer = null;
     }
     // .dataset[...] is for the tooltip.
     btn.dataset["tooltip"] = tooltip;
-    btn.dataset["inverted"] = true;
+    btn.dataset["inverted"] = "true";
     btn.dataset["position"] = "top left";
     btn.dataset["delay"] = "500";
 
@@ -483,7 +483,7 @@ var g_timer = null;
     outer_div.className = "textinput";
     div.className = "ui inverted fluid icon input";
     label.appendChild(document.createTextNode(label_text));
-    label.classList = "configlabel";
+    label.className = "configlabel";
     label.htmlFor = id;
     input.id = id;
     input.placeholder = placeholder;
@@ -491,7 +491,7 @@ var g_timer = null;
     if (typeof(callback) == "function") {
       input.oninput = callback;
     }
-    icon.classList = icon_name + " icon";
+    icon.className = icon_name + " icon";
 
     div.dataset["tooltip"] = tooltip;
     div.dataset["inverted"] = true;
@@ -529,20 +529,6 @@ function init() {
 
 function cb(param) {
   console.log("Clicked!", param);
-}
-
-function init_configbuttons() {
-    init_toggleButton("show_clients", "Clients Shown", "Clients Hidden", config.show_clients);
-    init_toggleButton("show_servers", "Servers Shown", "Servers Hidden", config.show_servers);
-    init_toggleButton("show_in", "Inbound Shown", "Inbound Hidden", config.show_in);
-    init_toggleButton("show_out", "Outbound Shown", "Outbound Hidden", config.show_out);
-    init_toggleButton("update", "Auto refresh", "No refresh", config.update);
-    init_toggleButton("flat", "Flatten subnets", "Use subnets", config.flat);
-    $(".ds.toggle.button").state();
-    $(".lw.toggle.button").state();
-    document.getElementById("links").classList.add("active");
-    let active_ds = document.getElementById(config.ds);
-    active_ds.classList.add("active");
 }
 
 function currentSubnet(scale) {

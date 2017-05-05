@@ -128,7 +128,7 @@ function wheel(event) {
   }
   updateRenderRoot();
   render_all();
-  if (config.flat === false) {
+  if (nodes.layout_flat === false) {
     checkLoD();
   }
 }
@@ -142,7 +142,6 @@ function keydown(event) {
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
         resetViewport(nodes.nodes);
-        updateRenderRoot();
         resetViewport(renderCollection);
         render_all();
     }
@@ -180,18 +179,17 @@ function applysearch() {
   else if (nearest.address + "/" + nearest.subnet == normalized_addr) {
     resetViewport([nearest], 0.2);
     sel_set_selection(nearest);
-    updateRenderRoot();
     render_all();
   }
-  //we have an imperfect match. Are there more children to load?
+  //we have an imperfect match at this point. Are there more children to load?
   else if (nearest.childrenLoaded) {
+    //no more child nodes to load.
     resetViewport([nearest], 0.2);
     sel_set_selection(nearest);
-    updateRenderRoot();
     render_all();
   } else {
-    //try to load children and repeat.
-    nodes.GET_request(config.ds, config.flat, [nearest], applysearch);
+    //load more child nodes.
+    nodes.GET_request([nearest], applysearch);
   }
 }
 

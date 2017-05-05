@@ -26,9 +26,10 @@ var renderConfig = {
 };
 
 function fadeFont(color, alpha) {
-  r = parseInt(color.slice(1, 3), 16);
-  g = parseInt(color.slice(3, 5), 16);
-  b = parseInt(color.slice(5, 7), 16);
+  "use strict";
+  let r = parseInt(color.slice(1, 3), 16);
+  let g = parseInt(color.slice(3, 5), 16);
+  let b = parseInt(color.slice(5, 7), 16);
   return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
 }
 
@@ -172,7 +173,7 @@ function onScreen(coll, x, y, scale) {
     var bottom = (controller.rect.height - y) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, coll, currentSubnet(scale));
+    visible = onScreenRecursive(left, right, top, bottom, coll);
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
     }
@@ -197,26 +198,30 @@ function resetViewport(collection, fill) {
         fill = 0.92;
     }
     var bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
+
     Object.keys(collection).forEach(function (nodeKey) {
         var node = collection[nodeKey];
-        if (node.abs_x - node.radius < bbox.left) {
+        if (node.abs_x - node.radius_orig < bbox.left) {
             bbox.left = node.abs_x - node.radius;
         }
-        if (node.abs_x + node.radius > bbox.right) {
+        if (node.abs_x + node.radius_orig > bbox.right) {
             bbox.right = node.abs_x + node.radius;
         }
-        if (node.abs_y - node.radius < bbox.top) {
+        if (node.abs_y - node.radius_orig < bbox.top) {
             bbox.top = node.abs_y - node.radius;
         }
-        if (node.abs_y + node.radius > bbox.bottom) {
+        if (node.abs_y + node.radius_orig > bbox.bottom) {
             bbox.bottom = node.abs_y + node.radius;
         }
     });
+    console.log("reseting viewport. Bbox is: top-left (%s, %s), bottom-right (%s, %s)", bbox.left, bbox.top, bbox.right, bbox.bottom);
+    console.log("         nodes: ", collection);
     var scaleA = fill * controller.rect.width / (bbox.right - bbox.left);
     var scaleB = fill * controller.rect.height / (bbox.bottom - bbox.top);
     g_scale = Math.min(scaleA, scaleB);
     tx = controller.rect.width / 2 - ((bbox.left + bbox.right) / 2) * g_scale;
     ty = controller.rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * g_scale;
+    updateRenderRoot();
 }
 
 function updateRenderRoot() {
@@ -654,7 +659,7 @@ function render(ctx, x, y, scale) {
     ctx.resetTransform();
     ctx.fillStyle = renderConfig.backgroundColor;
     ctx.globalAlpha = 1.0;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, controller.canvas.width, controller.canvas.height);
 
     if (Object.keys(renderCollection).length === 0) {
         ctx.fillStyle = renderConfig.labelColorError;
