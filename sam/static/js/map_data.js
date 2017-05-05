@@ -8,7 +8,7 @@ function GET_links(addrs) {
         "tend": config.tend,
         "ds": controller.ds
     };
-    if (controller.datasource.flat) {
+    if (nodes.layout_flat) {
       requestData.flat = true;
     }
     $.ajax({

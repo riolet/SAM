@@ -125,6 +125,10 @@ function fix_link_pointers(node) {
   node.outputs.forEach(function (link_in) {
     link_in.src = node;
     let dest = nodes.find_by_range(link_in.dst_start, link_in.dst_end);
+    if (dest==null) {
+      console.log("cannot find a node: {} .. {}", link_in.dst_start, link_in.dst_end);
+      console.log("from link_in ", link_in);
+    }
     let root = nodes.find_common_root(node, dest);
     if (root == null) {
       link_in.dst = nodes.find_step_closer(nodes.nodes, dest);

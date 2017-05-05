@@ -53,7 +53,7 @@ function opacity(subnet, type, scale) {
     var startZoom = -Infinity;
     var endZoom = Infinity;
 
-    if (config.flat) {
+    if (nodes.layout_flat) {
       return 1
     }
 
@@ -218,7 +218,7 @@ function updateRenderRoot() {
     renderCollection = onScreen(nodes.nodes, tx, ty, g_scale);
     subnetLabel = getSubnetLabel();
     //console.log("updateRenderRoot: ", "updating: ", renderCollection.length, " nodes in collection");
-    if (config.flat) {
+    if (nodes.layout_flat) {
         nodes.flat_scale();
     }
 }
@@ -371,7 +371,7 @@ function renderLabels(ctx, node, x, y, scale) {
     var alpha = 0;
     ctx.font = "1.5em sans";
     ctx.globalAlpha = 1.0;
-    if (scale > 25 || config.flat) {
+    if (scale > 25 || nodes.layout_flat) {
         //Draw port labels at this zoom level
         alpha = opacity(32, "label", scale);
         if (m_selection["selection"] === null || m_selection["selection"] === node) {

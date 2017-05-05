@@ -63,7 +63,6 @@ var g_timer = null;
   };
 
   self.init = function() {
-    console.log("self", "init");
     //get ctx/canvas reference
     //update screen rect reference
     self.init_window();
@@ -72,10 +71,9 @@ var g_timer = null;
     sel_init();
     map_settings.init();
     //map_settings.add_object(null, null, self.init_timeslider());
-
     ports.display_callback = function() {
-        render_all();
-        sel_update_display();
+      render_all();
+      sel_update_display();
     };
     self.init_demo();
 
@@ -98,7 +96,6 @@ var g_timer = null;
     //      create/update timerange slider
     //      trigger the get-node sequence
     self.GET_settings(null, function (result) {
-      console.log("self", "init", "get_settings is 'done'");
       let btn_list = []
       self.datasources.forEach(function (ds) {
         btn_list.push(map_settings.create_iconbutton("ds"+ds.datasource, "database", ds.name, ds.id==self.ds, cb));
@@ -106,8 +103,6 @@ var g_timer = null;
       map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, cb));
 
       self.GET_timerange(self.ds, function (result) {
-        console.log("self", "init", "get_timerange is 'done'");
-        console.log("self.datasource is ", self.datasource);
         nodes.set_datasource(self.datasource);
         self.init_buttons(nodes.layout_flat, nodes.layout_arrangement);
 
@@ -138,17 +133,17 @@ var g_timer = null;
     map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_out", "sign out", "Show Outbound Connections", config.show_out, null), cb));
 
     btn_list = [
-      map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, cb),
-      map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", isFlat, cb)
+      map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, null),
+      map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", isFlat, null)
     ];
-    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, "icon", cb));
+    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, "icon", self.event_layout_mode));
 
     btn_list = [
       map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="Address", null),
       map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="Grid", null),
       map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="Circle", null)
     ];
-    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", nodes.set_layout));
+    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", self.event_layout_arrangement));
   };
 
   self.init_demo = function () {
@@ -197,7 +192,6 @@ var g_timer = null;
   };
 
   self.GET_settings = function (ds, successCallback) {
-    console.log("self", "GET_settings");
     if (typeof(successCallback) !== "function") {
         return;
     }
@@ -208,8 +202,6 @@ var g_timer = null;
       dataType: "json",
       error: generic_ajax_failure,
       success: function (settings) {
-        console.log("self", "GET_settings", "response");
-        console.log("Settings received: ", settings);
         self.settings = settings;
         self.datasources = []
         Object.keys(settings.datasources).forEach( function (key) {
@@ -232,7 +224,6 @@ var g_timer = null;
   };
 
   self.GET_timerange = function (ds, successCallback) {
-    console.log("self", "GET_timerange");
     let request = $.ajax({
       url: self.stats_endpoint,
       type: "GET",
@@ -240,7 +231,6 @@ var g_timer = null;
       dataType: "json",
       error: generic_ajax_failure,
       success: function (range) {
-        console.log("self", "GET_timerange", "response");
         if (range.min == range.max) {
           config.tmin = range.min - 300;
           config.tmax = range.max;
@@ -260,6 +250,32 @@ var g_timer = null;
 
     return request;
   };
+
+  self.event_layout_mode = function (e_lm_btn) {
+    // Event: layout mode (flat/heirarchical) button clicked.
+    let new_flat = e_lm_btn.target.id.substr(3) === "Flat";
+    let old_flat = nodes.layout_flat;
+    if (new_flat !== old_flat) {
+      if (m_link_timer) {
+        clearTimeout(m_link_timer);
+      }
+      nodes.set_flat(new_flat);
+      nodes.GET_request(null, function (response) {
+        resetViewport(nodes.nodes);
+        updateRenderRoot();
+        render_all();
+      });
+    }
+  }
+
+  self.event_layout_arrangement = function (e_la_btn) {
+    let new_layout = e_la_btn.target.id.substr(3);
+    let old_layout = nodes.layout_arrangement;
+    if (new_layout !== old_layout) {
+      nodes.set_layout(new_layout);
+      render_all();
+    }
+  }
 
   window.controller = self;
 }());

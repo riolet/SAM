@@ -49,7 +49,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     layout_flat: false,
     layout_arrangement: "Address",
     endpoint: "./nodes",
-    ds: null
+    ds: null,
   };
   nodes.set_datasource = function (ds) {
     if (ds.datasource !== nodes.ds) {
@@ -62,12 +62,19 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     nodes.nodes = {};
   }
   nodes.set_flat = function (flat) {
+    if (typeof(flat) !== "boolean") {
+      return;
+    }
+
+    //only do stuff if the layout is changing.
     nodes.layout_flat = flat;
-    if (flat) {
+    
+    if (nodes.layout_flat) {
       nodes.layout_arrangement = "Circle";
     } else {
       nodes.layout_arrangement = "Address";
     }
+    nodes.clear();
   }
 
   //what is rendered:
@@ -273,9 +280,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.GET_response = function (response) {
     Object.keys(response).forEach(function (parent_address) {
       if (parent_address == 'error') {
-        //unclick the config.flat button.
-        if (config.flat) {
-          let btn_flat = document.getElementById("flat")
+        //unclick the nodes.layout_flat button.
+        if (nodes.layout_flat) {
+          let btn_flat = document.getElementById("lm_Heirarchy");
           btn_flat.click();
         }
         //pop up box explaining issue.
@@ -337,7 +344,6 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     }
     request.flat = nodes.layout_flat;
     request.ds = nodes.ds;
-    console.log("sending GET request, ", request);
     $.ajax({
       url: nodes.endpoint,
       type: "GET",
@@ -562,7 +568,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.get_name = function (node) {
     if (node.alias.length === 0) {
-      if (config.flat) {
+      if (nodes.layout_flat) {
         return node.address.toString();
       } else {
         return nodes.determine_number(node).toString();
@@ -606,15 +612,10 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     nodes.layouts[layout_name].layout(node_coll, 0, size_x, size_y);
   };
   nodes.set_layout = function (style) {
-    console.log("Set_Layout: ", style);
-    console.log("style is a ", typeof(style));
-    if (typeof(style) == "string") {
-      nodes.layout_arrangement = style;
-    } else if (typeof(style) == "object") {
-      nodes.layout_arrangement = style.target.id.substr(3);
-    } else {
+    if (typeof(style) !== "string") {
       return;
     }
+    nodes.layout_arrangement = style;
     nodes.do_layout(nodes.nodes);
   };
 
@@ -761,7 +762,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     node.inputs.forEach(function (l_in) {
       // only if the source is outside the node, add it.
       if (l_in.src_end < min || max < l_in.src_start) {
-        attached.push(l_in.dst);
+        attached.push(l_in.src);
       }
     });
     return attached;
