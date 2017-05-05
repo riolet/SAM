@@ -58,3 +58,7 @@ div.ui.message.transition {
     right: 10px;
     z-index: 10;
 }
+
+div.ui.inverted.footer.segment {
+  background: #142230;
+}

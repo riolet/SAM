@@ -54,7 +54,12 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.set_datasource = function (ds) {
     if (ds.datasource !== nodes.ds) {
       nodes.ds = ds.id;
-      nodes.set_flat(ds.flat);
+      nodes.layout_flat = (ds.flat === 1);
+      if (nodes.layout_flat) {
+        nodes.layout_arrangement = "Circle";
+      } else {
+        nodes.layout_arrangement = "Address";
+      }
       nodes.clear();
     }
   }
