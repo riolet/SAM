@@ -9,11 +9,10 @@ db = db_connection.db
 sub_id = db_connection.default_sub
 ds_empty = db_connection.dsid_short
 
-importer_names = ['paloalto', 'nfdump', 'aws', 'asa']
+importer_names = ['paloalto', 'nfdump', 'aws', 'asa', 'tcpdump']
 
 try:
     import dateutil.parser
-    importer_names.append('tcpdump')
     importer_names.append('tshark')
 except:
     pass

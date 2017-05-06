@@ -23,24 +23,22 @@ def login():
 
 def test_empty_user():
     with db_connection.env(login_active=False):
-        u = User(session)
-        logout()
+        u = User({})
 
-        assert u.email is 'SAM'
-        assert u.name is 'SAM'
+        assert u.email == 'SAM'
+        assert u.name == 'SAM'
         assert u.logged_in is True
         assert u.plan_active is True
-        assert u.plan is 'admin'
-        assert u.subscription is sub_id
-        assert u.viewing is sub_id
+        assert u.plan == 'auto'
+        assert u.subscription == sub_id
+        assert u.viewing == sub_id
         assert u.groups.issuperset({'login', 'subscribed'})
         assert 'logout' not in u.groups
         assert 'unsubscribed' not in u.groups
         assert 'debug' not in u.groups
 
     with db_connection.env(login_active=True):
-        u = User(session)
-        logout()
+        u = User({})
 
         assert u.email is None
         assert u.name is None
@@ -48,7 +46,7 @@ def test_empty_user():
         assert u.plan_active is False
         assert u.plan is None
         assert u.subscription is None
-        assert u.viewing is sub_id
+        assert u.viewing is None
         assert u.groups.issuperset({'logout', 'unsubscribed'})
         assert 'login' not in u.groups
         assert 'subscribed' not in u.groups
