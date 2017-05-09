@@ -17,7 +17,7 @@ $ disabled = "" if user.may_post() else "disabled"
                 $for ds in datasources:
                   <tr class="$('active' if ds['id'] == settings['datasource'] else '') item" id="ds$ds['id']_tab_row">
                     <td class="center aligned collapsing">
-                      <button class="ui small icon button del_ds"><i class="red delete icon"></i></button>
+                      <button class="ui small icon button del_ds" data-tab="ds$ds['id']"><i class="red delete icon"></i></button>
                     </td>
                     <td class="tablabel" data-tab="ds$ds['id']">$ds['name']</td>
                   </tr>
@@ -31,6 +31,15 @@ $ disabled = "" if user.may_post() else "disabled"
                   </td>
                 </tr>
             </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">
+                  <div id="add_ds" class="ui small green button">
+                    <i class="add icon"></i>New Data Source
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
         <div id="ds_tab_contents" class="twelve wide stretched column">
@@ -87,10 +96,6 @@ $ disabled = "" if user.may_post() else "disabled"
       </div>
 
       <div class="ui secondary menu">
-        <a class="$disabled item" id="add_ds"><i class="blue $disabled add icon"></i>New Data Source</a>
-        <div class="item">|</div>
-        <a class="$disabled item" id="rm_ds"><i class="red $disabled remove icon"></i>Remove Data Source</a>
-        <div class="item">|</div>
         <div class="$disabled ui deletion dropdown item">
           <span class="text">Delete ...</span>
           <div class="menu">

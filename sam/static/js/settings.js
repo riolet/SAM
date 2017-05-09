@@ -160,9 +160,12 @@ function getDSs() {
   return DSs;
 }
 
-function deleteDS() {
+function deleteDS(e) {
     "use strict";
-    let targetDS = getSelectedDS();
+    let targetDS = e.target.dataset['tab'];
+    if (targetDS == undefined) {
+      targetDS = e.target.parentElement.dataset['tab'];
+    }
     getConfirmation(catDeleteMessage("datasource", targetDS), function () {
         console.log("Deleting " + targetDS + ".");
         POST_ds_delete(targetDS)
@@ -287,6 +290,7 @@ function addDSTab(ds) {
     td1.className = "center aligned collapsing";
     let btn_del = document.createElement("BUTTON");
     btn_del.className = "ui small icon button del_ds"
+    btn_del.dataset['tab'] = "ds" + ds.id;
     btn_del.onclick = deleteDS;
     let icon = document.createElement("I");
     icon.className = "red delete icon";
@@ -724,7 +728,6 @@ function init() {
         onChange: deleteData
     });
 
-    document.getElementById("rm_ds").onclick = deleteDS;
     document.getElementById("add_ds").onclick = addDS;
     document.getElementById("upload_log").onclick = uploadLog;
 
