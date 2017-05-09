@@ -242,6 +242,9 @@ function build_label_duration(elapsed) {
 function sel_panel_height() {
     "use strict";
     var side = document.getElementById("sel_bar");
+    if (side === null) {
+      return;
+    }
     var heightAvailable = controller.rect.height - 40;
     side.style.maxHeight = heightAvailable + "px";
 

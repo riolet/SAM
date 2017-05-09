@@ -146,12 +146,6 @@ div.ui.message.transition {
   margin: 0.2em 0;
   padding: 0.4em;
 }
-#sidebar i {
-  color: rgba(255,255,255,0.5);
-}
-#sidebar .active > i {
-  color: rgba(0,0,0,0.5);
-}
 
 #sidebar div.input:focus {
   background-color: #F2F5F7;
@@ -164,39 +158,6 @@ div.ui.message.transition {
   width: 4em;
 }
 
-#output .inverted {
-  background-color: #2A3F54;
-}
-
-#sidebar button {
-  /* box-shadow: 0px 0px 0px 2px #142230 inset !important; */
-  box-shadow: 0 0 !important;
-  background: rgba(0,0,0,.1);
-}
-
 #sidebar div.divider {
   height: 0.5em;
-}
-
-#sidebar button:focus {
-  background: rgba(255,255,255,.2);
-}
-
-#sidebar button:hover {
-  background: rgba(255,255,255,.2);
-  /* box-shadow: 0px 0px 0px 2px #F2F5F7 inset !important; */
-}
-
-#sidebar button.active {
-  background: rgba(255,255,255,.75);
-  color: black;
-}
-
-#sidebar button.active:focus {
-  background: rgba(255,255,255,.9);
-}
-
-#sidebar button.active:hover {
-  /* box-shadow: 0px 0px 0px 2px #F2F5F7 inset !important; */
-  background: rgba(255,255,255,.9);
 }

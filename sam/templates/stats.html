@@ -1,11 +1,10 @@
 $def with (segments)
 $# "$def with (arg1, ...)" MUST be the first line. See template.py for details
-<h1 class="ui center aligned header">Usage Stats</h1>
-
 <div class="ui container">
+  <h1 class="ui center aligned header">Usage Stats</h1>
   $for segment, stats in segments:
   <div class="ui stacked segment">
-    <h2 class="header">$segment</h2>
+    <h3 class="header">$segment</h3>
     <table class="ui very compact collapsing striped definition table">
       <tbody>
       $for k, v in stats:

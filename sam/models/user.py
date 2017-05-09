@@ -11,7 +11,6 @@ class User(object):
         if constants.access_control['active'] is True and self.plan == 'auto':
             self.logged_in = False
         if constants.access_control['active'] is False and (not self.logged_in or self.plan != 'auto'):
-            print("doing auto-login")
             if '_datasources' in self.session:
                 del self.session._datasources
             if '_settings' in self.session:

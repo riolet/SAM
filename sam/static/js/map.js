@@ -438,7 +438,7 @@ var g_timer = null;
   self.create_labeliconbutton = function (id, icon_name, label, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
-    btn.className = "ui icon inverted button";
+    btn.className = "ui icon inverted blue button";
     if (active) {
       btn.classList.add("active");
     }
@@ -465,7 +465,7 @@ var g_timer = null;
   self.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
-    btn.className = "ui icon inverted button";
+    btn.className = "ui icon inverted blue button";
     if (active) {
       btn.classList.add("active");
     }
@@ -491,7 +491,7 @@ var g_timer = null;
   self.create_labelbutton = function (id, label, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
-    btn.className = "ui inverted button";
+    btn.className = "ui inverted blue button";
     if (active) {
       btn.classList.add("active");
     }

@@ -47,7 +47,8 @@ class LiveKeys:
         FROM {table_livekeys} AS `L`
         JOIN {table_datasources} AS `D`
             ON L.subscription = D.subscription AND L.datasource = D.id
-        WHERE L.subscription=$sub""".format(table_livekeys=self.table_livekeys, table_datasources=self.table_ds)
+        WHERE L.subscription=$sub
+        ORDER BY created ASC""".format(table_livekeys=self.table_livekeys, table_datasources=self.table_ds)
         rows = self.db.query(query, vars=qvars)
         return list(map(dict, rows))
 
