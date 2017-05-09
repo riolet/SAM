@@ -1,3 +1,5 @@
+
+
 function disambiguateDeletion(what) {
     "use strict";
     if (what.indexOf("tag") >= 0) return "tags";
@@ -56,70 +58,106 @@ function deleteData(what) {
 }
 
 function getSelectedDS() {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var ds = undefined;
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].classList.contains("active")) {
-            ds = tabs[i].dataset['tab'];
-            break;
-        }
+  /**
+   * Get the id of the active datasource. () -> "ds1"
+   * fail case: () -> ""
+   */
+  "use strict";
+  let ds = "";
+  let tabgroup = document.getElementById("ds_tabs");
+  let active_row = null;
+  if (tabgroup) {
+    let active_rows = tabgroup.getElementsByClassName("active");
+    if (active_rows.length === 1) {
+      active_row = active_rows[0];
     }
-    return ds;
+  }
+  if (active_row) {
+    ds = active_row.id.slice(0, -8);
+  }
+  return ds;
 }
 
 function getDSName(ds) {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var name = "";
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].dataset['tab'] === ds) {
-            name = tabs[i].innerText;
-            break;
-        }
+  /**
+   * Get the text name of a ds given it's id. ("ds1") -> "default"
+   * fail case: ("bad") -> ""
+   */
+  "use strict";
+  let name = "";
+  let rowname = ds + "_tab_row";
+  let row = document.getElementById(rowname); 
+  let label;
+  if (row) {
+    let labels = row.getElementsByClassName("tablabel");
+    if (labels.length === 1) {
+      label = labels[0];
+      name = label.innerText;
     }
-    return name;
+  }
+  return name;
 }
 
 function setDSTabName(ds, newName) {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var icon;
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].dataset['tab'] == ds) {
-            tabs[i].innerHTML = "";
-            icon = document.createElement("I");
-            icon.className = "on square icon";
-            tabs[i].appendChild(icon);
-            icon = document.createElement("I");
-            icon.className = "off square outline icon";
-            tabs[i].appendChild(icon);
-            tabs[i].appendChild(document.createTextNode(newName));
-            break;
-        }
+  /**
+   * Assigns the newName to the tab for the given DS. ("ds1", "bob") -> undefined
+   * Fail case: no effect.
+   */
+  "use strict";
+  let rowname = ds + "_tab_row";
+  let row = document.getElementById(rowname);
+  let label;
+  if (row) {
+    let labels = row.getElementsByClassName("tablabel");
+    if (labels.length === 1) {
+      label = labels[0];
+      label.innerText = newName;
     }
-    return name;
+  }
 }
 
 function getDSId(name) {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var id = "";
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].innerText === name) {
-            id = tabs[i].dataset['tab'];
-            break;
-        }
+  /**
+   * Translate datasource name into datasource ID. ("default") -> "ds1"
+   * fail case: ("bad") -> ""
+   */
+  "use strict";
+  let tabgroup = document.getElementById("ds_tabs");
+  let tabs = tabgroup.getElementsByClassName("tablabel");
+  let i = tabs.length - 1;
+  var id = "";
+  for (; i >= 0; i -= 1) {
+    if (tabs[i].innerText.trim() === name) {
+      id = tabs[i].dataset['tab'];
+      break;
     }
-    return id;
+  }
+  return id;
+}
+
+function getDSs() {
+  /**
+   * Get DSs as a list of [id, name] pairs with the active DS first in the list. () -> [['ds1', 'default'], ['ds2', 'other DS']]
+   */
+  "use strict";
+  let tabgroup = document.getElementById("ds_tabs");
+  let rows = tabgroup.getElementsByTagName("TR");
+  let DSs = [];
+  let currentDS;
+  let i = rows.length - 1;
+  for (; i >= 0; i -= 1) {
+    let ds = rows[i].id.slice(0, -8);
+    let name = getDSName(ds);
+    if (rows[i].classList.contains("active")) {
+      currentDS = [ds, name];
+    } else {
+      DSs.push([ds, name]);
+    }
+  }
+  if (currentDS) {
+    DSs.unshift(currentDS);
+  }
+  return DSs;
 }
 
 function deleteDS() {
@@ -226,7 +264,6 @@ function markupRow(td1_child, td2_child) {
     let tr = document.createElement("TR");
 
     let td1 = document.createElement("TD");
-    td1.className = "right aligned";
     td1.appendChild(td1_child);
 
     let td2 = document.createElement("TD");
@@ -242,21 +279,6 @@ function addDSTab(ds) {
     //ds.id, ds.name, ds.ar_active, ds.ar_interval, ds.flat
 
     //add tab
-    /*
-    let tabholder = document.getElementById("ds_tabs");
-    var a, icon;
-    a = document.createElement("A");
-    //a.className = "item";
-    a.dataset["tab"] = "ds_" + ds.id;
-    icon = document.createElement("I");
-    icon.className = "on square icon";
-    a.appendChild(icon);
-    icon = document.createElement("I");
-    icon.className = "off square outline icon";
-    a.appendChild(icon);
-    a.appendChild(document.createTextNode(ds.name));
-    tabholder.appendChild(a);
-    */
     let tabholder = document.getElementById("ds_tabs");
     let tab_tr = document.createElement("TR");
     tab_tr.className = "item";
@@ -264,8 +286,8 @@ function addDSTab(ds) {
     let td1 = document.createElement("TD");
     td1.className = "center aligned collapsing";
     let btn_del = document.createElement("BUTTON");
-    btn_del.className = "ui small icon button"
-    btn_del.dataset['tab'] = "ds" + ds.id;
+    btn_del.className = "ui small icon button del_ds"
+    btn_del.onclick = deleteDS;
     let icon = document.createElement("I");
     icon.className = "red delete icon";
     btn_del.appendChild(icon);
@@ -284,7 +306,7 @@ function addDSTab(ds) {
 
     div = document.createElement("DIV");
     div.className = "ui tab segment"
-    div.dataset["tab"] = "ds_" + ds.id;
+    div.dataset["tab"] = "ds" + ds.id;
 
     table = document.createElement("TABLE");
     table.className = "ui fixed definition table";
@@ -320,42 +342,29 @@ function rebuild_tabs(settings, datasources) {
     //for each ds,
     //   add the ds
     datasources.forEach(addDSTab);
-
-    //build tabs
-    let tabs = $(".tabular.menu .item")
-    tabs.tab({
-        onVisible: POST_ds_selection
-    });
+    //initialize datasource tabs
+    $('.tablabel')
+      .on('click', tab_change_callback)
+    ;
 
     //select active one
     var active_ds = settings.datasource;
-    tabs.tab("change tab", "ds_" + active_ds);
+    $.tab();  // This initializes the tabs. Must be done prior to changing tabs.
+    $.tab("change tab", "ds" + active_ds);
     let active_tab = document.getElementById("ds" + active_ds + "_tab_row");
     active_tab.classList.add("active");
 }
 
-function getDSs() {
-    "use strict";
-    //getDSs() returns DSs as [[id, name], ...] with the index 0 being the selected DS.
-    let datasource_group = document.getElementById("ds_tabs");
-    let datasources = datasource_group.getElementsByTagName("A");
-    let i = datasources.length - 1;
-    var DSs = [];
-    var currentDS;
-    var name;
-    var id;
-
-    for (; i >= 0; i -= 1) {
-        name = datasources[i].innerText;
-        id = datasources[i].dataset['tab'];
-        if (datasources[i].classList.contains("active")) {
-            currentDS = [id, name];
-        } else {
-            DSs.push([id,name]);
-        }
-    }
-    DSs.unshift(currentDS);
-    return DSs;
+function tab_change_callback(e) {
+  // programmatically activating tab
+  $.tab('change tab', e.target.dataset['tab']);
+  // change which row has the active class.
+  $(document.getElementById(e.target.dataset['tab'] + '_tab_row'))
+    .addClass('active')
+    .siblings()
+    .removeClass('active')
+  ;
+  POST_ds_selection(e.target.dataset['tab']);
 }
 
 function populateUploadDSList(options) {
@@ -519,6 +528,10 @@ function AjaxSuccess(response) {
     console.log("Server response:");
     console.log("\t" + response.result + ": " + response.message);
 }
+
+/*
+-----------------  Posts -------------------
+*/
 
 function POST_AJAX(command, successCallback) {
     "use strict";
@@ -690,23 +703,17 @@ function foreach(entities, callback) {
         callback(entities[i], i, entities);
     }
 }
-
+/*
+-----------------  Initialization -------------------
+*/
 function init() {
     "use strict";
 
     //initialize datasource tabs
-    $('.tablabel')
-      .on('click', function(e) {
-        // programmatically activating tab
-        $.tab('change tab', e.target.dataset['tab']);
-        // change which row has the active class.
-        $(document.getElementById(e.target.dataset['tab'] + '_tab_row'))
-          .addClass('active')
-          .siblings()
-          .removeClass('active')
-        ;
-      })
-    ;
+    $('.tablabel').on('click', tab_change_callback);
+
+    //initialize datasource delete buttons
+    $('.del_ds').on('click', deleteDS);
 
     $(".ui.selection.dropdown").dropdown({
         action: "activate"

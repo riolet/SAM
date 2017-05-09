@@ -17,11 +17,9 @@ $ disabled = "" if user.may_post() else "disabled"
                 $for ds in datasources:
                   <tr class="$('active' if ds['id'] == settings['datasource'] else '') item" id="ds$ds['id']_tab_row">
                     <td class="center aligned collapsing">
-                      <button class="ui small icon button" data-tab="ds$ds['id']"><i class="red delete icon"></i></button>
+                      <button class="ui small icon button del_ds"><i class="red delete icon"></i></button>
                     </td>
-                    <td class="tablabel" data-tab="ds$ds['id']">
-                      $ds['name']
-                    </td>
+                    <td class="tablabel" data-tab="ds$ds['id']">$ds['name']</td>
                   </tr>
               $else:
                 <tr>

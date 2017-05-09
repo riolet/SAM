@@ -11,9 +11,11 @@ body {
 #ds_tab_contents .tab.segment {
     margin-top: 0em;
     margin-bottom: 0em;
+    position: relative;
     /*padding: 0;*/
     background: #E0E0E0 !important;
 }
+
 #ds_tabs .item i.on{
     display: none;
 }
