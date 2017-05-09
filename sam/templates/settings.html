@@ -11,13 +11,29 @@ $ disabled = "" if user.may_post() else "disabled"
       <p>Each data source stored their own set of connection history and timeline.  Node information, such as tags, environment, and hostnames, is shared across data sources.</p>
       <div class="ui datasources grid">
         <div class="four wide column">
-          <div class="ui vertical fluid tabular menu"  id="ds_tabs">
-            $if datasources:
-              $for ds in datasources:
-                <a class="$('active' if ds['id'] == settings['datasource'] else '') item" data-tab="ds$ds['id']"><i class="on square icon"></i><i class="off square outline icon"></i>$ds['name']</a>
-            $else:
-              <a class="item" data-tab="dsnone"><i class="off square outline icon"></i>None</a>
-          </div>
+          <table class="ui very basic compact selectable table">
+            <tbody id="ds_tabs">
+              $if datasources:
+                $for ds in datasources:
+                  <tr class="$('active' if ds['id'] == settings['datasource'] else '') item" id="ds$ds['id']_tab_row">
+                    <td class="center aligned collapsing">
+                      <button class="ui small icon button" data-tab="ds$ds['id']"><i class="red delete icon"></i></button>
+                    </td>
+                    <td class="tablabel" data-tab="ds$ds['id']">
+                      $ds['name']
+                    </td>
+                  </tr>
+              $else:
+                <tr>
+                  <td class="center aligned collapsing">
+                    <button class="ui disabled icon button"><i class="disabled red delete icon"></i></button>
+                  </td>
+                  <td class="tablabel">
+                    None
+                  </td>
+                </tr>
+            </tbody>
+          </table>
         </div>
         <div id="ds_tab_contents" class="twelve wide stretched column">
           $if datasources:
@@ -26,13 +42,13 @@ $ disabled = "" if user.may_post() else "disabled"
                 <table class="ui fixed definition table">
                   <tbody>
                   <tr>
-                    <td class="right aligned">Name:</td>
+                    <td>Name:</td>
                     <td>
-                      <div class="ui transparent left icon $disabled input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
+                      <div class="ui transparent left icon $disabled fluid input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
                     </td>
                   </tr>
                   <tr>
-                    <td class="right aligned">Auto-refresh (map view):</td>
+                    <td>Auto-refresh (map view):</td>
                     <td>
                       <div class="ui toggle $disabled checkbox">
                         <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
@@ -41,13 +57,13 @@ $ disabled = "" if user.may_post() else "disabled"
                     </td>
                   </tr>
                   <tr>
-                    <td class="right aligned">Auto-refresh interval (seconds):</td>
+                    <td>Auto-refresh interval (seconds):</td>
                     <td>
-                      <div class="ui transparent left icon $disabled input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
+                      <div class="ui transparent left icon $disabled fluid input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
                     </td>
                   </tr>
                   <tr>
-                    <td class="right aligned">Flat mode (map view):</td>
+                    <td>Flat mode (map view):</td>
                     <td>
                       <div class="ui toggle $disabled checkbox">
                         <input class="ds_flat" name="public" type="checkbox" $('checked=""' if ds['flat'] else '')>

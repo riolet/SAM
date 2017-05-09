@@ -177,7 +177,7 @@ function markupWriteInput(classname, datacontent, placeholder, default_value, ch
     var div;
 
     div = document.createElement("DIV");
-    div.className = "ui transparent left icon input";
+    div.className = "ui transparent left icon fluid input";
 
     input = document.createElement("INPUT");
     input.className = classname;
@@ -238,13 +238,15 @@ function markupRow(td1_child, td2_child) {
 }
 
 function addDSTab(ds) {
+    "use strict";
     //ds.id, ds.name, ds.ar_active, ds.ar_interval, ds.flat
 
     //add tab
+    /*
     let tabholder = document.getElementById("ds_tabs");
     var a, icon;
     a = document.createElement("A");
-    a.className = "item";
+    //a.className = "item";
     a.dataset["tab"] = "ds_" + ds.id;
     icon = document.createElement("I");
     icon.className = "on square icon";
@@ -254,6 +256,27 @@ function addDSTab(ds) {
     a.appendChild(icon);
     a.appendChild(document.createTextNode(ds.name));
     tabholder.appendChild(a);
+    */
+    let tabholder = document.getElementById("ds_tabs");
+    let tab_tr = document.createElement("TR");
+    tab_tr.className = "item";
+    tab_tr.id="ds" + ds.id + "_tab_row";
+    let td1 = document.createElement("TD");
+    td1.className = "center aligned collapsing";
+    let btn_del = document.createElement("BUTTON");
+    btn_del.className = "ui small icon button"
+    btn_del.dataset['tab'] = "ds" + ds.id;
+    let icon = document.createElement("I");
+    icon.className = "red delete icon";
+    btn_del.appendChild(icon);
+    td1.appendChild(btn_del);
+    tab_tr.appendChild(td1);
+    let td2 = document.createElement("TD");
+    td2.className = "tablabel";
+    td2.dataset['tab'] = "ds" + ds.id;
+    td2.appendChild(document.createTextNode(ds.name));
+    tab_tr.appendChild(td2);
+    tabholder.appendChild(tab_tr);
 
     //add tab_contents
     let tabcontents = document.getElementById("ds_tab_contents");
@@ -307,6 +330,8 @@ function rebuild_tabs(settings, datasources) {
     //select active one
     var active_ds = settings.datasource;
     tabs.tab("change tab", "ds_" + active_ds);
+    let active_tab = document.getElementById("ds" + active_ds + "_tab_row");
+    active_tab.classList.add("active");
 }
 
 function getDSs() {
@@ -670,9 +695,18 @@ function init() {
     "use strict";
 
     //initialize datasource tabs
-    $(".tabular.menu .item").tab({
-        onVisible: POST_ds_selection
-    });
+    $('.tablabel')
+      .on('click', function(e) {
+        // programmatically activating tab
+        $.tab('change tab', e.target.dataset['tab']);
+        // change which row has the active class.
+        $(document.getElementById(e.target.dataset['tab'] + '_tab_row'))
+          .addClass('active')
+          .siblings()
+          .removeClass('active')
+        ;
+      })
+    ;
 
     $(".ui.selection.dropdown").dropdown({
         action: "activate"
