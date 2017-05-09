@@ -80,3 +80,8 @@ div.ui.message.transition {
 div.ui.inverted.footer.segment {
   background: #142230;
 }
+
+.meta_del h4{
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}

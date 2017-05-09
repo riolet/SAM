@@ -1,31 +1,3 @@
-
-
-function disambiguateDeletion(what) {
-    "use strict";
-    if (what.indexOf("tag") >= 0) return "tags";
-    if (what.indexOf("env") >= 0) return "envs";
-    if (what.indexOf("hostname") >= 0) return "aliases";
-    if (what.indexOf("connection") >= 0) return "connections";
-    return "unknown";
-}
-
-function catDeleteMessage(what, extra) {
-    "use strict";
-    var msg = "Are you sure you want to permanently delete ";
-    if (what === "tags") {
-        msg += "all host/subnet metadata tags? (Across all data sources)"
-    } else if (what === "envs") {
-        msg += "all host/subnet environment data? (Across all data sources)"
-    } else if (what === "aliases") {
-        msg += "all hostnames? (Across all data sources)"
-    } else if (what === "connections") {
-        msg += "connection information? (For the selected data source)"
-    } else if (what === "datasource") {
-        msg += "'" + getDSName(extra) + "'?"
-    }
-    return msg
-}
-
 function getConfirmation(msg, confirmCallback, denyCallback) {
     "use strict";
     let modal = document.getElementById("deleteModal");
@@ -39,20 +11,25 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
     .modal("show");
 }
 
-function deleteData(what) {
-    "use strict";
-    let target = disambiguateDeletion(what)
-    let deleteMessage = catDeleteMessage(target)
-    getConfirmation(deleteMessage, function () {
-        //target is one of 'tags', 'envs', 'aliases', 'connections'
-        if (target === "tags") {
-            POST_del_tags()
-        } else if (target === "envs") {
-            POST_del_envs()
-        } else if (target === "aliases") {
-            POST_del_aliases()
-        }
-    });
+function deleteHosts() {
+  let deleteMessage = "Are you sure you want to permanently delete all hostnames? (Across all data sources)";
+  getConfirmation(deleteMessage, function () {
+    POST_del_aliases();
+  });
+}
+
+function deleteTags() {
+  let deleteMessage = "Are you sure you want to permanently delete all host/subnet metadata tags? (Across all data sources)";
+  getConfirmation(deleteMessage, function () {
+    POST_del_tags();
+  });
+}
+
+function deleteEnvs() {
+  let deleteMessage = "Are you sure you want to permanently delete all host/subnet environment data? (Across all data sources)";
+  getConfirmation(deleteMessage, function () {
+    POST_del_envs();
+  });
 }
 
 function deleteConnectionsDS(e) {
@@ -749,15 +726,13 @@ function init() {
         action: "activate"
     });
 
-    $(".ui.deletion.dropdown").dropdown({
-        action: "hide",
-        onChange: deleteData
-    });
-
     $('.del_con').on('click', deleteConnectionsDS);
     $('.upload_con').on('click', uploadLog);
 
     document.getElementById("add_ds").onclick = addDS;
+    document.getElementById("del_host").onclick = deleteHosts;
+    document.getElementById("del_tag").onclick = deleteTags;
+    document.getElementById("del_env").onclick = deleteEnvs;
 
     foreach(document.getElementsByClassName("remove_live_key"), function(entity) {
       entity.onclick = removeLiveKey;

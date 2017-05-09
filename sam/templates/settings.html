@@ -1,4 +1,4 @@
-$def with (user, settings, datasources, livekeys, importers)
+$def with (user, settings, datasources, livekeys, importers, tags_preview, envs_preview, hosts_preview)
 $ disabled = "" if user.may_post() else "disabled"
 <div class="ui container">
   <h1 class="ui center aligned header">Settings</h1>
@@ -106,19 +106,54 @@ $ disabled = "" if user.may_post() else "disabled"
             </div>
         </div>
       </div>
+    </div>
 
-      <div class="ui secondary menu">
-        <div class="$disabled ui deletion dropdown item">
-          <span class="text">Delete ...</span>
-          <div class="menu">
-            <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete hostname information</a>
-            <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete tag information</a>
-            <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete environment information</a>
-            <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete connection information</a>
-          </div>
-        </div>
+    <!-- Metadata -->
+    <div class="ui raised segment">
+      <h3 class="ui header">Metadata</h3>
+      <p>Meta data is stored independant of specific data sources. It includes information on hosts
+        such as hostname, environment, and tags.</p>
+      <div class="meta_del">
+        <h4>Reset host names to be blank.</h4>
+        <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Delete Hostnames</button>
+        $if len(hosts_preview) > 1:
+          <p>Current hosts include:
+          $for host in hosts_preview[:-1]:
+            <em>$host</em>,
+          and <em>$hosts_preview[-1]</em>.</p>
+        $elif len(hosts_preview) == 1:
+          <p>Current hosts include: <em>$hosts_preview[0]</em></p>
+        $else:
+          <p>No hostnames are currently stored.</p>
+      </div>
+      <div class="meta_del">
+        <h4>Remove all tags.</h4>
+        <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Delete Tags</button>
+        $if len(tags_preview) > 1:
+          <p>Current tags include:
+          $for tag in tags_preview[:-1]:
+            <em>$tag</em>,
+          and <em>$tags_preview[-1]</em>.</p>
+        $elif len(tags_preview) == 1:
+          <p>Current tags include: <em>$tags_preview[0]</em></p>
+        $else:
+          <p>No tags are currently stored.</p>
+      </div>
+      <div class="meta_del">
+        <h4>Reset all environment information to be "production".</h4>
+        <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Delete Environments</button>
+        $if len(envs_preview) > 1:
+          <p>Current environments include:
+          $for env in envs_preview[:-1]:
+            <em>$env</em>,
+          and <em>$envs_preview[-1]</em>.</p>
+        $elif len(envs_preview) == 1:
+          <p>Current environments include: <em>envs_preview[0]</em></p>
+        $else:
+          <p>No environment information is currently stored.</p>
       </div>
     </div>
+
 
     <!-- Live Updates -->
     <div class="ui raised segment">

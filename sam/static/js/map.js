@@ -46,6 +46,8 @@ var g_timer = null;
     ctx: null,
     rect: {},
     datasources: [],
+    datasource: {},
+    ds: 0,
     settings: {},
     autorefresh: false,
     autorefresh_period: 0,

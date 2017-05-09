@@ -133,6 +133,9 @@ class Nodes(object):
     def delete_custom_hostnames(self):
         common.db.update(self.table_nodes, "1", alias=common.web.sqlliteral("NULL"))
 
+    def get_hostnames_preview(self):
+        return [row.alias for row in self.db.select(self.table_nodes, what="DISTINCT alias", limit=10) if row.alias]
+
     def get_root_nodes(self):
         return list(self.db.select(self.table_nodes, where="subnet=8"))
 
