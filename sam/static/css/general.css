@@ -15,6 +15,9 @@ body {
     /*padding: 0;*/
     background: #E0E0E0 !important;
 }
+#ds_tab_contents button {
+  margin: -1em 0em;
+}
 
 #ds_tabs .item i.on{
     display: none;
@@ -45,6 +48,7 @@ body {
 #ds_tabs td {
   padding: 0;
 }
+
 .datasources .four.wide.column {
     padding-right: 0em;
 }

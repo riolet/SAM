@@ -78,6 +78,18 @@ $ disabled = "" if user.may_post() else "disabled"
                       </div>
                     </td>
                   </tr>
+                  <tr>
+                    <td>Delete all connection information:</td>
+                    <td>
+                      <button class="ui compact icon button del_con"><i class="red trash icon"></i>Delete Connections</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Upload a connection log:</td>
+                    <td>
+                      <button class="ui compact icon button upload_con"><i class="green upload icon"></i>Upload Log</button>
+                    </td>
+                  </tr>
                   </tbody>
                 </table>
               </div>
@@ -86,7 +98,7 @@ $ disabled = "" if user.may_post() else "disabled"
               <table class="ui fixed definition table">
                 <tbody>
                   <tr>
-                    <td class="right aligned">...</td>
+                    <td>...</td>
                     <td>...</td>
                   </tr>
                 </tbody>
@@ -105,8 +117,6 @@ $ disabled = "" if user.may_post() else "disabled"
             <a class="$disabled item"><i class="red $disabled trash icon"></i>Delete connection information</a>
           </div>
         </div>
-        <div class="item">|</div>
-        <a class="$disabled item" id="upload_log"><i class="blue write icon"></i>Upload log</a>
       </div>
     </div>
 

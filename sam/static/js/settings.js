@@ -51,10 +51,17 @@ function deleteData(what) {
             POST_del_envs()
         } else if (target === "aliases") {
             POST_del_aliases()
-        } else if (target === "connections") {
-            POST_del_connections()
         }
     });
+}
+
+function deleteConnectionsDS(e) {
+  let targetDS = getSelectedDS();
+  let targetName = getDSName(targetDS);
+  let deleteMessage = "Are you sure you want to permanently delete connection information for " + targetName + "?";
+  getConfirmation(deleteMessage, function () {
+    POST_del_connections(targetDS);
+  })
 }
 
 function getSelectedDS() {
@@ -306,7 +313,7 @@ function addDSTab(ds) {
 
     //add tab_contents
     let tabcontents = document.getElementById("ds_tab_contents");
-    var tr, table, tbody, div;
+    let tr, table, tbody, div, btn;
 
     div = document.createElement("DIV");
     div.className = "ui tab segment"
@@ -326,6 +333,26 @@ function addDSTab(ds) {
     tbody.appendChild(tr);
 
     tr = markupRow(document.createTextNode("Flat mode (map view):"), markupCheckboxInput("ds_flat", ds.ar_active, " ", POST_ds_flatchange));
+    tbody.appendChild(tr);
+
+    btn = document.createElement("BUTTON");
+    btn.className = "ui compact icon button del_con";
+    btn.onclick = deleteConnectionsDS;
+    icon = document.createElement("I");
+    icon.className="red trash icon";
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode("Delete Connections"));
+    tr = markupRow(document.createTextNode("Delete all connection information:"), btn)
+    tbody.appendChild(tr);
+
+    btn = document.createElement("BUTTON");
+    btn.className = "ui compact icon button upload_con";
+    btn.onclick = uploadLog;
+    icon = document.createElement("I");
+    icon.className="green upload icon";
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode("Upload Log"));
+    tr = markupRow(document.createTextNode("Upload a connection log:"), btn)
     tbody.appendChild(tr);
 
     table.appendChild(tbody);
@@ -670,9 +697,8 @@ function POST_del_aliases() {
     POST_AJAX({"command":"rm_hosts"});
 }
 
-function POST_del_connections() {
+function POST_del_connections(ds) {
     "use strict";
-    let ds = getSelectedDS();
     POST_AJAX({"command":"rm_conns", "ds":ds});
 }
 
@@ -728,8 +754,10 @@ function init() {
         onChange: deleteData
     });
 
+    $('.del_con').on('click', deleteConnectionsDS);
+    $('.upload_con').on('click', uploadLog);
+
     document.getElementById("add_ds").onclick = addDS;
-    document.getElementById("upload_log").onclick = uploadLog;
 
     foreach(document.getElementsByClassName("remove_live_key"), function(entity) {
       entity.onclick = removeLiveKey;
