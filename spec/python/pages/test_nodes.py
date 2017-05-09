@@ -29,6 +29,11 @@ def test_decode_get():
         expected = {'addresses': [], 'flat': False, 'ds': 13}
         assert request == expected
 
+        data = {'horseradish': 'pickles', 'ds': 'ds_13', 'flat': 'true'}
+        request = p.decode_get_request(data)
+        expected = {'addresses': [], 'flat': True, 'ds': 13}
+        assert request == expected
+
 
 def test_perform_get():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):

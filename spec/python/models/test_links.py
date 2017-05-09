@@ -238,3 +238,33 @@ def test_get_all_endpoints():
     l_model = Links(db, sub_id, ds_empty)
     eps = l_model.get_all_endpoints()
     assert eps == []
+
+
+def test_get_links_flat():
+    l_model = Links(db, sub_id, ds_full)
+    timerange = None
+    port = None
+    protocol = None
+
+    links = l_model.get_links([], timerange, port, protocol, True)
+    assert links == {}
+
+    links = l_model.get_links(['110.11.12.13'], timerange, port, protocol, True)
+    first = links['110.11.12.13']
+    assert len(first['outputs']) == 0
+    assert len(first['inputs']) == 0
+
+    links = l_model.get_links(['110.20.30.40'], timerange, port, protocol, True)
+    first = links['110.20.30.40']
+    assert len(first['outputs']) == 16
+    assert sum([x['links'] for x in first['outputs']]) == 16
+    assert len(first['inputs']) == 3
+
+    links = l_model.get_links(['159.69.79.89', '150.60.70.80'], timerange, port, protocol, True)
+    first = links['159.69.79.89']
+    second = links['150.60.70.80']
+    assert len(first['outputs']) == 2
+    assert sum([x['links'] for x in first['outputs']]) == 3
+    assert len(first['inputs']) == 0
+    assert len(second['outputs']) == 0
+    assert len(second['inputs']) == 1
