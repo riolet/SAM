@@ -163,3 +163,15 @@ def test_multiple_filters():
     assert len(all_filters) == 8
     for filter in all_filters:
         assert isinstance(filter, sam.models.filters.Filter)
+
+def test_disabled():
+    encoded = "ds1|1;0;production|7;0;1;48GB|3;0;2;443"
+    dsid, all_filters = sam.models.filters.readEncoded(db, encoded)
+    assert len(all_filters) == 3
+    for filter in all_filters:
+        assert isinstance(filter, sam.models.filters.Filter)
+    assert all_filters[0].enabled == False
+    assert all_filters[1].enabled == False
+    assert all_filters[2].enabled == False
+
+

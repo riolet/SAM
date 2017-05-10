@@ -45,7 +45,7 @@ class Table:
         :return: list of dictionaries (table rows)
         """
 
-        where_clause = " AND ".join(clause.where(self.db) for clause in clauses if clause.where(self.db))
+        where_clause = " AND ".join(clause.where(self.db) for clause in clauses if clause.enabled and clause.where(self.db))
         if self.db.dbname == 'sqlite':
             if where_clause:
                 where_clause = "WHERE (conn_out + conn_in != 0) AND " + where_clause
@@ -55,7 +55,7 @@ class Table:
             if where_clause:
                 where_clause = "WHERE " + where_clause
 
-        having_clause = " AND ".join(clause.having(self.db) for clause in clauses if clause.having(self.db))
+        having_clause = " AND ".join(clause.having(self.db) for clause in clauses if clause.enabled and clause.having(self.db))
         if self.db.dbname == 'mysql':
             if having_clause:
                 having_clause = "HAVING (conn_out + conn_in != 0) AND " + having_clause
