@@ -297,7 +297,7 @@ filterTypes = [SubnetFilter,PortFilter,ConnectionsFilter,TagsFilter,MaskFilter,T
 filterTypes.sort(key=lambda x: str(x)) #sort classes by name
 
 
-def readEncoded(db, filterString):
+def readEncoded(db, sub_id, filterString):
     """
     :param filterString:
      :type filterString: unicode
@@ -308,13 +308,15 @@ def readEncoded(db, filterString):
     fstrings = filterString.split("|")
 
     # identify data source
+    print("ds string: {}".format(fstrings[0]))
     ds_match = re.search("(\d+)", fstrings[0])
     if ds_match:
         ds = int(ds_match.group())
+        print("ds matched as {}".format(ds))
     else:
-        user = User(sam.common.session)
-        settings_model = Settings(db, {}, user.viewing)
+        settings_model = Settings(db, {}, sub_id)
         ds = settings_model['datasource']
+        print("ds unmatched. assigned as {} (sub {})".format(ds, sub_id))
 
     for encodedFilter in fstrings[1:]:
         try:

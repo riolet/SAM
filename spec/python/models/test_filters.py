@@ -13,7 +13,7 @@ def test_filter_connections():
               "i",  # 'i', 'o'
               '1000']
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.ConnectionsFilter(enabled, *params)
@@ -27,7 +27,7 @@ def test_filter_env():
     ftype = sam.models.filters.filterTypes.index(sam.models.filters.EnvFilter)
     params = ["dev"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.EnvFilter(enabled, *params)
@@ -41,7 +41,7 @@ def test_filter_mask():
     ftype = sam.models.filters.filterTypes.index(sam.models.filters.MaskFilter)
     params = ["21.66.116"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.MaskFilter(enabled, *params)
@@ -56,7 +56,7 @@ def test_filter_port():
     params = ["2",
               "443"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.PortFilter(enabled, *params)
@@ -71,7 +71,7 @@ def test_filter_protocol():
     params = ['2',  # direction/existence: '0','1','2','3'
               'UDP']  # protocol string: 'TCP', 'UDP', ...
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.ProtocolFilter(enabled, *params)
@@ -86,7 +86,7 @@ def test_filter_role():
     params = [">",
               "0.75"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.RoleFilter(enabled, *params)
@@ -100,7 +100,7 @@ def test_filter_subnet():
     ftype = sam.models.filters.filterTypes.index(sam.models.filters.SubnetFilter)
     params = ["24"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.SubnetFilter(enabled, *params)
@@ -115,7 +115,7 @@ def test_filter_tags():
     params = ["1",
               "a,b,c"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.TagsFilter(enabled, *params)
@@ -130,7 +130,7 @@ def test_filter_target():
     params = ["21.66.116",
               "3"]
     encoded = "ds{0}|{1};{2};{3}".format(ds, ftype, enabled, ";".join(params))
-    dsid, filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     filter = filters[0]
 
     expected = sam.models.filters.TargetFilter(enabled, *params)
@@ -158,7 +158,7 @@ def test_multiple_filters():
                         "{tags};1;1;a,b,c".format(tags=tags_f),
                         "{target};1;21.66.116;3".format(target=target_f)])
     encoded = "ds{0}|{1}".format(ds, encoded)
-    dsid, all_filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, all_filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     assert dsid == ds
     assert len(all_filters) == 8
     for filter in all_filters:
@@ -166,7 +166,7 @@ def test_multiple_filters():
 
 def test_disabled():
     encoded = "ds1|1;0;production|7;0;1;48GB|3;0;2;443"
-    dsid, all_filters = sam.models.filters.readEncoded(db, encoded)
+    dsid, all_filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     assert len(all_filters) == 3
     for filter in all_filters:
         assert isinstance(filter, sam.models.filters.Filter)

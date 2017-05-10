@@ -215,23 +215,6 @@ def test_columns_headers():
     assert c.headers() == []
 
 
-def test_decode_filters():
-    q = sam.pages.table.Table
-    port_f = sam.models.filters.filterTypes.index(sam.models.filters.PortFilter)
-    data = {
-        'filters': 'ds{ds}|{port};1;2;443'.format(ds=ds_full, port=port_f)
-    }
-    ds, filters = q.decode_filters(data)
-    assert ds == ds_full
-    assert len(filters) == 1
-    assert isinstance(filters[0], sam.models.filters.PortFilter)
-
-    data = {}
-    ds, filters = q.decode_filters(data)
-    assert ds is None
-    assert len(filters) == 0
-
-
 def test_next_page():
     q = sam.pages.table.Table
     web.ctx.fullpath = 'http://bob:password@sam.riolet.com:8080/table?ds=1&page=2&page_size=10'
@@ -332,6 +315,24 @@ def test_decode_get():
         assert request['download'] is True
         assert request['page'] == 0
         assert request['page_size'] == sam.pages.table.Table.download_max
+
+
+def test_decode_filters():
+    with db_connection.env(mock_input=True, mock_session=True, login_active=False):
+        table = sam.pages.table.Table()
+        port_f = sam.models.filters.filterTypes.index(sam.models.filters.PortFilter)
+        data = {
+            'filters': 'ds{ds}|{port};1;2;443'.format(ds=ds_full, port=port_f)
+        }
+        ds, filters = table.decode_filters(data)
+        assert ds == ds_full
+        assert len(filters) == 1
+        assert isinstance(filters[0], sam.models.filters.PortFilter)
+
+        data = {}
+        ds, filters = table.decode_filters(data)
+        assert ds is None
+        assert len(filters) == 0
 
 
 def test_get_dses():
