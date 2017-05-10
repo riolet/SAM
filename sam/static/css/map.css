@@ -4,6 +4,11 @@ body, html {
     margin: 0;
 }
 
+#navbar {
+  border-radius: 0;
+  background-color: #142230;
+}
+
 #output {
     position: absolute;
     bottom: 0;
@@ -13,9 +18,11 @@ body, html {
 
 #canvas {
     position: absolute;
+    left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    z-index: 0;
+    z-index: -1;
 }
 
 #sel_bar {
@@ -38,26 +45,9 @@ body, html {
     overflow-x: hidden;
 }
 
-#searchbar {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 1;
-}
-#searchbar div.thin.item{
-    padding: 2px !important;
-}
-
-#searchbar button.active {
-    background: #2185D0 !important;
-}
-
-#searchbar button.active:hover {
-    background: #1170B0 !important;
-}
-
-#time_box p {
-    margin: 0;
+#selectionInfo div.content {
+    max-height: 500px;
+    overflow-y: auto;
 }
 
 h4 {
@@ -73,19 +63,101 @@ h5 {
     font-weight: normal;
 }
 
-#selectionInfo div.content {
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-#settings_menu .dropdown .ui.button {
-  text-align: left;
-  padding-top: 0.4em;
-  padding-bottom: 0.4em;
-}
-
 div.ui.message.transition {
     position: fixed;
     bottom: 10px;
     right: 10px;
+}
+
+/* settings panel css */
+
+#time_box p {
+    margin: 0;
+}
+
+#pulltab {
+  background-color: #2A3F54;
+  box-shadow: inset 2px 0 2px #124;
+  display: inline-block;
+  margin-top: 0.5em;
+  border-radius: 0 0.25em 0.25em 0;
+  z-index: 103;
+}
+
+#pulltab a {
+  display: inline-block;
+  color: rgba(255,255,255,.9);
+  font-size: 1.5rem;
+  padding: 0.4em 0.0em 0.4em 0em;
+}
+
+#pulltab a:hover {
+	background: rgba(255,255,255,.08);
+	color: #fff;
+}
+
+#sidebar {
+  color: rgba(255,255,255,.9);
+  border-radius: 0;
+}
+
+#sidebar .segment {
+  border-radius: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#mapconfig .content {
+  padding: 0.5em 0em 0.5em 1.0em;
+  background: rgba(255,255,255,0.05);
+}
+
+#sidebar label {
+  margin-top: 1em;
+  display: block;
+  color: rgba(255,255,255,0.5);
+}
+
+#mapconfig .title {
+  margin: 0.5em 0 0 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: .25em;
+}
+
+#mapconfig .title:hover {
+	background: rgba(255,255,255,.1);
+	color: #fff;
+}
+
+#mapconfig .textinput, #time_box {
+  margin: 0 0.5em;
+}
+
+#mapconfig input {
+  display: block;
+}
+
+#sidebar input {
+  background-color: #142230;
+  color: rgba(255,255,255,0.75);
+  margin: 0.2em 0;
+  padding: 0.4em;
+}
+
+#sidebar div.input:focus {
+  background-color: #F2F5F7;
+}
+
+#sidebar .input .label {
+  background-color: #8f9ead;
+  margin: 0.2em 0;
+  padding: 0.4em;
+  width: 4em;
+}
+
+#sidebar div.divider {
+  height: 0.5em;
 }

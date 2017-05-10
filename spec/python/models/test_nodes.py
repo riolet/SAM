@@ -1,14 +1,63 @@
 from spec.python import db_connection
 from sam import common
-from sam.models.nodes import Nodes
+from sam.models import nodes
 
 db = db_connection.db
 sub_id = db_connection.default_sub
 ds_full = db_connection.dsid_default
+ds_empty = db_connection.dsid_live
+
+
+def ipToNode(s):
+    low, high = common.determine_range_string(s)
+    sub = min(s.count("."), 3) * 8 + 8
+    return {'ipstart': low, 'ipend': high, 'subnet': sub}
+
+
+def nodesort(a, b):
+    if a['subnet'] < b['subnet']:
+        return 1
+    elif a['subnet'] > b['subnet']:
+        return -1
+    else:
+        return a['ipstart'] - b['ipstart']
+
+
+def test_merge_groups():
+    q = ipToNode
+    g1 = [q('127'), q('127.0.1.102')]
+    g2 = [q('127'), q('127.0'), q('127.0.1'), q('127.0.1.102')]
+    result = nodes.merge_groups(g1, g2)
+    result.sort(nodesort)
+    expected = [q('127.0.1.102'), q('127')]
+    assert result == expected
+
+    g3 = [
+        q('12.34.56.78'),
+        q('12.34.56.77'),
+        q('12.34.56.76'),
+        q('12.34.56.75'),
+    ]
+    g4 = [
+        q('12'),
+        q('12.34'),
+        q('12.34.56'),
+    ]
+    result = nodes.merge_groups(g3, g4)
+    result.sort(nodesort)
+    expected = [
+        q('12.34.56.75'),
+        q('12.34.56.76'),
+        q('12.34.56.77'),
+        q('12.34.56.78'),
+        q('12')
+    ]
+    assert result == expected
+    
 
 
 def test_get_all_endpoints():
-    m_nodes = Nodes(db, sub_id)
+    m_nodes = nodes.Nodes(db, sub_id)
     actual = m_nodes.get_all_endpoints()
     actual.sort()
     expected = map(common.IPStringtoInt, [
@@ -50,7 +99,7 @@ def test_get_all_endpoints():
 
 
 def test_get_children():
-    m_nodes = Nodes(db, sub_id)
+    m_nodes = nodes.Nodes(db, sub_id)
     kids = m_nodes.get_children("110.20")
     ips = [kid['ipstart'] for kid in kids]
     ips.sort()
@@ -60,7 +109,7 @@ def test_get_children():
 
 
 def test_get_root_nodes():
-    m_nodes = Nodes(db, sub_id)
+    m_nodes = nodes.Nodes(db, sub_id)
     roots = m_nodes.get_root_nodes()
     ips = [root['ipstart'] for root in roots]
     ips.sort()
@@ -69,8 +118,15 @@ def test_get_root_nodes():
                                                       '110.0.0.0', '150.0.0.0', '159.0.0.0']))
 
 
+def test_get_flat_nodes():
+    m_nodes = nodes.Nodes(db, sub_id)
+    roots = m_nodes.get_flat_nodes(ds_full)
+    ips = ["{}/{}".format(n['ipstart'], n['subnet']) for n in roots]
+    assert len(ips) == 34
+
+
 def test_tags():
-    m_nodes = Nodes(db, sub_id)
+    m_nodes = nodes.Nodes(db, sub_id)
     m_nodes.delete_custom_tags()
     m_nodes.set_tags('110', ['tag8'])
     m_nodes.set_tags('110.20', ['tag16'])
@@ -102,7 +158,7 @@ def test_tags():
 
 
 def test_env():
-    m_nodes = Nodes(db, sub_id)
+    m_nodes = nodes.Nodes(db, sub_id)
     m_nodes.delete_custom_envs()
     m_nodes.set_env('110', 'inherit')
     m_nodes.set_env('110.20', 'dev')
@@ -131,7 +187,7 @@ def test_env():
 
 
 def test_alias():
-    m_nodes = Nodes(db, sub_id)
+    m_nodes = nodes.Nodes(db, sub_id)
     m_nodes.set_alias('110', 'hero')
     m_nodes.set_alias('110.20', 'side-kick')
     m_nodes.set_alias('110.20.30', 'henchman')
@@ -142,9 +198,64 @@ def test_alias():
     assert m_nodes.get('110.20.30').alias == 'henchman'
     assert m_nodes.get('110.20.30.40').alias == 'villain'
 
+    hostnames = m_nodes.get_hostnames_preview()
+    print hostnames
+    assert sorted(hostnames) == ['henchman', 'hero', 'side-kick', 'villain']
+
     m_nodes.delete_custom_hostnames()
 
     assert m_nodes.get('110').alias is None
     assert m_nodes.get('110.20').alias is None
     assert m_nodes.get('110.20.30').alias is None
     assert m_nodes.get('110.20.30.40').alias is None
+    hostnames = m_nodes.get_hostnames_preview()
+    assert hostnames == []
+
+
+def test_del_hosts():
+    m_nodes = nodes.Nodes(db, sub_id)
+    t_low, t_high = common.determine_range_string("99")
+    try:
+        db.delete(m_nodes.table_nodes, where="ipstart BETWEEN $start AND $end", vars={'start': t_low, 'end': t_high})
+        ips = m_nodes.get_all()
+        test_set = set(map(common.IPStringtoInt, ['99.99.99.99', '99.99.99', '99.99', '99']))
+        test_set_chopped = set(map(common.IPStringtoInt, ['99.99.99', '99.99', '99']))
+
+        assert not test_set.issubset(set(ips))
+        db.insert(m_nodes.table_nodes, **ipToNode("99.99.99.99"))
+        db.insert(m_nodes.table_nodes, **ipToNode("99.99.99"))
+        db.insert(m_nodes.table_nodes, **ipToNode("99.99"))
+        db.insert(m_nodes.table_nodes, **ipToNode("99"))
+        ips = m_nodes.get_all()
+        assert test_set.issubset(set(ips))
+        m_nodes.delete_hosts([common.IPStringtoInt("99.99.99.99")])
+        ips = m_nodes.get_all()
+        assert not test_set.issubset(set(ips))
+        assert test_set_chopped.issubset(set(ips))
+    finally:
+        db.delete(m_nodes.table_nodes, where="ipstart BETWEEN $start AND $end", vars={'start': t_low, 'end': t_high})
+
+
+def test_del_collection():
+    m_nodes = nodes.Nodes(db, sub_id)
+    t_low, t_high = common.determine_range_string("99")
+    try:
+        db.delete(m_nodes.table_nodes, where="ipstart BETWEEN $start AND $end", vars={'start': t_low, 'end': t_high})
+        ips = set(m_nodes.get_all())
+        test_set = set(map(common.IPStringtoInt, ['99.99.99.99', '99.99.99', '99.99', '99']))
+
+        assert not test_set.issubset(ips)
+        db.insert(m_nodes.table_nodes, **ipToNode("99.99.99.99"))
+        db.insert(m_nodes.table_nodes, **ipToNode("99.99.99"))
+        db.insert(m_nodes.table_nodes, **ipToNode("99.99"))
+        db.insert(m_nodes.table_nodes, **ipToNode("99"))
+        ips = set(m_nodes.get_all())
+        assert test_set.issubset(ips)
+        m_nodes.delete_collection(["99"])
+        ips = set(m_nodes.get_all())
+        assert common.IPStringtoInt("99") not in ips
+        assert common.IPStringtoInt("99.99") in ips
+        assert common.IPStringtoInt("99.99.99") in ips
+        assert common.IPStringtoInt("99.99.99.99") in ips
+    finally:
+        db.delete(m_nodes.table_nodes, where="ipstart BETWEEN $start AND $end", vars={'start': t_low, 'end': t_high})

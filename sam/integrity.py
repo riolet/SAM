@@ -228,9 +228,9 @@ def check_default_subscription(db):
     subs = sub_model.get_all()
     errors = -1
     for sub in subs:
-        if sub['email'] == constants.subscription['default-email']:
+        if sub['email'] == constants.subscription['default_email']:
             if sub['plan'] != 'admin' \
-                    or sub['name'] != constants.subscription['default-name'] \
+                    or sub['name'] != constants.subscription['default_name'] \
                     or sub['active'] != 1:
                 errors = -2
                 print("\tDefault subscription malformed")
@@ -254,8 +254,8 @@ def fix_default_subscription(db, errors):
     elif errors == -2:
         print("\tFixing default subscription")
         sub_model = Subscriptions(db)
-        sub = sub_model.get_by_email(constants.subscription['default-email'])
-        succeeded = sub_model.set(sub['subscription'], plan='admin', active=1, name=constants.subscription['default-name'])
+        sub = sub_model.get_by_email(constants.subscription['default_email'])
+        succeeded = sub_model.set(sub['subscription'], plan='admin', active=1, name=constants.subscription['default_name'])
         if not succeeded:
             raise ValueError("Failed to fix default subscription")
     else:

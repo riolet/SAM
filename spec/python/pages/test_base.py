@@ -28,10 +28,11 @@ def test_headed():
         p = sam.pages.base.Headed('TestTitle', True, True)
         p.styles = ['1', '2']
         p.scripts = ['3', '4']
+        web.ctx.path = "/sam/testpage"
         p.render('testPage', 'arg1', 'arg2', start=12, end=15)
         calls = common.renderer.calls
         assert calls[0] == ('render', ('_head', 'TestTitle'), {'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
-        assert calls[1] == ('render', ('_header', constants.navbar, 'TestTitle', p.user, constants.debug, False), {})
+        assert calls[1] == ('render', ('_header', constants.navbar, 'TestTitle', p.page.user, constants.debug, "/sam/testpage", constants.access_control), {})
         assert calls[2] == ('render', ('testPage', 'arg1', 'arg2'), {'start': 12, 'end': 15})
         assert calls[3] == ('render', ('_footer', ), {})
         assert calls[4] == ('render', ('_tail', ), {})

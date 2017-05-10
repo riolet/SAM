@@ -323,7 +323,7 @@ function present_quick_info(info) {
     var tag_div;
     clear_quick_info();
     if (info.hasOwnProperty("address")) {
-        target.appendChild(buildKeyValueRow("IPv4 address / subnet", info.address));
+        target.appendChild(buildKeyValueRow("IPv4 address / subnet:", info.address));
     }
     if (info.hasOwnProperty("error")) {
         target.appendChild(buildKeyValueRow(info.error, "..."));
@@ -346,7 +346,7 @@ function present_quick_info(info) {
             div.appendChild(i);
             td = document.createElement("TD");
             td.appendChild(div);
-            target.appendChild(buildKeyValueRow("Name", td));
+            target.appendChild(buildKeyValueRow("Name:", td));
         }
         if (info.hasOwnProperty("tags")) {
             tag_div = document.createElement("TD");
@@ -396,7 +396,7 @@ function present_quick_info(info) {
                 tag_div.appendChild(build_label(tag, "teal", true));
             });
             //attach the row to the table
-            target.appendChild(buildKeyValueRow("Tags", tag_div));
+            target.appendChild(buildKeyValueRow("Tags:", tag_div));
 
             //Activate the selector
             $(div).dropdown({
@@ -437,7 +437,7 @@ function present_quick_info(info) {
             div.appendChild(values);
             tag_div.appendChild(div);
 
-            target.appendChild(buildKeyValueRow("Environment", tag_div));
+            target.appendChild(buildKeyValueRow("Environment:", tag_div));
 
             //Activate the selector
             $(div).dropdown({
@@ -446,20 +446,20 @@ function present_quick_info(info) {
             });
         }
         if (info.hasOwnProperty("role")) {
-            target.appendChild(buildKeyValueRow("Role (0 = client, 1 = server)", build_role_text(info.role)));
+            target.appendChild(buildKeyValueRow("Role (0 = client, 1 = server):", build_role_text(info.role)));
         }
         if (info.hasOwnProperty("protocols")) {
-            target.appendChild(buildKeyValueRow("Protocols used", info.protocols));
+            target.appendChild(buildKeyValueRow("Protocols used:", info.protocols));
         }
         if (info.hasOwnProperty("ports")) {
-            target.appendChild(buildKeyValueRow("Local ports accessed", info.ports));
+            target.appendChild(buildKeyValueRow("Local ports accessed:", info.ports));
         }
         if (info.hasOwnProperty("endpoints")) {
             var possible = Math.pow(2, 32 - getIP_Subnet().subnet);
-            target.appendChild(buildKeyValueRow("Endpoints represented", info.endpoints + " (of " + possible + " possible)"));
+            target.appendChild(buildKeyValueRow("Endpoints represented:", info.endpoints + " (of " + possible + " possible)"));
         }
         if (info.hasOwnProperty("bps")) {
-            target.appendChild(buildKeyValueRow("Average Total bps (approx)", build_label_datarate(info.bps)));
+            target.appendChild(buildKeyValueRow("Average Total bps (approx):", build_label_datarate(info.bps)));
         }
 
         // in/out data is placed seperately
@@ -478,18 +478,18 @@ function present_quick_info(info) {
             segment.appendChild(td);
             //Add datapoints
             table = document.createElement("TABLE");
-            table.className = "ui celled striped structured table";
-            table.appendChild(buildKeyValueRow("Unique source IPs", info.in.u_ip));
-            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port)", info.in.u_conn));
-            table.appendChild(buildKeyValueRow("Total Connections recorded", info.in.total + " over " + build_label_duration(info.in.seconds)));
-            table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.in.total / info.in.seconds).toFixed(3)));
-            table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.in.bytes_sent)));
-            table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.in.bytes_received)));
-            table.appendChild(buildKeyValueRow("Avg Connection bps", build_label_datarate(info.in.avg_bps)));
-            table.appendChild(buildKeyValueRow("Max Connection bps", build_label_datarate(info.in.max_bps)));
-            table.appendChild(buildKeyValueRow("Packets Send Rate", build_label_packetrate(info.in.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow("Packets Receive Rate", build_label_packetrate(info.in.packets_received / avg_denom)));
-            table.appendChild(buildKeyValueRow("Avg Connection Duration", build_label_duration(info.in.duration)));
+            table.className = "ui celled striped structured definition table";
+            table.appendChild(buildKeyValueRow("Unique source IPs:", info.in.u_ip));
+            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port):", info.in.u_conn));
+            table.appendChild(buildKeyValueRow("Total Connections recorded:", info.in.total + " over " + build_label_duration(info.in.seconds)));
+            table.appendChild(buildKeyValueRow("Connections per second:", parseFloat(info.in.total / info.in.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow("Bytes Sent:", build_label_bytes(info.in.bytes_sent)));
+            table.appendChild(buildKeyValueRow("Bytes Received:", build_label_bytes(info.in.bytes_received)));
+            table.appendChild(buildKeyValueRow("Avg Connection bps:", build_label_datarate(info.in.avg_bps)));
+            table.appendChild(buildKeyValueRow("Max Connection bps:", build_label_datarate(info.in.max_bps)));
+            table.appendChild(buildKeyValueRow("Packets Send Rate:", build_label_packetrate(info.in.packets_sent / avg_denom)));
+            table.appendChild(buildKeyValueRow("Packets Receive Rate:", build_label_packetrate(info.in.packets_received / avg_denom)));
+            table.appendChild(buildKeyValueRow("Avg Connection Duration:", build_label_duration(info.in.duration)));
             segment.appendChild(table);
         }
         if (info.hasOwnProperty("out")) {
@@ -504,18 +504,18 @@ function present_quick_info(info) {
             segment.appendChild(td);
             //Add datapoints
             table = document.createElement("TABLE");
-            table.className = "ui celled striped structured table";
-            table.appendChild(buildKeyValueRow("Unique destination IPs", info.out.u_ip));
-            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port)", info.out.u_conn));
-            table.appendChild(buildKeyValueRow("Total Connections recorded", info.out.total + " over " + build_label_duration(info.out.seconds)));
-            table.appendChild(buildKeyValueRow("Connections per second", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
-            table.appendChild(buildKeyValueRow("Bytes Sent", build_label_bytes(info.out.bytes_sent)));
-            table.appendChild(buildKeyValueRow("Bytes Received", build_label_bytes(info.out.bytes_received)));
-            table.appendChild(buildKeyValueRow("Avg Connection Bps", build_label_datarate(info.out.avg_bps)));
-            table.appendChild(buildKeyValueRow("Max Connection Bps", build_label_datarate(info.out.max_bps)));
-            table.appendChild(buildKeyValueRow("Packet Send Rate", build_label_packetrate(info.out.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow("Packet Receive Rate", build_label_packetrate(info.out.packets_received / avg_denom)))
-            table.appendChild(buildKeyValueRow("Avg Connection Duration", build_label_duration(info.out.duration)));
+            table.className = "ui celled striped structured definition table";
+            table.appendChild(buildKeyValueRow("Unique destination IPs:", info.out.u_ip));
+            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port):", info.out.u_conn));
+            table.appendChild(buildKeyValueRow("Total Connections recorded:", info.out.total + " over " + build_label_duration(info.out.seconds)));
+            table.appendChild(buildKeyValueRow("Connections per second:", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow("Bytes Sent:", build_label_bytes(info.out.bytes_sent)));
+            table.appendChild(buildKeyValueRow("Bytes Received:", build_label_bytes(info.out.bytes_received)));
+            table.appendChild(buildKeyValueRow("Avg Connection Bps:", build_label_datarate(info.out.avg_bps)));
+            table.appendChild(buildKeyValueRow("Max Connection Bps:", build_label_datarate(info.out.max_bps)));
+            table.appendChild(buildKeyValueRow("Packet Send Rate:", build_label_packetrate(info.out.packets_sent / avg_denom)));
+            table.appendChild(buildKeyValueRow("Packet Receive Rate:", build_label_packetrate(info.out.packets_received / avg_denom)))
+            table.appendChild(buildKeyValueRow("Avg Connection Duration:", build_label_duration(info.out.duration)));
             segment.appendChild(table);
         }
     }

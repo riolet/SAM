@@ -22,7 +22,10 @@ class Uploader(object):
         self.log_format = log_format.lower()
         self.importer = None
         self.preprocessor = None
-        self.importer = import_base.get_importer(self.log_format, self.sub, self.ds)
+        try:
+            self.importer = import_base.get_importer(self.log_format, self.sub, self.ds)
+        except ImportError:
+            self.importer = None
 
     def run_import(self, data):
         if self.importer is None:

@@ -58,8 +58,8 @@ class Subscriptions:
         portsModel.reset()
 
     def create_default_subscription(self):
-        email = constants.subscription['default-email']
-        name = constants.subscription['default-name']
+        email = constants.subscription['default_email']
+        name = constants.subscription['default_name']
         plan = 'admin'
         active = True
         self.db.insert(self.table, email=email, name=name, plan=plan, groups='read write admin', active=active)
@@ -93,7 +93,7 @@ class Subscriptions:
         elif constants.access_control['active'] is False:
             sought_sub = None
             for sub in subs:
-                if sub['email'] == constants.subscription['default-email']:
+                if sub['email'] == constants.subscription['default_email']:
                     sought_sub = sub
                     break
             if sought_sub:

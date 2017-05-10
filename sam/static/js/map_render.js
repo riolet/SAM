@@ -1,6 +1,12 @@
 //rendering configuration settings
 // test at https://jsfiddle.net/tn7836so/
 var renderConfig = {
+  show_clients: true,
+  show_servers: true,
+  show_inputs: true,
+  show_outputs: true,
+  linewidth: "links",
+
   backgroundColor: "#F7F7F7",
   nodeColor: "#5555CC",
   nodeColorFaded: "#95D5D9",
@@ -20,9 +26,10 @@ var renderConfig = {
 };
 
 function fadeFont(color, alpha) {
-  r = parseInt(color.slice(1, 3), 16);
-  g = parseInt(color.slice(3, 5), 16);
-  b = parseInt(color.slice(5, 7), 16);
+  "use strict";
+  let r = parseInt(color.slice(1, 3), 16);
+  let g = parseInt(color.slice(3, 5), 16);
+  let b = parseInt(color.slice(5, 7), 16);
   return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
 }
 
@@ -53,7 +60,7 @@ function opacity(subnet, type, scale) {
     var startZoom = -Infinity;
     var endZoom = Infinity;
 
-    if (config.flat) {
+    if (nodes.layout_flat) {
       return 1
     }
 
@@ -116,8 +123,8 @@ function getSubnetLabel() {
     renderCollection.forEach(function (node) {
         if (node.subnet === subnet - 8) {
             tempDist = magnitudeSquared(
-                node.abs_x * g_scale + tx - rect.width / 2,
-                node.abs_y * g_scale + ty - rect.height / 2
+                node.abs_x * g_scale + tx - controller.rect.width / 2,
+                node.abs_y * g_scale + ty - controller.rect.height / 2
             );
             if (tempDist < dist) {
                 dist = tempDist;
@@ -161,20 +168,20 @@ function onScreenRecursive(left, right, top, bottom, collection) {
 function onScreen(coll, x, y, scale) {
     "use strict";
     var left = -x / scale;
-    var right = (rect.width - x) / scale;
+    var right = (controller.rect.width - x) / scale;
     var top = -y / scale;
-    var bottom = (rect.height - y) / scale;
+    var bottom = (controller.rect.height - y) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, coll, currentSubnet(scale));
+    visible = onScreenRecursive(left, right, top, bottom, coll);
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
     }
 
     var filtered = [];
     visible.forEach(function (node) {
-        if ((node.client === true && config.show_clients) ||
-                (node.server === true && config.show_servers) ||
+        if ((node.client === true && renderConfig.show_clients) ||
+                (node.server === true && renderConfig.show_servers) ||
                 (node.client === true && node.server === true)) {
             filtered.push(node);
         }
@@ -193,24 +200,25 @@ function resetViewport(collection, fill) {
     var bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
     Object.keys(collection).forEach(function (nodeKey) {
         var node = collection[nodeKey];
-        if (node.abs_x - node.radius < bbox.left) {
+        if (node.abs_x - node.radius_orig < bbox.left) {
             bbox.left = node.abs_x - node.radius;
         }
-        if (node.abs_x + node.radius > bbox.right) {
+        if (node.abs_x + node.radius_orig > bbox.right) {
             bbox.right = node.abs_x + node.radius;
         }
-        if (node.abs_y - node.radius < bbox.top) {
+        if (node.abs_y - node.radius_orig < bbox.top) {
             bbox.top = node.abs_y - node.radius;
         }
-        if (node.abs_y + node.radius > bbox.bottom) {
+        if (node.abs_y + node.radius_orig > bbox.bottom) {
             bbox.bottom = node.abs_y + node.radius;
         }
     });
-    var scaleA = fill * rect.width / (bbox.right - bbox.left);
-    var scaleB = fill * rect.height / (bbox.bottom - bbox.top);
+    var scaleA = fill * controller.rect.width / (bbox.right - bbox.left);
+    var scaleB = fill * controller.rect.height / (bbox.bottom - bbox.top);
     g_scale = Math.min(scaleA, scaleB);
-    tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * g_scale;
-    ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * g_scale;
+    tx = controller.rect.width / 2 - ((bbox.left + bbox.right) / 2) * g_scale;
+    ty = controller.rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * g_scale;
+    updateRenderRoot();
 }
 
 function updateRenderRoot() {
@@ -218,12 +226,12 @@ function updateRenderRoot() {
     renderCollection = onScreen(nodes.nodes, tx, ty, g_scale);
     subnetLabel = getSubnetLabel();
     //console.log("updateRenderRoot: ", "updating: ", renderCollection.length, " nodes in collection");
-    if (config.flat) {
+    if (nodes.layout_flat) {
         nodes.flat_scale();
     }
 }
 
-function drawLoopArrow(node, scale) {
+function drawLoopArrow(ctx, node, scale) {
     "use strict";
     var x1 = node.radius * Math.cos(3 * Math.PI / 8);
     var y1 = node.radius * Math.sin(3 * Math.PI / 8);
@@ -249,7 +257,7 @@ function drawLoopArrow(node, scale) {
     ctx.lineTo(x4, y4);
 }
 
-function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
+function drawArrow(ctx, x1, y1, x2, y2, scale, bIncoming) {
     "use strict";
     if (bIncoming === undefined) {
         bIncoming = true;
@@ -290,10 +298,10 @@ function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
     ctx.lineTo(x2, y2);
 }
 
-function renderLinks(node, scale, faded) {
+function renderLinks(ctx, node, scale, faded) {
     "use strict";
     // inbound lines
-    if (config.show_in) {
+    if (renderConfig.show_inputs) {
         node.inputs.forEach(function (link) {
             ctx.beginPath();
             if (faded) {
@@ -301,23 +309,23 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
+                ctx.lineWidth = String(Math.round(link[renderConfig.linewidth])).length / scale;
             }
 
             // if connecting to self
             if (node.ipstart <= link.src.ipstart && link.src.ipend <= node.ipend) {
-                drawLoopArrow(node, scale);
+                drawLoopArrow(ctx, node, scale);
             } else {
                 let src = link["src"];
                 let out_pos = nodes.get_outbound_link_point(src, node.abs_x, node.abs_y)
                 let in_pos = nodes.get_inbound_link_point(node, src.abs_x, src.abs_y, link.port)
-                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
+                drawArrow(ctx, out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
             }
             ctx.stroke();
         });
     }
     // outbound lines
-    if (config.show_out) {
+    if (renderConfig.show_outputs) {
         node.outputs.forEach(function (link) {
             ctx.beginPath();
             if (faded) {
@@ -325,24 +333,24 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
+                ctx.lineWidth = String(Math.round(link[renderConfig.linewidth])).length / scale;
             }
 
             // if connecting to self or a child node, just draw a loopback arrow.
             if (node.ipstart <= link.dst.ipstart && link.dst.ipend <= node.ipend) {
-                drawLoopArrow(node, scale);
+                drawLoopArrow(ctx, node, scale);
             } else {
                 let dest = link["dst"];
                 let out_pos = nodes.get_outbound_link_point(node, dest.abs_x, dest.abs_y)
                 let in_pos = nodes.get_inbound_link_point(dest, node.abs_x, node.abs_y, link.port)
-                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
+                drawArrow(ctx, out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
             }
             ctx.stroke();
         });
     }
 }
 
-function renderSubnetLabel(scale) {
+function renderSubnetLabel(ctx, scale) {
     "use strict";
     //Draw subnet label
     ctx.font = "3em sans";
@@ -359,19 +367,19 @@ function renderSubnetLabel(scale) {
     } else {
         ctx.globalAlpha = 1.0;
     }
-    ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
-    ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.fillRect((controller.rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.strokeRect((controller.rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.fillStyle = fadeFont(renderConfig.labelColor, ctx.globalAlpha);
     ctx.globalAlpha = 1.0;
-    ctx.fillText(text, (rect.width - size.width) / 2, 55);
+    ctx.fillText(text, (controller.rect.width - size.width) / 2, 55);
 }
 
-function renderLabels(node, x, y, scale) {
+function renderLabels(ctx, node, x, y, scale) {
     "use strict";
     var alpha = 0;
     ctx.font = "1.5em sans";
     ctx.globalAlpha = 1.0;
-    if (scale > 25 || config.flat) {
+    if (scale > 25 || nodes.layout_flat) {
         //Draw port labels at this zoom level
         alpha = opacity(32, "label", scale);
         if (m_selection["selection"] === null || m_selection["selection"] === node) {
@@ -472,7 +480,7 @@ function renderLabels(node, x, y, scale) {
     }
 }
 
-function renderNode(node) {
+function renderNode(ctx, node) {
   "use strict";
   if (node.subnet < 31) {
     ctx.moveTo(node.abs_x + node.radius, node.abs_y);
@@ -547,7 +555,7 @@ function renderNode(node) {
   }
 }
 
-function renderClusters(collection, x, y, scale) {
+function renderClusters(ctx, collection, x, y, scale) {
     "use strict";
     var alpha = 0;
     var skip = false;
@@ -577,7 +585,7 @@ function renderClusters(collection, x, y, scale) {
             drawingLevel = node.subnet;
         }
         if (!skip) {
-            renderLinks(node, scale, faded);
+            renderLinks(ctx, node, scale, faded);
         }
     });
     //ctx.stroke();
@@ -605,7 +613,7 @@ function renderClusters(collection, x, y, scale) {
             drawingLevel = node.subnet;
         }
         if (!skip) {
-            renderNode(node);
+            renderNode(ctx, node);
         }
     });
     ctx.stroke();
@@ -613,7 +621,7 @@ function renderClusters(collection, x, y, scale) {
     //Draw the labels
     ctx.resetTransform();
     collection.forEach(function (node) {
-        renderLabels(node, x, y, scale);
+        renderLabels(ctx, node, x, y, scale);
     });
 
     //Draw the selected item over top everything else
@@ -626,7 +634,7 @@ function renderClusters(collection, x, y, scale) {
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links", scale);
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
-        renderLinks(m_selection["selection"], scale, false);
+        renderLinks(ctx, m_selection["selection"], scale, false);
         ctx.stroke();
 
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node", scale);
@@ -634,40 +642,41 @@ function renderClusters(collection, x, y, scale) {
         ctx.strokeStyle = renderConfig.nodeColor;
         ctx.fillStyle = renderConfig.labelBackgroundColor;
         ctx.beginPath();
-        renderNode(m_selection["selection"]);
+        renderNode(ctx, m_selection["selection"]);
         ctx.stroke();
 
         ctx.resetTransform();
-        renderLabels(m_selection["selection"], x, y, scale);
+        renderLabels(ctx, m_selection["selection"], x, y, scale);
     }
 }
 
-function render(x, y, scale) {
+function render(ctx, x, y, scale) {
     "use strict";
+
     ctx.resetTransform();
     ctx.fillStyle = renderConfig.backgroundColor;
     ctx.globalAlpha = 1.0;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, controller.canvas.width, controller.canvas.height);
 
     if (Object.keys(renderCollection).length === 0) {
         ctx.fillStyle = renderConfig.labelColorError;
         ctx.font = "3em sans";
         var size = ctx.measureText("No connections to display.");
-        ctx.fillText("No data available", rect.width / 2 - size.width / 2, rect.height / 2);
+        ctx.fillText("No data available", controller.rect.width / 2 - size.width / 2, controller.rect.height / 2);
         return;
     }
 
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     if (renderCollection.length !== 0) {
-        renderClusters(renderCollection, x, y, scale);
+        renderClusters(ctx, renderCollection, x, y, scale);
     }
 
-    renderSubnetLabel(scale);
+    renderSubnetLabel(ctx, scale);
 }
 
 function render_all() {
     "use strict";
-    requestAnimationFrame(function () {render(tx, ty, g_scale);});
+    requestAnimationFrame(function () {render(controller.ctx, tx, ty, g_scale);});
     //render(tx, ty, g_scale);
 }

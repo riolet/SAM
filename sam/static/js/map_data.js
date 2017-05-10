@@ -1,55 +1,3 @@
-function GET_settings(ds, successCallback) {
-    "use strict";
-    if (typeof(successCallback) !== "function") {
-        return;
-    }
-    $.ajax({
-        url: "./settings",
-        type: "GET",
-        data: {"headless": 1, 'ds': ds},
-        dataType: "json",
-        error: generic_ajax_failure,
-        success: successCallback
-    });
-}
-
-function GET_timerange(successCallback) {
-  "use strict";
-  if (typeof(successCallback) !== "function") {
-      return;
-  }
-  $.ajax({
-    url: "./stats",
-    type: "GET",
-    data: {"q": "timerange", 'ds': config.ds},
-    dataType: "json",
-    error: generic_ajax_failure,
-    success: successCallback
-  });
-}
-
-function GET_links(addrs) {
-    "use strict";
-    var requestData = {
-        "address": addrs.join(","),
-        "filter": config.filter,
-        "protocol": config.protocol,
-        "tstart": config.tstart,
-        "tend": config.tend,
-        "ds": config.ds
-    };
-    if (config.flat) {
-      requestData.flat = true;
-    }
-    $.ajax({
-        url: "./links",
-        type: "GET",
-        data: requestData,
-        error: generic_ajax_failure,
-        success: GET_links_callback
-    });
-}
-
 function POST_portinfo(request) {
     "use strict";
     $.ajax({
@@ -89,7 +37,7 @@ function checkLoD() {
     }
   });
   if (nodesToLoad.length > 0) {
-    nodes.GET_request(config.ds, config.flat, nodesToLoad, function () {
+    nodes.GET_request(nodesToLoad, function () {
       updateRenderRoot();
       render_all();
     });
@@ -106,7 +54,7 @@ function GET_details(node, callback) {
         "tend": config.tend,
         "order": "-links",
         "simple": true,
-        "ds": config.ds
+        "ds": controller.ds
         };
 
     $.ajax({
@@ -164,7 +112,7 @@ function GET_details_sorted(node, component, order, callback) {
         "order": order,
         "simple": true,
         "component": component,
-        "ds": config.ds
+        "ds": controller.ds
         };
 
     $.ajax({

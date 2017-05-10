@@ -9,7 +9,7 @@ function link_request_add(address) {
 function link_request_add_all(collection) {
     "use strict";
     Object.keys(collection).forEach(function (node_name) {
-        link_request_add(collection[node_name].address)
+        link_request_add(nodes.get_address(collection[node_name]))
         link_request_add_all(collection[node_name].children);
     });
 }
@@ -22,8 +22,8 @@ function dist_between_squared(x1, y1, x2, y2) {
 function link_comparator(a, b) {
     "use strict";
     //determine value of a and b
-    var centerx = (rect.width - 2 * tx) / (2 * g_scale);
-    var centery = (rect.height - 2 * ty) / (2 * g_scale);
+    var centerx = (controller.rect.width - 2 * tx) / (2 * g_scale);
+    var centery = (controller.rect.height - 2 * ty) / (2 * g_scale);
     var aNode = nodes.find_by_addr(a);
     var bNode = nodes.find_by_addr(b);
     if (aNode === null || bNode === null) {
@@ -85,6 +85,28 @@ function links_reset() {
     link_request_submit();
 }
 
+function GET_links(addrs) {
+    "use strict";
+    var requestData = {
+        "address": addrs.join(","),
+        "filter": config.filter,
+        "protocol": config.protocol,
+        "tstart": config.tstart,
+        "tend": config.tend,
+        "ds": controller.ds
+    };
+    if (nodes.layout_flat) {
+      requestData.flat = true;
+    }
+    $.ajax({
+        url: "./links",
+        type: "GET",
+        data: requestData,
+        error: generic_ajax_failure,
+        success: GET_links_callback
+    });
+}
+
 function GET_links_callback(result) {
     "use strict";
     //for each node address in result:
@@ -109,11 +131,11 @@ function GET_links_callback(result) {
     });
     ports.request_submit();
     nodes.do_layout();
-    updateRenderRoot();
     if (!config.initial_zoom) {
       resetViewport(nodes.nodes);
       config.initial_zoom = true;
     }
+    updateRenderRoot();
     render_all();
 }
 
@@ -125,6 +147,10 @@ function fix_link_pointers(node) {
   node.outputs.forEach(function (link_in) {
     link_in.src = node;
     let dest = nodes.find_by_range(link_in.dst_start, link_in.dst_end);
+    if (dest==null) {
+      console.log("cannot find a node: {} .. {}", link_in.dst_start, link_in.dst_end);
+      console.log("from link_in ", link_in);
+    }
     let root = nodes.find_common_root(node, dest);
     if (root == null) {
       link_in.dst = nodes.find_step_closer(nodes.nodes, dest);

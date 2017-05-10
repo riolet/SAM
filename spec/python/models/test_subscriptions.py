@@ -22,7 +22,7 @@ def test_get_id_list():
 
 def test_get_by_email():
     s = Subscriptions(db)
-    sub = s.get_by_email(constants.demo['email'])
+    sub = s.get_by_email(constants.subscription['default_email'])
     assert bool(sub)
     assert sub.plan == 'admin'
 

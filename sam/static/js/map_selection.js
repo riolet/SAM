@@ -11,6 +11,8 @@ function sel_init() {
     m_selection["conn_in"] = document.getElementById("conn_in");
     m_selection["conn_out"] = document.getElementById("conn_out");
     m_selection["ports_in"] = document.getElementById("ports_in");
+    sel_panel_height();
+    $(document.getElementById("selectionInfo")).accordion();
 }
 
 function sel_set_selection(node) {
@@ -240,7 +242,10 @@ function build_label_duration(elapsed) {
 function sel_panel_height() {
     "use strict";
     var side = document.getElementById("sel_bar");
-    var heightAvailable = rect.height - 40;
+    if (side === null) {
+      return;
+    }
+    var heightAvailable = controller.rect.height - 40;
     side.style.maxHeight = heightAvailable + "px";
 
     heightAvailable -= 10; //for padding
@@ -263,7 +268,7 @@ function sel_panel_height() {
 
 function sel_create_link(node) {
     var address = nodes.get_address(node);
-    var link = "./metadata#ip=" + address + "&ds=" + config.ds;
+    var link = "./metadata#ip=" + address + "&ds=" + controller.ds;
     var text = "More details for " + address;
 
     var icon = document.createElement("I");

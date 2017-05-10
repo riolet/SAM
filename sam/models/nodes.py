@@ -133,6 +133,9 @@ class Nodes(object):
     def delete_custom_hostnames(self):
         common.db.update(self.table_nodes, "1", alias=common.web.sqlliteral("NULL"))
 
+    def get_hostnames_preview(self):
+        return [row.alias for row in self.db.select(self.table_nodes, what="DISTINCT alias", limit=10) if row.alias]
+
     def get_root_nodes(self):
         return list(self.db.select(self.table_nodes, where="subnet=8"))
 
@@ -227,10 +230,18 @@ class Nodes(object):
         rows = self.db.select(self.table_nodes, what='ipstart', where='subnet=32')
         return [row['ipstart'] for row in rows]
 
+    def get_all(self):
+        rows = self.db.select(self.table_nodes, what='ipstart')
+        return [row['ipstart'] for row in rows]
+
     def delete_hosts(self, hostlist):
-        # type: (Nodes, [str]) -> int
+        """
+        :param hostlist: list of host numbers (32-bit int) to delete
+         :type hostlist: list[int]
+        :return: number of deleted nodes.
+        """
         collection = "({})".format(','.join(map(str, map(int, hostlist))))
-        # int cast is to cause failure if sql injection attacks.
+        # the int cast is to induce failure in the case of sql injection attacks.
         # Almost equivalent to:
         #    hostlist = str(tuple(map(int, collection)))
         # Which is better?
@@ -245,7 +256,7 @@ class Nodes(object):
         """
         :type self: Nodes
         :type nodes: list[str]
-        :param nodes: list of nodes to delete, along with their children
+        :param nodes: list of nodes to delete ("192"|"127.0.0.0/16"|"1.2.3"). (their children will not be deleted)
         :return: The number of nodes deleted
         :rtype: int
         """
@@ -268,7 +279,7 @@ def merge_groups(main, groups):
             keepers[node['ipstart']] = node
     keys = [v['ipstart'] for v in keepers.values()]
     for node in groups:
-        if (node['ipstart'] & 0xff000000) in keepers:
+        if   (node['ipstart'] & 0xff000000) in keepers:
             continue
         elif (node['ipstart'] & 0xffff0000) in keepers:
             continue

@@ -26,6 +26,7 @@ def test_decode_get():
             'tend': str(2**31 - 1),
             'protocol': 'ALL',
             'ds': 'ds{}'.format(ds_full),
+            'flat': 'true'
         }
         actual = p.decode_get_request(good_data)
         expected = {
@@ -35,7 +36,7 @@ def test_decode_get():
             'tend': 2147483647,
             'tstart': 1,
             'port': 180,
-            'flat': False
+            'flat': True
         }
         assert actual == expected
 

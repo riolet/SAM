@@ -4,9 +4,9 @@ var updateTimer = null;
 
 //Turn autoupdate on or off based on config setting.
 function setAutoUpdate() {
-  if (config.update == true && updateTimer === null) { //timer is not running
-    updateTimer = window.setInterval(updateCall,Math.abs(MILLIS_PER_SEC * config.update_interval));
-  } else if (config.update == false && updateTimer !== null) { //timer has been turned off
+  if (controller.autorefresh == true && updateTimer === null) { //timer is not running
+    updateTimer = window.setInterval(updateCall,Math.abs(MILLIS_PER_SEC * controller.autorefresh_period));
+  } else if (controller.autorefresh == false && updateTimer !== null) { //timer has been turned off
     window.clearInterval(updateTimer);
     updateTimer = null;
   }
@@ -47,10 +47,11 @@ function updateTimeConfig(newRange) {
 //The actual json calls that are executed when the update triggers
 function updateCall() {
   //get time range,
-  GET_timerange(function (range) {
+  controller.GET_timerange(controller.ds, function (range) {
+    // TODO: some redundant code here, with the default callback for GET_timerange...
     updateTimeConfig(range);
 
     slider_init();
-    nodes.GET_request(config.ds, config.flat, null);
+    nodes.GET_request(null, null);
   });
 }

@@ -451,7 +451,7 @@ class Table(base.headed):
         if self.request['download']:
             self.outbound = self.encode_get_response_for_download(self.response)
             web.header("Content-Type", "application/csv")
-            return csv_encode(self.page.outbound, ',', '\r\n', '\\')
+            return csv_encode(self.outbound, ',', '\r\n', '\\')
 
         self.outbound = self.encode_get_response(self.response)
 

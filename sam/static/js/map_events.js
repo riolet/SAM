@@ -13,9 +13,11 @@ function deselectText() {
 
 function mousedown(event) {
     "use strict";
+    event.preventDefault();
     deselectText();
-    mdownx = event.clientX - rect.left;
-    mdowny = event.clientY - rect.top;
+    event.target.focus();
+    mdownx = event.clientX - controller.rect.left;
+    mdowny = event.clientY - controller.rect.top;
     ismdown = true;
 }
 
@@ -61,10 +63,11 @@ function mouseup(event) {
   if (ismdown === false) {
     return;
   }
+  event.preventDefault();
 
   ismdown = false;
-  mx = event.clientX - rect.left;
-  my = event.clientY - rect.top;
+  mx = event.clientX - controller.rect.left;
+  my = event.clientY - controller.rect.top;
 
   if (mx === mdownx && my === mdowny) {
     //mouse hasn't moved. treat this as a "pick" operation
@@ -85,18 +88,19 @@ function mouseup(event) {
 function mousemove(event) {
     "use strict";
     if (ismdown === false) {
-        return;
+      return;
     }
-    mx = event.clientX - rect.left;
-    my = event.clientY - rect.top;
-    requestAnimationFrame(function () {render(tx + mx - mdownx, ty + my - mdowny, g_scale);});
+    event.preventDefault();
+    mx = event.clientX - controller.rect.left;
+    my = event.clientY - controller.rect.top;
+    requestAnimationFrame(function () {render(controller.ctx, tx + mx - mdownx, ty + my - mdowny, g_scale);});
 }
 
 function wheel(event) {
   "use strict";
   //event is a WheelEvent
-  mx = event.clientX - rect.left;
-  my = event.clientY - rect.top;
+  mx = event.clientX - controller.rect.left;
+  my = event.clientY - controller.rect.top;
 
   if (event.deltaY < 0) { // Zoom in
     if (g_scale >= 60.0) {
@@ -125,21 +129,16 @@ function wheel(event) {
   }
   updateRenderRoot();
   render_all();
-  if (config.flat === false) {
+  if (nodes.layout_flat === false) {
     checkLoD();
   }
 }
 
 function keydown(event) {
     "use strict";
-    //don't interfere with input dialogs
-    if (document.activeElement.localName !== "body") {
-        return;
-    }
     //if key is 'f', reset the view
     if (event.keyCode === 70) {
         resetViewport(nodes.nodes);
-        updateRenderRoot();
         resetViewport(renderCollection);
         render_all();
     }
@@ -177,142 +176,25 @@ function applysearch() {
   else if (nearest.address + "/" + nearest.subnet == normalized_addr) {
     resetViewport([nearest], 0.2);
     sel_set_selection(nearest);
-    updateRenderRoot();
     render_all();
   }
-  //we have an imperfect match. Are there more children to load?
+  //we have an imperfect match at this point. Are there more children to load?
   else if (nearest.childrenLoaded) {
+    //no more child nodes to load.
     resetViewport([nearest], 0.2);
     sel_set_selection(nearest);
-    updateRenderRoot();
     render_all();
   } else {
-    //try to load children and repeat.
-    nodes.GET_request(config.ds, config.flat, [nearest], applysearch);
+    //load more child nodes.
+    nodes.GET_request([nearest], applysearch);
   }
 }
-
 function onsearch() {
   "use strict";
   if (g_timer !== null) {
     clearTimeout(g_timer);
   }
   g_timer = setTimeout(applysearch, 700);
-}
-
-function onResize() {
-    "use strict";
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - $("#navbar").height();
-    rect = canvas.getBoundingClientRect();
-    ctx.lineJoin = "bevel"; //seems to get reset on resize?
-    render_all();
-    checkLoD();
-    sel_panel_height();
-}
-
-function updateDsSelection() {
-  "use strict";
-  //determine which datasource (ds) buttons are clicked.
-  var btns = document.getElementsByClassName("ds button active");
-  var oldDS = config.ds;
-  var newDS = config.ds;
-  var count = btns.length - 1;
-  if (count === -1) {
-    document.getElementById(newDS).classList.add("active");
-    return;
-  }
-  for(; count >= 0; count -= 1) {
-    if (btns[count].id !== oldDS) {
-      newDS = btns[count].id;
-    }
-  }
-  if (newDS !== oldDS) {
-    config.ds = newDS;
-    links_reset();
-    GET_settings(newDS, function (settings) {
-      let newDS_num = /^[^\d]+(\d+).*$/.exec(newDS)[1];
-      let datasource = settings.datasources[newDS_num]
-      config.update = (datasource.ar_active === 1);
-      config.update_interval = datasource.ar_interval;
-      config.flat = (datasource.flat === 1);
-      init_toggleButton("update", "Auto refresh", "No refresh", config.update);
-      setAutoUpdate();
-      updateCall();
-    });
-    for(count = btns.length - 1; count >= 0; count -= 1) {
-      if (btns[count].id !== newDS) {
-        btns[count].classList.remove("active");
-      }
-    }
-  }
-}
-
-function updateLwSelection() {
-  "use strict";
-  //lw is line width
-  let lwbuttons = document.getElementsByClassName("lw button active");
-  let num_buttons = lwbuttons.length;
-  var oldLW = config.linewidth;
-  var newLW = config.linewidth;
-  if (num_buttons === 0) {
-    document.getElementById(newLW).classList.add("active");
-    return;
-  }
-  for(let i = num_buttons - 1; i >= 0; i -= 1) {
-    if (lwbuttons[i].id !== oldLW) {
-      newLW = lwbuttons[i].id;
-    }
-  }
-  if (newLW !== oldLW) {
-    // do special stuff
-    config.linewidth = newLW;
-    render_all();
-    for(let i = num_buttons - 1; i >= 0; i -= 1) {
-      if (lwbuttons[i].id !== newLW) {
-        lwbuttons[i].classList.remove("active");
-      }
-    }
-  }
-}
-
-function updateFlat(new_flatness) {
-  if (config.flat === new_flatness) {
-      return;
-  }
-  config.flat = new_flatness;
-  config.initial_zoom = false;
-  if (config.flat) {
-    nodes.layout = "Circle";
-  } else {
-    nodes.layout = "Address";
-  }
-  nodes.nodes = {};
-  if (m_link_timer) {
-    clearTimeout(m_link_timer);
-  }
-  nodes.GET_request(config.ds, config.flat, null, function () {
-    updateRenderRoot();
-    render_all();
-  });
-}
-
-function updateConfig() {
-    "use strict";
-    config.show_clients = document.getElementById("show_clients").classList.contains("active");
-    config.show_servers = document.getElementById("show_servers").classList.contains("active");
-    config.show_in = document.getElementById("show_in").classList.contains("active");
-    config.show_out = document.getElementById("show_out").classList.contains("active");
-    config.update = document.getElementById("update").classList.contains("active");
-    updateFlat(document.getElementById("flat").classList.contains("active"));
-    updateDsSelection();
-    //Datasource choice
-    updateLwSelection();
-    //linewidth choice
-
-    setAutoUpdate(); //required to kill the timer if we want to turn it off.
-    updateRenderRoot();
-    render_all();
 }
 
 function applyProtocolFilter() {
@@ -331,6 +213,17 @@ function onProtocolFilter() {
         clearTimeout(g_timer);
     }
     g_timer = setTimeout(applyProtocolFilter, 700);
+}
+
+function onResize() {
+    "use strict";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight - $("#navbar").height();
+    controller.rect = canvas.getBoundingClientRect();
+    controller.ctx.lineJoin = "bevel"; //seems to get reset on resize?
+    render_all();
+    checkLoD();
+    sel_panel_height();
 }
 
 (function () {

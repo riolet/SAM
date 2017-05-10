@@ -43,11 +43,44 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
 
 (function () {
   "use strict";
-  let nodes = {};
-  nodes.nodes = {};
-  nodes.layouts = {};
-  nodes.layout = "Address";
-  nodes.endpoint = "./nodes"
+  let nodes = {
+    nodes: {},
+    layouts: {},
+    layout_flat: false,
+    layout_arrangement: "Address",
+    endpoint: "./nodes",
+    ds: null,
+  };
+  nodes.set_datasource = function (ds) {
+    if (ds.datasource !== nodes.ds) {
+      nodes.ds = ds.id;
+      nodes.layout_flat = (ds.flat === 1);
+      if (nodes.layout_flat) {
+        nodes.layout_arrangement = "Circle";
+      } else {
+        nodes.layout_arrangement = "Address";
+      }
+      nodes.clear();
+    }
+  }
+  nodes.clear = function() {
+    nodes.nodes = {};
+  }
+  nodes.set_flat = function (flat) {
+    if (typeof(flat) !== "boolean") {
+      return;
+    }
+
+    //only do stuff if the layout is changing.
+    nodes.layout_flat = flat;
+    
+    if (nodes.layout_flat) {
+      document.getElementById("la_Circle").click();
+    } else {
+      document.getElementById("la_Address").click();
+    }
+    nodes.clear();
+  }
 
   //what is rendered:
   // nodes.print_tree(nodes.nodes, "", function(n) {if (renderCollection.indexOf(n) === -1) return ""; else return " (rendered) ";});
@@ -252,9 +285,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   nodes.GET_response = function (response) {
     Object.keys(response).forEach(function (parent_address) {
       if (parent_address == 'error') {
-        //unclick the config.flat button.
-        if (config.flat) {
-          let btn_flat = document.getElementById("flat")
+        //unclick the nodes.layout_flat button.
+        if (nodes.layout_flat) {
+          let btn_flat = document.getElementById("lm_Heirarchy");
           btn_flat.click();
         }
         //pop up box explaining issue.
@@ -287,8 +320,9 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         });
       }
     });
-    //Not needed because do_layout is called after the links load.
-    //nodes.do_layout();
+    //do_layout() is not needed because do_layout is called after the links load,
+    // but is enabled because this lets node search work properly (in Address and Grid layouts, not Circle.)
+    nodes.do_layout();
     link_request_submit();
   };
   /*
@@ -299,7 +333,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     callback: if is a function, call it when done importing.
     ajax response: should be an object, where keys are address strings ("12.34.56.78") and values are arrays of objects (nodes)
   */
-  nodes.GET_request = function (ds, flat, parents, callback) {
+  nodes.GET_request = function (parents, callback) {
     let request = {};
     if (parents !== null) {
       //filter out parents with children already loaded
@@ -314,8 +348,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         return parent.address + "/" + parent.subnet;
       }).join(",");
     }
-    request.flat = flat;
-    request.ds = ds;
+    request.flat = nodes.layout_flat;
+    request.ds = nodes.ds;
     $.ajax({
       url: nodes.endpoint,
       type: "GET",
@@ -353,7 +387,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     if (oldName === name) {
       return;
     }
-    nodes.POST_name(node.address, name);
+    nodes.POST_name(nodes.get_address(node), name);
     node.alias = name;
   };
   nodes.submit_alias_CB = function (event) {
@@ -540,7 +574,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.get_name = function (node) {
     if (node.alias.length === 0) {
-      if (config.flat) {
+      if (nodes.layout_flat) {
         return node.address.toString();
       } else {
         return nodes.determine_number(node).toString();
@@ -570,7 +604,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
   };
   nodes.do_layout = function (node_coll) {
     node_coll = node_coll || nodes.nodes;
-    let aspect = rect.width / rect.height;
+    let aspect = controller.rect.width / controller.rect.height;
     let size_x;
     let size_y;
     if (aspect > 1.0) {
@@ -580,10 +614,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       size_x = 663552;
       size_y = 663552 / aspect;
     }
-    nodes.layouts[nodes.layout].layout(node_coll, 0, size_x, size_y);
+    let layout_name = nodes.layout_arrangement;
+    nodes.layouts[layout_name].layout(node_coll, 0, size_x, size_y);
   };
   nodes.set_layout = function (style) {
-    nodes.layout = style;
+    if (typeof(style) !== "string") {
+      return;
+    }
+    nodes.layout_arrangement = style;
     nodes.do_layout(nodes.nodes);
   };
 
@@ -728,7 +766,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     node.inputs.forEach(function (l_in) {
       // only if the source is outside the node, add it.
       if (l_in.src_end < min || max < l_in.src_start) {
-        attached.push(l_in.dst);
+        attached.push(l_in.src);
       }
     });
     return attached;

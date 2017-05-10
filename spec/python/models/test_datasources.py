@@ -29,7 +29,8 @@ def test_datasources():
     ds = Datasources(db, session, sub_id)
     assert bool(ds.storage.get(Datasources.SESSION_KEY)) is False
     sources = ds.datasources
-    assert ds.storage.get(Datasources.SESSION_KEY) == sources
+    assert bool(ds.storage.get(Datasources.SESSION_KEY)) is True
+    assert ds.storage.get(Datasources.SESSION_KEY)[sub_id] == sources
     assert type(sources) is dict
 
 
@@ -70,8 +71,8 @@ def test_update_clear_cache():
     ds.clear_cache()
     assert bool(ds.storage.get(Datasources.SESSION_KEY)) is False
     ds.update_cache()
-    assert type(ds.storage.get(Datasources.SESSION_KEY)) is dict
-    assert ds.storage.get(Datasources.SESSION_KEY) == sources
+    assert bool(ds.storage.get(Datasources.SESSION_KEY)) is True
+    assert ds.storage.get(Datasources.SESSION_KEY)[sub_id] == sources
 
 
 def test_set():
