@@ -43,7 +43,7 @@ def test_set():
 def test_copy():
     s_model = Settings(db, session, sub_id)
     s_model.update_cache()
-    old_copy = s_model.storage.get(Settings.SESSION_KEY)
+    old_copy = s_model.storage.get(Settings.SESSION_KEY)[sub_id]
     s_model2 = Settings(db, {}, sub_id)
     new_copy = s_model2.copy()
     assert old_copy == new_copy

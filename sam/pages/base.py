@@ -10,7 +10,7 @@ import traceback
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):
-        return float(obj)
+        return obj.__float__()
     raise TypeError
 
 
@@ -33,10 +33,16 @@ class Page(object):
             return True
         raise web.seeother(constants.access_control['login_url'])
 
+    def require_ownership(self):
+        if not self.user.may_post():
+            raise web.unauthorized("Cannot modify data. Do you have an active account?")
 
-class Headed(Page):
+page = Page
+
+
+class Headed(object):
     def __init__(self, title, header, footer):
-        super(Headed, self).__init__()
+        self.page = page()
         self.scripts = []
         self.styles = []
         self.page_title = title
@@ -44,24 +50,27 @@ class Headed(Page):
         self.footer = footer
 
     def render(self, page, *args, **kwargs):
-        head = str(common.render._head(self.page_title, stylesheets=self.styles, scripts=self.scripts))
+        head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
         if self.header:
-            header = str(common.render._header(constants.navbar, self.page_title, self.user, constants.debug))
+            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
         else:
             header = ''
-        page = str(getattr(common.render, page)(*args, **kwargs))
+        page = str(common.renderer.render(page, *args, **kwargs))
         if self.footer:
-            footer = str(common.render._footer())
+            footer = str(common.renderer.render('_footer'))
         else:
             footer = ''
-        tail = str(common.render._tail())
+        tail = str(common.renderer.render('_tail'))
 
         return head+header+page+footer+tail
 
 
-class Headless(Page):
+headed = Headed
+
+
+class Headless(object):
     def __init__(self):
-        super(Headless, self).__init__()
+        self.page = page()
         self.request = None
         self.response = None
         self.outbound = None
@@ -96,8 +105,9 @@ class Headless(Page):
         except to handle exceptions differently.
         :return: HTTP response data
         """
+        self.page.require_group('read')
         try:
-            self.request = self.decode_get_request(self.inbound)
+            self.request = self.decode_get_request(self.page.inbound)
             self.response = self.perform_get_command(self.request)
             self.outbound = self.encode_get_response(self.response)
         except errors.MalformedRequest as e:
@@ -111,7 +121,10 @@ class Headless(Page):
         raise web.nomethod()
 
 
-class HeadlessPost(Headless):
+headless = Headless
+
+
+class HeadlessPost(headless):
     def __init__(self):
         super(HeadlessPost, self).__init__()
 
@@ -139,21 +152,17 @@ class HeadlessPost(Headless):
         """
         raise NotImplementedError("Sub-class must implement this method")
 
-    def require_ownership(self):
-        if not self.user.may_post():
-            raise web.unauthorized("Cannot modify data. Do you have an active account?")
-
     def POST(self):
         """
         Entry point for POST requests to this endpoint.  Should not need to be overridden
         except to handle exceptions differently.
         :return: HTTP response data
         """
-
-        self.require_ownership()
+        self.page.require_ownership()
+        self.page.require_all_groups(['read', 'write'])
 
         try:
-            self.request = self.decode_post_request(self.inbound)
+            self.request = self.decode_post_request(self.page.inbound)
             self.response = self.perform_post_command(self.request)
             self.outbound = self.encode_post_response(self.response)
         except Exception as e:
@@ -163,3 +172,6 @@ class HeadlessPost(Headless):
         web.header("Content-Type", "application/json")
         if self.outbound:
             return json.dumps(self.outbound, default=decimal_default)
+
+
+headless_post = HeadlessPost

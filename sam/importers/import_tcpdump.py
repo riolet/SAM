@@ -67,7 +67,7 @@ class TCPDumpImporter(BaseImporter):
         return 0
 
 
-_class = TCPDumpImporter
+class_ = TCPDumpImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":

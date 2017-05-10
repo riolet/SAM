@@ -3,11 +3,20 @@ body {
     font-size: 100%;
 }
 
+#navbar {
+  border-radius: 0;
+  background-color: #142230;
+}
 
-
-.tab.segment {
+#ds_tab_contents .tab.segment {
     margin-top: 0em;
     margin-bottom: 0em;
+    position: relative;
+    /*padding: 0;*/
+    background: #E0E0E0 !important;
+}
+#ds_tab_contents button {
+  margin: -1em 0em;
 }
 
 #ds_tabs .item i.on{
@@ -23,9 +32,21 @@ body {
 #ds_tabs .active.item i.off{
     display: none;
 }
-#ds_tabs .active.item::after{
+#ds_tabs .tablabel {
+  cursor: pointer;
+}
+#ds_tabs button {
+  margin: .666em;
+}
+#ds_tabs .active.item .tablabel{
+  font-weight: 700;
+}
+#ds_tabs .active.item .tablabel:after{
     content: " (default)";
     display: inline;
+}
+#ds_tabs td {
+  padding: 0;
 }
 
 .datasources .four.wide.column {
@@ -54,4 +75,13 @@ div.ui.message.transition {
     bottom: 10px;
     right: 10px;
     z-index: 10;
+}
+
+div.ui.inverted.footer.segment {
+  background: #142230;
+}
+
+.meta_del h4{
+  margin-top: 2em;
+  margin-bottom: 0.5em;
 }

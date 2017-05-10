@@ -5,7 +5,7 @@ from sam import errors
 from sam import common
 
 
-class Links(base.Headless):
+class Links(base.headless):
     def __init__(self):
         base.Headless.__init__(self)
         self.default_tstart = 1
@@ -34,7 +34,7 @@ class Links(base.Headless):
             raise errors.MalformedRequest("Could not read time range ('tstart', 'tend')")
 
         protocol = data.get('protocol', None)
-        if protocol == 'ALL' or protocol == '':
+        if protocol and (protocol.upper() == 'ALL' or protocol == ''):
             protocol = None
 
         if 'ds' in data:
@@ -57,10 +57,10 @@ class Links(base.Headless):
                 'flat': flat}
 
     def perform_get_command(self, request):
-        self.require_group('read')
+        self.page.require_group('read')
         timerange = (request['tstart'], request['tend'])
         self.duration = int(timerange[1] - timerange[0])
-        links = sam.models.links.Links(common.db, self.user.viewing, request['ds'])
+        links = sam.models.links.Links(common.db, self.page.user.viewing, request['ds'])
         return links.get_links(request['addresses'], timerange, request['port'], request['protocol'], request['flat'])
 
     def encode_get_response(self, response):

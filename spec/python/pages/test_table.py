@@ -1,5 +1,5 @@
 from spec.python import db_connection
-
+import web
 import sam.pages.table
 import sam.models.filters
 import web
@@ -356,15 +356,16 @@ def test_get_dses():
 def test_render():
     with db_connection.env(mock_input=True, mock_session=True, login_active=False, mock_render=True):
         p = sam.pages.table.Table()
-        dummy = p.GET()
-        calls = common.render.calls
         page_title = 'Table View'
-        assert calls[0] == ('_head', (page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
-        assert calls[1] == ('_header', (constants.navbar, page_title, p.user, constants.debug), {})
-        assert calls[2][0] == 'table'
-        assert len(calls[2][1]) == 10
+        web.ctx.path = "/sam/testpage"
+        dummy = p.GET()
+        calls = common.renderer.calls
+        assert calls[0] == ('render', ('_head', page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
+        assert calls[1] == ('render', ('_header', constants.navbar, page_title, p.page.user, constants.debug, "/sam/testpage", constants.access_control), {})
+        assert calls[2][1][0] == 'table'
+        assert len(calls[2][1]) == 11
         assert calls[2][2] == {}
-        assert calls[3] == ('_tail', (), {})
+        assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"
 
 

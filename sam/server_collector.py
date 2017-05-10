@@ -99,29 +99,6 @@ class Collector(object):
         self.shutdown_event = threading.Event()
         self.importer = None
 
-    def get_importer(self, importer_name):
-        if importer_name.startswith("import_"):
-            importer_name = importer_name[7:]
-        i = importer_name.rfind(".py")
-        if i != -1:
-            importer_name = importer_name[:i]
-        else:
-            importer_name = self.default_format
-
-        # attempt to import the module
-        fullname = "sam.importers.import_{0}".format(importer_name)
-        try:
-            module = importlib.import_module(fullname)
-            instance = module._class()
-        except ImportError:
-            print("Cannot find importer {0}".format(importer_name))
-            instance = None
-        except AttributeError:
-            traceback.print_exc()
-            print("Cannot instantiate importer. Is _class defined?")
-            instance = None
-        return instance
-
     def run(self, port=None, format=None, access_key=None):
         # set up the importer
         if port is not None:
@@ -132,7 +109,7 @@ class Collector(object):
                 return
         if format is None:
             format = self.default_format
-        self.importer = self.get_importer(format)
+        self.importer = base_importer.get_importer(format, 0, 0)
         if not self.importer:
             print("Collector: Failed to load importer; aborting")
             return
@@ -170,7 +147,7 @@ class Collector(object):
         # set up the importer
         if format is None:
             format = self.default_format
-        self.importer = self.get_importer(format)
+        self.importer = base_importer.get_importer(format, 0, 0)
         if not self.importer:
             print("Collector: Failed to load importer; aborting")
             return

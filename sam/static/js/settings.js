@@ -1,29 +1,3 @@
-function disambiguateDeletion(what) {
-    "use strict";
-    if (what.indexOf("tag") >= 0) return "tags";
-    if (what.indexOf("env") >= 0) return "envs";
-    if (what.indexOf("hostname") >= 0) return "aliases";
-    if (what.indexOf("connection") >= 0) return "connections";
-    return "unknown";
-}
-
-function catDeleteMessage(what, extra) {
-    "use strict";
-    var msg = "Are you sure you want to permanently delete ";
-    if (what === "tags") {
-        msg += "all host/subnet metadata tags? (Across all data sources)"
-    } else if (what === "envs") {
-        msg += "all host/subnet environment data? (Across all data sources)"
-    } else if (what === "aliases") {
-        msg += "all hostnames? (Across all data sources)"
-    } else if (what === "connections") {
-        msg += "connection information? (For the selected data source)"
-    } else if (what === "datasource") {
-        msg += "'" + getDSName(extra) + "'?"
-    }
-    return msg
-}
-
 function getConfirmation(msg, confirmCallback, denyCallback) {
     "use strict";
     let modal = document.getElementById("deleteModal");
@@ -37,94 +11,145 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
     .modal("show");
 }
 
-function deleteData(what) {
-    "use strict";
-    let target = disambiguateDeletion(what)
-    let deleteMessage = catDeleteMessage(target)
-    getConfirmation(deleteMessage, function () {
-        //target is one of 'tags', 'envs', 'aliases', 'connections'
-        if (target === "tags") {
-            POST_del_tags()
-        } else if (target === "envs") {
-            POST_del_envs()
-        } else if (target === "aliases") {
-            POST_del_aliases()
-        } else if (target === "connections") {
-            POST_del_connections()
-        }
-    });
+function deleteHosts() {
+  let deleteMessage = "Are you sure you want to permanently delete all hostnames? (Across all data sources)";
+  getConfirmation(deleteMessage, function () {
+    POST_del_aliases();
+  });
+}
+
+function deleteTags() {
+  let deleteMessage = "Are you sure you want to permanently delete all host/subnet metadata tags? (Across all data sources)";
+  getConfirmation(deleteMessage, function () {
+    POST_del_tags();
+  });
+}
+
+function deleteEnvs() {
+  let deleteMessage = "Are you sure you want to permanently delete all host/subnet environment data? (Across all data sources)";
+  getConfirmation(deleteMessage, function () {
+    POST_del_envs();
+  });
+}
+
+function deleteConnectionsDS(e) {
+  let targetDS = getSelectedDS();
+  let targetName = getDSName(targetDS);
+  let deleteMessage = "Are you sure you want to permanently delete connection information for " + targetName + "?";
+  getConfirmation(deleteMessage, function () {
+    POST_del_connections(targetDS);
+  })
 }
 
 function getSelectedDS() {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var ds = undefined;
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].classList.contains("active")) {
-            ds = tabs[i].dataset['tab'];
-            break;
-        }
+  /**
+   * Get the id of the active datasource. () -> "ds1"
+   * fail case: () -> ""
+   */
+  "use strict";
+  let ds = "";
+  let tabgroup = document.getElementById("ds_tabs");
+  let active_row = null;
+  if (tabgroup) {
+    let active_rows = tabgroup.getElementsByClassName("active");
+    if (active_rows.length === 1) {
+      active_row = active_rows[0];
     }
-    return ds;
+  }
+  if (active_row) {
+    ds = active_row.id.slice(0, -8);
+  }
+  return ds;
 }
 
 function getDSName(ds) {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var name = "";
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].dataset['tab'] === ds) {
-            name = tabs[i].innerText;
-            break;
-        }
+  /**
+   * Get the text name of a ds given it's id. ("ds1") -> "default"
+   * fail case: ("bad") -> ""
+   */
+  "use strict";
+  let name = "";
+  let rowname = ds + "_tab_row";
+  let row = document.getElementById(rowname); 
+  let label;
+  if (row) {
+    let labels = row.getElementsByClassName("tablabel");
+    if (labels.length === 1) {
+      label = labels[0];
+      name = label.innerText;
     }
-    return name;
+  }
+  return name;
 }
 
 function setDSTabName(ds, newName) {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var icon;
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].dataset['tab'] == ds) {
-            tabs[i].innerHTML = "";
-            icon = document.createElement("I");
-            icon.className = "on square icon";
-            tabs[i].appendChild(icon);
-            icon = document.createElement("I");
-            icon.className = "off square outline icon";
-            tabs[i].appendChild(icon);
-            tabs[i].appendChild(document.createTextNode(newName));
-            break;
-        }
+  /**
+   * Assigns the newName to the tab for the given DS. ("ds1", "bob") -> undefined
+   * Fail case: no effect.
+   */
+  "use strict";
+  let rowname = ds + "_tab_row";
+  let row = document.getElementById(rowname);
+  let label;
+  if (row) {
+    let labels = row.getElementsByClassName("tablabel");
+    if (labels.length === 1) {
+      label = labels[0];
+      label.innerText = newName;
     }
-    return name;
+  }
 }
 
 function getDSId(name) {
-    "use strict";
-    let tabgroup = document.getElementById("ds_tabs");
-    let tabs = tabgroup.getElementsByTagName("A");
-    let i = tabs.length - 1;
-    var id = "";
-    for (; i >= 0; i -= 1) {
-        if (tabs[i].innerText === name) {
-            id = tabs[i].dataset['tab'];
-            break;
-        }
+  /**
+   * Translate datasource name into datasource ID. ("default") -> "ds1"
+   * fail case: ("bad") -> ""
+   */
+  "use strict";
+  let tabgroup = document.getElementById("ds_tabs");
+  let tabs = tabgroup.getElementsByClassName("tablabel");
+  let i = tabs.length - 1;
+  var id = "";
+  for (; i >= 0; i -= 1) {
+    if (tabs[i].innerText.trim() === name) {
+      id = tabs[i].dataset['tab'];
+      break;
     }
-    return id;
+  }
+  return id;
 }
 
-function deleteDS() {
+function getDSs() {
+  /**
+   * Get DSs as a list of [id, name] pairs with the active DS first in the list. () -> [['ds1', 'default'], ['ds2', 'other DS']]
+   */
+  "use strict";
+  let tabgroup = document.getElementById("ds_tabs");
+  let rows = tabgroup.getElementsByTagName("TR");
+  let DSs = [];
+  let currentDS;
+  let i = rows.length - 1;
+  for (; i >= 0; i -= 1) {
+    let ds = rows[i].id.slice(0, -8);
+    let name = getDSName(ds);
+    if (rows[i].classList.contains("active")) {
+      currentDS = [ds, name];
+    } else {
+      DSs.push([ds, name]);
+    }
+  }
+  if (currentDS) {
+    DSs.unshift(currentDS);
+  }
+  return DSs;
+}
+
+function deleteDS(e) {
     "use strict";
-    let targetDS = getSelectedDS();
+    let targetDS = e.target.dataset['tab'];
+    if (targetDS == undefined) {
+      targetDS = e.target.parentElement.dataset['tab'];
+    }
     getConfirmation(catDeleteMessage("datasource", targetDS), function () {
         console.log("Deleting " + targetDS + ".");
         POST_ds_delete(targetDS)
@@ -177,7 +202,7 @@ function markupWriteInput(classname, datacontent, placeholder, default_value, ch
     var div;
 
     div = document.createElement("DIV");
-    div.className = "ui transparent left icon input";
+    div.className = "ui transparent left icon fluid input";
 
     input = document.createElement("INPUT");
     input.className = classname;
@@ -226,7 +251,6 @@ function markupRow(td1_child, td2_child) {
     let tr = document.createElement("TR");
 
     let td1 = document.createElement("TD");
-    td1.className = "right aligned";
     td1.appendChild(td1_child);
 
     let td2 = document.createElement("TD");
@@ -238,30 +262,39 @@ function markupRow(td1_child, td2_child) {
 }
 
 function addDSTab(ds) {
-    //ds.id, ds.name, ds.ar_active, ds.ar_interval
+    "use strict";
+    //ds.id, ds.name, ds.ar_active, ds.ar_interval, ds.flat
 
     //add tab
     let tabholder = document.getElementById("ds_tabs");
-    var a, icon;
-    a = document.createElement("A");
-    a.className = "item";
-    a.dataset["tab"] = "ds_" + ds.id;
-    icon = document.createElement("I");
-    icon.className = "on square icon";
-    a.appendChild(icon);
-    icon = document.createElement("I");
-    icon.className = "off square outline icon";
-    a.appendChild(icon);
-    a.appendChild(document.createTextNode(ds.name));
-    tabholder.appendChild(a);
+    let tab_tr = document.createElement("TR");
+    tab_tr.className = "item";
+    tab_tr.id="ds" + ds.id + "_tab_row";
+    let td1 = document.createElement("TD");
+    td1.className = "center aligned collapsing";
+    let btn_del = document.createElement("BUTTON");
+    btn_del.className = "ui small icon button del_ds"
+    btn_del.dataset['tab'] = "ds" + ds.id;
+    btn_del.onclick = deleteDS;
+    let icon = document.createElement("I");
+    icon.className = "red delete icon";
+    btn_del.appendChild(icon);
+    td1.appendChild(btn_del);
+    tab_tr.appendChild(td1);
+    let td2 = document.createElement("TD");
+    td2.className = "tablabel";
+    td2.dataset['tab'] = "ds" + ds.id;
+    td2.appendChild(document.createTextNode(ds.name));
+    tab_tr.appendChild(td2);
+    tabholder.appendChild(tab_tr);
 
     //add tab_contents
     let tabcontents = document.getElementById("ds_tab_contents");
-    var tr, table, tbody, div;
+    let tr, table, tbody, div, btn;
 
     div = document.createElement("DIV");
     div.className = "ui tab segment"
-    div.dataset["tab"] = "ds_" + ds.id;
+    div.dataset["tab"] = "ds" + ds.id;
 
     table = document.createElement("TABLE");
     table.className = "ui fixed definition table";
@@ -270,10 +303,33 @@ function addDSTab(ds) {
     tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput(ds.live, ds.ar_active, " ", POST_ds_livechange));
+    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput("ds_live", ds.ar_active, " ", POST_ds_livechange));
     tbody.appendChild(tr);
 
     tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
+    tbody.appendChild(tr);
+
+    tr = markupRow(document.createTextNode("Flat mode (map view):"), markupCheckboxInput("ds_flat", ds.ar_active, " ", POST_ds_flatchange));
+    tbody.appendChild(tr);
+
+    btn = document.createElement("BUTTON");
+    btn.className = "ui compact icon button del_con";
+    btn.onclick = deleteConnectionsDS;
+    icon = document.createElement("I");
+    icon.className="red trash icon";
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode("Delete Connections"));
+    tr = markupRow(document.createTextNode("Delete all connection information:"), btn)
+    tbody.appendChild(tr);
+
+    btn = document.createElement("BUTTON");
+    btn.className = "ui compact icon button upload_con";
+    btn.onclick = uploadLog;
+    icon = document.createElement("I");
+    icon.className="green upload icon";
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode("Upload Log"));
+    tr = markupRow(document.createTextNode("Upload a connection log:"), btn)
     tbody.appendChild(tr);
 
     table.appendChild(tbody);
@@ -294,40 +350,29 @@ function rebuild_tabs(settings, datasources) {
     //for each ds,
     //   add the ds
     datasources.forEach(addDSTab);
-
-    //build tabs
-    let tabs = $(".tabular.menu .item")
-    tabs.tab({
-        onVisible: POST_ds_selection
-    });
+    //initialize datasource tabs
+    $('.tablabel')
+      .on('click', tab_change_callback)
+    ;
 
     //select active one
     var active_ds = settings.datasource;
-    tabs.tab("change tab", "ds_" + active_ds);
+    $.tab();  // This initializes the tabs. Must be done prior to changing tabs.
+    $.tab("change tab", "ds" + active_ds);
+    let active_tab = document.getElementById("ds" + active_ds + "_tab_row");
+    active_tab.classList.add("active");
 }
 
-function getDSs() {
-    "use strict";
-    //getDSs() returns DSs as [[id, name], ...] with the index 0 being the selected DS.
-    let datasource_group = document.getElementById("ds_tabs");
-    let datasources = datasource_group.getElementsByTagName("A");
-    let i = datasources.length - 1;
-    var DSs = [];
-    var currentDS;
-    var name;
-    var id;
-
-    for (; i >= 0; i -= 1) {
-        name = datasources[i].innerText;
-        id = datasources[i].dataset['tab'];
-        if (datasources[i].classList.contains("active")) {
-            currentDS = [id, name];
-        } else {
-            DSs.push([id,name]);
-        }
-    }
-    DSs.unshift(currentDS);
-    return DSs;
+function tab_change_callback(e) {
+  // programmatically activating tab
+  $.tab('change tab', e.target.dataset['tab']);
+  // change which row has the active class.
+  $(document.getElementById(e.target.dataset['tab'] + '_tab_row'))
+    .addClass('active')
+    .siblings()
+    .removeClass('active')
+  ;
+  POST_ds_selection(e.target.dataset['tab']);
 }
 
 function populateUploadDSList(options) {
@@ -492,10 +537,14 @@ function AjaxSuccess(response) {
     console.log("\t" + response.result + ": " + response.message);
 }
 
+/*
+-----------------  Posts -------------------
+*/
+
 function POST_AJAX(command, successCallback) {
     "use strict";
     $.ajax({
-        url: "/settings",
+        url: "./settings",
         type: "POST",
         data: command,
         error: AjaxError,
@@ -578,7 +627,6 @@ function POST_ds_livechange(e) {
     "use strict";
     var active = e.target.checked;
     var ds = getSelectedDS();
-    console.log("Toggling autorefresh of " + ds + " to " + active);
     POST_AJAX({"command":"ds_live", "ds":ds, "is_active":active});
 }
 
@@ -597,6 +645,13 @@ function POST_ds_intervalchange(e) {
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
         POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});
     }
+}
+
+function POST_ds_flatchange(e) {
+    "use strict";
+    let flat = e.target.checked;
+    let ds = getSelectedDS();
+    POST_AJAX({"command":"ds_flat", "ds":ds, "is_flat":flat});
 }
 
 function POST_ds_selection(ds) {
@@ -619,9 +674,8 @@ function POST_del_aliases() {
     POST_AJAX({"command":"rm_hosts"});
 }
 
-function POST_del_connections() {
+function POST_del_connections(ds) {
     "use strict";
-    let ds = getSelectedDS();
     POST_AJAX({"command":"rm_conns", "ds":ds});
 }
 
@@ -656,27 +710,29 @@ function foreach(entities, callback) {
         callback(entities[i], i, entities);
     }
 }
-
+/*
+-----------------  Initialization -------------------
+*/
 function init() {
     "use strict";
 
     //initialize datasource tabs
-    $(".tabular.menu .item").tab({
-        onVisible: POST_ds_selection
-    });
+    $('.tablabel').on('click', tab_change_callback);
+
+    //initialize datasource delete buttons
+    $('.del_ds').on('click', deleteDS);
 
     $(".ui.selection.dropdown").dropdown({
         action: "activate"
     });
 
-    $(".ui.deletion.dropdown").dropdown({
-        action: "hide",
-        onChange: deleteData
-    });
+    $('.del_con').on('click', deleteConnectionsDS);
+    $('.upload_con').on('click', uploadLog);
 
-    document.getElementById("rm_ds").onclick = deleteDS;
     document.getElementById("add_ds").onclick = addDS;
-    document.getElementById("upload_log").onclick = uploadLog;
+    document.getElementById("del_host").onclick = deleteHosts;
+    document.getElementById("del_tag").onclick = deleteTags;
+    document.getElementById("del_env").onclick = deleteEnvs;
 
     foreach(document.getElementsByClassName("remove_live_key"), function(entity) {
       entity.onclick = removeLiveKey;
@@ -691,5 +747,8 @@ function init() {
     });
     foreach(document.getElementsByClassName("ds_interval"), function(entity) {
         entity.onchange = POST_ds_intervalchange
+    });
+    foreach(document.getElementsByClassName("ds_flat"), function(entity) {
+        entity.onchange = POST_ds_flatchange
     });
 }

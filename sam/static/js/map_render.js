@@ -1,6 +1,12 @@
 //rendering configuration settings
 // test at https://jsfiddle.net/tn7836so/
 var renderConfig = {
+  show_clients: true,
+  show_servers: true,
+  show_inputs: true,
+  show_outputs: true,
+  linewidth: "links",
+
   backgroundColor: "#F7F7F7",
   nodeColor: "#5555CC",
   nodeColorFaded: "#95D5D9",
@@ -20,9 +26,10 @@ var renderConfig = {
 };
 
 function fadeFont(color, alpha) {
-  r = parseInt(color.slice(1, 3), 16);
-  g = parseInt(color.slice(3, 5), 16);
-  b = parseInt(color.slice(5, 7), 16);
+  "use strict";
+  let r = parseInt(color.slice(1, 3), 16);
+  let g = parseInt(color.slice(3, 5), 16);
+  let b = parseInt(color.slice(5, 7), 16);
   return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
 }
 
@@ -53,7 +60,7 @@ function opacity(subnet, type, scale) {
     var startZoom = -Infinity;
     var endZoom = Infinity;
 
-    if (config.flat) {
+    if (nodes.layout_flat) {
       return 1
     }
 
@@ -116,8 +123,8 @@ function getSubnetLabel() {
     renderCollection.forEach(function (node) {
         if (node.subnet === subnet - 8) {
             tempDist = magnitudeSquared(
-                node.x * g_scale + tx - rect.width / 2,
-                node.y * g_scale + ty - rect.height / 2
+                node.abs_x * g_scale + tx - controller.rect.width / 2,
+                node.abs_y * g_scale + ty - controller.rect.height / 2
             );
             if (tempDist < dist) {
                 dist = tempDist;
@@ -131,45 +138,50 @@ function getSubnetLabel() {
     return closest.address;
 }
 
-function onScreenRecursive(left, right, top, bottom, collection, subnet) {
+function onScreenRecursive(left, right, top, bottom, collection) {
     "use strict";
-    var selected = [];
-    var x;
-    var y;
-    var r;
-    Object.keys(collection).forEach(function (node) {
-        x = collection[node].x;
-        y = collection[node].y;
-        r = collection[node].radius * 2;
+    let selected = [];
+    let x;
+    let y;
+    let d;
+    Object.keys(collection).forEach(function (key) {
+      let node = collection[key];
+      x = node.abs_x;
+      y = node.abs_y;
+      d = node.radius * 2;
 
-        if ((x + r) > left && (x - r) < right && (y + r) > top && (y - r) < bottom) {
-            selected.push(collection[node]);
-            if (collection[node].childrenLoaded && collection[node].subnet < subnet) {
-                selected = selected.concat(onScreenRecursive(left, right, top, bottom, collection[node].children, subnet));
-            }
+      //if the position is on screen
+      if ((x + d) > left && (x - d) < right && (y + d) > top && (y - d) < bottom) {
+        //add it.
+        selected.push(node);
+        //If it has children, and is big enough on screen,
+        if (node.childrenLoaded && d / (bottom - top) > 0.6) {
+          //then recurse on this node's children.
+          selected = selected.concat(onScreenRecursive(left, right, top, bottom, node.children));
         }
+      }
     });
     return selected;
 }
 
 //build a collection of all nodes currently visible in the window.
-function onScreen(x, y, scale) {
+function onScreen(coll, x, y, scale) {
     "use strict";
     var left = -x / scale;
-    var right = (rect.width - x) / scale;
+    var right = (controller.rect.width - x) / scale;
     var top = -y / scale;
-    var bottom = (rect.height - y) / scale;
+    var bottom = (controller.rect.height - y) / scale;
     var visible = [];
 
-    visible = onScreenRecursive(left, right, top, bottom, m_nodes, currentSubnet(scale));
+    visible = onScreenRecursive(left, right, top, bottom, coll);
     if (visible.length === 0) {
         console.log("Cannot see any nodes");
     }
 
     var filtered = [];
     visible.forEach(function (node) {
-        if ((node.client === true && config.show_clients) ||
-                (node.server === true && config.show_servers) ||
+        if ((node.client === true && renderConfig.show_clients) ||
+                (node.server === true && renderConfig.show_servers) ||
                 (node.client === true && node.server === true)) {
             filtered.push(node);
         }
@@ -188,51 +200,52 @@ function resetViewport(collection, fill) {
     var bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
     Object.keys(collection).forEach(function (nodeKey) {
         var node = collection[nodeKey];
-        if (node.x - node.radius < bbox.left) {
-            bbox.left = node.x - node.radius;
+        if (node.abs_x - node.radius_orig < bbox.left) {
+            bbox.left = node.abs_x - node.radius;
         }
-        if (node.x + node.radius > bbox.right) {
-            bbox.right = node.x + node.radius;
+        if (node.abs_x + node.radius_orig > bbox.right) {
+            bbox.right = node.abs_x + node.radius;
         }
-        if (node.y - node.radius < bbox.top) {
-            bbox.top = node.y - node.radius;
+        if (node.abs_y - node.radius_orig < bbox.top) {
+            bbox.top = node.abs_y - node.radius;
         }
-        if (node.y + node.radius > bbox.bottom) {
-            bbox.bottom = node.y + node.radius;
+        if (node.abs_y + node.radius_orig > bbox.bottom) {
+            bbox.bottom = node.abs_y + node.radius;
         }
     });
-    var scaleA = fill * rect.width / (bbox.right - bbox.left);
-    var scaleB = fill * rect.height / (bbox.bottom - bbox.top);
+    var scaleA = fill * controller.rect.width / (bbox.right - bbox.left);
+    var scaleB = fill * controller.rect.height / (bbox.bottom - bbox.top);
     g_scale = Math.min(scaleA, scaleB);
-    tx = rect.width / 2 - ((bbox.left + bbox.right) / 2) * g_scale;
-    ty = rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * g_scale;
+    tx = controller.rect.width / 2 - ((bbox.left + bbox.right) / 2) * g_scale;
+    ty = controller.rect.height / 2 - ((bbox.top + bbox.bottom) / 2) * g_scale;
+    updateRenderRoot();
 }
 
 function updateRenderRoot() {
     "use strict";
-    renderCollection = onScreen(tx, ty, g_scale);
+    renderCollection = onScreen(nodes.nodes, tx, ty, g_scale);
     subnetLabel = getSubnetLabel();
     //console.log("updateRenderRoot: ", "updating: ", renderCollection.length, " nodes in collection");
-    if (config.flat) {
-        node_flat_scale();
+    if (nodes.layout_flat) {
+        nodes.flat_scale();
     }
 }
 
-function drawLoopArrow(node, scale) {
+function drawLoopArrow(ctx, node, scale) {
     "use strict";
     var x1 = node.radius * Math.cos(3 * Math.PI / 8);
     var y1 = node.radius * Math.sin(3 * Math.PI / 8);
-    var x2 = 3 * x1 + node.x;
-    var y2 = 3 * y1 + node.y;
+    var x2 = 3 * x1 + node.abs_x;
+    var y2 = 3 * y1 + node.abs_y;
     var x4 = node.radius * Math.cos(1 * Math.PI / 8);
     var y4 = node.radius * Math.sin(1 * Math.PI / 8);
-    var x3 = 3 * x4 + node.x;
-    var y3 = 3 * y4 + node.y;
+    var x3 = 3 * x4 + node.abs_x;
+    var y3 = 3 * y4 + node.abs_y;
 
-    x1 += node.x;
-    y1 += node.y;
-    x4 += node.x;
-    y4 += node.y;
+    x1 += node.abs_x;
+    y1 += node.abs_y;
+    x4 += node.abs_x;
+    y4 += node.abs_y;
 
     // draw the curve.
     ctx.moveTo(x1, y1);
@@ -244,7 +257,7 @@ function drawLoopArrow(node, scale) {
     ctx.lineTo(x4, y4);
 }
 
-function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
+function drawArrow(ctx, x1, y1, x2, y2, scale, bIncoming) {
     "use strict";
     if (bIncoming === undefined) {
         bIncoming = true;
@@ -285,10 +298,10 @@ function drawArrow(x1, y1, x2, y2, scale, bIncoming) {
     ctx.lineTo(x2, y2);
 }
 
-function renderLinks(node, scale, faded) {
+function renderLinks(ctx, node, scale, faded) {
     "use strict";
     // inbound lines
-    if (config.show_in) {
+    if (renderConfig.show_inputs) {
         node.inputs.forEach(function (link) {
             ctx.beginPath();
             if (faded) {
@@ -296,24 +309,23 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
+                ctx.lineWidth = String(Math.round(link[renderConfig.linewidth])).length / scale;
             }
 
             // if connecting to self
-            if (link.src_start === link.dst_start
-                    && link.src_end === link.dst_end) {
-                drawLoopArrow(node, scale);
+            if (node.ipstart <= link.src.ipstart && link.src.ipend <= node.ipend) {
+                drawLoopArrow(ctx, node, scale);
             } else {
-                let src = find_by_range(link['src_start'], link['src_end'])
-                let out_pos = get_outbound_link_point(src, node.x, node.y)
-                let in_pos = get_inbound_link_point(node, src.x, src.y, link.port)
-                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
+                let src = link["src"];
+                let out_pos = nodes.get_outbound_link_point(src, node.abs_x, node.abs_y)
+                let in_pos = nodes.get_inbound_link_point(node, src.abs_x, src.abs_y, link.port)
+                drawArrow(ctx, out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, true);
             }
             ctx.stroke();
         });
     }
     // outbound lines
-    if (config.show_out) {
+    if (renderConfig.show_outputs) {
         node.outputs.forEach(function (link) {
             ctx.beginPath();
             if (faded) {
@@ -321,24 +333,24 @@ function renderLinks(node, scale, faded) {
                 ctx.lineWidth = 2 / scale;
             } else {
                 ctx.strokeStyle = link.color;
-                ctx.lineWidth = String(Math.round(link[config.linewidth])).length / scale;
+                ctx.lineWidth = String(Math.round(link[renderConfig.linewidth])).length / scale;
             }
 
-            // if connecting to self
-            if (link.src_start === link.dst_start && link.src_end === link.dst_end) {
-                drawLoopArrow(node, scale);
+            // if connecting to self or a child node, just draw a loopback arrow.
+            if (node.ipstart <= link.dst.ipstart && link.dst.ipend <= node.ipend) {
+                drawLoopArrow(ctx, node, scale);
             } else {
-                let dest = find_by_range(link['dst_start'], link['dst_end'])
-                let out_pos = get_outbound_link_point(node, dest.x, dest.y)
-                let in_pos = get_inbound_link_point(dest, node.x, node.y, link.port)
-                drawArrow(out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
+                let dest = link["dst"];
+                let out_pos = nodes.get_outbound_link_point(node, dest.abs_x, dest.abs_y)
+                let in_pos = nodes.get_inbound_link_point(dest, node.abs_x, node.abs_y, link.port)
+                drawArrow(ctx, out_pos[0], out_pos[1], in_pos[0], in_pos[1], scale, false);
             }
             ctx.stroke();
         });
     }
 }
 
-function renderSubnetLabel(scale) {
+function renderSubnetLabel(ctx, scale) {
     "use strict";
     //Draw subnet label
     ctx.font = "3em sans";
@@ -355,19 +367,19 @@ function renderSubnetLabel(scale) {
     } else {
         ctx.globalAlpha = 1.0;
     }
-    ctx.fillRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
-    ctx.strokeRect((rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.fillRect((controller.rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
+    ctx.strokeRect((controller.rect.width - size.width) / 2 - 5, 20, size.width + 10, 40);
     ctx.fillStyle = fadeFont(renderConfig.labelColor, ctx.globalAlpha);
     ctx.globalAlpha = 1.0;
-    ctx.fillText(text, (rect.width - size.width) / 2, 55);
+    ctx.fillText(text, (controller.rect.width - size.width) / 2, 55);
 }
 
-function renderLabels(node, x, y, scale) {
+function renderLabels(ctx, node, x, y, scale) {
     "use strict";
     var alpha = 0;
     ctx.font = "1.5em sans";
     ctx.globalAlpha = 1.0;
-    if (scale > 25 || config.flat) {
+    if (scale > 25 || nodes.layout_flat) {
         //Draw port labels at this zoom level
         alpha = opacity(32, "label", scale);
         if (m_selection["selection"] === null || m_selection["selection"] === node) {
@@ -390,48 +402,48 @@ function renderLabels(node, x, y, scale) {
                 var px;
                 var py;
                 if (side === 'l-t') {
-                  px = (node.x - node.radius) * scale + x - size / 2;
-                  py = (node.y - node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x - node.radius) * scale + x - size / 2;
+                  py = (node.abs_y - node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 'l-b') {
-                  px = (node.x - node.radius) * scale + x - size / 2;
-                  py = (node.y + node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x - node.radius) * scale + x - size / 2;
+                  py = (node.abs_y + node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 'r-t') {
-                  px = (node.x + node.radius) * scale + x - size / 2;
-                  py = (node.y - node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x + node.radius) * scale + x - size / 2;
+                  py = (node.abs_y - node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 'r-b') {
-                  px = (node.x + node.radius) * scale + x - size / 2;
-                  py = (node.y + node.radius / 3) * scale + y + hOffset;
+                  px = (node.abs_x + node.radius) * scale + x - size / 2;
+                  py = (node.abs_y + node.radius / 3) * scale + y + hOffset;
                   ctx.fillText(text, px, py);
                 } else if (side === 't-l') {
-                  px = (node.x - node.radius / 3) * scale + x;
-                  py = (node.y - node.radius) * scale + y;
+                  px = (node.abs_x - node.radius / 3) * scale + x;
+                  py = (node.abs_y - node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
                   ctx.fillText(text, -size / 2, 0);
                   ctx.restore();
                 } else if (side === 't-r') {
-                  px = (node.x + node.radius / 3) * scale + x;
-                  py = (node.y - node.radius) * scale + y;
+                  px = (node.abs_x + node.radius / 3) * scale + x;
+                  py = (node.abs_y - node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
                   ctx.fillText(text, -size / 2, 0);
                   ctx.restore();
                 } else if (side === 'b-l') {
-                  px = (node.x - node.radius / 3) * scale + x;
-                  py = (node.y + node.radius) * scale + y;
+                  px = (node.abs_x - node.radius / 3) * scale + x;
+                  py = (node.abs_y + node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
                   ctx.fillText(text, -size / 2, 0);
                   ctx.restore();
                 } else if (side === 'b-r') {
-                  px = (node.x + node.radius / 3) * scale + x;
-                  py = (node.y + node.radius) * scale + y;
+                  px = (node.abs_x + node.radius / 3) * scale + x;
+                  py = (node.abs_y + node.radius) * scale + y;
                   ctx.save();
                   ctx.translate(px, py);
                   ctx.rotate(Math.PI / 2);
@@ -443,14 +455,14 @@ function renderLabels(node, x, y, scale) {
     }
     //Draw node labels here
     ctx.font = "1.5em sans";
-    var text = get_node_name(node);
+    var text = nodes.get_name(node);
     var size = ctx.measureText(text);
-    var px = node.x * scale + x - size.width / 2;
+    var px = node.abs_x * scale + x - size.width / 2;
     var py;
     if (node.subnet === 32) {
-        py = node.y * scale + y + 10;
+        py = node.abs_y * scale + y + 10;
     } else {
-        py = (node.y - node.radius) * scale + y - 5;
+        py = (node.abs_y - node.radius) * scale + y - 5;
     }
     alpha = opacity(node.subnet, "label", scale);
 
@@ -468,15 +480,15 @@ function renderLabels(node, x, y, scale) {
     }
 }
 
-function renderNode(node) {
+function renderNode(ctx, node) {
   "use strict";
   if (node.subnet < 31) {
-    ctx.moveTo(node.x + node.radius, node.y);
-    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2, 0);
+    ctx.moveTo(node.abs_x + node.radius, node.abs_y);
+    ctx.arc(node.abs_x, node.abs_y, node.radius, 0, Math.PI * 2, 0);
   } else {
     //terminal node (final IP address)
-    ctx.strokeRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
-    ctx.fillRect(node.x - node.radius, node.y - node.radius, node.radius * 2, node.radius * 2);
+    ctx.strokeRect(node.abs_x - node.radius, node.abs_y - node.radius, node.radius * 2, node.radius * 2);
+    ctx.fillRect(node.abs_x - node.radius, node.abs_y - node.radius, node.radius * 2, node.radius * 2);
     //draw ports
     let p_long = node.radius * 4 / 5;  // 1.2
     let p_short = p_long * 2 / 3;  // 0.8
@@ -490,50 +502,50 @@ function renderNode(node) {
       let side = node.ports[p];
       if (side === "l-t") {
         //if the port is on the left-top side
-        corner_x = node.x - node.radius - p_long_r;
-        corner_y = node.y - node.radius / 3 - p_short_r;
+        corner_x = node.abs_x - node.radius - p_long_r;
+        corner_y = node.abs_y - node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "l-b") {
         //if the port is on the left-bottom side
-        corner_x = node.x - node.radius - p_long_r;
-        corner_y = node.y + node.radius / 3 - p_short_r;
+        corner_x = node.abs_x - node.radius - p_long_r;
+        corner_y = node.abs_y + node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "r-t") {
         //if the port is on the right-top side
-        corner_x = node.x + node.radius - p_long_r;
-        corner_y = node.y - node.radius / 3 - p_short_r;
+        corner_x = node.abs_x + node.radius - p_long_r;
+        corner_y = node.abs_y - node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "r-b") {
         //if the port is on the right-bottom side
-        corner_x = node.x + node.radius - p_long_r;
-        corner_y = node.y + node.radius / 3 - p_short_r;
+        corner_x = node.abs_x + node.radius - p_long_r;
+        corner_y = node.abs_y + node.radius / 3 - p_short_r;
         width = p_long;
         height = p_short;
       } else if (side === "t-l") {
         //if the port is on the top-left side
-        corner_x = node.x - node.radius / 3 - p_short_r;
-        corner_y = node.y - node.radius - p_long_r;
+        corner_x = node.abs_x - node.radius / 3 - p_short_r;
+        corner_y = node.abs_y - node.radius - p_long_r;
         width = p_short;
         height = p_long;
       } else if (side === "t-r") {
         //if the port is on the top-right side
-        corner_x = node.x + node.radius / 3 - p_short_r;
-        corner_y = node.y - node.radius - p_long_r;
+        corner_x = node.abs_x + node.radius / 3 - p_short_r;
+        corner_y = node.abs_y - node.radius - p_long_r;
         width = p_short;
         height = p_long;
       } else if (side === "b-l") {
         //if the port is on the bottom-left side
-        corner_x = node.x - node.radius / 3 - p_short_r;
-        corner_y = node.y + node.radius - p_long_r;
+        corner_x = node.abs_x - node.radius / 3 - p_short_r;
+        corner_y = node.abs_y + node.radius - p_long_r;
         width = p_short;
         height = p_long;
       } else if (side === "b-r") {
         //if the port is on the bottom-right side
-        corner_x = node.x + node.radius / 3 - p_short_r;
-        corner_y = node.y + node.radius - p_long_r;
+        corner_x = node.abs_x + node.radius / 3 - p_short_r;
+        corner_y = node.abs_y + node.radius - p_long_r;
         width = p_short;
         height = p_long;
       }
@@ -543,7 +555,7 @@ function renderNode(node) {
   }
 }
 
-function renderClusters(collection, x, y, scale) {
+function renderClusters(ctx, collection, x, y, scale) {
     "use strict";
     var alpha = 0;
     var skip = false;
@@ -573,7 +585,7 @@ function renderClusters(collection, x, y, scale) {
             drawingLevel = node.subnet;
         }
         if (!skip) {
-            renderLinks(node, scale, faded);
+            renderLinks(ctx, node, scale, faded);
         }
     });
     //ctx.stroke();
@@ -601,7 +613,7 @@ function renderClusters(collection, x, y, scale) {
             drawingLevel = node.subnet;
         }
         if (!skip) {
-            renderNode(node);
+            renderNode(ctx, node);
         }
     });
     ctx.stroke();
@@ -609,7 +621,7 @@ function renderClusters(collection, x, y, scale) {
     //Draw the labels
     ctx.resetTransform();
     collection.forEach(function (node) {
-        renderLabels(node, x, y, scale);
+        renderLabels(ctx, node, x, y, scale);
     });
 
     //Draw the selected item over top everything else
@@ -622,7 +634,7 @@ function renderClusters(collection, x, y, scale) {
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "links", scale);
         ctx.lineWidth = 2 / scale;
         ctx.beginPath();
-        renderLinks(m_selection["selection"], scale, false);
+        renderLinks(ctx, m_selection["selection"], scale, false);
         ctx.stroke();
 
         //ctx.globalAlpha = opacity(m_selection["selection"].subnet, "node", scale);
@@ -630,39 +642,41 @@ function renderClusters(collection, x, y, scale) {
         ctx.strokeStyle = renderConfig.nodeColor;
         ctx.fillStyle = renderConfig.labelBackgroundColor;
         ctx.beginPath();
-        renderNode(m_selection["selection"]);
+        renderNode(ctx, m_selection["selection"]);
         ctx.stroke();
 
         ctx.resetTransform();
-        renderLabels(m_selection["selection"], x, y, scale);
+        renderLabels(ctx, m_selection["selection"], x, y, scale);
     }
 }
 
-function render(x, y, scale) {
+function render(ctx, x, y, scale) {
     "use strict";
+
     ctx.resetTransform();
     ctx.fillStyle = renderConfig.backgroundColor;
     ctx.globalAlpha = 1.0;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, controller.canvas.width, controller.canvas.height);
 
-    if (Object.keys(m_nodes).length === 0) {
+    if (Object.keys(renderCollection).length === 0) {
         ctx.fillStyle = renderConfig.labelColorError;
         ctx.font = "3em sans";
-        var size = ctx.measureText("No data available");
-        ctx.fillText("No data available", rect.width / 2 - size.width / 2, rect.height / 2);
+        var size = ctx.measureText("No connections to display.");
+        ctx.fillText("No data available", controller.rect.width / 2 - size.width / 2, controller.rect.height / 2);
         return;
     }
 
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     if (renderCollection.length !== 0) {
-        renderClusters(renderCollection, x, y, scale);
+        renderClusters(ctx, renderCollection, x, y, scale);
     }
 
-    renderSubnetLabel(scale);
+    renderSubnetLabel(ctx, scale);
 }
 
 function render_all() {
     "use strict";
-    render(tx, ty, g_scale);
+    requestAnimationFrame(function () {render(controller.ctx, tx, ty, g_scale);});
+    //render(tx, ty, g_scale);
 }

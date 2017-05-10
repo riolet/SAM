@@ -60,7 +60,7 @@ def si_formatting(f, places=2):
     return format_string.format(val=f, prefix=u'G')
 
 
-class Details(base.Headless):
+class Details(base.headless):
     """
     The expected GET data includes:
         'address': dotted-decimal IP addresses.
@@ -81,7 +81,7 @@ class Details(base.Headless):
         # self.ip_range = (0, 4294967295)
         self.page_size = Details.default_page_size
         self.detailsModel = None
-        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.page.user.viewing)
         self.linksModel = None  # set during decode_get_request()
 
     def decode_get_request(self, data):
@@ -94,7 +94,7 @@ class Details(base.Headless):
                 raise errors.MalformedRequest("Could not read data source ('ds')")
         else:
             raise errors.RequiredKey('data source', 'ds')
-        self.linksModel = sam.models.links.Links(common.db, self.user.viewing, ds)
+        self.linksModel = sam.models.links.Links(common.db, self.page.user.viewing, ds)
         # port filter
         port = data.get('port')
 
@@ -132,7 +132,7 @@ class Details(base.Headless):
             components = components.split(',')
 
         self.page_size = page_size
-        self.detailsModel = sam.models.details.Details(common.db, self.user.viewing, ds, address, (tstart, tend), port, page_size)
+        self.detailsModel = sam.models.details.Details(common.db, self.page.user.viewing, ds, address, (tstart, tend), port, page_size)
 
         request = {
             'ds': ds,
@@ -161,7 +161,7 @@ class Details(base.Headless):
         :param request:
         :return:
         """
-        self.require_group('read')
+        self.page.require_group('read')
         details = {}
         if request['components']:
             for c_name in request['components']:

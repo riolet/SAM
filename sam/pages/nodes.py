@@ -7,7 +7,7 @@ from sam import common
 # This class is for getting the child nodes of all nodes in a node list, for the map
 
 
-class Nodes(base.HeadlessPost):
+class Nodes(base.headless_post):
     """
     The expected GET data includes:
         'address': comma-seperated list of dotted-decimal IP addresses.
@@ -34,7 +34,13 @@ class Nodes(base.HeadlessPost):
     """
     def __init__(self):
         base.HeadlessPost.__init__(self)
-        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+        self.flatmode_tolerance = 256
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.page.user.viewing)
+
+    def check_flat_tolerance(self):
+        endpoints = self.nodesModel.get_all_endpoints()
+        count = len(endpoints)
+        return count <= self.flatmode_tolerance
 
     def decode_get_request(self, data):
         addresses = []
@@ -57,9 +63,12 @@ class Nodes(base.HeadlessPost):
         return {'addresses': addresses, 'flat': flat, 'ds': ds}
 
     def perform_get_command(self, request):
-        self.require_group('read')
+        self.page.require_group('read')
         if request['flat']:
-            response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
+            if self.check_flat_tolerance():
+                response = {'flat': self.nodesModel.get_flat_nodes(request['ds'])}
+            else:
+                response = {'error': 'Flat mode is not supported once a graph has exceeded {} hosts.'.format(self.flatmode_tolerance)}
         elif len(request['addresses']) == 0:
             response = {'_': self.nodesModel.get_root_nodes()}
         else:
@@ -89,7 +98,7 @@ class Nodes(base.HeadlessPost):
         return request
 
     def perform_post_command(self, request):
-        self.require_group('write')
+        self.page.require_group('write')
         node = request.pop('node')
         for key, value in request.iteritems():
             if key == 'alias':

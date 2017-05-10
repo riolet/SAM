@@ -225,7 +225,7 @@ class Columns(object):
         return headers
 
 
-class Table(base.Headed):
+class Table(base.headed):
     default_page = 1
     default_page_size = 10
     default_sort_column = 0
@@ -246,7 +246,7 @@ class Table(base.Headed):
         self.outbound = None
         self.tableModel = None
         self.nodesModel = None
-        self.dsModel = sam.models.datasources.Datasources(common.db, self.session, self.user.viewing)
+        self.dsModel = sam.models.datasources.Datasources(common.db, self.page.session, self.page.user.viewing)
         self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
     @staticmethod
@@ -254,7 +254,7 @@ class Table(base.Headed):
         fs = []
         ds = None
         if "filters" in data:
-            ds, fs = sam.models.filters.readEncoded(data["filters"])
+            ds, fs = sam.models.filters.readEncoded(common.db, data["filters"])
         return ds, fs
 
     @staticmethod
@@ -286,7 +286,7 @@ class Table(base.Headed):
 
         # fall back to default data source if not provided in query string.
         if ds is None:
-            settings_model = sam.models.settings.Settings(common.db, self.session, self.user.viewing)
+            settings_model = sam.models.settings.Settings(common.db, self.page.session, self.page.user.viewing)
             ds = settings_model['datasource']
 
         try:
@@ -339,7 +339,7 @@ class Table(base.Headed):
             if not any(isinstance(f, sam.models.filters.SubnetFilter) for f in request['filters']):
                 request['filters'].append(sam.models.filters.SubnetFilter(True, '32'))
 
-        self.tableModel = sam.models.tables.Table(common.db, self.user.viewing, self.request['ds'])
+        self.tableModel = sam.models.tables.Table(common.db, self.page.user.viewing, self.request['ds'])
         data = self.tableModel.get_table_info(request['filters'],
                                               request['page'],
                                               request['page_size'],
@@ -442,8 +442,8 @@ class Table(base.Headed):
         return spread
 
     def GET(self):
-        self.require_group('read')
-        self.nodesModel = sam.models.nodes.Nodes(common.db, self.user.viewing)
+        self.page.require_group('read')
+        self.nodesModel = sam.models.nodes.Nodes(common.db, self.page.user.viewing)
 
         self.request = self.decode_get_request(self.inbound)
         self.response = self.perform_get_command(self.request)

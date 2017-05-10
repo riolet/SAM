@@ -139,10 +139,7 @@ function applyFilter() {
         searchString += "&" + term.join("=");
     });
     //window.location.search = "?" + searchString.substr(1);
-    var link = "/table?" + searchString.substr(1);
-    if (window.location.pathname.substr(1,4) === "demo") {
-      link = "/demo" + link
-    }
+    var link = "./table?" + searchString.substr(1);
     window.location.assign(link);
 }
 
@@ -180,7 +177,7 @@ function hostname_edit_callback(event) {
             input.dataset.content = new_name;
             var request = {"node": address, "alias": new_name};
             $.ajax({
-                url: "/nodes",
+                url: "./nodes",
                 type: "POST",
                 data: request,
                 error: function (x, s, e) {
@@ -282,10 +279,7 @@ function initiateDownload(event) {
     } else {
         //download all
         console.log("Downloading ALL the data");
-        var download_string = "/table?download=1&" + location.search.substr(1)
-        if (window.location.pathname.substr(1,4) === "demo") {
-          download_string = "/demo" + download_string
-        }
+        var download_string = "./table?download=1&" + location.search.substr(1)
         download(download_string, "table_" + get_stamp() + ".csv")
     }
 }

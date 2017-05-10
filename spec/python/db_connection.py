@@ -10,6 +10,7 @@ import sam.preprocess
 import sam.models.links
 import sam.models.nodes
 from datetime import datetime
+from sam.models.subscriptions import Subscriptions
 TEST_DATABASE_MYSQL = 'samapper_test'
 TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
@@ -53,7 +54,7 @@ class env(object):
         self.input_real = web.input
         self.active_old = sam.constants.access_control['active']
         self.session = sam.common.session
-        self.render = sam.common.render
+        self.renderer = sam.common.renderer
 
         self.mock_input = mock_input
         self.mock_login = login_active
@@ -70,7 +71,7 @@ class env(object):
         if self.mock_session:
             sam.common.session = Session()
         if self.mock_render:
-            sam.common.render = Mocker()
+            sam.common.renderer = Mocker()
 
     def __exit__(self, type, value, traceback):
         if self.mock_input:
@@ -80,7 +81,7 @@ class env(object):
         if self.mock_session:
             sam.common.session = self.session
         if self.mock_render:
-            sam.common.render = self.render
+            sam.common.renderer = self.renderer
 
 
 def make_timestamp(timestring):
@@ -99,19 +100,12 @@ def get_test_db_connection():
     print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
     sam.common.db = tdb
     sam.common.db_quiet = tdbq
-    print("CHECKING THE DB")
     sam.integrity.check_and_fix_integrity(tdbq, params)
     return tdb
 
 
-def create_test_database(db):
-    # creates all the default tables and profile.
-    print("SETTING UP THE DATASOURCES")
-    setup_datasources(db, sam.constants.demo['id'])
-
-
-def setup_datasources(db, sub):
-    d = sam.models.datasources.Datasources(db, {}, sub)
+def setup_datasources(db, sub_id):
+    d = sam.models.datasources.Datasources(db, {}, sub_id)
     sources = d.datasources
     remaining = ['default', 'short', 'live']
     for ds in sources.values():
@@ -129,24 +123,24 @@ def template_sql(path, *args):
     return commands
 
 
-def clear_network(db, sub, ds):
-    l_model = sam.models.links.Links(db, sub, ds)
+def clear_network(db, sub_id, ds_id):
+    l_model = sam.models.links.Links(db, sub_id, ds_id)
     l_model.delete_connections()
 
-    n_model = sam.models.nodes.Nodes(db, sub)
+    n_model = sam.models.nodes.Nodes(db, sub_id)
     n_model.delete_custom_tags()
     n_model.delete_custom_envs()
     n_model.delete_custom_hostnames()
     db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
-    db.query("DELETE FROM {table}".format(table="s{}_ds{}_StagingLinks".format(sub, ds)))
-    db.query("DELETE FROM {table}".format(table="s{}_ds{}_Syslog".format(sub, ds)))
+    db.query("DELETE FROM {table}".format(table="s{}_ds{}_StagingLinks".format(sub_id, ds_id)))
+    db.query("DELETE FROM {table}".format(table="s{}_ds{}_Syslog".format(sub_id, ds_id)))
 
 
 def setup_network(db, sub_id, ds_id):
     clear_network(db, sub_id, ds_id)
     loader = sam.importers.import_base.BaseImporter()
-    loader.subscription = sub_id
-    loader.datasource = ds_id
+    loader.set_subscription(sub_id)
+    loader.set_datasource_id(ds_id)
     processor = sam.preprocess.Preprocessor(db, sub_id, ds_id)
 
     # used to generate network data for testing
@@ -504,8 +498,7 @@ def setup_network(db, sub_id, ds_id):
     processor.run_all()
 
 
-def setup_node_extras():
-    sub_id = sam.constants.demo['id']
+def setup_node_extras(sub_id):
     commands = template_sql("./sql/test_data.sql", sub_id)
     for command in commands:
         print command
@@ -515,8 +508,9 @@ def setup_node_extras():
 print("GET TEST DB")
 db = get_test_db_connection()
 print("CREATE TEST DATABASE")
-create_test_database(db)
-default_sub = sam.constants.demo['id']
+sub_model = Subscriptions(db)
+default_sub = sub_model.decode_sub(sam.constants.subscription['default_email'])
+setup_datasources(db, default_sub)
 ds_model = sam.models.datasources.Datasources(db, {}, default_sub)
 dsid_default = 0
 dsid_short = 0

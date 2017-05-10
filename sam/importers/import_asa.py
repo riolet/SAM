@@ -56,7 +56,7 @@ class ASAImporter(BaseImporter):
             return 2
 
 
-_class = ASAImporter
+class_ = ASAImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":

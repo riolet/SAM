@@ -11,6 +11,8 @@ function sel_init() {
     m_selection["conn_in"] = document.getElementById("conn_in");
     m_selection["conn_out"] = document.getElementById("conn_out");
     m_selection["ports_in"] = document.getElementById("ports_in");
+    sel_panel_height();
+    $(document.getElementById("selectionInfo")).accordion();
 }
 
 function sel_set_selection(node) {
@@ -68,9 +70,9 @@ function sel_remove_all(collection) {
 
 function sel_build_title(node) {
   "use strict";
-  var s_name = get_node_name(node);
-  var s_address = get_node_address(node);
-  var s_name_edit_callback = node_alias_submit;
+  var s_name = nodes.get_name(node);
+  var s_address = nodes.get_address(node);
+  var s_name_edit_callback = nodes.submit_alias_CB;
 
   var titles = document.createElement("div")
   var input_group = document.createElement("div");
@@ -240,7 +242,10 @@ function build_label_duration(elapsed) {
 function sel_panel_height() {
     "use strict";
     var side = document.getElementById("sel_bar");
-    var heightAvailable = rect.height - 40;
+    if (side === null) {
+      return;
+    }
+    var heightAvailable = controller.rect.height - 40;
     side.style.maxHeight = heightAvailable + "px";
 
     heightAvailable -= 10; //for padding
@@ -262,11 +267,8 @@ function sel_panel_height() {
 }
 
 function sel_create_link(node) {
-    var address = get_node_address(node);
-    var link = "/metadata#ip=" + address + "&ds=" + config.ds;
-    if (window.location.pathname.substr(1,4) === "demo") {
-      link = "/demo" + link
-    }
+    var address = nodes.get_address(node);
+    var link = "./metadata#ip=" + address + "&ds=" + controller.ds;
     var text = "More details for " + address;
 
     var icon = document.createElement("I");

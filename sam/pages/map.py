@@ -3,7 +3,7 @@ import base
 from sam import common
 
 
-class Map(base.Headed):
+class Map(base.headed):
     def __init__(self):
         base.Headed.__init__(self, "Map", header=True, footer=False)
         self.scripts = ['/static/js/map.js',
@@ -19,13 +19,14 @@ class Map(base.Headed):
                         '/static/nouislider/nouislider.min.js']
         self.styles = ['/static/css/map.css',
                        '/static/css/timerange.css',
-                       '/static/nouislider/nouislider.css',
+                       '/static/nouislider/nouislider-dark.css',
                        '/static/nouislider/nouislider.pips.css']
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):
-        self.require_group('read')
-        datasources = Datasources(common.db, self.session, self.user.viewing)
+        self.page.require_group('read')
+
+        datasources = Datasources(common.db, self.page.session, self.page.user.viewing)
         dses = [(k, v['name']) for k, v in datasources.datasources.iteritems()]
 
         return self.render('map', dses)
