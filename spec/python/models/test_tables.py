@@ -313,7 +313,7 @@ def test_get_table_filter_protocol():
 
 def test_disabled_filters():
     encoded = "ds1|1;0;production|7;0;1;48GB|3;0;2;1"
-    _, filters = sam.models.filters.readEncoded(db, encoded)
+    _, filters = sam.models.filters.readEncoded(db, sub_id, encoded)
     m_table = Table(db, sub_id, ds_full)
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addresses = [x['address'] for x in rows]
