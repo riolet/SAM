@@ -303,13 +303,15 @@ def check_subscriptions(db):
                   .format(sid=sid, tables=", ".join(missing_tables)))
             subs_missing_tables.add(sid)
         if extra_tables:
-            print("\tERROR: Subscription {sid} has extra tables: {tables}"
+            print("\tWARNING: Subscription {sid} has extra tables: {tables}"
                   .format(sid=sid, tables=", ".join(extra_tables)))
             all_extra_tables |= extra_tables
     if not all_extra_tables and not subs_missing_tables:
         print("\tSubscription tables confirmed")
         return {}
-    return {'extra': all_extra_tables, 'malformed': subs_missing_tables}
+    # return {'extra': all_extra_tables, 'malformed': subs_missing_tables}
+    # extra tables may belong to a plugin. Do not delete them immediately.
+    return {'malformed': subs_missing_tables}
 
 
 def fix_subscriptions(db, errors):
@@ -421,13 +423,15 @@ def check_data_sources(db):
             ds_tables -= expected_tables
     extra_tables |= ds_tables
     if len(extra_tables) > 0:
-        print("\tERROR: Unused tables: {0}".format(" ".join(extra_tables)))
+        print("\tWARNING: Unused tables: {0}".format(" ".join(extra_tables)))
 
     if not malformed_datasources and not extra_tables:
         print("\tData sources confirmed")
         return {}
 
-    return {'malformed': malformed_datasources, 'unused': extra_tables}
+    # return {'malformed': malformed_datasources, 'unused': extra_tables}
+    # unused tables may belong to a plugin. Do not delete them immediately.
+    return {'malformed': malformed_datasources}
 
 
 def fix_data_sources(db, errors):
@@ -457,6 +461,9 @@ def fix_data_sources(db, errors):
         print('\tData sources fixed')
 
 
+# ==================  Session Table  ====================
+
+
 def check_sessions_table(db):
     # type: () -> bool
     """
@@ -482,6 +489,41 @@ def fix_sessions_table(db, is_missing):
         print("\tFixed sessions.")
     else:
         print("\tNo fix needed.")
+
+
+# ==================  Plugin Tables  ====================
+
+
+def check_plugins(db):
+    plugins = constants.plugin_models
+    # assume each plugin is type sam.models.base.DBPlugin
+    any_issues = False
+    print("Checking plugin models...")
+    for plugin in plugins:
+        if bool(plugin.checkIntegrity(db)) is False:
+            print("\tplugin {} verified.".format(plugin))
+        else:
+            print("\tplugin {} has errors.".format(plugin))
+            any_issues = True
+    return any_issues
+
+
+def fix_plugins(db, errors):
+    plugins = constants.plugin_models
+    any_issues = False
+    print("Fixing plugin models...")
+    for plugin in plugins:
+        errors = plugin.checkIntegrity(db)
+        if errors:
+            print("\tfixing {}".format(plugin))
+            success = plugin.fixIntegrity(db, errors)
+            if not success:
+                any_issues = True
+                print("\tunable to fix {}".format(plugin))
+    return any_issues
+
+
+# ==================  Suite  ====================
 
 
 def check_integrity(db=None):
@@ -511,7 +553,9 @@ def check_integrity(db=None):
     # ensure that each datasource has all the appropriate ds-specific tables
     healthy = healthy and all([len(x) == 0 for x in check_data_sources(db).values()])
     # make sure the sessions table is there!
-    healthy = healthy and check_sessions_table(db) == False
+    healthy = healthy and check_sessions_table(db) is False
+    # make sure all plugin models are setup
+    healthy = healthy and check_plugins(db) is False
 
     return healthy
 
@@ -555,5 +599,9 @@ def check_and_fix_integrity(db=None, params=None):
     errors = check_sessions_table(db)
     if errors:
         fix_sessions_table(db, errors)
+
+    errors = check_plugins(db)
+    if errors:
+        fix_plugins(db, errors)
 
     return True
