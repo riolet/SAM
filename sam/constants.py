@@ -75,6 +75,7 @@ plugin_templates = []
 plugin_static = []
 plugin_importers = []
 plugin_urls = []
+plugin_models = []
 
 default_urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)

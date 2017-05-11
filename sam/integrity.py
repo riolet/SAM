@@ -28,6 +28,19 @@ def get_table_names(db):
         raise ValueError("Unknown dbn. Cannot determine tables")
     return tables
 
+def get_all_subs(db):
+    rows = db.select("Subscriptions", what="subscription")
+    subs = [row['subscription'] for row in rows]
+    return subs
+
+def get_all_dss(db):
+    rows = db.select('Datasources', what='subscription, id')
+    dss = [{'sub_id': row['subscription'], 'ds_id': row['id']} for row in rows]
+    return dss
+
+
+# ==================  DB Access ====================
+
 
 def check_db_access_MySQL(params):
     # type: () -> int
@@ -129,6 +142,9 @@ def check_and_fix_db_access_SQLite(params):
     return error_code
 
 
+# ==================  Shared Tables  ====================
+
+
 def check_shared_tables(db):
     # type: (web.DB) -> [str]
     """
@@ -189,16 +205,6 @@ def fix_UDF_SQLite(db):
     common.sqlite_udf(db)
 
 
-def chunk(list_, chunk_size):
-    start = 0
-    end = chunk_size
-    max = len(list_)
-    while start <= max:
-        yield list_[start:end]
-        start += chunk_size
-        end += chunk_size
-
-
 def fill_port_table(db):
     db.delete("Ports", "1=1")
     with open(os.path.join(constants.base_path, 'sql/default_port_data.json'), 'rb') as f:
@@ -217,6 +223,9 @@ def fill_port_table(db):
     else:
         for port in ports:
             db.insert('Ports', **port)
+
+
+# ==================  Subscription Tables  ====================
 
 
 def check_default_subscription(db):
@@ -378,6 +387,9 @@ def fix_settings(db, errors):
         print("\tNo fix needed")
     else:
         print("\tSettings fixed")
+
+
+# ==================  Datasource Tables  ====================
 
 
 def check_data_sources(db):
