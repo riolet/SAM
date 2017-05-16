@@ -150,9 +150,9 @@ function deleteDS(e) {
     if (targetDS == undefined) {
       targetDS = e.target.parentElement.dataset['tab'];
     }
-    getConfirmation(catDeleteMessage("datasource", targetDS), function () {
+    getConfirmation("Are you sure you want to permanently delete datasource \"" + getDSName(targetDS) + "\"?", function () {
         console.log("Deleting " + targetDS + ".");
-        POST_ds_delete(targetDS)
+        POST_ds_delete(targetDS);
     });
 }
 
@@ -385,7 +385,7 @@ function populateUploadDSList(options) {
     var div;
     options.forEach(function (option) {
         div = document.createElement("DIV");
-        div.className = "item"
+        div.className = "item";
         div.dataset['value'] = option[0];
         div.appendChild(document.createTextNode(option[1]));
         log_ds_list.appendChild(div);

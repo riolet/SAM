@@ -191,7 +191,7 @@ var g_timer = null;
       error: generic_ajax_failure,
       success: function (settings) {
         self.settings = settings;
-        self.datasources = []
+        self.datasources = [];
         Object.keys(settings.datasources).forEach( function (key) {
           self.datasources.push(settings.datasources[key]);
         });
