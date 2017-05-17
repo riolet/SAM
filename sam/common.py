@@ -141,7 +141,10 @@ def IPStringtoInt(ip):
     for i in range(4):
         ip_int <<= 8
         if len(parts) > i:
-            ip_int += int(parts[i])
+            try:
+                ip_int += int(parts[i])
+            except:
+                pass
     return ip_int
 
 
