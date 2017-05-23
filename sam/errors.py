@@ -5,8 +5,11 @@ class LoggedOutError(Exception): pass
 
 
 class MalformedRequest(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
+    def __init__(self, message=None):
+        if message:
+            Exception.__init__(self, message)
+        else:
+            Exception.__init__(self)
 
 
 class RequiredKey(MalformedRequest):
