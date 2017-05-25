@@ -91,6 +91,10 @@ def make_timestamp(timestring):
     return int(ts)
 
 
+def unix_timestamp_to_datetime(stamp):
+    return datetime.fromtimestamp(stamp)
+
+
 def get_test_db_connection():
     params = sam.constants.dbconfig.copy()
     if params['dbn'] == 'sqlite':
