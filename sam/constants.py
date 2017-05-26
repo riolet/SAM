@@ -3,7 +3,7 @@ base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
-subscription_tables = ['Nodes', 'Tags', 'PortAliases']
+subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
 config = ConfigEnvy('SAM')
@@ -89,6 +89,12 @@ default_urls = [
     '/settings', 'sam.pages.settings.Settings',
     '/settings_page', 'sam.pages.settings_page.SettingsPage',
     '/table', 'sam.pages.table.Table',
+    '/sec_dashboard', 'sam.pages.sec_dashboard.Dashboard',
+    '/sec_alerts', 'sam.pages.alerts.Alerts',
+    '/sec_rules', 'sam.pages.rules.Rules',
+    '/sec_rules/new', 'sam.pages.rules.RulesNew',
+    '/sec_rules/edit', 'sam.pages.rules.RulesEdit',
+    '/sec_rules/reapply', 'sam.pages.rules.RulesApply',
 ]
 urls = []
 
@@ -122,6 +128,12 @@ navbar = [
         "name": "Stats",
         "icon": "filter",
         "link": "./stats",
+        "group": "any"
+    },
+    {
+        "name": "Dashboard",
+        "icon": "dashboard",
+        "link": "./sec_dashboard",
         "group": "any"
     },
     {

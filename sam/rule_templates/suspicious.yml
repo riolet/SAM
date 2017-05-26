@@ -1,0 +1,37 @@
+# suspicious traffic -- traffic that you expect to not have happen.
+# e.g. host1 shouldn't connect to the database on host2.
+# trigger an alert on {src} if [{src}] connects to [{dst}] on [{dest_port}]
+---
+name: TCPDUMP Rule
+type: immediate
+include:
+exposed:
+  source_ip:
+    label: Source IP
+    format: text
+    default: 127.0.0.1
+    regex: "^([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])(\\.([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])){3}$"
+  dest_ip:
+    label: Destination IP
+    format: text
+    default: 80.80.80.80
+    regex: "^([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])(\\.([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])){3}$"
+  port:
+    label: Port
+    format: text
+    default: "80, 443"
+  severity:
+    label: Alert severity
+    format: text
+    regex: "^\\s*([1-8])\\s*$"
+    default: 6
+  alert_label:
+    label: Alert label
+    format: text
+    regex: "^\\s*(\\S|\\S.{0,30}\\S)\\s*$"
+    default: Rule Violated
+actions:
+ - type: alert
+   severity: $severity
+   label: $alert_label
+when: src host $source_ip and dst host $dest_ip and dst port $port

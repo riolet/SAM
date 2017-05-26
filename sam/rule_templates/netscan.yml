@@ -1,0 +1,17 @@
+# Network Scanning -- Scanning all hosts in a network.
+# trigger an alert on {src} if {src} connects to more than $threshhold distinct hosts / minute
+---
+name: Network Scanning
+type: periodic
+include:
+exposed:
+  pattern:
+    format: string
+  severity:
+    format: number
+    regex: "[1-8]"
+action:
+  alert:
+    severity: $severity
+    host: src
+when: define the trigger conditions, and identify the host??

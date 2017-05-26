@@ -1,0 +1,17 @@
+# Port Scanning -- Scanning through ports on a host.
+# trigger an alert on {src} if {dst} uses more than $threshhold (udp?) distinct ports / minute
+---
+name: Port Scanning
+type: periodic
+include:
+exposed:
+  pattern:
+    format: string
+  severity:
+    format: number
+    regex: "[1-8]"
+action:
+  alert:
+    severity: $severity
+    host: src
+when: define the trigger conditions, and identify the host??

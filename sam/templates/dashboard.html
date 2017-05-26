@@ -1,0 +1,300 @@
+$def with ()
+<div class="ui container">
+<h1 class="ui center aligned header">Security Dashboard</h1>
+<div class="ui basic segment">
+  <div class="ui right rail">
+    <div class="ui sticky">
+      <div class="ui vertical menu">
+        <a class="item" href="#Alerts">Alerts</a>
+        <a class="item" href="#Rules">Rules</a>
+      </div>
+    </div>
+  </div>
+<div id="stickyrailcontext" class="ui stackable grid">
+
+  <!--==================  Latest Alerts  ==================-->
+  <div id="Alerts" class="sixteen wide column">
+    <div class="ui blue raised segment">
+      <h2 class="ui header">Latest Alerts</h2>
+      <div class="alertfilter">
+        <label class="configlabel">Refresh</label>
+        <button id="alert_refresh" class="ui icon button"><i class="refresh icon"></i></button>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel" for="host_filter">Subnet Filter</label>
+        <div class="ui icon input" data-tooltip="Filter by host or subnet. " data-delay="500">
+          <input id="alert_host_filter" placeholder="110.24.36.0/24" value="0.0.0.0/0" type="text">
+          <i class="server icon"></i>
+        </div>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel" for="min_severity">Min Severity</label>
+        <div class="ui filtering selection dropdown" data-tooltip="Minimum alert severity to display. " data-delay="500">
+          <input id="alert_min_severity" name="min_severity" value="sev1" data-old="sev1" type="hidden">
+          <i class="dropdown icon"></i>
+          <div class="default text">1</div>
+          <div class="menu">
+            <div class="item" data-value="sev1"><i class="circle icon severe1"></i>1</div>
+            <div class="item" data-value="sev2"><i class="circle icon severe2"></i>2</div>
+            <div class="item" data-value="sev3"><i class="circle icon severe3"></i>3</div>
+            <div class="item" data-value="sev4"><i class="circle icon severe4"></i>4</div>
+            <div class="item" data-value="sev5"><i class="circle icon severe5"></i>5</div>
+            <div class="item" data-value="sev6"><i class="circle icon severe6"></i>6</div>
+            <div class="item" data-value="sev7"><i class="circle icon severe7"></i>7</div>
+            <div class="item" data-value="sev8"><i class="circle icon severe8"></i>8</div>
+          </div>
+        </div>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel" for="host_filter">Timerange</label>
+        <div class="ui icon input" data-tooltip="Maximum age of alert to display. Use years, days, weeks, hours, minutes or seconds." data-delay="500">
+          <input id="alert_time_filter" placeholder="1 week" value="1 week" data-old="1 week" type="text">
+          <i class="clock icon"></i>
+        </div>
+      </div>
+      <div class="scrollbox">
+        <table class="ui selectable sortable table">
+          <thead>
+          <tr id="alert_headers">
+            <th data-value="id" class="sorted descending">#</th>
+            <th data-value="ipstart">Host</th>
+            <th data-value="timestamp">Timestamp</th>
+            <th data-value="severity">Severity</th>
+            <th data-value="status">Status</th>
+            <th data-value="event_type">Type</th>
+          </tr>
+          </thead>
+          <tbody id="alert_table_body">
+          <tr>
+            <td colspan="6">No Alerts to display.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <h2 class="ui header">Selection Details</h2>
+      <div id="alert_details" class="ui fluid card">
+        <div class="content">
+          <div id="alert_details_loader" class="ui inverted dimmer">
+            <div class="ui text loader">Loading</div>
+          </div>
+          <div class="ui two column grid">
+            <div class="column">
+              <div class="ui right floated alertfilter">
+                <label class="configlabel" for="alert_status">Status</label>
+                <div class="ui selection dropdown" data-tooltip="Change alert status here." data-delay="500">
+                  <input id="alert_status" name="alert_status" type="hidden" value="new">
+                  <i class="dropdown icon"></i>
+                  <div class="default text">1</div>
+                  <div class="menu">
+                    <div class="item" data-value="new">New</div>
+                    <div class="item" data-value="unclassified">Unclassified</div>
+                    <div class="item" data-value="false">False Positive</div>
+                    <div class="item" data-value="uncertain">Uncertain</div>
+                    <div class="item" data-value="suspicious">Suspicious</div>
+                    <div class="item" data-value="verysuspicious">Very Suspicious</div>
+                    <div class="item" data-value="confirmed">Confirmed Bad</div>
+                  </div>
+                </div>
+              </div>
+              <h3 id="alert_details_name" class="ui header">No alert selected.</h3>
+              <div class="meta">
+                Alert #: <span id="alert_details_id"></span>
+              </div>
+              <div class="meta">
+                Time: <span id="alert_details_time"></span>
+              </div>
+              <div class="meta">
+                Host: <span id="alert_details_host"></span>
+              </div>
+              <div class="meta">
+                Severity: <span id="alert_details_severity"></span>
+              </div>
+              <div id="alert_details_desc" class="description">
+              </div>
+            </div>
+            <div class="column">
+              <h3 class="ui header">Metadata</h3>
+              <div class="scrollbox">
+                <table class="ui very basic compact table">
+                  <tbody id="alert_details_details">
+                  </tbody>
+                </table>
+              </div>
+            </div> <!-- end column-->
+          </div>
+        </div> <!-- end card content -->
+      </div> <!-- end card -->
+    </div> <!-- end segment -->
+  </div> <!-- end column (main panel) -->
+
+  <!--==================  Rules  ==================-->
+  <div id="Rules" class="sixteen wide column">
+    <div class="ui orange raised segment">
+      <h2 class="ui header">Rules</h2>
+      <p>Rules are instructions used decide whether or not to flag network traffic as suspicious.</p>
+      <p>They are applied against live network traffic as it comes in and can be manually applied or
+        reapplied against some or all stored data as needed.</p>
+      <div class="ui basic segment">
+        <div id="rules_loader" class="ui inverted dimmer">
+          <div class="ui text loader">Loading</div>
+        </div>
+        <table class="ui selectable celled table">
+        <thead class="full-width">
+        <tr>
+          <th class="collapsing" data-tooltip="Check this box to apply the rule against new live traffic data.">Active</th>
+          <th>Rule Name</th>
+          <th data-tooltip="The template used for this rule.">Type</th>
+          <th data-tooltip="Edit any settings available for this rule.">Edit</th>
+          <th data-tooltip="Remove this rule from the rule set. Can only be done for custom rules.">Remove</th>
+        </tr>
+        </thead>
+        <tbody id="rules_table">
+        </tbody>
+      </table>
+      </div>
+      <button id="add_rule" class="ui small green button">
+        <i class="add icon"></i>New Custom Rule
+      </button>
+      <button id="reapply_rules" class="ui small button">Reapply Rules to Traffic Data...</button>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!--=====================  Add rule modal  =======================-->
+<div id="newRuleModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    New Rule
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="alarm icon"></i>
+    </div>
+    <div class="ui form">
+      <div class="field">
+        <label>Name:</label>
+        <input id="newRuleName" type="text" placeholder="Rule label">
+      </div>
+      <div class="field">
+        <label>Description:</label>
+        <input id="newRuleDesc" type="text" placeholder="Brief description of rule">
+      </div>
+      <div class="field">
+        <label>Template:</label>
+        <div class="ui selection dropdown">
+          <input name="newRuleTemplate" id="newRuleTemplate" type="hidden">
+          <i class="dropdown icon"></i>
+          <div class="default text">template</div>
+          <div class="menu" id="newRuleTemplateList">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Cancel
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Create
+    </div>
+  </div>
+</div>
+
+<!--=====================  Edit rule modal  =======================-->
+<div id="editRuleModal" class="ui modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Edit Rule
+  </div>
+  <div class="content">
+    <div class="ui two column grid">
+      <div class="column">
+        <div class="ui form" id="editRuleMeta">
+          <div class="ui checkbox field">
+            <label>Active</label>
+            <input id="editRuleActive" type="checkbox">
+          </div>
+          <div class="field">
+            <label>Name:</label>
+            <input id="editRuleName" type="text" placeholder="Rule label">
+          </div>
+          <div class="field">
+            <label>Description:</label>
+            <input id="editRuleDesc" type="text" placeholder="Brief description of rule">
+          </div>
+        </div>
+      </div>
+      <div class="column">
+        <div class="ui form" id="editRuleParams">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Cancel
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Update
+    </div>
+  </div>
+</div>
+
+<!--=====================  Reapply Rules modal  =======================-->
+<div id="reapplyRulesModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Apply rules to network data
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="alarm outline icon"></i>
+    </div>
+    <div class="ui form">
+      <div class="field">
+        <label>Data source</label>
+        <div class="ui selection dropdown">
+          <input name="rules_ds_input" id="rules_ds_input" type="hidden">
+          <i class="dropdown icon"></i>
+          <div class="default text">Datasource</div>
+          <div class="menu" id="rules_ds_list">
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Apply rules over this period:</label>
+        <div class="slider-box">
+          <div id="slider-date"></div>
+        </div>
+        <div class="ui right labeled fluid input">
+          <input class="slider-input" id="input-start" value="2016-06-19 19:00">
+          <div class="ui label">From</div>
+        </div>
+        <div class="ui right labeled fluid input">
+          <input class="slider-input" id="input-end" value="2016-06-20 08:00">
+          <div class="ui label">To</div>
+        </div>
+      </div>
+
+      <p>This operation may take time. Progress bar? Info message?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Cancel
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Apply
+    </div>
+  </div>
+</div>

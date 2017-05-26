@@ -1,0 +1,33 @@
+# DoS Attack -- unusually high traffic levels connecting to a host.
+# trigger an alert on {dst} if {dst} gets more than $threshhold (tcp?) conn/minute
+---
+name: Traffic Threshhold
+type: periodic
+include:
+expose:
+  pattern:
+    format: text
+    label: temp label
+    default: "src_port > 1024"
+  severity:
+    format: text
+    label: temp label 2
+    default: 2
+    regex: "[1-8]"
+  sendmail:
+    format: checkbox
+    label: Send email?
+    default: 0
+  color:
+    format: dropdown
+    label: Favorite Color
+    default: blue
+    options:
+      - red
+      - blue
+      - green
+actions:
+ - type: alert
+   severity: $severity
+   label: $alert_label
+when: define the trigger conditions, and identify the host??
