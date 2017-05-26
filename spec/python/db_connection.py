@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import os
 import time
 import sam.constants
 import sam.common
@@ -90,14 +91,23 @@ def make_timestamp(timestring):
     return int(ts)
 
 
+def unix_timestamp_to_datetime(stamp):
+    return datetime.fromtimestamp(stamp)
+
+
 def get_test_db_connection():
     params = sam.constants.dbconfig.copy()
     if params['dbn'] == 'sqlite':
         params['db'] = TEST_DATABASE_SQLITE
+        os.unlink(TEST_DATABASE_SQLITE)
     else:
         params['db'] = TEST_DATABASE_MYSQL
     tdb, tdbq = sam.common.get_db(params)
     print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
+    if params['dbn'] != 'sqlite':
+        tdbq.query("DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_MYSQL))
+        tdbq.query("CREATE DATABASE IF NOT EXISTS {};".format(TEST_DATABASE_MYSQL))
+        tdbq.query("USE {}".format(TEST_DATABASE_MYSQL))
     sam.common.db = tdb
     sam.common.db_quiet = tdbq
     sam.integrity.check_and_fix_integrity(tdbq, params)
@@ -123,21 +133,7 @@ def template_sql(path, *args):
     return commands
 
 
-def clear_network(db, sub_id, ds_id):
-    l_model = sam.models.links.Links(db, sub_id, ds_id)
-    l_model.delete_connections()
-
-    n_model = sam.models.nodes.Nodes(db, sub_id)
-    n_model.delete_custom_tags()
-    n_model.delete_custom_envs()
-    n_model.delete_custom_hostnames()
-    db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
-    db.query("DELETE FROM {table}".format(table="s{}_ds{}_StagingLinks".format(sub_id, ds_id)))
-    db.query("DELETE FROM {table}".format(table="s{}_ds{}_Syslog".format(sub_id, ds_id)))
-
-
 def setup_network(db, sub_id, ds_id):
-    clear_network(db, sub_id, ds_id)
     loader = sam.importers.import_base.BaseImporter()
     loader.set_subscription(sub_id)
     loader.set_datasource_id(ds_id)
@@ -522,5 +518,5 @@ for dk, dv in ds_model.datasources.iteritems():
         dsid_short = dk
     if dv['name'] == 'live':
         dsid_live = dk
-clear_network(db, default_sub, dsid_default)
 setup_network(db, default_sub, dsid_default)
+print("TEST DATABASE PREPARED")
