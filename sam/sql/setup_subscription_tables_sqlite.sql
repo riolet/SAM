@@ -32,19 +32,6 @@ CREATE TABLE IF NOT EXISTS s{acct}_PortAliases
 ,CONSTRAINT PK{acct}PortAliases PRIMARY KEY (port)
 );
 
--- Create the table for security alerts
-CREATE TABLE IF NOT EXISTS s{acct}_Alerts
-(id                INTEGER NOT NULL PRIMARY KEY
-,ipstart           INT UNSIGNED NOT NULL
-,ipend             INT UNSIGNED NOT NULL
-,timestamp         INT UNSIGNED NOT NULL
-,severity          TINYINT(1) NOT NULL
-,viewed            TINYINT(1) NOT NULL
-,status            VARCHAR(32) NOT NULL
-,event_type        VARCHAR(32) NOT NULL
-,details           TEXT
-);
-
 -- Create the table for security rules (params)
 CREATE TABLE IF NOT EXISTS s{acct}_Rules
 (id                INTEGER NOT NULL PRIMARY KEY
@@ -53,4 +40,18 @@ CREATE TABLE IF NOT EXISTS s{acct}_Rules
 ,name              VARCHAR(64) NOT NULL
 ,description       TEXT NOT NULL
 ,params            TEXT NOT NULL
+);
+
+-- Create the table for security alerts
+CREATE TABLE IF NOT EXISTS s{acct}_Alerts
+(id                INTEGER NOT NULL PRIMARY KEY
+,ipstart           INT UNSIGNED NOT NULL
+,ipend             INT UNSIGNED NOT NULL
+,timestamp         INT UNSIGNED NOT NULL
+,severity          TINYINT(1) NOT NULL
+,viewed            TINYINT(1) NOT NULL DEFAULT 0
+,label             VARCHAR(32) NOT NULL
+,rule_id           INT UNSIGNED
+,details           TEXT
+,CONSTRAINT FK{acct}Alerts FOREIGN KEY (rule_id) REFERENCES s{acct}_Rules (id)
 );

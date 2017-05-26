@@ -44,9 +44,8 @@ class AlertFilter():
         return "{} {}".format(self.sort, self.order)
 
 
-class Alerts(DBPlugin):
+class Alerts():
     TABLE_FORMAT = "s{}_Alerts"
-    DEFAULT_STATUS = "new"
 
     def __init__(self, db, sub_id):
         """
@@ -57,7 +56,7 @@ class Alerts(DBPlugin):
         self.sub_id = sub_id
         self.table = Alerts.TABLE_FORMAT.format(sub_id)
 
-    def add_alert(self, ipstart, ipend, severity, event_type, details):
+    def add_alert(self, ipstart, ipend, severity, rule_id, label, details):
         """
         :param ipstart: integer ip address. 32-bit unsigned integer.
          :type ipstart: int
@@ -73,8 +72,8 @@ class Alerts(DBPlugin):
          :rtype: int
         """
         unix_now = int(time.time())
-        new_id = self.db.insert(self.table, ipstart=ipstart, ipend=ipend, severity=severity, status=Alerts.DEFAULT_STATUS,
-                      timestamp=unix_now, event_type=event_type, details=cPickle.dumps(details))
+        new_id = self.db.insert(self.table, ipstart=ipstart, ipend=ipend, severity=severity, label=label,
+                      timestamp=unix_now, rule_id=rule_id, details=cPickle.dumps(details))
         return new_id
 
     @staticmethod
@@ -90,7 +89,7 @@ class Alerts(DBPlugin):
         """
 
         where = filters.get_where()
-        what = 'id, ipstart, ipend, timestamp, severity, status, event_type'
+        what = 'id, ipstart, ipend, timestamp, severity, label'
 
         rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.limit)
         rows = list(rows)
@@ -111,7 +110,7 @@ class Alerts(DBPlugin):
             'ipe': ipend
         }
         where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
-        what = 'id, ipstart, ipend, timestamp, severity, status, event_type'
+        what = 'id, ipstart, ipend, timestamp, severity, label'
         rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.limit)
         rows = list(rows)
         return rows
@@ -123,42 +122,15 @@ class Alerts(DBPlugin):
             return rows[0]
         return None
 
-    def set_status(self, event_id, status):
+    def set_label(self, alert_id, label):
         qvars = {
-            'eid': event_id
+            'aid': alert_id
         }
-        where = "id=$eid"
-        if not status or len(status) > 32:
-            print("Failed to update alert event status. Status text was {}.".format(repr(status)))
+        where = 'id=$aid'
+        if not label or len(label) > 32:
+            print('Failed to update alert event status. Status text was "{}".'.format(repr(label)))
             return None
-        return self.db.update(self.table, where=where, vars=qvars, status = status)
+        return self.db.update(self.table, where=where, vars=qvars, label=label)
 
     def clear(self):
         return self.db.delete(self.table, where="1")
-
-    @staticmethod
-    def checkIntegrity(db):
-        all_tables = set(integrity.get_table_names(db))
-        subs = integrity.get_all_subs(db)
-        missing = []
-        for sub_id in subs:
-            if Alerts.TABLE_FORMAT.format(sub_id) not in all_tables:
-                missing.append(sub_id)
-
-        if not missing:
-            return {}
-        return {'missing': missing}
-
-    @staticmethod
-    def fixIntegrity(db, errors):
-        missing_table_subs = errors['missing']
-        for sub_id in missing_table_subs:
-            replacements = {
-                'acct': sub_id
-            }
-            with db.transaction():
-                if db.dbname == 'sqlite':
-                    common.exec_sql(db, os.path.join(base_path, '../sql/create_alerts_sqlite.sql'), replacements)
-                else:
-                    common.exec_sql(db, os.path.join(base_path, '../sql/create_alerts_mysql.sql'), replacements)
-        return True

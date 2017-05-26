@@ -9,7 +9,7 @@ BASE_PATH = os.path.dirname(__file__)
 # db: RULES(id, rule_path, active, name, description, params)
 
 
-class Rules(DBPlugin):
+class Rules():
     TABLE_FORMAT = "s{}_Rules"
 
     def __init__(self, db, sub_id):
@@ -106,31 +106,3 @@ class Rules(DBPlugin):
 
     def validate_params(self, rule_id, params):
         old = self.get_rule(rule_id)
-
-
-    @staticmethod
-    def checkIntegrity(db):
-        all_tables = set(integrity.get_table_names(db))
-        subs = integrity.get_all_subs(db)
-        missing = []
-        for sub_id in subs:
-            if Rules.TABLE_FORMAT.format(sub_id) not in all_tables:
-                missing.append(sub_id)
-
-        if not missing:
-            return {}
-        return {'missing': missing}
-
-    @staticmethod
-    def fixIntegrity(db, errors):
-        missing_table_subs = errors['missing']
-        for sub_id in missing_table_subs:
-            replacements = {
-                'acct': sub_id
-            }
-            with db.transaction():
-                if db.dbname == 'sqlite':
-                    common.exec_sql(db, os.path.join(BASE_PATH, '../sql/create_rules_sqlite.sql'), replacements)
-                else:
-                    common.exec_sql(db, os.path.join(BASE_PATH, '../sql/create_rules_mysql.sql'), replacements)
-        return True
