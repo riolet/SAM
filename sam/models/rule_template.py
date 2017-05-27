@@ -4,10 +4,6 @@ import re
 import yaml
 from sam import constants
 
-BASE_PATH = os.path.dirname(__file__)
-TEMPLATES_FOLDER = 'rule_templates'
-RULE_PATH = os.path.join(BASE_PATH, os.path.pardir, TEMPLATES_FOLDER)
-
 # will have compromisedhosts.yml, suspicioustraffic.yml, dos.yml, ...
 # they will expose some controls, such as for dos:
 # expose "tolerance"
@@ -21,28 +17,28 @@ RULE_PATH = os.path.join(BASE_PATH, os.path.pardir, TEMPLATES_FOLDER)
 
 
 def get_all():
-    return filter(lambda f: f.endswith(".yml"), os.listdir(RULE_PATH))
+    return filter(lambda f: f.endswith(".yml"), os.listdir(constants.rule_templates_path))
 
 
 def abs_rule_path(path):
     if path[0:7] == "plugin:":
         abspath = os.path.join(constants.plugins['root'], path[7:])
         if not os.path.exists(abspath):
-            print('security.models.definition: WARNING: absolute rule path not found.')
+            print('WARNING: absolute rule path not found.')
             print('  (Checked "{}"->"{}")'.format(path, abspath))
             return None
     else:
-        abspath = os.path.join(RULE_PATH, "{}".format(path))
+        abspath = os.path.join(constants.rule_templates_path, path)
         if not os.path.exists(abspath):
-            print('Cannot find definition path.')
+            print('WARNING: Cannot find definition file.')
             print('  (Checked "{}"->"{}")'.format(path, abspath))
             return None
     return abspath
 
 
-def get_definition(path, flyweight={}):
-    if path in flyweight:
-        return flyweight[path]
+def get_definition(path, cache={}):
+    if path in cache:
+        return cache[path]
     else:
         try:
             with open(path, 'r') as f:
@@ -52,7 +48,7 @@ def get_definition(path, flyweight={}):
             # print errors, but move on.
             traceback.print_exc()
             return None
-        flyweight[path] = rule_def
+        cache[path] = rule_def
         return rule_def
 
 
@@ -73,21 +69,26 @@ class RuleTemplate(object):
         self.import_yml(yml)
 
     def import_yml(self, data):
-        if 'type' in data:
-            self.type = data['type']
-        if 'name' in data:
+        try:
             self.name = data['name']
+            self.type = data['type']
+        except:
+            if 'name' not in data:
+                raise ValueError("Bad rule: 'name' key not found.")
+            else:
+                raise ValueError("Bad rule: 'type' key not found.")
 
-        self.load_exposed()
-        self.load_inclusions()
-        self.load_actions()
-        self.load_conditions()
+        self.exposed = self.load_exposed(self.yml)
+        self.inclusions = self.load_inclusions(self.yml)
+        self.actions = self.load_actions(self.yml)
+        self.when = self.load_conditions(self.yml)
 
-    def load_exposed(self):
-        if 'expose' not in self.yml:
+    def load_exposed(self, yml):
+        if 'expose' not in yml:
             return
-        exposed = self.yml['expose']
-        for key, param in exposed.iteritems():
+        exposed = {}
+
+        for key, param in yml['expose'].iteritems():
             label = param.get('label', None)
             format = param.get('format', None)
             default = param.get('default', None)
@@ -123,23 +124,27 @@ class RuleTemplate(object):
                 print("Invalid format for exposed parameter {}".format(key))
                 continue
 
-            self.exposed[key] = exposed_param
+            exposed[key] = exposed_param
+        return exposed
 
-    def load_inclusions(self):
-        if not self.yml.get('include', None):
+    def load_inclusions(self, yml):
+        inclusions = {}
+        if not yml.get('include', None):
             return
-        for ref in self.yml['include'].keys():
-            path = os.path.join(self.cwd, self.yml['include'][ref])
+        for ref in yml['include'].keys():
+            path = os.path.join(self.cwd, yml['include'][ref])
             try:
                 with open(path, 'r') as f:
                     data = f.read()
-                self.inclusions[ref] = data.splitlines()
+                inclusions[ref] = data.splitlines()
             except Exception as e:
                 print("Failed to load inclusion {}: {}".format(ref, str(e)))
+        return inclusions
 
-    def load_actions(self):
-        actions = self.yml.get('actions', [])
-        for action in actions:
+    def load_actions(self, yml):
+        yml_actions = yml.get('actions', [])
+        actions = []
+        for action in yml_actions:
             if 'type' not in action:
                 print("Action skipped, type not specified: {}".format(action))
                 continue
@@ -152,16 +157,33 @@ class RuleTemplate(object):
                     print("Action skipped, 'label' key missing from alert.")
                     continue
                 else:
-                    self.actions.append(action)
+                    actions.append(action)
             elif a_type == 'email':
-                print("Email actions not supported yet.")
-                continue
+                if 'address' not in action:
+                    print("Action skipped, 'address' key missing from email.")
+                    continue
+                elif 'subject' not in action:
+                    print("Action skipped, 'subject' key missing from email.")
+                    continue
+                else:
+                    actions.append(action)
+            elif a_type == 'sms':
+                if 'number' not in action:
+                    print("Action skipped, 'number' key missing from email.")
+                    continue
+                elif 'message' not in action:
+                    print("Action skipped, 'message' key missing from email.")
+                    continue
+                else:
+                    actions.append(action)
             else:
                 print("Action skipped, type not supported: {}".format(action))
-        if len(self.actions) == 0:
-            raise ValueError("Rule invalid--no{} actions specified.".format("" if len(actions) == 0 else " valid"))
+        if len(actions) == 0:
+            raise ValueError("Rule invalid--no{} actions specified.".format("" if len(yml_actions) == 0 else " valid"))
+        return actions
 
-    def load_conditions(self):
-        if 'when' not in self.yml:
+    def load_conditions(self, yml):
+        if 'when' not in yml:
             raise ValueError("Rule invalid--no conditions specified")
-        self.when = self.yml['when']
+        when = yml['when']
+        return when

@@ -6,6 +6,9 @@ shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions'
 subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
+templates_folder = 'rule_templates'
+rule_templates_path = os.path.join(base_path, templates_folder)
+
 config = ConfigEnvy('SAM')
 debug = config.get('debug', 'debug', default='False').lower() == 'true'
 

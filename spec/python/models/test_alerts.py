@@ -1,12 +1,6 @@
-# to run these tests (and have python find the sam package), go to your sam_cloud/sam and run:
-#   python -m pytest ../plugins/security/spec
-
 from spec.python import db_connection
 from sam import common
 from sam.models.alerts import Alerts, AlertFilter
-from datetime import datetime
-import time
-
 
 session = {}
 db = db_connection.db
