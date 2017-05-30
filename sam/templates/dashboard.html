@@ -159,9 +159,7 @@ $def with ()
     </div>
   </div>
 
-</div>
-</div>
-</div>
+</div></div></div> <!-- end container -->
 
 <!--=====================  Add rule modal  =======================-->
 <div id="newRuleModal" class="ui small modal">
@@ -207,7 +205,7 @@ $def with ()
 </div>
 
 <!--=====================  Edit rule modal  =======================-->
-<div id="editRuleModal" class="ui modal">
+<div id="er_modal" class="ui modal">
   <i class="close icon"></i>
   <div class="header">
     Edit Rule
@@ -215,23 +213,96 @@ $def with ()
   <div class="content">
     <div class="ui two column grid">
       <div class="column">
-        <div class="ui form" id="editRuleMeta">
-          <div class="ui checkbox field">
-            <label>Active</label>
-            <input id="editRuleActive" type="checkbox">
-          </div>
-          <div class="field">
-            <label>Name:</label>
-            <input id="editRuleName" type="text" placeholder="Rule label">
+        <div class="ui form" id="er_meta">
+
+          <!-- Rule description -->
+          <div class="two fields">
+            <div class="field">
+              <label>Active:</label>
+              <div class="ui toggle checkbox">
+                <input tabindex="0" id="er_active" class="hidden" type="checkbox">
+                <label></label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Name:</label>
+              <input id="er_name" type="text" placeholder="Rule label">
+            </div>
           </div>
           <div class="field">
             <label>Description:</label>
-            <input id="editRuleDesc" type="text" placeholder="Brief description of rule">
+            <input id="er_desc" type="text" placeholder="Brief description of rule">
           </div>
+
+          <!-- Actions: alert? -->
+          <h3 class="header">Actions:</h3>
+          <div class="ui yellow top attached segment">
+            <div class="two fields">
+              <div class="field">
+                <label>Create Alert:</label>
+                <div class="ui toggle checkbox">
+                  <input tabindex="0" id="er_alert" class="hidden" type="checkbox">
+                  <label></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Alert Severity:</label>
+                <input id="er_alert_sev" type="text" placeholder="1-8">
+              </div>
+            </div>
+            <div class="field">
+              <label>Alert Label:</label>
+              <input id="er_alert_label" type="text" placeholder="ex: Main server connected to DB">
+            </div>
+          </div>
+
+          <!-- Actions: email? -->
+          <div class="ui attached segment">
+            <div class="two fields">
+              <div class="field">
+                <label>Send Email:</label>
+                <div class="ui toggle checkbox">
+                  <input tabindex="0" id="er_email" class="hidden" type="checkbox">
+                  <label></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Email address:</label>
+                <input id="er_email_address" type="text" placeholder="jdoe@example.com">
+              </div>
+            </div>
+            <div class="field">
+              <label>Subject:</label>
+              <input id="er_email_subject" type="text" placeholder="Subject of email">
+            </div>
+          </div>
+
+          <!-- Actions: sms? -->
+          <div class="ui bottom attached segment">
+            <div class="two fields">
+              <div class="field">
+                <label>Send SMS:</label>
+                <div class="ui toggle checkbox">
+                  <input tabindex="0" id="er_sms" class="hidden" type="checkbox">
+                  <label></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Number:</label>
+                <input id="er_sms_number" type="text" placeholder="1-123-456-7890">
+              </div>
+            </div>
+            <div class="field">
+              <label>Message:</label>
+              <input id="er_sms_message" type="text" placeholder="Brief message">
+            </div>
+          </div>
+          <!-- -->
         </div>
       </div>
       <div class="column">
-        <div class="ui form" id="editRuleParams">
+        <div class="ui form" id="er_params">
         </div>
       </div>
     </div>

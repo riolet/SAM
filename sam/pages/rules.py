@@ -127,8 +127,8 @@ class RulesEdit(base.HeadlessPost):
             }
         else:
             # Cannot transmit compiled regex expressions to client. They must be recompiled on the javascript side.
-            params = response.get_params()
-            for exposed_param in params.itervalues():
+            exposed_params = response.get_exposed_params()
+            for exposed_param in exposed_params.itervalues():
                 exposed_param.pop('regex_compiled', None)
 
             encoded = {
@@ -137,7 +137,8 @@ class RulesEdit(base.HeadlessPost):
                 'desc': response.get_desc(),
                 'type': response.get_type(),
                 'active': response.is_active(),
-                'params': params,
+                'exposed': exposed_params,
+                'actions': response.get_action_params()
             }
         return encoded
 

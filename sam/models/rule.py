@@ -1,16 +1,24 @@
 import re
 from sam.models import rule_template
+from sam import constants
 
 
 class Rule(object):
+    ACTION_KEYS = ['alert_active', 'alert_severity', 'alert_label',
+                   'email_active', 'email_address', 'email_subject',
+                   'sms_active', 'sms_number', 'sms_message']
+
     def __init__(self, rule_id, active, name, description, path):
         self.id = rule_id
         self.active = active
         self.name = name
         self.desc = description
         self.path = path
-        self.params = {}
         self.definition = self.load_yml()
+        self.exposed_params = self.get_initial_exposed_params()
+        # exposed_params is a dict of dicts where each value dict has type, format, value...
+        self.action_params = self.get_initial_action_params()
+        # action_params is a dict with the action keys above
 
     def nice_path(self):
         nice_name = self.path
@@ -19,18 +27,6 @@ class Rule(object):
         if nice_name[-4:].lower() == '.yml':
             nice_name = nice_name[:-4]
         return nice_name
-
-    def translate(self, s, replacements):
-        """
-        :param s:
-         :type s: str or unicode
-        :param replacements: 
-         :type replacements: dict[str, Any]
-        :return:
-        """
-        for key, value in replacements.iteritems():
-            s = re.sub("\${}".format(key), unicode(value), unicode(s))
-        return s
 
     def get_type(self):
         if self.definition is None:
@@ -47,35 +43,65 @@ class Rule(object):
     def get_desc(self):
         return self.desc
 
-    def set_params(self, params):
-        exposed = self.definition.exposed
-        if not exposed:
-            return
-        key_matches = [key for key in exposed.keys() if key in params]
-        for key in key_matches:
-            p_format = exposed[key]['format']
-            new_value = params[key]
+    def get_initial_exposed_params(self):
+        # get all exposed parameters
+        exposed = self.definition.get_exposed()
+        return exposed
+
+    def get_initial_action_params(self):
+        a_params = {
+            'alert_active': constants.security['alert_active'],
+            'alert_severity': constants.security['alert_active'],
+            'alert_label': constants.security['alert_active'],
+            'email_active': constants.security['email_active'],
+            'email_address': constants.security['email_address'],
+            'email_subject': constants.security['email_subject'],
+            'sms_active': constants.security['sms_active'],
+            'sms_number': constants.security['sms_number'],
+            'sms_message': constants.security['sms_message']
+        }
+
+        # update action parameters to rule definitions as needed
+        action_defaults = self.definition.get_action_defaults()
+        for k, v in action_defaults.iteritems():
+            a_params[k] = v
+
+        return a_params
+
+    def set_params(self, new_action_params, new_exposed_params):
+
+        # import new action params:
+        valid_keys = [key for key in new_action_params.keys() if key in self.action_params]
+        for key in valid_keys:
+            # TODO: validate new value
+            self.action_params[key] = new_action_params[key]
+
+        # import new exposed param values
+        valid_keys = [key for key in new_exposed_params.keys() if key in self.exposed_params]
+        for key in valid_keys:
+            p_format = self.exposed_params[key]['format']
+            new_value = unicode(new_exposed_params[key])
             if p_format == 'text':
-                if 'regex_compiled' in exposed[key]:
-                    regex = exposed[key]['regex_compiled']
-                    if new_value is not None and regex.match(unicode(new_value)) is not None:
-                        self.params[key] = new_value
+                if 'regex_compiled' in self.exposed_params[key]:
+                    regex = self.exposed_params[key]['regex_compiled']
+                    if new_value is not None and regex.match(new_value) is not None:
+                        self.exposed_params[key] = new_value
                     else:
                         # print("regex failed")
                         pass
                 else:
-                    self.params[key] = new_value
+                    self.exposed_params[key] = new_value
             elif p_format == 'checkbox':
-                if unicode(new_value).lower() == 'true':
-                    self.params[key] = True
-                elif unicode(new_value).lower() == 'false':
-                    self.params[key] = False
+                if new_value.lower() == 'true':
+                    self.exposed_params[key] = 'true'
+                elif new_value.lower() == 'false':
+                    self.exposed_params[key] = 'false'
                 else:
                     # new value doesn't match true or false, so leave the existing value unchanged.
                     pass
             elif p_format == 'dropdown':
-                if new_value in exposed[key]['options']:
-                    self.params[key] = new_value
+                if new_value in self.exposed_params[key]['options']:
+                    self.exposed_params[key] = new_value
                 else:
                     # new value isn't one of the acceptable options, so use the existing value unchanged.
                     pass
@@ -83,7 +109,7 @@ class Rule(object):
                 # parameter format isn't recognized, so do not change anything.
                 pass
 
-    def get_params(self):
+    def get_exposed_params(self):
         """
         Gets a dictionary of params like:
         params = {
@@ -96,38 +122,116 @@ class Rule(object):
             }
         }
         """
-        if self.definition is None:
-            return {}
+        return self.exposed_params
 
-        params = self.definition.exposed
+    def get_action_params(self):
+        """
+        Gets a dictionary of action-related params and their values like:
+        params = {
+            'alert_active': 'true',
+            'sms_number': '555-213-7749',
+            ...
+        }
+        """
+        return self.action_params
 
-        # apply stored values, where available.
-        for key in params.keys():
-            if key in self.params:
-                params[key]['value'] = self.params[key]
+    def get_param_values(self):
+        """
+        All params as key-value pairs.
+        Parameters included:
+            1. All action parameters: alert (active, severity, label), email (active, address, subject), sms (active, number, message).
+            2. All exposed parameters.
 
-        return params
+        Resolution order is:
+            1. Default values from constants.py (from default.cfg or environment variables).
+            2. Default values from rule definition.
+            3. Values stored in database.
+
+        :return:
+        """
+        p_values = {
+            'alert_active': constants.security['alert_active'],
+            'alert_severity': constants.security['alert_active'],
+            'alert_label': constants.security['alert_active'],
+            'email_active': constants.security['email_active'],
+            'email_address': constants.security['email_address'],
+            'email_subject': constants.security['email_subject'],
+            'sms_active': constants.security['sms_active'],
+            'sms_number': constants.security['sms_number'],
+            'sms_message': constants.security['sms_message']
+        }
+
+        # update action parameters to rule definitions as needed
+        action_defaults = self.definition.get_action_defaults()
+        for k, v in action_defaults.iteritems():
+            p_values[k] = v
+
+        # get all exposed parameters
+        exposed = self.get_exposed_params()
+        p_values.update(exposed)
+
+        return p_values
+
 
     def get_translation_table(self):
-        tr = self.params.copy()
-        tr.update(self.get_inclusions().copy())
-        return tr
+        """
+        All translation params as key-value pairs.
+        Parameters included:
+            1. All action parameters: alert_(active, severity, label), email_(active, address, subject), sms_(active, number, message).
+            2. All exposed parameters.
+            3. Metadata params: rule_name, rule_desc
+            4. Included data
+
+        Resolution order is:
+            1. Default values from constants.py (from default.cfg or environment variables).
+            2. Default values from rule definition.
+            3. Values stored in database.
+        :return:
+        """
+        # get default action parameters
+        tr_table = {
+            'alert_active': constants.security['alert_active'],
+            'alert_severity': constants.security['alert_active'],
+            'alert_label': constants.security['alert_active'],
+            'email_active': constants.security['email_active'],
+            'email_address': constants.security['email_address'],
+            'email_subject': constants.security['email_subject'],
+            'sms_active': constants.security['sms_active'],
+            'sms_number': constants.security['sms_number'],
+            'sms_message': constants.security['sms_message']
+        }
+
+        # update action parameters to rule definitions as needed
+        action_defaults = self.definition.get_action_defaults()
+        for k, v in action_defaults.iteritems():
+            tr_table[k] = v
+
+        # get all exposed parameters
+        exposed = self.get_exposed_params()
+        tr_table.update(exposed)
+
+        # get all metadata parameters
+        tr_table['rule_name'] = self.name
+        tr_table['rule_desc'] = self.desc
+
+        # get all inclusions
+        tr_table.update(self.definition.get_inclusions())
+
+        # pretranslate symbols where possible.
+        for key, value in tr_table.iteritems():
+            tr_table[key] = re.sub(r'\$(\S+)', lambda match: tr_table[match.group(1)] if match.group(1) in tr_table else match.group(1), value)
+
+        return tr_table
 
     def get_conditions(self):
         return self.definition.when
-
-    def get_actions(self):
-        return self.definition.actions
-
-    def get_inclusions(self):
-        return self.definition.inclusions
 
     def export_params(self):
         """
         Get all the param values as a dict
         :return: 
         """
-        return {k: v['value'] for k, v in self.get_params().iteritems()}
+        return {k: v['value'] for k, v in self.get_exposed_params().iteritems()}
 
     def load_yml(self):
         """

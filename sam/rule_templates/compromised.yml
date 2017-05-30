@@ -6,23 +6,7 @@ type: immediate
 include:
   bad_hosts: ./test_hosts.txt
 expose:
-  severity:
-    label: Alert severity
-    format: text
-    regex: "^\\s*([1-8])\\s*$"
-    default: 6
-  alert_label:
-    label: Alert label
-    format: text
-    regex: "^\\s*(\\S|\\S.{0,30}\\S)\\s*$"
-    default: Probably Bad
 actions:
- - type: alert
-   severity: $severity
-   label: $alert_label
-
- - type: email
-   address: 4
-   label: The Th$alert_label Master
+  alert_severity: 8
 
 when: dst host in $bad_hosts

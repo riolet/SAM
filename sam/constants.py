@@ -40,6 +40,8 @@ LDAP = {
     'connection_string': config.get('LDAP', 'connection_string', default='')
 }
 
+security = dict(config.items('security'))
+
 collector = dict(config.items('collector'))
 aggregator = dict(config.items('aggregator'))
 webserver = dict(config.items('webserver'))

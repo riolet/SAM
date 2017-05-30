@@ -33,8 +33,9 @@ class Rules():
 
     def row_to_rule(self, row):
         rule_obj = rule.Rule(row.id, row.active, row.name, row.description, row.rule_path)
-        if 'params' in row:
-            rule_obj.set_params(row.params)
+        exposed_params = row.get('exposed_params', {})
+        action_params = row.get('action_params', {})
+        rule_obj.set_params(action_params, exposed_params)
         return rule_obj
 
     def add_rule(self, path, name, description, params):

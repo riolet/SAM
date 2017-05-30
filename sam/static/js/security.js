@@ -158,7 +158,7 @@ function dateConverter() {
 
     init: function () {
       //activate modal checkboxes
-      $('#editRuleModal .ui.checkbox')
+      $('#er_modal .ui.checkbox')
         .checkbox({
         onChecked: function() {
           console.log("Checked, ", this);
@@ -238,9 +238,9 @@ function dateConverter() {
         "id": rule_id,
       };
       //details are loading...
-      let modalformA = document.getElementById("editRuleMeta");
+      let modalformA = document.getElementById("er_meta");
       modalformA.classList.add("loading");
-      let modalformB = document.getElementById("editRuleParams");
+      let modalformB = document.getElementById("er_params");
       modalformB.classList.add("loading");
 
       $.ajax({
@@ -650,9 +650,11 @@ function dateConverter() {
     populate_edit_modal: function (rule_data) {
       console.log("filling modal with data:");
       console.log(rule_data);
-      let active = document.getElementById("editRuleActive");
-      let name = document.getElementById("editRuleName");
-      let desc = document.getElementById("editRuleDesc");
+
+      // populate meta data
+      let active = document.getElementById("er_active");
+      let name = document.getElementById("er_name");
+      let desc = document.getElementById("er_desc");
       if (rule_data.active) {
         $(active.parentElement).checkbox("set checked");
       } else {
@@ -661,10 +663,47 @@ function dateConverter() {
       name.value = rule_data.name;
       desc.value = rule_data.desc;
 
-      let parambox = document.getElementById("editRuleParams");
+      // populate alert data
+      active = document.getElementById("er_alert");
+      let severity = document.getElementById("er_alert_sev");
+      let label = document.getElementById("er_alert_label");
+      if (rule_data.actions.alert_active === "True") {
+        $(active.parentElement).checkbox("set checked");
+      } else {
+        $(active.parentElement).checkbox("set unchecked");
+      }
+      severity.value = rule_data.actions.alert_severity;
+      label.value = rule_data.actions.alert_label;
+
+      // populate email data
+      active = document.getElementById("er_email");
+      let address = document.getElementById("er_email_address");
+      let subject = document.getElementById("er_email_subject");
+      if (rule_data.actions.email_active === "True") {
+        $(active.parentElement).checkbox("set checked");
+      } else {
+        $(active.parentElement).checkbox("set unchecked");
+      }
+      address.value = rule_data.actions.email_address;
+      subject.value = rule_data.actions.email_subject;
+
+      // populate sms data
+      active = document.getElementById("er_email");
+      let number = document.getElementById("er_sms_number");
+      let message = document.getElementById("er_sms_message");
+      if (rule_data.actions.sms_active === "True") {
+        $(active.parentElement).checkbox("set checked");
+      } else {
+        $(active.parentElement).checkbox("set unchecked");
+      }
+      number.value = rule_data.actions.sms_number;
+      message.value = rule_data.actions.sms_message;
+
+      // populate exposed data values
+      let parambox = document.getElementById("er_params");
       parambox.innerHTML = "";
-      Object.keys(rule_data.params).forEach(function (key) {
-        let param = rule_data.params[key];
+      Object.keys(rule_data.exposed).forEach(function (key) {
+        let param = rule_data.exposed[key];
         if (param.format === "text") {
           rules.edit_add_text_param(parambox, key, param);
         } else if (param.format === "checkbox") {
@@ -698,17 +737,17 @@ function dateConverter() {
       }
       let rule_id = button.dataset['rule_id'];
       rules.GET_edit_rule(rule_id);
-      let modal = document.getElementById("editRuleModal");
+      let modal = document.getElementById("er_modal");
       $(modal)
         .modal({
           onApprove: function() {
             let edits = {
-              active: document.getElementById("editRuleActive").parentElement.classList.contains("checked"),
-              name: document.getElementById("editRuleName").value,
-              desc: document.getElementById("editRuleDesc").value,
+              active: document.getElementById("er_active").parentElement.classList.contains("checked"),
+              name: document.getElementById("er_name").value,
+              desc: document.getElementById("er_desc").value,
               params: {}
             }
-            let params = document.getElementById("editRuleParams");
+            let params = document.getElementById("er_params");
             let inputs = params.getElementsByTagName("INPUT");
             let i = inputs.length - 1;
             for(; i >= 0; i = i - 1) {

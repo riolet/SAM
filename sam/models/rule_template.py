@@ -58,12 +58,12 @@ class RuleTemplate(object):
     """
     def __init__(self, path, yml):
         self.cwd = path
-        self.yml = yml
+        self._yml = yml
         self.type = "Unknown"
         self.name = "Unknown"
-        self.exposed = {}
-        self.actions = []
-        self.inclusions = {}
+        self._exposed = {}
+        self._action_defaults = {}
+        self._inclusions = {}
         self.when = ""
 
         self.import_yml(yml)
@@ -78,36 +78,37 @@ class RuleTemplate(object):
             else:
                 raise ValueError("Bad rule: 'type' key not found.")
 
-        self.exposed = self.load_exposed(self.yml)
-        self.inclusions = self.load_inclusions(self.yml)
-        self.actions = self.load_actions(self.yml)
-        self.when = self.load_conditions(self.yml)
+        self._exposed = self.load_exposed(self._yml)
+        self._inclusions = self.load_inclusions(self._yml)
+        self._action_defaults = self.load_actions(self._yml)
+        self.when = self.load_conditions(self._yml)
 
     def load_exposed(self, yml):
-        if 'expose' not in yml:
-            return
         exposed = {}
+        if 'expose' not in yml or yml['expose'] is None:
+            return exposed
 
         for key, param in yml['expose'].iteritems():
             label = param.get('label', None)
-            format = param.get('format', None)
+            format_ = param.get('format', None)
             default = param.get('default', None)
             if default is not None:
                 default = str(default)
             regex = param.get('regex', None)
             options = param.get('options', None)
 
-            if label is None or format is None or default is None:
-                print("Unable to expose parameter {} of {}: Missing keys '{}'".format(key, self.name, "', '".join([x[1] for x in [(label, "label"), (format, "format"), (default, "default")] if x[0] is None])))
+            if label is None or format_ is None or default is None:
+                print("Unable to expose parameter {} of {}: Missing keys '{}'".format(key, self.name, "', '".join(
+                    [x[1] for x in [(label, "label"), (format_, "format"), (default, "default")] if x[0] is None])))
                 continue
             exposed_param = {
                 'label': label,
-                'format': format,
+                'format': format_,
                 'value': default
             }
-            if format == 'checkbox':
+            if format_ == 'checkbox':
                 pass
-            elif format == 'text':
+            elif format_ == 'text':
                 if regex is not None:
                     try:
                         compiled_regex = re.compile(regex)
@@ -115,7 +116,7 @@ class RuleTemplate(object):
                         exposed_param['regex_compiled'] = compiled_regex
                     except:
                         print("Unable to compile regular expression: /{}/".format(repr(regex)))
-            elif format == 'dropdown':
+            elif format_ == 'dropdown':
                 if options is None:
                     print("Missing options for exposed parameter {}".format(key))
                     continue
@@ -141,49 +142,28 @@ class RuleTemplate(object):
                 print("Failed to load inclusion {}: {}".format(ref, str(e)))
         return inclusions
 
-    def load_actions(self, yml):
-        yml_actions = yml.get('actions', [])
-        actions = []
-        for action in yml_actions:
-            if 'type' not in action:
-                print("Action skipped, type not specified: {}".format(action))
-                continue
-            a_type = action['type']
-            if a_type == 'alert':
-                if 'severity' not in action:
-                    print("Action skipped, 'severity' key missing from alert.")
-                    continue
-                elif 'label' not in action:
-                    print("Action skipped, 'label' key missing from alert.")
-                    continue
-                else:
-                    actions.append(action)
-            elif a_type == 'email':
-                if 'address' not in action:
-                    print("Action skipped, 'address' key missing from email.")
-                    continue
-                elif 'subject' not in action:
-                    print("Action skipped, 'subject' key missing from email.")
-                    continue
-                else:
-                    actions.append(action)
-            elif a_type == 'sms':
-                if 'number' not in action:
-                    print("Action skipped, 'number' key missing from email.")
-                    continue
-                elif 'message' not in action:
-                    print("Action skipped, 'message' key missing from email.")
-                    continue
-                else:
-                    actions.append(action)
-            else:
-                print("Action skipped, type not supported: {}".format(action))
-        if len(actions) == 0:
-            raise ValueError("Rule invalid--no{} actions specified.".format("" if len(yml_actions) == 0 else " valid"))
+    @staticmethod
+    def load_actions(yml):
+        yml_actions = yml.get('actions', {})
+        actions = {}
+
+        for key, def_value in yml_actions.items():
+            if key in ['alert_severity', 'alert_label', 'email_address', 'email_subject', 'sms_number', 'sms_message']:
+                actions[key] = def_value
         return actions
 
-    def load_conditions(self, yml):
+    @staticmethod
+    def load_conditions(yml):
         if 'when' not in yml:
             raise ValueError("Rule invalid--no conditions specified")
         when = yml['when']
         return when
+
+    def get_exposed(self):
+        return self._exposed.copy()
+
+    def get_action_defaults(self):
+        return self._action_defaults.copy()
+
+    def get_inclusions(self):
+        return self._inclusions.copy()
