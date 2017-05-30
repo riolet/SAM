@@ -49,6 +49,8 @@ class Rule(object):
 
     def set_params(self, params):
         exposed = self.definition.exposed
+        if not exposed:
+            return
         key_matches = [key for key in exposed.keys() if key in params]
         for key in key_matches:
             p_format = exposed[key]['format']

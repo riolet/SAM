@@ -113,8 +113,7 @@ class RulesProcessor(object):
 
         parser = rule_parser.RuleParser(translations, conditions)
 
-        where = parser.get_sql
-        where = "{} {}".format(subject, object)
+        where = parser.sql
 
         print("prepared_condition: WHERE {}".format(where))
 
