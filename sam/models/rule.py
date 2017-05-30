@@ -106,25 +106,16 @@ class Rule(object):
 
         return params
 
+    def get_translation_table(self):
+        tr = self.params.copy()
+        tr.update(self.get_inclusions().copy())
+        return tr
+
     def get_conditions(self):
-        cond = self.definition.when
-        # replace when a simple string. Do not just replace collections.
-        translated = self.translate(cond, self.params)
-        return translated
+        return self.definition.when
 
     def get_actions(self):
-        # replace vars when a simple string. Do not just replace collections.
-        actions = []
-        for original_action in self.definition.actions:
-            action = {}
-            for key, value in original_action.iteritems():
-                d_key = "${}".format(value)
-                if d_key in self.params:
-                    action[key] = self.params[d_key]
-                else:
-                    action[key] = self.translate(value, self.params)
-            actions.append(action)
-        return actions
+        return self.definition.actions
 
     def get_inclusions(self):
         return self.definition.inclusions

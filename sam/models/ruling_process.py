@@ -5,7 +5,7 @@ import multiprocessing
 import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
 from sam import common, constants
-from sam.models import rule
+from sam.models import rule, rule_parser
 
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
@@ -108,32 +108,14 @@ class RulesProcessor(object):
         """
         self.db = db
 
-    def evaluate_rule(self, job, conditions, included):
+    def evaluate_rule(self, job, translations, conditions):
         alerts_discovered = []
-        re_match = RulesProcessor.COND_REGEX.match(conditions)
-        if re_match is None:
-            print("ERROR evaluating conditions. No regex match found.")
-            return alerts_discovered
-        groups = re_match.groupdict()
-        type = groups['type']  # host or port
-        dir_ = groups['dir']  # src or dst
-        value = groups['value']  # xxx or in $container
 
-        if type == 'port':
-            subject = 'port'
-        else:
-            subject = dir_
+        parser = rule_parser.RuleParser(translations, conditions)
 
-        if value[:3] == "in ":
-            if value[4:] in included:
-                object = "in ({})".format(",".join(map(str, map(common.IPStringtoInt, included[value[4:]]))))
-            else:
-                items = value[5:-1].split(",")
-                object = "in ({})".format(",".join(map(str, map(common.IPStringtoInt, items))))
-        else:
-            object = "= {}".format(common.IPStringtoInt(value))
-
+        where = parser.get_sql
         where = "{} {}".format(subject, object)
+
         print("prepared_condition: WHERE {}".format(where))
 
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
@@ -163,14 +145,13 @@ class RulesProcessor(object):
             actions = rule.get_actions()
             included = rule.get_inclusions()
             print('  {}: Working on rule "{}" ({})'.format(job.status, rule.get_name(), rule.nice_path()))
-            print('    Rule conditions: {}'.format(rule.get_conditions()))
+            print('    Rule conditions: {}'.format(conditions))
             print('    Rule actions:')
-            for action in rule.get_actions():
+            for action in actions:
                 print('      {}'.format(repr(action)))
 
             alert_rows = self.evaluate_rule(job, conditions, included)
             print('    {} alerts discovered,'.format(len(alert_rows)))
-            import pprint
             for alert in alert_rows:
                 print('      {}: {} -> {}:{} using {}'.format(datetime.fromtimestamp(int(time.mktime(alert.timestamp.timetuple()))), common.IPtoString(alert.src), common.IPtoString(alert.dst), alert.port, alert.protocol))
 

@@ -1,4 +1,5 @@
 from pprint import pprint
+from sam import common
 import re
 
 
@@ -16,9 +17,11 @@ class RuleParser(object):
         (r'<=|<|>|>=|=|!=',
                        lambda scanner, token: ('COMPARATOR', token)),
         (r'\$\S+',     lambda scanner, token: ('REPLACEMENT', token[1:])),  # remove the leading $
-        (r'\[\S+(?:[\s,]*\S+)*\]|\(\S+(?:[\s,]*\S+)*\)',
-                       lambda scanner, token: ('LIT_LIST', token)),  # to match "[a,b,c]" and "(d e f)"
-        (r'\S+',       lambda scanner, token: ('LITERAL', token)),
+        (r'\[\S+(?:\s*,\s*\S+)*\]|\(\S+(?:\s*,\s*\S+)*\)',
+                       lambda scanner, token: ('LIT_LIST', token)),  # to match "[a,b,c]" and "(d , e , f)"
+        (r'\(',        lambda scanner, token: ('P_OPEN', token)),
+        (r'\)',        lambda scanner, token: ('P_CLOSE', token)),
+        (r'[\w.-]+',   lambda scanner, token: ('LITERAL', token)),
         (r"\s+",       None),  # None == skip token.
     ])
 
@@ -37,16 +40,32 @@ class RuleParser(object):
         self.original = rule_string
         self.tokens = []
         self.clauses = []
+        self.sql = ""
 
-        self.tokenize()
+        self.tokens = self.tokenize()
         self.decode_tokens()
-        self.clause_builder()
+        self.clauses = self.clause_builder()
+        self.sql = self.sql_encoder()
 
     def tokenize(self):
         tokens, remainder = RuleParser.SCANNER.scan(self.original)
         if remainder:
             raise RuleParseError('Unable to parse rule. Cannot interpret "{}"'.format(remainder))
-        self.tokens = tokens
+        if not self.has_balanced_parens(tokens):
+            raise RuleParseError('Unable to parse rule. Parentheses are unbalanced.')
+        return tokens
+
+    def has_balanced_parens(self, tokenlist):
+        p_level = 0
+        for token in tokenlist:
+            print(token)
+            if token[1] == '(':
+                p_level += 1
+            elif token[1] == ')':
+                p_level -= 1
+            if p_level < 0:
+                return False
+        return p_level == 0
 
     def decode_tokens(self):
         for i in range(len(self.tokens)):
@@ -57,7 +76,7 @@ class RuleParser(object):
                     if isinstance(replacement, (list, tuple)):
                         self.tokens[i] = ('LIT_LIST', map(str, replacement))
                     else:
-                        if re.match(r'\[\S+(?:[\s,]*\S+)*\]|\(\S+(?:[\s,]*\S+)*\)', str(replacement)):
+                        if re.match(r'\[\S+(?:\s*,\s*\S+)*\]|\(\S+(?:\s*,\s*\S+)*\)', str(replacement)):
                             parts = re.split("[, ]+", str(replacement[1:-1]))
                             self.tokens[i] = ('LIT_LIST', parts)
                         else:
@@ -82,13 +101,12 @@ class RuleParser(object):
         mode = None
         next_mode = None
         for token in self.tokens:
-            next_mode = mode
             if token[0] in ('DIRECTION', 'TYPE', 'COMPARATOR', 'LITERAL', 'LIT_LIST') and mode != 'clause':
                 next_mode = 'clause'
                 clause = self.default_clause()
             elif token[0] in ('AND', 'OR'):
                 next_mode = 'join'
-            elif token[0] in ('NOT'):
+            elif token[0] in ('NOT', 'P_OPEN', 'P_CLOSE'):
                 next_mode = 'modify'
 
             if next_mode is None or (mode is None and next_mode == 'join'):
@@ -132,4 +150,36 @@ class RuleParser(object):
             clause.pop('collection', None)
             objects.append(('CLAUSE', clause))
             clause = None
-        self.clauses = objects
+        return objects
+
+    def sql_encoder(self):
+        sql = ""
+        for item in self.clauses:
+            if item[0] == 'JOIN':
+                sql += ' {} '.format(item[1])
+            elif item[0] == 'MODIFIER':
+                sql += ' {} '.format(item[1])
+            elif item[0] == 'CLAUSE':
+                clause = item[1]
+                if clause['type'] == 'port':
+                    if type(clause['value']) is list:
+                        ports = "({})".format(",".join(map(str, map(int, clause['value']))))
+                    else:
+                        ports = int(clause['value'])
+
+                    clause_sql = 'port {} {}'.format(clause['comp'], ports)
+                elif clause['type'] == 'host':
+                    if type(clause['value']) is list:
+                        ips = "({})".format(",".join(map(str, map(common.IPStringtoInt, clause['value']))))
+                    else:
+                        ips = common.IPStringtoInt(clause['value'])
+                    if clause['dir_'] == 'src':
+                        clause_sql = 'src {} {}'.format(clause['comp'], ips)
+                    elif clause['dir_'] == 'dst':
+                        clause_sql = 'dst {} {}'.format(clause['comp'], ips)
+                    else:
+                        clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
+                else:
+                    raise RuleParseError('Cannot convert to sql: type "{}" is unhandled.'.format(clause['type']))
+                sql += clause_sql
+        return sql

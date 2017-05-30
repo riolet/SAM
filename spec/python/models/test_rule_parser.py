@@ -1,3 +1,4 @@
+import pytest
 from sam.models import rule_parser
 
 
@@ -49,7 +50,7 @@ def test_tokenize_lists():
     parser = rule_parser.RuleParser({}, s1)
     assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'src', 'type': 'host', 'value': list('1234')})]
 
-    s2 = 'src host in (5 6 7 8)'
+    s2 = 'src host in (5 ,6 ,7 , 8)'
     parser = rule_parser.RuleParser({}, s2)
     assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'src', 'type': 'host', 'value': list('5678')})]
 
@@ -97,7 +98,7 @@ def test_tokenize_replacements():
     assert parser.tokens == [('TYPE', 'host'), ('LIST', 'in'), ('LIT_LIST', ['1', '2', '3'])]
 
     s2 = 'host in $place'
-    tr = {'place': "(1 2 3)"}
+    tr = {'place': "(1 ,2 , 3)"}
     parser = rule_parser.RuleParser(tr, s2)
     assert parser.tokens == [('TYPE', 'host'), ('LIST', 'in'), ('LIT_LIST', ['1', '2', '3'])]
 
@@ -133,6 +134,7 @@ def test_joins():
         ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
     ]
 
+
 def test_negation():
     s1 = 'dst port not in (22, 33, 44)'
     parser = rule_parser.RuleParser({}, s1)
@@ -159,3 +161,112 @@ def test_negation():
         ('MODIFIER', 'not'),
         ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': 'not in', 'value': ['22', '33', '44']})
     ]
+
+
+def test_parens():
+    s = '(dst port < 500)'
+    parser = rule_parser.RuleParser({}, s)
+    assert parser.clauses == [
+        ('MODIFIER', '('),
+        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
+        ('MODIFIER', ')'),
+    ]
+
+    s = '((dst port < 500))'
+    parser = rule_parser.RuleParser({}, s)
+    assert parser.clauses == [
+        ('MODIFIER', '('),
+        ('MODIFIER', '('),
+        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
+        ('MODIFIER', ')'),
+        ('MODIFIER', ')'),
+    ]
+
+    s = 'dst port < 500)'
+    with pytest.raises(rule_parser.RuleParseError):
+        parser = rule_parser.RuleParser({}, s)
+
+    s = '(dst port < 500'
+    with pytest.raises(rule_parser.RuleParseError):
+        parser = rule_parser.RuleParser({}, s)
+
+    s = 'dst port < 500)('
+    with pytest.raises(rule_parser.RuleParseError):
+        parser = rule_parser.RuleParser({}, s)
+
+    s = 'dst port < 500()'
+    parser = rule_parser.RuleParser({}, s)
+    assert parser.clauses == [
+        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
+        ('MODIFIER', '('),
+        ('MODIFIER', ')'),
+    ]
+
+
+def test_sql():
+    s1 = 'src host = 1.2.3.4'
+    parser = rule_parser.RuleParser({}, s1)
+    sql = parser.sql
+    assert sql == 'src = 16909060'
+
+    s2 = 'src host in [1.2.3.4, 10.20.30.40, 100.200.50.150]'
+    parser = rule_parser.RuleParser({}, s2)
+    sql = parser.sql
+    assert sql == 'src in (16909060,169090600,1690841750)'
+
+    s3 = 'dst port in [22, 33, 44]'
+    parser = rule_parser.RuleParser({}, s3)
+    sql = parser.sql
+    assert sql == 'port in (22,33,44)'
+
+    s4 = 'dst port = 5'
+    parser = rule_parser.RuleParser({}, s4)
+    sql = parser.sql
+    assert sql == 'port = 5'
+
+    s5 = '(src host = 1.2.3.4 or dst host = 5.6.7.8) and port = 80'
+    parser = rule_parser.RuleParser({}, s5)
+    sql = parser.sql
+    assert sql == ' ( src = 16909060 or dst = 84281096 )  and port = 80'
+
+
+def test_tcpdump_examples():
+    s = 'host sundown'
+    parser = rule_parser.RuleParser({}, s)
+    assert parser.clauses == [
+        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'sundown'})
+    ]
+
+    s = 'host helios and ( hot or ace )'
+    parser = rule_parser.RuleParser({}, s)
+    assert parser.clauses == [
+        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'helios'}),
+        ('JOIN', 'and'),
+        ('MODIFIER', '('),
+        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'hot'}),
+        ('JOIN', 'or'),
+        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'ace'}),
+        ('MODIFIER', ')'),
+    ]
+
+    s = 'ip host ace and not helios'  # all traffic available is IP traffic
+    s = 'host ace and not helios'
+    parser = rule_parser.RuleParser({}, s)
+    assert parser.clauses == [
+        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'ace'}),
+        ('JOIN', 'and'),
+        ('MODIFIER', 'not'),
+        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'helios'}),
+    ]
+
+    s = 'net ucb-ether'  # 'net' is not supported in SAM
+    s = 'gateway snup and (port ftp or ftp-data)'  # 'gateway' is not supported in SAM
+    s = 'ip and not net localnet'  # 'localnet' is not supported in SAM
+    s = 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0 and not src and dst net localnet'  # tcp flags haven't been retained by SAM
+    s = 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'  # no data has been retained by SAM
+    s = 'gateway snup and ip[2:2] > 576'  # 'gateway' is not supported in SAM
+    s = 'ether[0] & 1 = 0 and ip[16] >= 224'  #
+    s = 'icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply'
+
+
+
