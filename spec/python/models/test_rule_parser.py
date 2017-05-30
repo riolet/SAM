@@ -227,7 +227,13 @@ def test_sql():
     s5 = '(src host = 1.2.3.4 or dst host = 5.6.7.8) and port = 80'
     parser = rule_parser.RuleParser({}, s5)
     sql = parser.sql
-    assert sql == ' ( src = 16909060 or dst = 84281096 )  and port = 80'
+    assert sql == '( src = 16909060 or dst = 84281096 ) and port = 80'
+
+    s6 = 'host 10.20.30.40 and not (10.24.34.44 or 10.24.34.45)'
+    parser = rule_parser.RuleParser({}, s6)
+    sql = parser.sql
+    assert sql == '(dst = 169090600 or src = 169090600) and not ' \
+                  '( (dst = 169353772 or src = 169353772) or (dst = 169353773 or src = 169353773) )'
 
 
 def test_tcpdump_examples():
@@ -266,7 +272,7 @@ def test_tcpdump_examples():
     s = 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'  # no data has been retained by SAM
     s = 'gateway snup and ip[2:2] > 576'  # 'gateway' is not supported in SAM
     s = 'ether[0] & 1 = 0 and ip[16] >= 224'  #
-    s = 'icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply'
+    s = 'icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply'  # icmp details are not stored by SAM
 
 
 

@@ -153,12 +153,13 @@ class RuleParser(object):
         return objects
 
     def sql_encoder(self):
-        sql = ""
+        parts = []
         for item in self.clauses:
+
             if item[0] == 'JOIN':
-                sql += ' {} '.format(item[1])
+                parts.append(item[1])
             elif item[0] == 'MODIFIER':
-                sql += ' {} '.format(item[1])
+                parts.append(item[1])
             elif item[0] == 'CLAUSE':
                 clause = item[1]
                 if clause['type'] == 'port':
@@ -166,7 +167,6 @@ class RuleParser(object):
                         ports = "({})".format(",".join(map(str, map(int, clause['value']))))
                     else:
                         ports = int(clause['value'])
-
                     clause_sql = 'port {} {}'.format(clause['comp'], ports)
                 elif clause['type'] == 'host':
                     if type(clause['value']) is list:
@@ -181,5 +181,6 @@ class RuleParser(object):
                         clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
                 else:
                     raise RuleParseError('Cannot convert to sql: type "{}" is unhandled.'.format(clause['type']))
-                sql += clause_sql
+                parts.append(clause_sql)
+        sql = " ".join(parts)
         return sql
