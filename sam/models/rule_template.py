@@ -78,12 +78,13 @@ class RuleTemplate(object):
             else:
                 raise ValueError("Bad rule: 'type' key not found.")
 
-        self._exposed = self.load_exposed(self._yml)
+        self._exposed = RuleTemplate.load_exposed(self._yml)
         self._inclusions = self.load_inclusions(self._yml)
-        self._action_defaults = self.load_actions(self._yml)
-        self.when = self.load_conditions(self._yml)
+        self._action_defaults = RuleTemplate.load_action_defaults(self._yml)
+        self.when = RuleTemplate.load_conditions(self._yml)
 
-    def load_exposed(self, yml):
+    @staticmethod
+    def load_exposed(yml):
         exposed = {}
         if 'expose' not in yml or yml['expose'] is None:
             return exposed
@@ -98,7 +99,7 @@ class RuleTemplate(object):
             options = param.get('options', None)
 
             if label is None or format_ is None or default is None:
-                print("Unable to expose parameter {} of {}: Missing keys '{}'".format(key, self.name, "', '".join(
+                print("Unable to expose parameter {}: Missing keys '{}'".format(key, "', '".join(
                     [x[1] for x in [(label, "label"), (format_, "format"), (default, "default")] if x[0] is None])))
                 continue
             exposed_param = {
@@ -128,12 +129,13 @@ class RuleTemplate(object):
             exposed[key] = exposed_param
         return exposed
 
-    def load_inclusions(self, yml):
+    @staticmethod
+    def load_inclusions(yml):
         inclusions = {}
         if not yml.get('include', None):
             return
         for ref in yml['include'].keys():
-            path = os.path.join(self.cwd, yml['include'][ref])
+            path = os.path.join(constants.rule_templates_path, yml['include'][ref])
             try:
                 with open(path, 'r') as f:
                     data = f.read()
@@ -143,9 +145,11 @@ class RuleTemplate(object):
         return inclusions
 
     @staticmethod
-    def load_actions(yml):
-        yml_actions = yml.get('actions', {})
+    def load_action_defaults(yml):
         actions = {}
+        yml_actions = yml.get('actions', {})
+        if yml_actions is None or len(yml_actions) == 0:
+            return actions
 
         for key, def_value in yml_actions.items():
             if key in ['alert_severity', 'alert_label', 'email_address', 'email_subject', 'sms_number', 'sms_message']:

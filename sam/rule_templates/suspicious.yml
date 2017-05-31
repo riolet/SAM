@@ -27,4 +27,5 @@ actions:
   email_subject: "[SAM] Special Email Subject"
   # sms_number: could be overridden here. Not recommended.
   sms_message: "[SAM] Special SMS Message"
+subject: src
 when: src host $source_ip and dst host $dest_ip and dst port $port

@@ -14,7 +14,6 @@ def test_get_all():
         'netscan.yml',
         'portscan.yml',
         'suspicious.yml',
-        'unexpected.yml'
     ]
     expected.sort()
     assert all_templates == expected
@@ -45,34 +44,29 @@ def test_yml_compromised():
     assert isinstance(dfn, rule_template.RuleTemplate)
 
 
-def xtest_yml_dos():
+def test_yml_dos():
     s = 'dos.yml'
     dfn = rule_template.get_definition(rule_template.abs_rule_path(s))
     assert isinstance(dfn, rule_template.RuleTemplate)
 
 
-def xtest_yml_netscan():
+def test_yml_netscan():
     s = 'netscan.yml'
     dfn = rule_template.get_definition(rule_template.abs_rule_path(s))
     assert isinstance(dfn, rule_template.RuleTemplate)
 
 
-def xtest_yml_portscan():
+def test_yml_portscan():
     s = 'portscan.yml'
     dfn = rule_template.get_definition(rule_template.abs_rule_path(s))
     assert isinstance(dfn, rule_template.RuleTemplate)
 
 
-def xtest_yml_suspicious():
+def test_yml_suspicious():
     s = 'suspicious.yml'
     dfn = rule_template.get_definition(rule_template.abs_rule_path(s))
     assert isinstance(dfn, rule_template.RuleTemplate)
 
-
-def xtest_yml_unexpected():
-    s = 'unexpected.yml'
-    dfn = rule_template.get_definition(rule_template.abs_rule_path(s))
-    assert isinstance(dfn, rule_template.RuleTemplate)
 
 # ----------------- RuleTemplate ----------------------
 dummy_yml = """---
@@ -113,17 +107,12 @@ expose:
       - blue
       - green
 actions:
- - type: alert
-   severity: $severity
-   label: $alert_label
-
- - type: email
-   address: supe@example.com
-   subject: "[SAM] Security Rule $name triggered"
-   
- - type: sms
-   number: +1-555-321-7789
-   message: "[SAM] Security Rule $name triggered"
+  alert_severity: 8
+  alert_label: Special Label
+  email_address: abc@zyx.com
+  email_subject: "[SAM] Special Email Subject"
+  sms_number: 1 123 456 7890
+  sms_message: "[SAM] Special SMS Message"
 when: src host $source_ip and dst host $dest_ip and dst port $port
 """
 
@@ -303,86 +292,14 @@ def test_load_inclusions():
 def test_load_actions_alert():
     rt = get_test_rule_template()
 
-    good_alert = {'actions': [{
-        'type': 'alert',
-        'severity': '5',
-        'label': 'hello'
-    }]}
-    actions = rt.load_actions(good_alert)
-    assert len(actions) == 1
-    assert sorted(actions[0].keys()) == ['label', 'severity', 'type']
-
-    bad_alert1 = {'actions': [{
-        'type': 'alert',
-        'severity': '5'
-    }]}
-    with pytest.raises(ValueError):
-        actions = rt.load_actions(bad_alert1)
-        assert len(actions) == 0
-
-    bad_alert2 = {'actions': [{
-        'type': 'alert',
-        'label': 'hello'
-    }]}
-    with pytest.raises(ValueError):
-        actions = rt.load_actions(bad_alert2)
-        assert len(actions) == 0
-
-
-def test_load_actions_email():
-    rt = get_test_rule_template()
-
-    good_email = {'actions': [{
-        'type': 'email',
-        'address': 'example@example.com',
-        'subject': '[SAM] Security Rule $name triggered'
-    }]}
-    actions = rt.load_actions(good_email)
-    assert len(actions) == 1
-    assert sorted(actions[0].keys()) == ['address', 'subject', 'type']
-
-    bad_email1 = {'actions': [{
-        'type': 'email',
-        'subject': '[SAM] Security Rule $name triggered'
-    }]}
-    with pytest.raises(ValueError):
-        actions = rt.load_actions(bad_email1)
-        assert len(actions) == 0
-
-    bad_email2 = {'actions': [{
-        'type': 'email',
-        'address': 'example@example.com',
-    }]}
-    with pytest.raises(ValueError):
-        actions = rt.load_actions(bad_email2)
-        assert len(actions) == 0
-
-
-def test_load_actions_sms():
-    rt = get_test_rule_template()
-
-    good_sms = {'actions': [{
-        'type': 'sms',
-        'number': '+1-555-123-7789',
-        'message': '[SAM] Security Rule $name triggered'
-    }]}
-    actions = rt.load_actions(good_sms)
-    assert len(actions) == 1
-    assert sorted(actions[0].keys()) == ['message', 'number', 'type']
-
-    bad_sms1 = {'actions': [{
-        'type': 'sms',
-        'message': '[SAM] Security Rule $name triggered'
-    }]}
-    with pytest.raises(ValueError):
-        actions = rt.load_actions(bad_sms1)
-        assert len(actions) == 0
-
-    bad_sms2 = {'actions': [{
-        'type': 'sms',
-        'number': '+1-555-123-7789'
-    }]}
-    with pytest.raises(ValueError):
-        actions = rt.load_actions(bad_sms2)
-        assert len(actions) == 0
-
+    good_alert = {'actions': {
+        'alert_severity': '8',
+        'alert_label': 'Special Label',
+        'email_address': 'abc@zyx.com',
+        'email_subject': '[SAM] Special Email Subject',
+        'sms_number': '1 123 456 7890',
+        'sms_message': '[SAM] Special SMS Message'
+    }}
+    actions = rt.load_action_defaults(good_alert)
+    assert len(actions) == 6
+    assert sorted(actions.keys()) == sorted(good_alert['actions'].keys())

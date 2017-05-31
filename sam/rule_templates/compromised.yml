@@ -8,5 +8,5 @@ include:
 expose:
 actions:
   alert_severity: 8
-
+subject: src
 when: dst host in $bad_hosts

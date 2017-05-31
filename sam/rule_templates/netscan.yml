@@ -4,14 +4,12 @@
 name: Network Scanning
 type: periodic
 include:
-exposed:
-  pattern:
-    format: string
-  severity:
-    format: number
-    regex: "[1-8]"
-action:
-  alert:
-    severity: $severity
-    host: src
-when: define the trigger conditions, and identify the host??
+expose:
+  threshold:
+    label: Trigger Threshold (hosts / minute)
+    format: text
+    default: 600
+    regex: "^\\d+$"
+actions:
+subject: src
+when: dst[hosts] > $threshold
