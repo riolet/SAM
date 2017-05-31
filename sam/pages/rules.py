@@ -143,29 +143,53 @@ class RulesEdit(base.HeadlessPost):
         return encoded
 
     # ----------- POST ------------
-    def decode_params(self, data):
+    def decode_exposed(self, data):
         """
         translates from:
             data = {
-                'edits[params][color]': u'blue',
-                'edits[params][pattern]': u'src_port > 1024',
-                'edits[params][sendmail]': u'true',
+                'edits[exposed][color]': u'blue',
+                'edits[exposed][pattern]': u'src_port > 1024',
+                'edits[exposed][sendmail]': u'true',
             }
         to:
-            params = {
+            exposed = {
                 'color': u'blue',
                 'pattern': u'src_port > 1024',
                 'sendmail': u'true'
             }
         """
-        params = {}
+        exposed = {}
         for key in data.keys():
-            if not key.startswith("edits[params]"):
+            if not key.startswith("edits[exposed]"):
                 continue
-            k = key[14:-1]
+            k = key[15:-1]
             v = data[key]
-            params[k] = v
-        return params
+            exposed[k] = v
+        return exposed
+
+    def decode_actions(self, data):
+        """
+        translates from:
+            data = {
+                'edits[actions][color]': u'blue',
+                'edits[actions][pattern]': u'src_port > 1024',
+                'edits[actions][sendmail]': u'true',
+            }
+        to:
+            actions = {
+                'color': u'blue',
+                'pattern': u'src_port > 1024',
+                'sendmail': u'true'
+            }
+        """
+        actions = {}
+        for key in data.keys():
+            if not key.startswith("edits[actions]"):
+                continue
+            k = key[15:-1]
+            v = data[key]
+            actions[k] = v
+        return actions
 
     def decode_post_request(self, data):
         try:
@@ -181,9 +205,12 @@ class RulesEdit(base.HeadlessPost):
         elif method not in RulesEdit.METHODS:
             raise errors.MalformedRequest()
 
-        params = self.decode_params(data)
-        if len(params) == 0:
-            params = None
+        actions = self.decode_actions(data)
+        exposed = self.decode_exposed(data)
+        if len(exposed) == 0:
+            exposed = None
+        if len(actions) == 0:
+            actions = None
         desc = data.get('edits[desc]', None)
         name = data.get('edits[name]', None)
         active = data.get('edits[active]', None)
@@ -196,7 +223,8 @@ class RulesEdit(base.HeadlessPost):
             'active': active,
             'name': name,
             'desc': desc,
-            'params': params,
+            'actions': actions,
+            'exposed': exposed,
         }
         return request
 
@@ -213,8 +241,10 @@ class RulesEdit(base.HeadlessPost):
                 edits['name'] = request['name']
             if request['desc'] is not None:
                 edits['description'] = request['desc']
-            if request['params'] is not None:
-                edits['params'] = request['params']
+            if request['actions'] is not None:
+                edits['actions'] = request['actions']
+            if request['exposed'] is not None:
+                edits['exposed'] = request['exposed']
             r_model.edit_rule(id, edits)
         return "success"
 

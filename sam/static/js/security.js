@@ -655,6 +655,7 @@ function dateConverter() {
       let active = document.getElementById("er_active");
       let name = document.getElementById("er_name");
       let desc = document.getElementById("er_desc");
+      let rid = document.getElementById("er_rule_id");
       if (rule_data.active) {
         $(active.parentElement).checkbox("set checked");
       } else {
@@ -662,12 +663,13 @@ function dateConverter() {
       }
       name.value = rule_data.name;
       desc.value = rule_data.desc;
+      rid.value = rule_data.id;
 
       // populate alert data
       active = document.getElementById("er_alert");
       let severity = document.getElementById("er_alert_sev");
       let label = document.getElementById("er_alert_label");
-      if (rule_data.actions.alert_active === "True") {
+      if (rule_data.actions.alert_active === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {
         $(active.parentElement).checkbox("set unchecked");
@@ -679,7 +681,9 @@ function dateConverter() {
       active = document.getElementById("er_email");
       let address = document.getElementById("er_email_address");
       let subject = document.getElementById("er_email_subject");
-      if (rule_data.actions.email_active === "True") {
+      console.log("rule_data.actions is", rule_data.actions);
+      console.log("rule_data.actions.email_active is", rule_data.actions.email_active);
+      if (rule_data.actions.email_active === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {
         $(active.parentElement).checkbox("set unchecked");
@@ -688,10 +692,10 @@ function dateConverter() {
       subject.value = rule_data.actions.email_subject;
 
       // populate sms data
-      active = document.getElementById("er_email");
+      active = document.getElementById("er_sms");
       let number = document.getElementById("er_sms_number");
       let message = document.getElementById("er_sms_message");
-      if (rule_data.actions.sms_active === "True") {
+      if (rule_data.actions.sms_active === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {
         $(active.parentElement).checkbox("set unchecked");
@@ -740,30 +744,43 @@ function dateConverter() {
       let modal = document.getElementById("er_modal");
       $(modal)
         .modal({
-          onApprove: function() {
-            let edits = {
-              active: document.getElementById("er_active").parentElement.classList.contains("checked"),
-              name: document.getElementById("er_name").value,
-              desc: document.getElementById("er_desc").value,
-              params: {}
-            }
-            let params = document.getElementById("er_params");
-            let inputs = params.getElementsByTagName("INPUT");
-            let i = inputs.length - 1;
-            for(; i >= 0; i = i - 1) {
-              let inp = inputs[i];
-              if (inp.type == "checkbox") {
-                edits.params[inp.name] = inp.parentElement.classList.contains("checked");
-              } else {
-                edits.params[inp.name] = inp.value;
-              }
-            }
-            //console.table(results);
-            rules.POST_edit_rule(rule_id, edits);
-          },
+          onApprove: rules.submit_edits,
         })
         .modal('show')
       ;
+    },
+    submit_edits: function() {
+      let rule_id = document.getElementById("er_rule_id").value;
+      let edits = {
+        active: document.getElementById("er_active").parentElement.classList.contains("checked"),
+        name: document.getElementById("er_name").value,
+        desc: document.getElementById("er_desc").value,
+        actions: {
+          alert_active: document.getElementById("er_alert").parentElement.classList.contains("checked"),
+          alert_severity: document.getElementById("er_alert_sev").value,
+          alert_label: document.getElementById("er_alert_label").value,
+          email_active: document.getElementById("er_email").parentElement.classList.contains("checked"),
+          email_address: document.getElementById("er_email_address").value,
+          email_subject: document.getElementById("er_email_subject").value,
+          sms_active: document.getElementById("er_sms").parentElement.classList.contains("checked"),
+          sms_number: document.getElementById("er_sms_number").value,
+          sms_message: document.getElementById("er_sms_message").value,
+        },
+        exposed: {}
+      };
+      let params = document.getElementById("er_params");
+      let inputs = params.getElementsByTagName("INPUT");
+      let i = inputs.length - 1;
+      for(; i >= 0; i = i - 1) {
+        let inp = inputs[i];
+        if (inp.type == "checkbox") {
+          edits.exposed[inp.name] = inp.parentElement.classList.contains("checked");
+        } else {
+          edits.exposed[inp.name] = inp.value;
+        }
+      }
+      //console.table(results);
+      rules.POST_edit_rule(rule_id, edits);
     },
     delete_rule: function(e) {
       let button = e.target;

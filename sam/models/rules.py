@@ -33,8 +33,9 @@ class Rules():
 
     def row_to_rule(self, row):
         rule_obj = rule.Rule(row.id, row.active, row.name, row.description, row.rule_path)
-        exposed_params = row.get('exposed_params', {})
-        action_params = row.get('action_params', {})
+        params = row.get('params', {})
+        exposed_params = params.get('exposed', {})
+        action_params = params.get('actions', {})
         rule_obj.set_params(action_params, exposed_params)
         return rule_obj
 
@@ -98,9 +99,11 @@ class Rules():
         qvars = {
             'rid': rule_id
         }
-        if 'params' in edits:
+        if 'actions' in edits or 'exposed' in edits:
+            actions = edits.pop('actions', {})
+            exposed = edits.pop('exposed', {})
             old_rule = self.get_rule(rule_id)
-            old_rule.set_params(edits['params'])
+            old_rule.set_params(actions, exposed)
             params = old_rule.export_params()
             edits['params'] = cPickle.dumps(params)
         self.db.update(self.table, where='id=$rid', vars=qvars, **edits)

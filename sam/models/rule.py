@@ -85,23 +85,23 @@ class Rule(object):
                 if 'regex_compiled' in self.exposed_params[key]:
                     regex = self.exposed_params[key]['regex_compiled']
                     if new_value is not None and regex.match(new_value) is not None:
-                        self.exposed_params[key] = new_value
+                        self.exposed_params[key]['value'] = new_value
                     else:
-                        # print("regex failed")
+                        # print("regex failed")  # keep the default value.
                         pass
                 else:
-                    self.exposed_params[key] = new_value
+                    self.exposed_params[key]['value'] = new_value
             elif p_format == 'checkbox':
                 if new_value.lower() == 'true':
-                    self.exposed_params[key] = 'true'
+                    self.exposed_params[key]['value'] = 'true'
                 elif new_value.lower() == 'false':
-                    self.exposed_params[key] = 'false'
+                    self.exposed_params[key]['value'] = 'false'
                 else:
                     # new value doesn't match true or false, so leave the existing value unchanged.
                     pass
             elif p_format == 'dropdown':
                 if new_value in self.exposed_params[key]['options']:
-                    self.exposed_params[key] = new_value
+                    self.exposed_params[key]['value'] = new_value
                 else:
                     # new value isn't one of the acceptable options, so use the existing value unchanged.
                     pass
@@ -172,7 +172,6 @@ class Rule(object):
 
         return p_values
 
-
     def get_translation_table(self):
         """
         All translation params as key-value pairs.
@@ -228,10 +227,25 @@ class Rule(object):
 
     def export_params(self):
         """
-        Get all the param values as a dict
-        :return: 
+        Get all saveable values for persistant storage. Looks like:
+        params = {
+            'actions': {
+                'alert_active': 'true',
+                'alert_label': 'test',
+                [...]
+            },
+            'exposed': {
+                [...]
+            }
+        }
         """
-        return {k: v['value'] for k, v in self.get_exposed_params().iteritems()}
+        actions = {k: v for k, v in self.get_action_params().iteritems()}
+        exposed = {k: v['value'] for k, v in self.get_exposed_params().iteritems()}
+        params = {
+            'actions': actions,
+            'exposed': exposed,
+        }
+        return params
 
     def load_yml(self):
         """

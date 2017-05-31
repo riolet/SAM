@@ -160,7 +160,7 @@ class RuleTemplate(object):
         return when
 
     def get_exposed(self):
-        return self._exposed.copy()
+        return {k: v.copy() for k, v in self._exposed.iteritems()}
 
     def get_action_defaults(self):
         return self._action_defaults.copy()
