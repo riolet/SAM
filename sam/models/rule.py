@@ -51,8 +51,8 @@ class Rule(object):
     def get_initial_action_params(self):
         a_params = {
             'alert_active': constants.security['alert_active'],
-            'alert_severity': constants.security['alert_active'],
-            'alert_label': constants.security['alert_active'],
+            'alert_severity': constants.security['alert_severity'],
+            'alert_label': constants.security['alert_label'],
             'email_active': constants.security['email_active'],
             'email_address': constants.security['email_address'],
             'email_subject': constants.security['email_subject'],
@@ -69,7 +69,6 @@ class Rule(object):
         return a_params
 
     def set_params(self, new_action_params, new_exposed_params):
-
         # import new action params:
         valid_keys = [key for key in new_action_params.keys() if key in self.action_params]
         for key in valid_keys:
@@ -134,6 +133,40 @@ class Rule(object):
         }
         """
         return self.action_params
+
+    def get_actions(self):
+        """
+        Get a list of actions to perform when rules match. Only returns active actions.
+        returns something like:
+        actions = [
+            {type: alert, severity: 2, label: "Unusual Connection"},
+            {type: email, address: "jdoe@example.com", subject: "[SAM] Rule $rule_name Triggered"},
+            {type: sms, number: "11234567890", msg: "[SAM] Rule $rule_name Triggered"}
+        ]
+        :return:
+         :rtype: list[ dict[str, str] ]
+        """
+        params = self.get_action_params()
+        actions = []
+        if params['alert_active'].lower() == 'true':
+            actions.append({
+                'type': 'alert',
+                'severity': params['alert_severity'],
+                'label': params['alert_label']
+            })
+        if params['email_active'].lower() == 'true':
+            actions.append({
+                'type': 'email',
+                'address': params['email_address'],
+                'subject': params['email_subject']
+            })
+        if params['sms_active'].lower() == 'true':
+            actions.append({
+                'type': 'sms',
+                'number': params['sms_number'],
+                'message': params['sms_message']
+            })
+        return actions
 
     def get_param_values(self):
         """
@@ -207,7 +240,8 @@ class Rule(object):
 
         # get all exposed parameters
         exposed = self.get_exposed_params()
-        tr_table.update(exposed)
+        for k, v in exposed.iteritems():
+            tr_table[k] = v['value']
 
         # get all metadata parameters
         tr_table['rule_name'] = self.name
@@ -218,7 +252,7 @@ class Rule(object):
 
         # pretranslate symbols where possible.
         for key, value in tr_table.iteritems():
-            tr_table[key] = re.sub(r'\$(\S+)', lambda match: tr_table[match.group(1)] if match.group(1) in tr_table else match.group(1), value)
+            tr_table[key] = re.sub(r'\$(\S+)', lambda match: tr_table[match.group(1)] if match.group(1) in tr_table else match.group(1), unicode(value))
 
         return tr_table
 

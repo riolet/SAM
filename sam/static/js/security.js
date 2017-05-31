@@ -240,8 +240,10 @@ function dateConverter() {
       //details are loading...
       let modalformA = document.getElementById("er_meta");
       modalformA.classList.add("loading");
-      let modalformB = document.getElementById("er_params");
+      let modalformB = document.getElementById("er_actions");
       modalformB.classList.add("loading");
+      let modalformC = document.getElementById("er_params");
+      modalformC.classList.add("loading");
 
       $.ajax({
           url: rules.endpoint_edit,
@@ -253,6 +255,7 @@ function dateConverter() {
             rules.populate_edit_modal(response);
             modalformA.classList.remove("loading");
             modalformB.classList.remove("loading");
+            modalformC.classList.remove("loading");
 
             if (typeof(callback) === "function") {
               callback(response);
@@ -669,7 +672,7 @@ function dateConverter() {
       active = document.getElementById("er_alert");
       let severity = document.getElementById("er_alert_sev");
       let label = document.getElementById("er_alert_label");
-      if (rule_data.actions.alert_active === "true") {
+      if (rule_data.actions.alert_active.toLocaleLowerCase() === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {
         $(active.parentElement).checkbox("set unchecked");
@@ -683,7 +686,7 @@ function dateConverter() {
       let subject = document.getElementById("er_email_subject");
       console.log("rule_data.actions is", rule_data.actions);
       console.log("rule_data.actions.email_active is", rule_data.actions.email_active);
-      if (rule_data.actions.email_active === "true") {
+      if (rule_data.actions.email_active.toLocaleLowerCase() === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {
         $(active.parentElement).checkbox("set unchecked");
@@ -695,7 +698,7 @@ function dateConverter() {
       active = document.getElementById("er_sms");
       let number = document.getElementById("er_sms_number");
       let message = document.getElementById("er_sms_message");
-      if (rule_data.actions.sms_active === "true") {
+      if (rule_data.actions.sms_active.toLocaleLowerCase() === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {
         $(active.parentElement).checkbox("set unchecked");
@@ -715,7 +718,12 @@ function dateConverter() {
         } else if (param.format === "dropdown") {
           rules.edit_add_dropdown_param(parambox, key, param);
         }
-      })
+      });
+      if (Object.keys(rule_data.exposed).length == 0) {
+        let p = document.createElement("P");
+        p.innerText = "No parameters available to adjust.";
+        parambox.appendChild(p);
+      }
     },
 
     new_rule: function () {  

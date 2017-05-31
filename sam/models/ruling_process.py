@@ -115,7 +115,7 @@ class RulesProcessor(object):
 
         where = parser.sql
 
-        print("prepared_condition: WHERE {}".format(where))
+        print("    prepared_condition: WHERE {}".format(where))
 
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
         rows = list(self.db.select(table,where=where))
@@ -135,21 +135,21 @@ class RulesProcessor(object):
                                                                    job.time_end))
 
         for i, rule in enumerate(job.rules):
-            job.status = 'Running rule "{}" of {}'.format(i+1, len(job.rules))
+            job.status = 'Running rule {} of {}'.format(i+1, len(job.rules))
             if not rule.is_active():
-                print('  {}: Skipping rule "{}" ({})'.format(job.status, rule.get_name(), rule.nice_path()))
+                print('  {}: Skipping rule {} ({})'.format(job.status, rule.get_name(), rule.nice_path()))
                 continue
 
             conditions = rule.get_conditions()
             actions = rule.get_actions()
-            included = rule.get_inclusions()
-            print('  {}: Working on rule "{}" ({})'.format(job.status, rule.get_name(), rule.nice_path()))
+            translation_table = rule.get_translation_table()
+            print('  {}: Working on rule {} ({})'.format(job.status, rule.get_name(), rule.nice_path()))
             print('    Rule conditions: {}'.format(conditions))
             print('    Rule actions:')
             for action in actions:
                 print('      {}'.format(repr(action)))
 
-            alert_rows = self.evaluate_rule(job, conditions, included)
+            alert_rows = self.evaluate_rule(job, translation_table, conditions)
             print('    {} alerts discovered,'.format(len(alert_rows)))
             for alert in alert_rows:
                 print('      {}: {} -> {}:{} using {}'.format(datetime.fromtimestamp(int(time.mktime(alert.timestamp.timetuple()))), common.IPtoString(alert.src), common.IPtoString(alert.dst), alert.port, alert.protocol))

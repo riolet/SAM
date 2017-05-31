@@ -59,8 +59,9 @@ class RuleTemplate(object):
     def __init__(self, path, yml):
         self.cwd = path
         self._yml = yml
-        self.type = "Unknown"
         self.name = "Unknown"
+        self.type = "Unknown"
+        self.subject = "Unknown"
         self._exposed = {}
         self._action_defaults = {}
         self._inclusions = {}
@@ -69,19 +70,23 @@ class RuleTemplate(object):
         self.import_yml(yml)
 
     def import_yml(self, data):
-        try:
-            self.name = data['name']
-            self.type = data['type']
-        except:
-            if 'name' not in data:
-                raise ValueError("Bad rule: 'name' key not found.")
-            else:
-                raise ValueError("Bad rule: 'type' key not found.")
+        self.name = data.get('name', None)
+        self.type = data.get('type', None)
+        self.subject = data.get('subject', None)
+        self.when = data.get('when', None)
+
+        if not self.name:
+            raise ValueError("Bad rule: 'name' key not found.")
+        elif not self.subject:
+            raise ValueError("Bad rule: 'subject' key not found.")
+        elif not self.type:
+            raise ValueError("Bad rule: 'type' key not found.")
+        elif not self.when:
+            raise ValueError("Bad rule: 'when' key not found.")
 
         self._exposed = RuleTemplate.load_exposed(self._yml)
         self._inclusions = self.load_inclusions(self._yml)
         self._action_defaults = RuleTemplate.load_action_defaults(self._yml)
-        self.when = RuleTemplate.load_conditions(self._yml)
 
     @staticmethod
     def load_exposed(yml):
@@ -133,13 +138,14 @@ class RuleTemplate(object):
     def load_inclusions(yml):
         inclusions = {}
         if not yml.get('include', None):
-            return
+            return inclusions
         for ref in yml['include'].keys():
             path = os.path.join(constants.rule_templates_path, yml['include'][ref])
             try:
                 with open(path, 'r') as f:
                     data = f.read()
                 inclusions[ref] = data.splitlines()
+                print("loaded inclusion: {}".format(inclusions[ref]))
             except Exception as e:
                 print("Failed to load inclusion {}: {}".format(ref, str(e)))
         return inclusions
@@ -148,20 +154,13 @@ class RuleTemplate(object):
     def load_action_defaults(yml):
         actions = {}
         yml_actions = yml.get('actions', {})
-        if yml_actions is None or len(yml_actions) == 0:
+        if not yml_actions:
             return actions
 
         for key, def_value in yml_actions.items():
             if key in ['alert_severity', 'alert_label', 'email_address', 'email_subject', 'sms_number', 'sms_message']:
                 actions[key] = def_value
         return actions
-
-    @staticmethod
-    def load_conditions(yml):
-        if 'when' not in yml:
-            raise ValueError("Rule invalid--no conditions specified")
-        when = yml['when']
-        return when
 
     def get_exposed(self):
         return {k: v.copy() for k, v in self._exposed.iteritems()}

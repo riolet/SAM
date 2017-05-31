@@ -19,11 +19,14 @@ class RuleParser(object):
         (r'\$\S+',     lambda scanner, token: ('REPLACEMENT', token[1:])),  # remove the leading $
         (r'\[\S+(?:\s*,\s*\S+)*\]|\(\S+(?:\s*,\s*\S+)*\)',
                        lambda scanner, token: ('LIT_LIST', token)),  # to match "[a,b,c]" and "(d , e , f)"
-        (r'\(',        lambda scanner, token: ('P_OPEN', token)),
-        (r'\)',        lambda scanner, token: ('P_CLOSE', token)),
+        (r'\(',        lambda scanner, token: ('P_OPEN', token)),  # must come after LIT_LIST (both capture parens)
+        (r'\)',        lambda scanner, token: ('P_CLOSE', token)),  # must come after LIT_LIST (both capture parens)
         (r'[\w.-]+',   lambda scanner, token: ('LITERAL', token)),
         (r"\s+",       None),  # None == skip token.
     ])
+    LIST_DECODER = re.compile(r'\[\S+(?:\s*,\s*\S+)*\]|'  # lists in brackets: [1, 2, 3]
+                              r'\(\S+(?:\s*,\s*\S+)*\)|'  # lists in parens: (1, 2, 3) 
+                              r'[^\r\n\t\f ,]+(?:\s*,\s*[^\r\n\t\f ,]+)+')  # bare lists: 22, 44
 
     # rule:
     # | clauses
@@ -37,6 +40,13 @@ class RuleParser(object):
 
     def __init__(self, replacements, rule_string):
         self.replacements = replacements
+
+        # import pprint
+        # print("=" * 80)
+        # print("Rule_Parser: Replacements are:")
+        # pprint.pprint(replacements)
+        # print("=" * 80)
+
         self.original = rule_string
         self.tokens = []
         self.clauses = []
@@ -58,7 +68,6 @@ class RuleParser(object):
     def has_balanced_parens(self, tokenlist):
         p_level = 0
         for token in tokenlist:
-            print(token)
             if token[1] == '(':
                 p_level += 1
             elif token[1] == ')':
@@ -68,6 +77,12 @@ class RuleParser(object):
         return p_level == 0
 
     def decode_tokens(self):
+        """
+        If a REPLACEMENT token was found, replace it from the translation table.
+           If the replacement is a list, format it as a string like: "(1,2,3)"
+        If a LIT_LIST (literal list) was found, also format it like: "(1,2,3)"
+        :return:
+        """
         for i in range(len(self.tokens)):
             token = self.tokens[i]
             if token[0] == 'REPLACEMENT':
@@ -76,13 +91,15 @@ class RuleParser(object):
                     if isinstance(replacement, (list, tuple)):
                         self.tokens[i] = ('LIT_LIST', map(str, replacement))
                     else:
-                        if re.match(r'\[\S+(?:\s*,\s*\S+)*\]|\(\S+(?:\s*,\s*\S+)*\)', str(replacement)):
-                            parts = re.split("[, ]+", str(replacement[1:-1]))
+                        match = RuleParser.LIST_DECODER.match(str(replacement))
+                        if match:
+                            s = match.group(0)  # whole match
+                            parts = re.split("['\", ]+", s.strip("'\"[]()"))
                             self.tokens[i] = ('LIT_LIST', parts)
                         else:
                             self.tokens[i] = ('LITERAL', str(replacement))
             elif token[0] == 'LIT_LIST':
-                parts = re.split("[, ]+", token[1][1:-1])
+                parts = re.split("['\", ]+", token[1][1:-1].strip("'\""))
                 self.tokens[i] = ('LIT_LIST', parts)
 
     def default_clause(self):
@@ -91,7 +108,6 @@ class RuleParser(object):
             'type': 'host',
             'comp': '=',
             'value': '1.2.3.4',
-            'collection': False
         }
         return obj
 
@@ -115,13 +131,11 @@ class RuleParser(object):
 
             if next_mode == 'join':
                 if clause is not None:
-                    clause.pop('collection', None)
                     objects.append(('CLAUSE', clause))
                     clause = None
                 objects.append(('JOIN', token[1]))
             elif next_mode == 'modify':
                 if clause is not None:
-                    clause.pop('collection', None)
                     objects.append(('CLAUSE', clause))
                     clause = None
                 objects.append(('MODIFIER', token[1]))
@@ -130,24 +144,16 @@ class RuleParser(object):
                     clause['dir_'] = token[1]
                 elif token[0] == 'TYPE':
                     clause['type'] = token[1]
-                elif token[0] == 'COMPARATOR':
+                elif token[0] in ('COMPARATOR', 'LIST'):
                     clause['comp'] = token[1]
-                    clause['collection'] = False
-                elif token[0] == 'LIST':
-                    clause['comp'] = token[1]
-                    clause['collection'] = True
                 elif token[0] == 'LIT_LIST':
-                    if clause['collection'] == True:
-                        clause['value'] = token[1]
-                    else:
-                        raise RuleParseError("Lists can only be used with the 'in' operator. Example: dst port in (22, 23, 24)")
+                    clause['comp'] = 'in'  # comparator must be 'in' for lists.
+                    clause['value'] = token[1]
                 elif token[0] == 'LITERAL':
-                    if clause['collection'] == False:
-                        clause['value'] = token[1]
-                    else:
-                        raise RuleParseError("The in operator can only be used with lists. Example: dst port in (22, 23, 24)")
+                    clause['value'] = token[1]
+                    if clause['comp'].lower() == 'in':
+                        clause['comp'] = '='  # comparator 'in' only works with lists, but we have a literal.
         if clause is not None:
-            clause.pop('collection', None)
             objects.append(('CLAUSE', clause))
             clause = None
         return objects
