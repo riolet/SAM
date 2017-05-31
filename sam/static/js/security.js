@@ -403,7 +403,7 @@ function dateConverter() {
       div = document.createElement("DIV");
       div.className = "ui rule checkbox";
       input = document.createElement("INPUT");
-      input.dataset['rule'] = "1"; //TODO: should be rule index/id.
+      input.dataset['rule'] = id;
       input.tabIndex = "0";
       input.className = "hidden"
       input.type = "checkbox"
