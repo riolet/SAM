@@ -103,6 +103,55 @@ def test_tokenize_replacements():
     assert parser.tokens == [('TYPE', 'host'), ('LIST', 'in'), ('LIT_LIST', ['1', '2', '3'])]
 
 
+def test_tokenize_aggregates():
+    s1 = 'src[host] > 50'
+    tokens = rule_parser.PeriodicRuleParser.tokenize(s1)
+    expected = [
+        ('AGGREGATE', 'src[host]'),
+        ('COMPARATOR', '>'),
+        ('LITERAL', '50')
+    ]
+    assert tokens == expected
+
+    s2 = 'dst[port] 22'
+    tokens = rule_parser.PeriodicRuleParser.tokenize(s2)
+    expected = [
+        ('AGGREGATE', 'dst[port]'),
+        ('LITERAL', '22')
+    ]
+    assert tokens == expected
+
+    s3 = 'conn[links] > 3000'
+    tokens = rule_parser.PeriodicRuleParser.tokenize(s3)
+    expected = [
+        ('AGGREGATE', 'conn[links]'),
+        ('COMPARATOR', '>'),
+        ('LITERAL', '3000')
+    ]
+    assert tokens == expected
+
+    # This is an expected failure.
+    s4 = 'host[count] > 3000'
+    tokens = rule_parser.PeriodicRuleParser.tokenize(s4)
+    expected = [
+        ('TYPE', 'host'),
+        ('LIT_LIST', '[count]'),
+        ('COMPARATOR', '>'),
+        ('LITERAL', '3000')
+    ]
+    assert tokens == expected
+
+    s3 = 'conn[links] > 3000'
+    tokens = rule_parser.PeriodicRuleParser.tokenize(s3)
+    expected = [
+        ('AGGREGATE', ('conn', 'links')),
+        ('COMPARATOR', '>'),
+        ('LITERAL', '3000')
+    ]
+    rule_parser.PeriodicRuleParser.decode_tokens({}, tokens)
+    assert tokens == expected
+
+
 def test_joins():
     s1 = 'src port 12345 and dst port 80'
     parser = rule_parser.RuleParser({}, s1)
@@ -203,6 +252,49 @@ def test_parens():
     ]
 
 
+def test_aggregates():
+    s1 = 'dst[ports] > 300'
+    parser = rule_parser.PeriodicRuleParser({}, 'src', s1)
+    expected = [
+        ('AGGREGATE', ('dst', 'ports')),
+        ('COMPARATOR', '>'),
+        ('LITERAL', '300')
+    ]
+    assert parser.tokens == expected
+    expected = [
+        ('CLAUSE', {
+            'dir_': 'dst',
+            'agg': 'ports',
+            'type': 'aggregate',
+            'comp': '>',
+            'value': '300'
+        })
+    ]
+    assert parser.clauses == expected
+
+    s2 = 'conn[links] 1000 or not conn[links] 1050'
+    parser = rule_parser.PeriodicRuleParser({}, 'src', s2)
+    expected = [
+        ('CLAUSE', {
+            'dir_': 'conn',
+            'agg': 'links',
+            'type': 'aggregate',
+            'comp': '=',
+            'value': '1000'
+        }),
+        ('JOIN', 'or'),
+        ('MODIFIER', 'not'),
+        ('CLAUSE', {
+            'dir_': 'conn',
+            'agg': 'links',
+            'type': 'aggregate',
+            'comp': '=',
+            'value': '1050'
+        }),
+    ]
+    assert parser.clauses == expected
+
+
 def test_sql():
     s1 = 'src host = 1.2.3.4'
     parser = rule_parser.RuleParser({}, s1)
@@ -273,6 +365,3 @@ def test_tcpdump_examples():
     s = 'gateway snup and ip[2:2] > 576'  # 'gateway' is not supported in SAM
     s = 'ether[0] & 1 = 0 and ip[16] >= 224'  #
     s = 'icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply'  # icmp details are not stored by SAM
-
-
-

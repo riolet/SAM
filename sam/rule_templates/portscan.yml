@@ -12,4 +12,4 @@ expose:
     regex: "^\\d+$"
 actions:
 subject: src
-when: dst[port] > $threshold and protocol udp
+when: dst host and protocol udp and dst[port] > $threshold

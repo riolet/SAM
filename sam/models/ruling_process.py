@@ -118,7 +118,7 @@ class RulesProcessor(object):
     def evaluate_immediate_rule(self, job, translations, conditions):
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
 
-        parser = rule_parser.ImmediateRuleParser(translations, conditions)
+        parser = rule_parser.RuleParser(translations, conditions)
         where = parser.sql
         # print("    prepared_condition: WHERE {}".format(where))
         alerts_discovered = list(self.db.select(table, where=where))
