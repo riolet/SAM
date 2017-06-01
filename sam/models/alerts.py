@@ -56,7 +56,7 @@ class Alerts():
         self.sub_id = sub_id
         self.table = Alerts.TABLE_FORMAT.format(sub_id)
 
-    def add_alert(self, ipstart, ipend, severity, rule_id, label, details):
+    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details):
         """
         :param ipstart: integer ip address. 32-bit unsigned integer.
          :type ipstart: int
@@ -64,6 +64,10 @@ class Alerts():
          :type ipend: int
         :param severity: How significant is the event? higher number is more severe.
          :type severity: int
+        :param rule_id: The id of the rule that spawned this alert
+         :type rule_id: int
+        :param rule_name: The name of the rule that spawned this alert
+         :type rule_name: str
         :param event_type: A generic type by which one might categorize events
          :type event_type: unicode
         :param details: Any extra details. Native python formats supported. Will be pickled and stored. 
@@ -73,7 +77,7 @@ class Alerts():
         """
         unix_now = int(time.time())
         new_id = self.db.insert(self.table, ipstart=ipstart, ipend=ipend, severity=severity, label=label,
-                      timestamp=unix_now, rule_id=rule_id, details=cPickle.dumps(details))
+                      timestamp=unix_now, rule_id=rule_id, rule_name=rule_name, details=cPickle.dumps(details))
         return new_id
 
     @staticmethod
@@ -89,7 +93,7 @@ class Alerts():
         """
 
         where = filters.get_where()
-        what = 'id, ipstart, ipend, timestamp, severity, label'
+        what = 'id, ipstart, ipend, timestamp, severity, label, rule_name, rule_id'
 
         rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.limit)
         rows = list(rows)
@@ -110,7 +114,7 @@ class Alerts():
             'ipe': ipend
         }
         where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
-        what = 'id, ipstart, ipend, timestamp, severity, label'
+        what = 'id, ipstart, ipend, timestamp, severity, label, rule_name, rule_id'
         rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.limit)
         rows = list(rows)
         return rows

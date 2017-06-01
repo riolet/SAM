@@ -52,6 +52,6 @@ CREATE TABLE IF NOT EXISTS s{acct}_Alerts
 ,viewed            TINYINT(1) NOT NULL DEFAULT 0
 ,label             VARCHAR(32) NOT NULL
 ,rule_id           INT UNSIGNED
+,rule_name         VARCHAR(64)
 ,details           TEXT
-,CONSTRAINT FK{acct}Alerts FOREIGN KEY (rule_id) REFERENCES s{acct}_Rules (id)
 );

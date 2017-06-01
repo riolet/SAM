@@ -5,7 +5,7 @@ import multiprocessing
 import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
 from sam import common, constants
-from sam.models import rule, rule_parser
+from sam.models import rule, rule_parser, alerts
 
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
@@ -97,6 +97,13 @@ def ruling_process(queue):
     reset_globals()
 
 
+def translate_symbols(self, s, tr):
+    result = re.sub(r'\$(\S+)',
+                    lambda match: tr[match.group(1)] if match.group(1) in tr else match.group(1),
+                    unicode(s))
+    return result
+
+
 class RulesProcessor(object):
     COND_REGEX = re.compile(r"^(?P<rule>(?:(?P<dir>src|dst|src or dst|src and dst)\s+)(?P<type>host|port))\s+(?P<value>\S+|in \S+)$")
     TABLE_FORMAT = "s{sub_id}_ds{ds_id}_Links"
@@ -122,6 +129,73 @@ class RulesProcessor(object):
         alerts_discovered.extend(rows)
         return alerts_discovered
 
+    def trigger_alert(self, sub_id, rule_, severity, label, subject, match):
+        """
+
+        sql debugging:
+        # SELECT id, decodeIP(ipstart), FROM_UNIXTIME(timestamp), severity, viewed, label, rule_id FROM s1_Alerts;
+
+        :param sub_id:
+         :type sub_id: int
+        :param rule_:
+         :type rule_: rule.Rule
+        :param severity:
+         :type severity: int or str
+        :param label:
+         :type label: str
+        :param subject:
+         :type subject: str
+        :param match:
+         :type match: dict[basestring, Any]
+        :return:
+         :rtype: None
+        """
+
+        m_alerts = alerts.Alerts(self.db, sub_id)
+        ip = match.get(subject, 0)
+        m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match)
+        print("  Triggering alert: {} ({}): {}".format(common.IPtoString(ip), severity, label))
+
+    def trigger_email(self, address, email_subject, subject, matches, translations):
+        print("  Triggering email to {}: re: {}".format(address, email_subject))
+        print('    WARNING: email alerts are not implemented yet.')
+
+    def trigger_sms(self, number, message, subject, matches, translations):
+        print("  Triggering sms to {} ({}/160 chars):".format(number, len(message)))
+        print("    {}".format(message))
+        print('    WARNING: sms alerts are not implemented yet.')
+
+    def trigger_actions(self, job, rule_, translation_table, matches):
+        """
+        Trigger/Create/Send any appropriate actions for all matches found.
+        :param job:
+         :type job: RuleJob
+        :param rule_:
+         :type rule_: rule.Rule
+        :param translation_table:
+         :type translation_table: dict[str, Any]
+        :param matches:
+         :type matches: list[ dict[basestring, Any] ]
+        :return:
+         :rtype: None
+        """
+        actions = rule_.get_actions()
+        print('    Rule actions:')
+        for action in actions:
+            print('      {}'.format(repr(action)))
+
+        for action in actions:
+            if action['type'] == 'alert':
+                for match in matches:
+                    self.trigger_alert(job.sub_id, rule_, action['severity'], action['label'], rule_.definition.subject, match)
+            elif action['type'] == 'email':
+                self.trigger_email(action['address'], action['subject'], rule_.definition.subject, matches)
+            elif action['type'] == 'sms':
+                self.trigger_sms(action['number'], action['message'], rule_.definition.subject, matches)
+            else:
+                print('WARNING: action "{}" not supported'.format(action['type']))
+                continue
+
     def process(self, job):
         """
         :param job:
@@ -134,25 +208,28 @@ class RulesProcessor(object):
         print('{}: Starting job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
                                                                    job.time_end))
 
-        for i, rule in enumerate(job.rules):
+        for i, rule_ in enumerate(job.rules):
             job.status = 'Running rule {} of {}'.format(i+1, len(job.rules))
-            if not rule.is_active():
-                print('  {}: Skipping rule {} ({})'.format(job.status, rule.get_name(), rule.nice_path()))
+            if not rule_.is_active():
+                print('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
                 continue
 
-            conditions = rule.get_conditions()
-            actions = rule.get_actions()
-            translation_table = rule.get_translation_table()
-            print('  {}: Working on rule {} ({})'.format(job.status, rule.get_name(), rule.nice_path()))
+            conditions = rule_.get_conditions()
+            translation_table = rule_.get_translation_table()
+            print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
             print('    Rule conditions: {}'.format(conditions))
-            print('    Rule actions:')
-            for action in actions:
-                print('      {}'.format(repr(action)))
 
-            alert_rows = self.evaluate_rule(job, translation_table, conditions)
-            print('    {} alerts discovered,'.format(len(alert_rows)))
-            for alert in alert_rows:
-                print('      {}: {} -> {}:{} using {}'.format(datetime.fromtimestamp(int(time.mktime(alert.timestamp.timetuple()))), common.IPtoString(alert.src), common.IPtoString(alert.dst), alert.port, alert.protocol))
+            matches = self.evaluate_rule(job, translation_table, conditions)
+            print('    {} alerts discovered,'.format(len(matches)))
+            for match in matches:
+                print('      {}: {} -> {}:{} x{} using {}'.format(
+                    datetime.fromtimestamp(int(time.mktime(match.timestamp.timetuple()))),
+                    common.IPtoString(match.src),
+                    common.IPtoString(match.dst),
+                    match.port,
+                    match.links,
+                    match.protocol))
+            self.trigger_actions(job, rule_, translation_table, matches)
 
         job.status = "Complete"
         print('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,

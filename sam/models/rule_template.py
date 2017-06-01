@@ -145,7 +145,7 @@ class RuleTemplate(object):
                 with open(path, 'r') as f:
                     data = f.read()
                 inclusions[ref] = data.splitlines()
-                print("loaded inclusion: {}".format(inclusions[ref]))
+                # print("loaded inclusion: {}".format(inclusions[ref]))
             except Exception as e:
                 print("Failed to load inclusion {}: {}".format(ref, str(e)))
         return inclusions

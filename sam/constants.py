@@ -96,6 +96,7 @@ default_urls = [
     '/table', 'sam.pages.table.Table',
     '/sec_dashboard', 'sam.pages.sec_dashboard.Dashboard',
     '/sec_alerts', 'sam.pages.alerts.Alerts',
+    '/sec_alerts/details', 'sam.pages.alerts.AlertDetails',
     '/sec_rules', 'sam.pages.rules.Rules',
     '/sec_rules/new', 'sam.pages.rules.RulesNew',
     '/sec_rules/edit', 'sam.pages.rules.RulesEdit',

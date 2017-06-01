@@ -828,18 +828,13 @@ function dateConverter() {
   "use strict";
   let alerts = {
     endpoint: "/sec_alerts",
+    endpoint_details: "/sec_alerts/details",
 
     init: function () {
       $('#Alerts .ui.filtering.dropdown')
         .dropdown({
           action: 'activate',
           onChange: alerts.GET_alerts,
-        })
-      ;
-      $('#alert_details .ui.dropdown')
-        .dropdown({
-          action: 'activate',
-          onChange: alerts.update_alert_status,
         })
       ;
 
@@ -924,11 +919,6 @@ function dateConverter() {
       document.getElementById("alert_details_host").innerText = "";
       document.getElementById("alert_details_severity").innerText = "";
       document.getElementById("alert_details_desc").innerText = "";
-
-      let status_dropdown = document.getElementById("alert_status");
-      $(status_dropdown.parentElement)
-        .addClass("disabled")
-      ;
     },
 
     column_clicked: function (column) {
@@ -989,8 +979,8 @@ function dateConverter() {
               alert.host,
               alert.timestamp,
               alert.severity,
-              alert.status,
-              alert.type
+              alert.label,
+              alert.rule_name
             ]);
           })
           if (response.alerts.length == 0) {
@@ -1012,7 +1002,7 @@ function dateConverter() {
         "id": alert_id
       };
       $.ajax({
-        url: alerts.endpoint,
+        url: alerts.endpoint_details,
         type: "GET",
         data: requestData,
         dataType: "json",
@@ -1059,6 +1049,9 @@ function dateConverter() {
       } else {
         columns.forEach(function (column) {
           let td = document.createElement("TD");
+          if (!column) {
+            column = "unknown";
+          }
 
           if (column.length === 4 && column.substring(0, 3) === "sev") {
             let icon = document.createElement("I");
@@ -1094,30 +1087,20 @@ function dateConverter() {
     },
     update_details: function (details) {
       /*
-      'for', 'type', 'time', 'host', 'severity', 'status', 'description', 'details'
+      'for', 'rule_name', 'time', 'host', 'severity', 'status', 'description', 'details'
       */
-      document.getElementById("alert_details_name").innerText = details.type;
+      document.getElementById("alert_details_name").innerText = details.label;
       document.getElementById("alert_details_id").innerText = details["for"];
       document.getElementById("alert_details_time").innerText = details.time;
       document.getElementById("alert_details_host").innerText = details.host;
       document.getElementById("alert_details_severity").innerText = details.severity;
       document.getElementById("alert_details_desc").innerText = details.description;
-      let status_dropdown = document.getElementById("alert_status");
-      $(status_dropdown.parentElement)
-        .removeClass("disabled")
-        .dropdown("set selected", details.status)
-      ;
 
       alerts.clear_details_meta();
       Object.keys(details.details).forEach(function (key) {
         let value = details.details[key];
         alerts.add_details_meta(key, value);
       });
-    },
-    update_alert_status: function () {
-      let alert_id = document.getElementById("alert_details_id").innerText;
-      let alert_status = document.getElementById("alert_status").value;
-      alerts.POST_status(alert_id, alert_status)
     },
   }
   window.alerts = alerts;

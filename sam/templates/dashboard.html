@@ -60,8 +60,8 @@ $def with ()
             <th data-value="ipstart">Host</th>
             <th data-value="timestamp">Timestamp</th>
             <th data-value="severity">Severity</th>
-            <th data-value="status">Status</th>
-            <th data-value="event_type">Type</th>
+            <th data-value="status">Label</th>
+            <th data-value="event_type">Rule</th>
           </tr>
           </thead>
           <tbody id="alert_table_body">
@@ -79,23 +79,6 @@ $def with ()
           </div>
           <div class="ui two column grid">
             <div class="column">
-              <div class="ui right floated alertfilter">
-                <label class="configlabel" for="alert_status">Status</label>
-                <div class="ui selection dropdown" data-tooltip="Change alert status here." data-delay="500">
-                  <input id="alert_status" name="alert_status" type="hidden" value="new">
-                  <i class="dropdown icon"></i>
-                  <div class="default text">1</div>
-                  <div class="menu">
-                    <div class="item" data-value="new">New</div>
-                    <div class="item" data-value="unclassified">Unclassified</div>
-                    <div class="item" data-value="false">False Positive</div>
-                    <div class="item" data-value="uncertain">Uncertain</div>
-                    <div class="item" data-value="suspicious">Suspicious</div>
-                    <div class="item" data-value="verysuspicious">Very Suspicious</div>
-                    <div class="item" data-value="confirmed">Confirmed Bad</div>
-                  </div>
-                </div>
-              </div>
               <h3 id="alert_details_name" class="ui header">No alert selected.</h3>
               <div class="meta">
                 Alert #: <span id="alert_details_id"></span>

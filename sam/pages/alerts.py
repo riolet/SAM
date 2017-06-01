@@ -34,159 +34,153 @@ def iprange_to_string(ipstart, ipend):
         return "{}/{}".format(ip, subnet)
 
 
-def encode_status(status, default="unclassified"):
-    """
-    translate alert status from pretty string to key. default is "Unclassified"
-    :param status: 
-    :return: 
-    """
-    if status in ('new', 'unclassified', 'false', 'uncertain',
-                  'suspicous', 'verysuspicious', 'confirmed'):
-        return status
-    return {
-        'New': 'new',
-        'Unclassified': 'unclassified',
-        'False Positive': 'false',
-        'Uncertain': 'uncertain',
-        'Suspicious': 'suspicious',
-        'Very Suspicious': 'verysuspicious',
-        'Confirmed Bad': 'confirmed'
-    }.get(status, default)
+def fuzzy_time(seconds):
+    if seconds < 120:
+        return "{:.0f} seconds".format(seconds)
+    seconds /= 60.0
+    if seconds < 10:
+        return "{:.1f} minutes".format(seconds)
+    if seconds < 120:
+        return "{:.0f} minutes".format(seconds)
+    seconds /= 60.0
+    if seconds < 12:
+        return "{:.1f} hours".format(seconds)
+    if seconds < 48:
+        return "{:.0f} hours".format(seconds)
+    seconds /= 24.0
+    if seconds < 5:
+        return "{:.0f} days".format(seconds)
+    if seconds < 14:
+        return "{:.0f} days".format(seconds)
+    seconds /= 7.0
+    if seconds < 10:
+        return "{:.1f} weeks".format(seconds)
+    if seconds < 106:
+        return "{:.0f} weeks".format(seconds)
+    seconds /= 52.177457
+    if seconds < 10:
+        return "{:.1f} years".format(seconds)
+    return "{:.0f} years".format(seconds)
 
 
-def decode_status(status, default="Unclassified"):
-    """
-    translate alert status from key to pretty string
-    :param status: 
-    :return: 
-    """
-    if status in ('New', 'Unclassified', 'False Positive', 'Uncertain',
-                  'Suspicous', 'Very Suspicious', 'Confirmed Bad'):
-        return status
-    return {
-        'new': 'New',
-        'unclassified': 'Unclassified',
-        'false': 'False Positive',
-        'uncertain': 'Uncertain',
-        'suspicious': 'Suspicious',
-        'verysuspicious': 'Very Suspicious',
-        'confirmed': 'Confirmed Bad'
-    }.get(status, default)
-
-class Alerts(base.HeadlessPost):
-    REGEX = re.compile(r'(\d+)\s?([ywdhms])', re.I)
-
-    def get_description(self, details):
-        e_type = details['event_type']
-        if e_type == "Compromised Traffic":
-            msg = "Connection detected from host {} to a known compromised server.".format(iprange_to_string(details['ipstart'], details['ipend']))
-        elif e_type == "Custom Rule":
-            msg = "Custom rule matched traffic at {}.".format(iprange_to_string(details['ipstart'], details['ipend']))
-        else:
-            msg = "Traffic flagged for host {}.".format(iprange_to_string(details['ipstart'], details['ipend']))
-        return msg
+class Alerts(base.headless):
+    REGEX = re.compile(r'(\d+)\s*([ywdhms])', re.I)
 
     # ------------------- GET ---------------------
 
     def decode_get_request(self, data):
-        # queries include: GET latest alerts, GET alert details
-        # request must include: 'type'
-        # if type is 'alerts', request should include: 'subnet', 'severity', 'time', 'sort', 'sort_dir'
-        # if type is 'details', request must include: 'id'
-        type = data.get('type', None)
-        if type not in ('alerts', 'details'):
-            raise errors.RequiredKey("type ('alerts' or 'details')", "type")
+        # request should (but doesn't need to) include: 'subnet', 'severity', 'time', 'sort', 'sort_dir'
+        request = {'subnet': data.get('subnet', None)}
 
-        request = {
-            'type': type,
-        }
+        try:
+            request['severity'] = int(data.get('severity', 1))
+        except:
+            request['severity'] = 1
 
-        if type == 'alerts':
-            request['subnet'] = data.get('subnet', None)
+        request['time'] = time_to_seconds(data.get('time', '1 week'))
+        request['sort'] = data.get('sort', 'id')
+        request['sort_dir'] = 'ASC' if data.get('sort_dir', 'DESC').upper() == 'ASC' else 'DESC'
 
-            try:
-                request['severity'] = int(data.get('severity', 1))
-            except:
-                request['severity'] = 1
-
-            request['time'] = time_to_seconds(data.get('time', '1 week'))
-            request['sort'] = data.get('sort', 'id')
-            request['sort_dir'] = 'ASC' if data.get('sort_dir', 'DESC').upper() == 'ASC' else 'DESC'
-        elif type == 'details':
-            try:
-                request['id'] = int(data.get('id'))
-            except:
-                raise errors.RequiredKey('alert id', 'id')
-        else:
-            raise errors.MalformedRequest()
         return request
 
     def perform_get_command(self, request):
         response = {}
         m_alerts = alerts.Alerts(common.db, self.page.user.viewing)
 
-        if request['type'] == 'alerts':
-            alert_filters = alerts.AlertFilter(min_severity=request['severity'], sort=request['sort'], order=request['sort_dir'], age_limit=request['time'])
-            if request['subnet'] is None:
-                response['alerts'] = m_alerts.get_recent(alert_filters)
-            else:
-                ipstart, ipend = common.determine_range_string(request['subnet'])
-                response['alerts'] = m_alerts.get_by_host(alert_filters, ipstart, ipend)
-        if request['type'] == 'details':
-            response['for'] = request['id']
-            response['details'] = m_alerts.get_details(request['id'])
+        alert_filters = alerts.AlertFilter(min_severity=request['severity'], sort=request['sort'], order=request['sort_dir'], age_limit=request['time'])
+        if request['subnet'] is None:
+            response['alerts'] = m_alerts.get_recent(alert_filters)
+        else:
+            ipstart, ipend = common.determine_range_string(request['subnet'])
+            response['alerts'] = m_alerts.get_by_host(alert_filters, ipstart, ipend)
 
         return response
 
     def encode_get_response(self, response):
         encoded = {}
-        if self.request['type'] == 'alerts':
-            alerts = []
-            for alert in response['alerts']:
-                alerts.append({
-                    'id': str(alert['id']),
-                    'host': iprange_to_string(alert['ipstart'], alert['ipend']),
-                    'timestamp': datetime.fromtimestamp(alert['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
-                    'severity': "sev{}".format(alert['severity']),
-                    'status': decode_status(alert['status']),
-                    'type': alert['event_type']
-                })
-            encoded['alerts'] = alerts
-        elif self.request['type'] == 'details':
-            details = response['details']
 
-            raw_metadata = details['details']
-            metadata = {}
-            if isinstance(raw_metadata, (str, unicode)):
-                metadata['data'] = raw_metadata
-            elif isinstance(raw_metadata, dict):
-                metadata.update(raw_metadata)
-            elif isinstance(raw_metadata, list):
-                for i, value in enumerate(raw_metadata):
-                    metadata['Value {}'.format(i+1)] = value
-            else:
-                metadata['data'] = str(raw_metadata)
+        alert_list = []
+        for alert in response['alerts']:
+            alert_list.append({
+                'id': str(alert['id']),
+                'host': iprange_to_string(alert['ipstart'], alert['ipend']),
+                'timestamp': datetime.fromtimestamp(alert['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+                'severity': "sev{}".format(alert['severity']),
+                'label': alert['label'],
+                'rule_name': alert['rule_name']
+            })
+        encoded['alerts'] = alert_list
 
-            encoded = {
-                'for': response['for'],
-                'type': response['details']['event_type'],
-                'time': datetime.fromtimestamp(details['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
-                'host': iprange_to_string(details['ipstart'], details['ipend']),
-                'severity': details['severity'],
-                'status': details['status'],
-                'description': self.get_description(details),
-                'details': metadata
-            }
+        return encoded
+
+
+class AlertDetails(base.headless_post):
+
+    # ------------------- GET ---------------------
+
+    def decode_get_request(self, data):
+        try:
+            request = {'id': int(data.get('id'))}
+        except:
+            raise errors.RequiredKey('alert id', 'id')
+        return request
+
+    def perform_get_command(self, request):
+        response = {}
+        m_alerts = alerts.Alerts(common.db, self.page.user.viewing)
+
+        response['for'] = request['id']
+        response['details'] = m_alerts.get_details(request['id'])
+
+        return response
+
+    def encode_get_response(self, response):
+        details = response['details']
+        raw_metadata = details['details']
+        metadata = {}
+        if isinstance(raw_metadata, (str, unicode)):
+            metadata['data'] = raw_metadata
+        elif isinstance(raw_metadata, dict):
+            metadata.update(raw_metadata)
+        elif isinstance(raw_metadata, list):
+            for i, value in enumerate(raw_metadata):
+                metadata['Value {}'.format(i + 1)] = value
+        else:
+            metadata['data'] = str(raw_metadata)
+
+
+        # prettify some values
+        if 'timestamp' in metadata:
+            metadata['timestamp'] = metadata['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
+        if 'src' in metadata:
+            metadata['src'] = common.IPtoString(metadata['src'])
+        if 'dst' in metadata:
+            metadata['dst'] = common.IPtoString(metadata['dst'])
+        if 'duration' in metadata:
+            metadata['duration'] = fuzzy_time(metadata['duration'])
+
+
+        host = iprange_to_string(details['ipstart'], details['ipend'])
+        encoded = {
+            'for': response['for'],
+            'time': datetime.fromtimestamp(details['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+            'host': host,
+            'severity': details['severity'],
+            'label': details['label'],
+            'rule_name': details['rule_name'],
+            'details': metadata,
+            'description': 'Rule "{}" triggered on {}'.format(details['rule_name'], host)
+        }
         return encoded
 
     # ------------------- POST ---------------------
 
     def decode_post_request(self, data):
-        # Queries include updating alert status (and adding notes?)
+        # Queries include updating alert label (and adding notes?)
 
         method = data.get('method', None)
-        if method not in ('update_status'):
-            raise errors.RequiredKey("method (must be 'update_status')", "method")
+        if method != 'update_label':
+            raise errors.RequiredKey("method (must be 'update_label')", "method")
 
         request = {
             'method': method
@@ -197,16 +191,16 @@ class Alerts(base.HeadlessPost):
             except:
                 raise errors.RequiredKey('alert id', 'id')
             try:
-                request['status'] = data.get('status')
+                request['label'] = data.get('label')
             except:
-                raise errors.RequiredKey('status', 'status')
+                raise errors.RequiredKey('label', 'label')
 
         return request
 
     def perform_post_command(self, request):
         if request['method'] == 'update_status':
             a_model = alerts.Alerts(common.db, self.page.user.viewing)
-            a_model.set_status(request['id'], encode_status(request['status']))
+            a_model.set_label(request['id'], request['label'])
         return "success"
 
     def encode_post_response(self, response):
