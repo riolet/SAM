@@ -115,18 +115,21 @@ class RulesProcessor(object):
         """
         self.db = db
 
-    def evaluate_rule(self, job, translations, conditions):
-        alerts_discovered = []
-
-        parser = rule_parser.RuleParser(translations, conditions)
-
-        where = parser.sql
-
-        print("    prepared_condition: WHERE {}".format(where))
-
+    def evaluate_immediate_rule(self, job, translations, conditions):
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
-        rows = list(self.db.select(table,where=where))
-        alerts_discovered.extend(rows)
+
+        parser = rule_parser.ImmediateRuleParser(translations, conditions)
+        where = parser.sql
+        # print("    prepared_condition: WHERE {}".format(where))
+        alerts_discovered = list(self.db.select(table, where=where))
+        return alerts_discovered
+
+    def evaluate_periodic_rule(self, job, translations, subject, conditions):
+        table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
+
+        parser = rule_parser.PeriodicRuleParser(translations, subject, conditions)
+        alerts_discovered = list(self.db.select(table, where="0"))
+
         return alerts_discovered
 
     def trigger_alert(self, sub_id, rule_, severity, label, subject, match):
@@ -219,7 +222,14 @@ class RulesProcessor(object):
             print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
             print('    Rule conditions: {}'.format(conditions))
 
-            matches = self.evaluate_rule(job, translation_table, conditions)
+            rule_type = rule_.get_type()
+            if rule_type == 'immediate':
+                matches = self.evaluate_immediate_rule(job, translation_table, conditions)
+            elif rule_type == 'periodic':
+                matches = self.evaluate_periodic_rule(job, translation_table, rule_.definition.subject, conditions)
+            else:
+                print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'.format(job.status, rule_.get_name(), rule_type))
+                continue
             print('    {} alerts discovered,'.format(len(matches)))
             for match in matches:
                 print('      {}: {} -> {}:{} x{} using {}'.format(
