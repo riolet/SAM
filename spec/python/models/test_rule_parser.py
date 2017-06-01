@@ -5,107 +5,104 @@ from sam.models import rule_parser
 def test_tokenize_simple():
     s1 = 'src host = 1.2.3.4'
 
-    parser = rule_parser.RuleParser({}, s1)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'src', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s1)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'src', 'type': 'host', 'value': '1.2.3.4'})]
 
     s2 = 'src port = 51223'
-    parser = rule_parser.RuleParser({}, s2)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'src', 'type': 'port', 'value': '51223'})]
+    parser = rule_parser.RuleParser({}, 'src', s2)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'src', 'type': 'port', 'value': '51223'})]
 
     s3 = 'dst host = 1.2.3.4'
-    parser = rule_parser.RuleParser({}, s3)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'dst', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s3)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'dst', 'type': 'host', 'value': '1.2.3.4'})]
 
     s4 = 'dst port = 443'
-    parser = rule_parser.RuleParser({}, s4)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'dst', 'type': 'port', 'value': '443'})]
+    parser = rule_parser.RuleParser({}, 'src', s4)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'dst', 'type': 'port', 'value': '443'})]
 
     s5 = 'host = 1.2.3.4'
-    parser = rule_parser.RuleParser({}, s5)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'either', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s5)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'host', 'value': '1.2.3.4'})]
 
     s6 = 'host 1.2.3.4'
-    parser = rule_parser.RuleParser({}, s6)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'either', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s6)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'host', 'value': '1.2.3.4'})]
 
     s7 = 'src host 1.2.3.4'
-    parser = rule_parser.RuleParser({}, s7)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'src', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s7)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'src', 'type': 'host', 'value': '1.2.3.4'})]
 
     s8 = '1.2.3.4'
-    parser = rule_parser.RuleParser({}, s8)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'either', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s8)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'host', 'value': '1.2.3.4'})]
 
     s9 = 'dst 1.2.3.4'
-    parser = rule_parser.RuleParser({}, s9)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'dst', 'type': 'host', 'value': '1.2.3.4'})]
+    parser = rule_parser.RuleParser({}, 'src', s9)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'dst', 'type': 'host', 'value': '1.2.3.4'})]
 
     s10 = 'port 443'
-    parser = rule_parser.RuleParser({}, s10)
-    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir_': 'either', 'type': 'port', 'value': '443'})]
+    parser = rule_parser.RuleParser({}, 'src', s10)
+    assert parser.clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'port', 'value': '443'})]
 
 
 def test_tokenize_lists():
     s1 = 'src host in [1, 2, 3, 4]'
-    parser = rule_parser.RuleParser({}, s1)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'src', 'type': 'host', 'value': list('1234')})]
+    parser = rule_parser.RuleParser({}, 'src', s1)
+    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir': 'src', 'type': 'host', 'value': list('1234')})]
 
     s2 = 'src host in (5 ,6 ,7 , 8)'
-    parser = rule_parser.RuleParser({}, s2)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'src', 'type': 'host', 'value': list('5678')})]
+    parser = rule_parser.RuleParser({}, 'src', s2)
+    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir': 'src', 'type': 'host', 'value': list('5678')})]
 
     s3 = 'src host in (9)'
-    parser = rule_parser.RuleParser({}, s3)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'src', 'type': 'host', 'value': list('9')})]
+    parser = rule_parser.RuleParser({}, 'src', s3)
+    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir': 'src', 'type': 'host', 'value': list('9')})]
 
     s4 = 'src host in [0]'
-    parser = rule_parser.RuleParser({}, s4)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'src', 'type': 'host', 'value': list('0')})]
+    parser = rule_parser.RuleParser({}, 'src', s4)
+    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir': 'src', 'type': 'host', 'value': list('0')})]
 
     s5 = 'dst port in $ports'
-    tr = {
-        'ports': [22, 33, 44, 55]
-    }
-    parser = rule_parser.RuleParser(tr, s5)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'dst', 'type': 'port', 'value': ['22','33','44','55']})]
+    tr = {'ports': [22, 33, 44, 55]}
+    parser = rule_parser.RuleParser(tr, 'src', s5)
+    assert parser.clauses == [('CLAUSE',
+                               {'comp': 'in', 'dir': 'dst', 'type': 'port', 'value': ['22', '33', '44', '55']})]
 
-    tr = {
-        'ports': (22, 33, 44, 55)
-    }
-    parser = rule_parser.RuleParser(tr, s5)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'dst', 'type': 'port', 'value': ['22','33','44','55']})]
+    tr = {'ports': (22, 33, 44, 55)}
+    parser = rule_parser.RuleParser(tr, 'src', s5)
+    assert parser.clauses == [('CLAUSE',
+                               {'comp': 'in', 'dir': 'dst', 'type': 'port', 'value': ['22', '33', '44', '55']})]
 
-    tr = {
-        'ports': '(22, 33, 44, 55)'
-    }
-    parser = rule_parser.RuleParser(tr, s5)
-    assert parser.clauses == [('CLAUSE', {'comp': 'in', 'dir_': 'dst', 'type': 'port', 'value': ['22','33','44','55']})]
+    tr = {'ports': '(22, 33, 44, 55)'}
+    parser = rule_parser.RuleParser(tr, 'src', s5)
+    assert parser.clauses == [('CLAUSE',
+                               {'comp': 'in', 'dir': 'dst', 'type': 'port', 'value': ['22', '33', '44', '55']})]
 
 
 def test_tokenize_replacements():
     s1 = '$place'
     tr = {'place': 'hello'}
-    parser = rule_parser.RuleParser(tr, s1)
+    parser = rule_parser.RuleParser(tr, 'src', s1)
     assert parser.tokens == [('LITERAL', 'hello')]
 
     tr = {'place': 42}
-    parser = rule_parser.RuleParser(tr, s1)
+    parser = rule_parser.RuleParser(tr, 'src', s1)
     assert parser.tokens == [('LITERAL', '42')]
 
     s2 = 'host in $place'
     tr = {'place': [1, 2, 3]}
-    parser = rule_parser.RuleParser(tr, s2)
+    parser = rule_parser.RuleParser(tr, 'src', s2)
     assert parser.tokens == [('TYPE', 'host'), ('LIST', 'in'), ('LIT_LIST', ['1', '2', '3'])]
 
     s2 = 'host in $place'
     tr = {'place': "(1 ,2 , 3)"}
-    parser = rule_parser.RuleParser(tr, s2)
+    parser = rule_parser.RuleParser(tr, 'src', s2)
     assert parser.tokens == [('TYPE', 'host'), ('LIST', 'in'), ('LIT_LIST', ['1', '2', '3'])]
 
 
 def test_tokenize_aggregates():
     s1 = 'src[host] > 50'
-    tokens = rule_parser.PeriodicRuleParser.tokenize(s1)
+    tokens = rule_parser.RuleParser.tokenize(s1)
     expected = [
         ('AGGREGATE', 'src[host]'),
         ('COMPARATOR', '>'),
@@ -114,7 +111,7 @@ def test_tokenize_aggregates():
     assert tokens == expected
 
     s2 = 'dst[port] 22'
-    tokens = rule_parser.PeriodicRuleParser.tokenize(s2)
+    tokens = rule_parser.RuleParser.tokenize(s2)
     expected = [
         ('AGGREGATE', 'dst[port]'),
         ('LITERAL', '22')
@@ -122,7 +119,7 @@ def test_tokenize_aggregates():
     assert tokens == expected
 
     s3 = 'conn[links] > 3000'
-    tokens = rule_parser.PeriodicRuleParser.tokenize(s3)
+    tokens = rule_parser.RuleParser.tokenize(s3)
     expected = [
         ('AGGREGATE', 'conn[links]'),
         ('COMPARATOR', '>'),
@@ -132,7 +129,7 @@ def test_tokenize_aggregates():
 
     # This is an expected failure.
     s4 = 'host[count] > 3000'
-    tokens = rule_parser.PeriodicRuleParser.tokenize(s4)
+    tokens = rule_parser.RuleParser.tokenize(s4)
     expected = [
         ('TYPE', 'host'),
         ('LIT_LIST', '[count]'),
@@ -142,119 +139,115 @@ def test_tokenize_aggregates():
     assert tokens == expected
 
     s3 = 'conn[links] > 3000'
-    tokens = rule_parser.PeriodicRuleParser.tokenize(s3)
+    tokens = rule_parser.RuleParser.tokenize(s3)
     expected = [
         ('AGGREGATE', ('conn', 'links')),
         ('COMPARATOR', '>'),
         ('LITERAL', '3000')
     ]
-    rule_parser.PeriodicRuleParser.decode_tokens({}, tokens)
+    rule_parser.RuleParser.decode_tokens({}, tokens)
     assert tokens == expected
 
 
 def test_joins():
     s1 = 'src port 12345 and dst port 80'
-    parser = rule_parser.RuleParser({}, s1)
+    parser = rule_parser.RuleParser({}, 'src', s1)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'src', 'type': 'port', 'comp': '=', 'value': '12345'}),
+        ('CLAUSE', {'dir': 'src', 'type': 'port', 'comp': '=', 'value': '12345'}),
         ('JOIN', 'and'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
     ]
 
     s2 = 'src port 12345 or dst port 80'
-    parser = rule_parser.RuleParser({}, s2)
+    parser = rule_parser.RuleParser({}, 'src', s2)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'src', 'type': 'port', 'comp': '=', 'value': '12345'}),
+        ('CLAUSE', {'dir': 'src', 'type': 'port', 'comp': '=', 'value': '12345'}),
         ('JOIN', 'or'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
     ]
 
     s2 = 'dst port 80 or dst port 80 and dst port 80 or dst port 80 and dst port 80'
-    parser = rule_parser.RuleParser({}, s2)
+    parser = rule_parser.RuleParser({}, 'src', s2)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
         ('JOIN', 'or'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
         ('JOIN', 'and'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
         ('JOIN', 'or'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
         ('JOIN', 'and'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '80'}),
     ]
 
 
 def test_negation():
     s1 = 'dst port not in (22, 33, 44)'
-    parser = rule_parser.RuleParser({}, s1)
+    parser = rule_parser.RuleParser({}, 'src', s1)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': 'not in', 'value': ['22', '33', '44']})
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': 'not in', 'value': ['22', '33', '44']})
     ]
 
     s2 = 'dst port != 443'
-    parser = rule_parser.RuleParser({}, s2)
+    parser = rule_parser.RuleParser({}, 'src', s2)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '!=', 'value': '443'})
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '!=', 'value': '443'})
     ]
 
     s3 = 'not dst port = 443'
-    parser = rule_parser.RuleParser({}, s3)
+    parser = rule_parser.RuleParser({}, 'src', s3)
     assert parser.clauses == [
         ('MODIFIER', 'not'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '=', 'value': '443'})
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '=', 'value': '443'})
     ]
 
     s4 = 'not dst port not in (22, 33, 44)'
-    parser = rule_parser.RuleParser({}, s4)
+    parser = rule_parser.RuleParser({}, 'src', s4)
     assert parser.clauses == [
         ('MODIFIER', 'not'),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': 'not in', 'value': ['22', '33', '44']})
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': 'not in', 'value': ['22', '33', '44']})
     ]
 
 
 def test_parens():
     s = '(dst port < 500)'
-    parser = rule_parser.RuleParser({}, s)
+    parser = rule_parser.RuleParser({}, 'src', s)
     assert parser.clauses == [
         ('MODIFIER', '('),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
         ('MODIFIER', ')'),
     ]
 
     s = '((dst port < 500))'
-    parser = rule_parser.RuleParser({}, s)
+    parser = rule_parser.RuleParser({}, 'src', s)
     assert parser.clauses == [
         ('MODIFIER', '('),
         ('MODIFIER', '('),
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
+        ('CLAUSE', {'dir': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
         ('MODIFIER', ')'),
         ('MODIFIER', ')'),
     ]
 
     s = 'dst port < 500)'
     with pytest.raises(rule_parser.RuleParseError):
-        parser = rule_parser.RuleParser({}, s)
+        parser = rule_parser.RuleParser({}, 'src', s)
 
     s = '(dst port < 500'
     with pytest.raises(rule_parser.RuleParseError):
-        parser = rule_parser.RuleParser({}, s)
+        parser = rule_parser.RuleParser({}, 'src', s)
 
     s = 'dst port < 500)('
     with pytest.raises(rule_parser.RuleParseError):
-        parser = rule_parser.RuleParser({}, s)
+        parser = rule_parser.RuleParser({}, 'src', s)
 
     s = 'dst port < 500()'
-    parser = rule_parser.RuleParser({}, s)
-    assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'dst', 'type': 'port', 'comp': '<', 'value': '500'}),
-        ('MODIFIER', '('),
-        ('MODIFIER', ')'),
-    ]
+    with pytest.raises(rule_parser.RuleParseError):
+        parser = rule_parser.RuleParser({}, 'src', s)
 
 
 def test_aggregates():
     s1 = 'dst[ports] > 300'
-    parser = rule_parser.PeriodicRuleParser({}, 'src', s1)
+    parser = rule_parser.RuleParser({}, 'src', s1)
     expected = [
         ('AGGREGATE', ('dst', 'ports')),
         ('COMPARATOR', '>'),
@@ -263,7 +256,7 @@ def test_aggregates():
     assert parser.tokens == expected
     expected = [
         ('CLAUSE', {
-            'dir_': 'dst',
+            'dir': 'dst',
             'agg': 'ports',
             'type': 'aggregate',
             'comp': '>',
@@ -273,10 +266,10 @@ def test_aggregates():
     assert parser.clauses == expected
 
     s2 = 'conn[links] 1000 or not conn[links] 1050'
-    parser = rule_parser.PeriodicRuleParser({}, 'src', s2)
+    parser = rule_parser.RuleParser({}, 'src', s2)
     expected = [
         ('CLAUSE', {
-            'dir_': 'conn',
+            'dir': 'conn',
             'agg': 'links',
             'type': 'aggregate',
             'comp': '=',
@@ -285,7 +278,7 @@ def test_aggregates():
         ('JOIN', 'or'),
         ('MODIFIER', 'not'),
         ('CLAUSE', {
-            'dir_': 'conn',
+            'dir': 'conn',
             'agg': 'links',
             'type': 'aggregate',
             'comp': '=',
@@ -297,32 +290,32 @@ def test_aggregates():
 
 def test_sql():
     s1 = 'src host = 1.2.3.4'
-    parser = rule_parser.RuleParser({}, s1)
+    parser = rule_parser.RuleParser({}, 'src', s1)
     sql = parser.sql
     assert sql == 'src = 16909060'
 
     s2 = 'src host in [1.2.3.4, 10.20.30.40, 100.200.50.150]'
-    parser = rule_parser.RuleParser({}, s2)
+    parser = rule_parser.RuleParser({}, 'src', s2)
     sql = parser.sql
     assert sql == 'src in (16909060,169090600,1690841750)'
 
     s3 = 'dst port in [22, 33, 44]'
-    parser = rule_parser.RuleParser({}, s3)
+    parser = rule_parser.RuleParser({}, 'src', s3)
     sql = parser.sql
     assert sql == 'port in (22,33,44)'
 
     s4 = 'dst port = 5'
-    parser = rule_parser.RuleParser({}, s4)
+    parser = rule_parser.RuleParser({}, 'src', s4)
     sql = parser.sql
     assert sql == 'port = 5'
 
     s5 = '(src host = 1.2.3.4 or dst host = 5.6.7.8) and port = 80'
-    parser = rule_parser.RuleParser({}, s5)
+    parser = rule_parser.RuleParser({}, 'src', s5)
     sql = parser.sql
     assert sql == '( src = 16909060 or dst = 84281096 ) and port = 80'
 
     s6 = 'host 10.20.30.40 and not (10.24.34.44 or 10.24.34.45)'
-    parser = rule_parser.RuleParser({}, s6)
+    parser = rule_parser.RuleParser({}, 'src', s6)
     sql = parser.sql
     assert sql == '(dst = 169090600 or src = 169090600) and not ' \
                   '( (dst = 169353772 or src = 169353772) or (dst = 169353773 or src = 169353773) )'
@@ -330,31 +323,31 @@ def test_sql():
 
 def test_tcpdump_examples():
     s = 'host sundown'
-    parser = rule_parser.RuleParser({}, s)
+    parser = rule_parser.RuleParser({}, 'src', s)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'sundown'})
+        ('CLAUSE', {'dir': 'either', 'type': 'host', 'comp': '=', 'value': 'sundown'})
     ]
 
     s = 'host helios and ( hot or ace )'
-    parser = rule_parser.RuleParser({}, s)
+    parser = rule_parser.RuleParser({}, 'src', s)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'helios'}),
+        ('CLAUSE', {'dir': 'either', 'type': 'host', 'comp': '=', 'value': 'helios'}),
         ('JOIN', 'and'),
         ('MODIFIER', '('),
-        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'hot'}),
+        ('CLAUSE', {'dir': 'either', 'type': 'host', 'comp': '=', 'value': 'hot'}),
         ('JOIN', 'or'),
-        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'ace'}),
+        ('CLAUSE', {'dir': 'either', 'type': 'host', 'comp': '=', 'value': 'ace'}),
         ('MODIFIER', ')'),
     ]
 
     s = 'ip host ace and not helios'  # all traffic available is IP traffic
     s = 'host ace and not helios'
-    parser = rule_parser.RuleParser({}, s)
+    parser = rule_parser.RuleParser({}, 'src', s)
     assert parser.clauses == [
-        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'ace'}),
+        ('CLAUSE', {'dir': 'either', 'type': 'host', 'comp': '=', 'value': 'ace'}),
         ('JOIN', 'and'),
         ('MODIFIER', 'not'),
-        ('CLAUSE', {'dir_': 'either', 'type': 'host', 'comp': '=', 'value': 'helios'}),
+        ('CLAUSE', {'dir': 'either', 'type': 'host', 'comp': '=', 'value': 'helios'}),
     ]
 
     s = 'net ucb-ether'  # 'net' is not supported in SAM
