@@ -6,8 +6,121 @@ import re
 class RuleParseError(Exception): pass
 
 
+class RuleSQL(object):
+    def __init__(self, subject, wheres, havings):
+        self.subject = subject
+        self._wheres = wheres
+        self._havings = havings
+        self._groupbys = set()
+        self._whats = []
+
+        self._where_columns = self._build_where_columns(self._wheres)
+        # self._having_columns = self._build_having_columns
+
+        self.where = ""
+        self.having = ""
+        self.groupby = ""
+        self.what = ""
+
+        self.where = self.process_clauses(self._wheres)
+        self.having = self.process_clauses(self._havings)
+        self.groupbys = self._build_groupbys()
+        self.groupby = ", ".join(self.groupbys)
+        self.whats = self._build_whats()
+        self.what = ", ".join(self.whats)
+
+    def process_clauses(self, clauses):
+        parts = []
+        for item in clauses:
+            if item[0] == 'JOIN':
+                parts.append(item[1])
+            elif item[0] == 'MODIFIER':
+                parts.append(item[1])
+            elif item[0] == 'CLAUSE':
+                clause = item[1]
+                if clause['type'] == 'port':
+                    if type(clause['value']) is list:
+                        ports = "({})".format(",".join(map(str, map(int, clause['value']))))
+                    else:
+                        ports = int(clause['value'])
+                    clause_sql = 'port {} {}'.format(clause['comp'], ports)
+                    parts.append(clause_sql)
+                elif clause['type'] == 'host':
+                    if type(clause['value']) is list:
+                        ips = "({})".format(",".join(map(str, map(common.IPStringtoInt, clause['value']))))
+                    else:
+                        ips = common.IPStringtoInt(clause['value'])
+                    if clause['dir'] == 'src':
+                        clause_sql = 'src {} {}'.format(clause['comp'], ips)
+                    elif clause['dir'] == 'dst':
+                        clause_sql = 'dst {} {}'.format(clause['comp'], ips)
+                    else:
+                        clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
+                    parts.append(clause_sql)
+                elif clause['type'] == 'aggregate':
+                    clause_sql = '{dir}[{agg}] {comp} {value}'.format(**clause)
+                    parts.append(clause_sql)
+                else:
+                    raise RuleParseError('Cannot convert to sql: type "{}" is unhandled.'.format(clause['type']))
+        return " ".join(parts)
+
+    def _build_where_columns(self, wheres):
+        columns = set()
+        for item in wheres:
+            if item[0] == 'CLAUSE':
+                clause = item[1]
+                if clause['type'] == 'host':
+                    dir_ = clause['dir']
+                    # dir_ should be one of 'src' 'dst' 'either'
+                    if dir_ == 'either':
+                        columns.add('src')
+                        columns.add('dst')
+                    elif dir_ in ('src', 'dst'):
+                        columns.add(dir_)
+                elif clause['type'] == 'port':
+                    columns.add('port')
+                elif clause['type'] == 'protocol':
+                    columns.add('protocol')
+        return columns
+
+    def _build_whats(self):
+        if not self._havings:
+            return "*"
+
+        whats = ['timestamp']
+        if self.subject == 'either':
+            whats.extend(['src', 'dst'])
+        elif self.subject in ('src', 'dst'):
+            whats.append(self.subject)
+        whats.extend(self._where_columns)
+
+        #
+        if 'dst' not in whats:
+            whats.append("COUNT(DISTINCT dst) AS 'dst[hosts]'")
+        if 'src' not in whats:
+            whats.append("COUNT(DISTINCT dst) AS 'src[hosts]'")
+        if 'port' not in whats:
+            whats.append("COUNT(DISTINCT port) AS 'conn[ports]'")
+        if 'protocol' not in whats:
+            whats.append("COUNT(DISTINCT protocol) AS 'conn[protocol]'")
+        if 'links' not in whats:
+            whats.append("SUM(links) AS 'conn[links]'")
+
+        return whats
+
+    def _build_groupbys(self):
+        column_names = {'timestamp'}
+        if self.subject == 'either':
+            column_names |= {'src', 'dst'}
+        elif self.subject in ('src', 'dst'):
+            column_names.add(self.subject)
+        column_names |= self._where_columns
+        return column_names
+
+
 class RuleParser(object):
     SCANNER = re.Scanner([
+        (r'having',      lambda scanner, token: ('CONTEXT', token)),
         (r'(?:src|dst|conn)\[\S+\]',
                         lambda scanner, token: ('AGGREGATE', token)),
         (r'src|dst',    lambda scanner, token: ('DIRECTION', token)),
@@ -19,7 +132,7 @@ class RuleParser(object):
         (r'not',        lambda scanner, token: ('NOT', token)),
         (r'<=|<|>|>=|==?|!=',
                         lambda scanner, token: ('COMPARATOR', token)),
-        (r'\$\S+',      lambda scanner, token: ('REPLACEMENT', token[1:])),  # remove the leading $
+        (r'\$\S+',      lambda scanner, token: ('REPLACEMENT', token[1:])),  # slicing to remove the leading $
         (r'\[\S+(?:\s*,\s*\S+)*\]|\(\S+(?:\s*,\s*\S+)*\)',
                         lambda scanner, token: ('LIT_LIST', token)),  # to match "[a,b,c]" and "(d , e , f)"
         (r'\(',         lambda scanner, token: ('P_OPEN', token)),  # must come after LIT_LIST (both capture parens)
@@ -33,15 +146,26 @@ class RuleParser(object):
 
     # rule:
     # | clauses
+    # | CONTEXT aggs
+    # | clauses CONTEXT aggs
     # clauses:
     # | [NOT] clause
     # | clauses AND [NOT] clause
     # | clauses OR [NOT] clause
     # clause:
-    # | AGGREGATE [COMPARATOR==] LITERAL|REPLACEMENT
     # | [DIRECTION=either] [TYPE=host] [LIST] LIT_LIST|REPLACEMENT
     # | [DIRECTION=either] [TYPE=host] [COMPARATOR==] LITERAL|REPLACEMENT
     # | P_OPEN [NOT] clauses P_CLOSE
+    # aggs:
+    # | [NOT] agg
+    # | aggs AND [NOT] agg
+    # | aggs OR [NOT] agg
+    # agg:
+    # | AGGREGATE [COMPARATOR==] LITERAL|REPLACEMENT
+    # | P_OPEN [NOT] aggs P_CLOSE
+
+    # TODO: remove the token CONTEXT ("having") so that you write horrible rules like:
+    #   "dst protocol UDP and (dst[ports] >500 or dst host 1.2.3.4)"
 
     def __init__(self, replacements, subject, rule_string):
         self.replacements = replacements
@@ -55,26 +179,27 @@ class RuleParser(object):
 
         self.original = rule_string
         self.tokens = []
-        self.clauses = []
+        self.where_clauses = []
+        self.having_clauses = []
         self.sql = ""
 
         self.tokens = self.tokenize(self.original)
-        print(" Tokens ".center(80, '='))
-        pprint(self.tokens)
+        #print(" Tokens ".center(80, '='))
+        #pprint(self.tokens)
 
-        RuleParser.conform_to_syntax(self.tokens)
         self.decode_tokens(self.replacements, self.tokens)
-        print(" Decoded Tokens ".center(80, '='))
-        pprint(self.tokens)
+        RuleParser.conform_to_syntax(self.tokens)
+        #print(" Decoded Tokens ".center(80, '='))
+        #pprint(self.tokens)
 
-        self.clauses = self.clause_builder()
-        print(" Clauses ".center(80, '='))
-        pprint(self.clauses)
+        self.where_clauses, self.having_clauses = self.clause_builder()
+        #print(" WHERE Clauses ".center(80, '='))
+        #pprint(self.where_clauses)
+        #print(" HAVING Clauses ".center(80, '='))
+        #pprint(self.having_clauses)
 
         self.sql = self.sql_encoder()
-        print(" SQL ".center(80, '='))
-        pprint(self.sql)
-        print(" ".center(80, '='))
+        #print(" ".center(80, '='))
 
     @staticmethod
     def tokenize(s):
@@ -98,8 +223,13 @@ class RuleParser(object):
         return p_level == 0
 
     @staticmethod
-    def get_next_token_options(token):
+    def get_next_token_options(passed_having, token):
         """
+        Note: this function assumes all replacements have been made and no replacement tokens remain.
+        They all should have become "LITERAL" or "LIT_LIST".
+
+        TODO: add a stream_start and stream_end tokens to make sure we reach an exit point
+           (Exit points are only after a LIT_LIST or LITERAL)
         :param token:
          :type token: str or None
         :return:
@@ -108,39 +238,55 @@ class RuleParser(object):
         options = []
         if token is None:
             # Start condition
-            options = ['P_OPEN', 'NOT', 'AGGREGATE', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST',
-                       'REPLACEMENT']
+            options = ['CONTEXT', 'NOT', 'P_OPEN', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST']
         if token == 'AGGREGATE':
-            options = ['COMPARATOR', 'LITERAL', 'REPLACEMENT']
+            options = ['COMPARATOR', 'LITERAL']
         elif token == 'DIRECTION':
-            options = ['TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST', 'REPLACEMENT']
+            options = ['TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST']
         elif token == 'TYPE':
-            options = ['LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST', 'REPLACEMENT']
+            options = ['LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST']
         elif token == 'LIST':
-            options = ['LIST', 'LIT_LIST', 'REPLACEMENT']
+            options = ['LIT_LIST']
         elif token in ('AND', 'OR'):
-            options = ['NOT', 'P_OPEN', 'AGGREGATE', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST',
-                       'REPLACEMENT']
+            if passed_having:
+                options = ['NOT', 'P_OPEN', 'AGGREGATE']
+            else:
+                options = ['NOT', 'P_OPEN', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST']
         elif token == 'NOT':
-            options = ['P_OPEN', 'AGGREGATE', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST',
-                       'REPLACEMENT']
+            if passed_having:
+                options = ['P_OPEN', 'AGGREGATE']
+            else:
+                options = ['P_OPEN', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST']
         elif token == 'P_OPEN':
-            options = ['P_OPEN', 'NOT', 'AGGREGATE', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST',
-                       'REPLACEMENT']
+            if passed_having:
+                options = ['NOT', 'AGGREGATE']
+            else:
+                options = ['NOT', 'P_OPEN', 'DIRECTION', 'TYPE', 'LIST', 'COMPARATOR', 'LITERAL', 'LIT_LIST']
         elif token == 'COMPARATOR':
-            options = ['LITERAL', 'REPLACEMENT']
-        elif token in ('REPLACEMENT', 'LITERAL', 'LIT_LIST', 'P_CLOSE'):
-            options = ['P_CLOSE', 'OR', 'AND']
+            options = ['LITERAL']
+        elif token in ('LITERAL', 'LIT_LIST', 'P_CLOSE'):
+            if passed_having:
+                options = ['P_CLOSE', 'OR', 'AND']
+            else:
+                options = ['P_CLOSE', 'OR', 'AND', 'CONTEXT']
+        elif token == 'CONTEXT':
+            options = ['NOT', 'P_OPEN', 'AGGREGATE']
+
 
         return options
 
     @staticmethod
     def conform_to_syntax(tokens):
         prev_token = None
+        having = 0
         for token in tokens:
-            options = RuleParser.get_next_token_options(prev_token)
+            options = RuleParser.get_next_token_options(having == 1, prev_token)
             if token[0] not in options:
                 raise RuleParseError("Invalid rule syntax: unexpected token {}: {}".format(token[0], token[1]))
+            if token[0] == 'CONTEXT':
+                having += 1
+                if having > 1:
+                    raise RuleParseError('Invalid rule syntax: "{}" may only appear once.'.format(token[1]))
             prev_token = token[0]
 
     @staticmethod
@@ -195,7 +341,9 @@ class RuleParser(object):
         return obj
 
     def clause_builder(self):
-        objects = []
+        where_objects = []
+        having_objects = []
+        objects = where_objects
         clause = {}
         mode = None
         next_mode = None
@@ -207,6 +355,9 @@ class RuleParser(object):
                 next_mode = 'join'
             elif switch in ('NOT', 'P_OPEN', 'P_CLOSE'):
                 next_mode = 'modify'
+            elif switch == "CONTEXT":
+                objects = having_objects
+                continue
 
             mode = next_mode
 
@@ -235,46 +386,12 @@ class RuleParser(object):
                     RuleParser.finalize_clause(clause)
                     objects.append(('CLAUSE', clause))
                     clause = {}
-        return objects
+        return where_objects, having_objects
 
     def sql_encoder(self):
-        parts = []
-        for item in self.clauses:
-
-            if item[0] == 'JOIN':
-                parts.append(item[1])
-            elif item[0] == 'MODIFIER':
-                parts.append(item[1])
-            elif item[0] == 'CLAUSE':
-
-                clause = item[1]
-                if clause['type'] == 'port':
-                    if type(clause['value']) is list:
-                        ports = "({})".format(",".join(map(str, map(int, clause['value']))))
-                    else:
-                        ports = int(clause['value'])
-                    clause_sql = 'port {} {}'.format(clause['comp'], ports)
-                elif clause['type'] == 'host':
-                    if type(clause['value']) is list:
-                        ips = "({})".format(",".join(map(str, map(common.IPStringtoInt, clause['value']))))
-                    else:
-                        ips = common.IPStringtoInt(clause['value'])
-                    if clause['dir'] == 'src':
-                        clause_sql = 'src {} {}'.format(clause['comp'], ips)
-                    elif clause['dir'] == 'dst':
-                        clause_sql = 'dst {} {}'.format(clause['comp'], ips)
-                    else:
-                        clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
-                else:
-                    raise RuleParseError('Cannot convert to sql: type "{}" is unhandled.'.format(clause['type']))
-                parts.append(clause_sql)
-        sql = " ".join(parts)
+        """
+        :return:
+         :rtype: RuleSQL
+        """
+        sql = RuleSQL(self.subject, self.where_clauses, self.having_clauses)
         return sql
-
-
-class RuleSQL(object):
-    def __init__(self, what, where, groupby, having):
-        self.what = what
-        self.where = where
-        self.groupby = groupby
-        self.having = having
