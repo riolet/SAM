@@ -12,4 +12,4 @@ expose:
     regex: "^\\d+$"
 actions:
 subject: src
-when: dst[hosts] > $threshold
+when: having dst[hosts] > $threshold
