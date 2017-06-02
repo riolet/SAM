@@ -55,13 +55,33 @@ def test_tokenize_simple():
     assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'dst', 'type': 'host', 'value': '1.2.3.4'})]
     assert parser.having_clauses == []
 
-    s10 = 'port 443'
-    parser = rule_parser.RuleParser({}, 'src', s10)
+    s10a = 'port 443'
+    parser = rule_parser.RuleParser({}, 'src', s10a)
     assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'port', 'value': '443'})]
     assert parser.having_clauses == []
 
-    s10 = 'protocol tcp'
-    parser = rule_parser.RuleParser({}, 'src', s10)
+    s10b = 'dst port 443'
+    parser = rule_parser.RuleParser({}, 'src', s10b)
+    assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'dst', 'type': 'port', 'value': '443'})]
+    assert parser.having_clauses == []
+
+    s10c = 'dst port [80, 443]'
+    parser = rule_parser.RuleParser({}, 'src', s10c)
+    assert parser.where_clauses == [('CLAUSE', {'comp': 'in', 'dir': 'dst', 'type': 'port', 'value': ['80', '443']})]
+    assert parser.having_clauses == []
+
+    s10d = 'dst port $ports'
+    parser = rule_parser.RuleParser({'ports': 80}, 'src', s10d)
+    assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'dst', 'type': 'port', 'value': '80'})]
+    assert parser.having_clauses == []
+
+    s10e = 'dst port $ports'
+    parser = rule_parser.RuleParser({'ports': [80, 443]}, 'src', s10e)
+    assert parser.where_clauses == [('CLAUSE', {'comp': 'in', 'dir': 'dst', 'type': 'port', 'value': ['80', '443']})]
+    assert parser.having_clauses == []
+
+    s12 = 'protocol tcp'
+    parser = rule_parser.RuleParser({}, 'src', s12)
     assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'protocol', 'value': 'tcp'})]
     assert parser.having_clauses == []
 
@@ -399,7 +419,7 @@ def simple_query(select, from_, where='', groupby='', having='', orderby='', lim
         query = "{}\nHAVING {}".format(query, having)
     if orderby:
         query = "{}\nORDER BY {}".format(query, orderby)
-    if having:
+    if limit:
         query = "{}\nLIMIT {}".format(query, limit)
     return query
 

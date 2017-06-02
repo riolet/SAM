@@ -4,7 +4,7 @@
 name: Compromised Traffic
 type: immediate
 include:
-  bad_hosts: ./test_hosts.txt
+  bad_hosts: ./compromised_hosts.txt
 expose:
 actions:
   alert_severity: 8

@@ -182,6 +182,7 @@ def setup_network(db, sub_id, ds_id):
     t = sam.common.IPStringtoInt
 
     log_lines = [
+        [t('199.29.39.40'), 12345, t('101.99.86.58'), 80, when1, 'TCP', 100, 0, 1, 0, 5],  # for testing known compromised hosts.
         [t('110.20.30.40'), 12345, t('110.20.30.40'), 180, when1, 'TCP', 100, 0, 1, 0, 5],
         [t('110.20.30.40'), 12345, t('110.20.30.41'), 180, when2, 'TCP', 100, 0, 1, 0, 5],
         [t('110.20.30.40'), 12345, t('110.20.32.42'), 180, when3, 'TCP', 100, 0, 1, 0, 5],

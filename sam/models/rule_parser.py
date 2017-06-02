@@ -43,8 +43,6 @@ class RuleSQL(object):
                     clause_sql = 'port {} {}'.format(clause['comp'], web.db.sqlquote(clause['value']))
                     parts.append(clause_sql)
                 elif clause['type'] == 'host':
-                    print("processing clauses")
-                    pprint(clause)
                     if isinstance(clause['value'], (str, unicode)):
                         ips = web.db.sqlquote(common.IPStringtoInt(clause['value']))
                     else:
@@ -124,6 +122,20 @@ class RuleSQL(object):
             column_names.add(self.subject)
         column_names |= self._where_columns
         return column_names
+
+    def get_query(self, table, orderby='', limit=''):
+        query = "SELECT {}\nFROM {}".format(self.what, table)
+        if self.where:
+            query = "{}\nWHERE {}".format(query, self.where)
+        if self.groupby:
+            query = "{}\nGROUP BY {}".format(query, self.groupby)
+        if self.having:
+            query = "{}\nHAVING {}".format(query, self.having)
+        if orderby:
+            query = "{}\nORDER BY {}".format(query, orderby)
+        if limit:
+            query = "{}\nLIMIT {}".format(query, limit)
+        return query
 
 
 class RuleParser(object):
@@ -304,7 +316,7 @@ class RuleParser(object):
         if not clause.get('type'):
             clause['type'] = 'host'
         if not clause.get('comp'):
-            if clause['value'][0] == '(':
+            if isinstance(clause['value'], (list, tuple)):
                 clause['comp'] = 'in'
             else:
                 clause['comp'] = '='

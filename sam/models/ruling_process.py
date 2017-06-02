@@ -13,6 +13,17 @@ _JOBS = {}
 _NEXT_ID = 1
 # get own connection to DB
 _DB, _DB_QUIET = common.get_db(constants.dbconfig.copy())
+# keep processor alive for xx seconds between jobs (to reduce shutdown/startup overhead
+_PROCESSOR_STAYALIVE = 10
+
+def __testing_only_reset_state():
+    global _RULES_PROCESS, _QUEUE, _JOBS, _NEXT_ID
+    if _RULES_PROCESS and _RULES_PROCESS.is_alive():
+        _RULES_PROCESS.terminate()
+    _RULES_PROCESS = None
+    _QUEUE = multiprocessing.Queue()
+    _JOBS = {}
+    _NEXT_ID = 1
 
 
 class RuleJob(object):
@@ -81,20 +92,26 @@ def reset_globals():
     _QUEUE = multiprocessing.Queue()
 
 
-def ruling_process(queue):
+def ruling_process(queue, stayalive=_PROCESSOR_STAYALIVE):
     """
-    :param queue:
+    :param queue: job queue. contains ids that reference the _JOBS global.
      :type queue: multiprocessing.queues.Queue
+    :param stayalive: How long to keep the process running if it runs out of jobs before shutdown.
+     :type stayalive: int
     :return: 
     """
-    global _JOBS
+    global _JOBS, _PROCESSOR_STAYALIVE
+    #print("Queue: {}".format(queue))
+    #print("Stayalive: {}".format(stayalive))
+    #print("_JOBS: {}".format(_JOBS))
     engine = RulesProcessor(_DB_QUIET)
     while not queue.empty():
         job_id = queue.get()
         engine.process(_JOBS[job_id])
         if queue.empty():
-            time.sleep(10)
+            time.sleep(stayalive)
     reset_globals()
+    return engine
 
 
 def translate_symbols(self, s, tr):
@@ -115,20 +132,30 @@ class RulesProcessor(object):
         """
         self.db = db
 
-    def evaluate_immediate_rule(self, job, translations, conditions):
+    def evaluate_immediate_rule(self, job, rule_):
+        translations = rule_.get_translation_table()
+        conditions = rule_.get_conditions()
+        subject = rule_.definition.subject
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
 
-        parser = rule_parser.RuleParser(translations, conditions)
-        where = parser.sql
-        # print("    prepared_condition: WHERE {}".format(where))
-        alerts_discovered = list(self.db.select(table, where=where))
+        parser = rule_parser.RuleParser(translations, subject, conditions)
+        query = parser.sql.get_query(table)
+        print(" QUERY ".center(80, '='))
+        print(query)
+        print(" END QUERY ".center(80, '='))
+        alerts_discovered = list(self.db.query(query))
+
         return alerts_discovered
 
-    def evaluate_periodic_rule(self, job, translations, subject, conditions):
+    def evaluate_periodic_rule(self, job, rule_):
+        translations = rule_.get_translation_table()
+        conditions = rule_.get_conditions()
+        subject = rule_.definition.subject
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
 
-        parser = rule_parser.PeriodicRuleParser(translations, subject, conditions)
-        alerts_discovered = list(self.db.select(table, where="0"))
+        parser = rule_parser.RuleParser(translations, subject, conditions)
+        query = parser.sql.get_query(table)
+        alerts_discovered = list(self.db.query(query))
 
         return alerts_discovered
 
@@ -217,16 +244,13 @@ class RulesProcessor(object):
                 print('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
                 continue
 
-            conditions = rule_.get_conditions()
-            translation_table = rule_.get_translation_table()
             print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
-            print('    Rule conditions: {}'.format(conditions))
 
             rule_type = rule_.get_type()
             if rule_type == 'immediate':
-                matches = self.evaluate_immediate_rule(job, translation_table, conditions)
+                matches = self.evaluate_immediate_rule(job, rule_)
             elif rule_type == 'periodic':
-                matches = self.evaluate_periodic_rule(job, translation_table, rule_.definition.subject, conditions)
+                matches = self.evaluate_periodic_rule(job, rule_)
             else:
                 print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'.format(job.status, rule_.get_name(), rule_type))
                 continue

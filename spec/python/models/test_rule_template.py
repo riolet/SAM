@@ -1,6 +1,5 @@
 import os
 import yaml
-import pytest
 from sam import constants
 from sam.models import rule_template
 
@@ -113,6 +112,7 @@ actions:
   email_subject: "[SAM] Special Email Subject"
   sms_number: 1 123 456 7890
   sms_message: "[SAM] Special SMS Message"
+subject: src
 when: src host $source_ip and dst host $dest_ip and dst port $port
 """
 
