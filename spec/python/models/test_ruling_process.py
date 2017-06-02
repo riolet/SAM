@@ -1,5 +1,6 @@
 from spec.python import db_connection
 from sam import common
+import time
 from sam.models import ruling_process as rp, rule
 
 db = db_connection.db
@@ -11,7 +12,7 @@ def reset_state():
     rp.__testing_only_reset_state()
 
 
-def xtest_submit_job():
+def test_submit_job():
     old_spawner = rp.spawn_if_not_alive
     rp.spawn_if_not_alive = lambda: 0
     try:
@@ -27,7 +28,7 @@ def xtest_submit_job():
         reset_state()
 
 
-def xtest_check_job():
+def test_check_job():
     old_spawner = rp.spawn_if_not_alive
     rp.spawn_if_not_alive = lambda: 0
     try:
@@ -102,13 +103,34 @@ def test_evaluate_immediate_rule():
 
 def test_evaluate_periodic_rule():
     rule1 = rule.Rule(1, True, 'test_rule1', 'test_rule1_desc', 'dos.yml')
+    rule1.set_params({}, {'threshold': '1'})
     rule2 = rule.Rule(2, True, 'test_rule2', 'test_rule2_desc', 'netscan.yml')
+    rule2.set_params({}, {'threshold': '4'})
     rule3 = rule.Rule(3, True, 'test_rule3', 'test_rule3_desc', 'portscan.yml')
-    job1 = rp.RuleJob(sub_id, ds_full, 1, 2**32-1, [rule1, rule2, rule3])
+    rule3.set_params({}, {'threshold': '1'})
 
+    job1 = rp.RuleJob(sub_id, ds_full, 1, 2**32-1, [rule1, rule2, rule3])
     processor = rp.RulesProcessor(db)
+
     r1_alerts = processor.evaluate_immediate_rule(job1, rule1)
-    assert len(r1_alerts) == 1
-    assert r1_alerts[0]['src'] == 3340576552
-    assert r1_alerts[0]['dst'] == 1701008954
+    assert len(r1_alerts) == 3
+    dsts = [row['dst'] for row in r1_alerts]
+    assert sorted(dsts) == [842811474, 843074132, 1846812200]
+
+    r2_alerts = processor.evaluate_immediate_rule(job1, rule2)
+    assert len(r2_alerts) == 3
+    srcs = [row['src'] for row in r2_alerts]
+    assert srcs == [1846812200, 1846812200, 1846812200]
+    times = [int(time.mktime(row['timestamp'].timetuple())) for row in r2_alerts]
+    assert times == [1453065600, 1487456700, 1521498300]
+
+    # curiously, this rule is operating correctly and has the same results as the above rule
+    # under the same partial tests in this testing environment.
+    r3_alerts = processor.evaluate_immediate_rule(job1, rule3)
+    assert len(r3_alerts) == 3
+    srcs = [row['src'] for row in r3_alerts]
+    assert srcs == [1846812200, 1846812200, 1846812200]
+    times = [int(time.mktime(row['timestamp'].timetuple())) for row in r3_alerts]
+    assert times == [1453065600, 1487456700, 1521498300]
+
 

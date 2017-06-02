@@ -140,9 +140,9 @@ class RulesProcessor(object):
 
         parser = rule_parser.RuleParser(translations, subject, conditions)
         query = parser.sql.get_query(table)
-        print(" QUERY ".center(80, '='))
-        print(query)
-        print(" END QUERY ".center(80, '='))
+        # print(" QUERY ".center(80, '='))
+        # print(query)
+        # print(" END QUERY ".center(80, '='))
         alerts_discovered = list(self.db.query(query))
 
         return alerts_discovered
