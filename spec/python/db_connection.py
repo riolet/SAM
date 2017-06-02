@@ -96,6 +96,9 @@ def unix_timestamp_to_datetime(stamp):
 
 
 def get_test_db_connection():
+    """
+     :rtype: web.DB
+    """
     params = sam.constants.dbconfig.copy()
     if params['dbn'] == 'sqlite':
         params['db'] = TEST_DATABASE_SQLITE

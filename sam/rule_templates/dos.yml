@@ -12,4 +12,4 @@ expose:
     regex: "^\\d+$"
 actions:
 subject: dst
-when: dst[conns] > $threshold
+when: conn[links] > $threshold

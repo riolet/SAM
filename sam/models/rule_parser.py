@@ -1,6 +1,7 @@
 from pprint import pprint
 from sam import common
 import re
+import web.db
 
 
 class RuleParseError(Exception): pass
@@ -24,10 +25,10 @@ class RuleSQL(object):
 
         self.where = self.process_clauses(self._wheres)
         self.having = self.process_clauses(self._havings)
-        self.groupbys = self._build_groupbys()
-        self.groupby = ", ".join(self.groupbys)
-        self.whats = self._build_whats()
-        self.what = ", ".join(self.whats)
+        self._groupbys = self._build_groupbys()
+        self.groupby = ", ".join(self._groupbys)
+        self._whats = self._build_whats()
+        self.what = ", ".join(self._whats)
 
     def process_clauses(self, clauses):
         parts = []
@@ -39,17 +40,15 @@ class RuleSQL(object):
             elif item[0] == 'CLAUSE':
                 clause = item[1]
                 if clause['type'] == 'port':
-                    if type(clause['value']) is list:
-                        ports = "({})".format(",".join(map(str, map(int, clause['value']))))
-                    else:
-                        ports = int(clause['value'])
-                    clause_sql = 'port {} {}'.format(clause['comp'], ports)
+                    clause_sql = 'port {} {}'.format(clause['comp'], web.db.sqlquote(clause['value']))
                     parts.append(clause_sql)
                 elif clause['type'] == 'host':
-                    if type(clause['value']) is list:
-                        ips = "({})".format(",".join(map(str, map(common.IPStringtoInt, clause['value']))))
+                    print("processing clauses")
+                    pprint(clause)
+                    if isinstance(clause['value'], (str, unicode)):
+                        ips = web.db.sqlquote(common.IPStringtoInt(clause['value']))
                     else:
-                        ips = common.IPStringtoInt(clause['value'])
+                        ips = web.db.sqlquote(map(common.IPStringtoInt, clause['value']))
                     if clause['dir'] == 'src':
                         clause_sql = 'src {} {}'.format(clause['comp'], ips)
                     elif clause['dir'] == 'dst':
@@ -57,8 +56,14 @@ class RuleSQL(object):
                     else:
                         clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
                     parts.append(clause_sql)
+                elif clause['type'] == 'protocol':
+                    val = web.db.sqlquote(clause['value'].upper())
+                    clause_sql = 'protocol {} {}'.format(clause['comp'], val)
+                    parts.append(clause_sql)
                 elif clause['type'] == 'aggregate':
-                    clause_sql = '{dir}[{agg}] {comp} {value}'.format(**clause)
+                    val = web.db.sqlquote(clause['value'])
+                    clause_sql = '`{0}[{1}]` {2} {3}'.format(clause['dir'], clause['agg'],
+                                                             clause['comp'], val)
                     parts.append(clause_sql)
                 else:
                     raise RuleParseError('Cannot convert to sql: type "{}" is unhandled.'.format(clause['type']))
@@ -109,6 +114,9 @@ class RuleSQL(object):
         return whats
 
     def _build_groupbys(self):
+        if not self._havings:
+            return ''
+
         column_names = {'timestamp'}
         if self.subject == 'either':
             column_names |= {'src', 'dst'}

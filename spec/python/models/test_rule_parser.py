@@ -1,5 +1,11 @@
 import pytest
+from web.utils import IterBetter
+from spec.python import db_connection
 from sam.models import rule_parser
+
+db = db_connection.db
+sub_id = db_connection.default_sub
+ds_full = db_connection.dsid_default
 
 
 def test_tokenize_simple():
@@ -52,6 +58,11 @@ def test_tokenize_simple():
     s10 = 'port 443'
     parser = rule_parser.RuleParser({}, 'src', s10)
     assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'port', 'value': '443'})]
+    assert parser.having_clauses == []
+
+    s10 = 'protocol tcp'
+    parser = rule_parser.RuleParser({}, 'src', s10)
+    assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'protocol', 'value': 'tcp'})]
     assert parser.having_clauses == []
 
 
@@ -306,7 +317,7 @@ def test_aggregates():
     assert parser.having_clauses == expected
 
 
-def test_sql():
+def test_where_sql():
     s1 = 'src host = 1.2.3.4'
     parser = rule_parser.RuleParser({}, 'src', s1)
     sql = parser.sql
@@ -315,28 +326,128 @@ def test_sql():
     s2 = 'src host in [1.2.3.4, 10.20.30.40, 100.200.50.150]'
     parser = rule_parser.RuleParser({}, 'src', s2)
     sql = parser.sql
-    assert sql.where == 'src in (16909060,169090600,1690841750)'
+    assert sql.where == 'src in (16909060, 169090600, 1690841750)'
 
     s3 = 'dst port in [22, 33, 44]'
     parser = rule_parser.RuleParser({}, 'src', s3)
     sql = parser.sql
-    assert sql.where == 'port in (22,33,44)'
+    assert sql.where == "port in ('22', '33', '44')"
 
     s4 = 'dst port = 5'
     parser = rule_parser.RuleParser({}, 'src', s4)
     sql = parser.sql
-    assert sql.where == 'port = 5'
+    assert sql.where == "port = '5'"
 
     s5 = '(src host = 1.2.3.4 or dst host = 5.6.7.8) and port = 80'
     parser = rule_parser.RuleParser({}, 'src', s5)
     sql = parser.sql
-    assert sql.where == '( src = 16909060 or dst = 84281096 ) and port = 80'
+    assert sql.where == "( src = 16909060 or dst = 84281096 ) and port = '80'"
 
     s6 = 'host 10.20.30.40 and not (10.24.34.44 or 10.24.34.45)'
     parser = rule_parser.RuleParser({}, 'src', s6)
     sql = parser.sql
     assert sql.where == '(dst = 169090600 or src = 169090600) and not ' \
                         '( (dst = 169353772 or src = 169353772) or (dst = 169353773 or src = 169353773) )'
+
+    s7 = 'protocol UDP or protocol tcp'
+    parser = rule_parser.RuleParser({}, 'src', s7)
+    sql = parser.sql
+    assert sql.where == "protocol = 'UDP' or protocol = 'TCP'"
+
+
+def test_having_sql():
+    s1 = 'having conn[links] > 1000'
+    parser = rule_parser.RuleParser({}, 'dst', s1)
+    sql = parser.sql
+
+    print(" WHERE ".center(80, '='))
+    print(sql.where)
+    print(" HAVING ".center(80, '='))
+    print(sql.having)
+    print(" GROUPBY ".center(80, '='))
+    print(sql.groupby)
+    print(" WHAT ".center(80, '='))
+    print(sql.what)
+    print(" -- ".center(80, '='))
+
+    assert sql.where == ''
+    assert sql.having == "`conn[links]` > '1000'"
+    assert sql.groupby == 'timestamp, dst'
+
+    s2 = 'protocol udp having conn[ports] > 3000'
+    parser = rule_parser.RuleParser({}, 'src', s2)
+    sql = parser.sql
+    assert sql.where == "protocol = 'UDP'"
+    assert sql.having == "`conn[ports]` > '3000'"
+    assert sql.groupby == 'timestamp, protocol, src'
+
+    s3 = '(port > 16384 and port < 32768) or protocol TCP having dst[hosts] > $threshold'
+    parser = rule_parser.RuleParser({'threshold': 100}, 'src', s3)
+    sql = parser.sql
+    assert sql.where == "( port > '16384' and port < '32768' ) or protocol = 'TCP'"
+    assert sql.having == "`dst[hosts]` > '100'"
+    assert sql.groupby == 'timestamp, protocol, port, src'
+
+
+def simple_query(select, from_, where='', groupby='', having='', orderby='', limit=''):
+    query = "SELECT {}\nFROM {}".format(select, from_)
+    if where:
+        query = "{}\nWHERE {}".format(query, where)
+    if groupby:
+        query = "{}\nGROUP BY {}".format(query, groupby)
+    if having:
+        query = "{}\nHAVING {}".format(query, having)
+    if orderby:
+        query = "{}\nORDER BY {}".format(query, orderby)
+    if having:
+        query = "{}\nLIMIT {}".format(query, limit)
+    return query
+
+
+def test_valid_sql():
+    table = 's{}_ds{}_Links'.format(sub_id, ds_full)
+    s1 = 'dst port in [22, 33, 44]'
+    s2 = 'protocol udp having conn[ports] > 3000'
+    s3 = 'having conn[links] > 1000'
+    s4 = '(src host = 1.2.3.4 or dst host = 5.6.7.8) and port = 80'
+    s5 = 'host 10.20.30.40 and not (10.24.34.44 or 10.24.34.45)'
+    s6 = '(port > 16384 and port < 32768) or protocol TCP having dst[hosts] > $threshold'
+
+    parser = rule_parser.RuleParser({}, 'src', s1)
+    sql = parser.sql
+    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
+    rows = db.query(query)
+    assert isinstance(rows, IterBetter)
+
+    parser = rule_parser.RuleParser({}, 'src', s2)
+    sql = parser.sql
+    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
+    rows = db.query(query)
+    assert isinstance(rows, IterBetter)
+
+    parser = rule_parser.RuleParser({}, 'src', s3)
+    sql = parser.sql
+    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
+    rows = db.query(query)
+    assert isinstance(rows, IterBetter)
+
+    parser = rule_parser.RuleParser({}, 'src', s4)
+    sql = parser.sql
+    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
+    rows = db.query(query)
+    assert isinstance(rows, IterBetter)
+
+    parser = rule_parser.RuleParser({}, 'src', s5)
+    sql = parser.sql
+    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
+    rows = db.query(query)
+    assert isinstance(rows, IterBetter)
+
+    parser = rule_parser.RuleParser({'threshold': 100}, 'src', s6)
+    sql = parser.sql
+    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
+    rows = db.query(query)
+    assert isinstance(rows, IterBetter)
 
 
 def test_tcpdump_examples():
@@ -372,7 +483,7 @@ def test_tcpdump_examples():
     s = 'gateway snup and (port ftp or ftp-data)'  # 'gateway' is not supported in SAM
     s = 'ip and not net localnet'  # 'localnet' is not supported in SAM
     s = 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0 and not src and dst net localnet'  # tcp flags haven't been retained by SAM
-    s = 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'  # no data has been retained by SAM
+    s = 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'  # no packet data has been retained by SAM
     s = 'gateway snup and ip[2:2] > 576'  # 'gateway' is not supported in SAM
-    s = 'ether[0] & 1 = 0 and ip[16] >= 224'  #
+    s = 'ether[0] & 1 = 0 and ip[16] >= 224'  # distinguising networks is not supported
     s = 'icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply'  # icmp details are not stored by SAM
