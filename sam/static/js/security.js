@@ -827,8 +827,8 @@ function dateConverter() {
 (function () {
   "use strict";
   let alerts = {
-    endpoint: "/sec_alerts",
-    endpoint_details: "/sec_alerts/details",
+    endpoint: "./sec_alerts",
+    endpoint_details: "./sec_alerts/details",
 
     init: function () {
       $('#Alerts .ui.filtering.dropdown')
