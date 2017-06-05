@@ -71,6 +71,15 @@ sam.constants.navbar.append({
 * and `link` is the url to your page.
 * Note: `group` is reserved for future use.
 
+## Security rules
+* If your plugin provides new security rules, include the following in your install script for each endpoint:
+    * `sam.constants.plugin_rules.append(<plugin>)`
+    * where `<plugin>` is the name of your plugin
+* Each security rule must:
+    * Be a valid YAML file. See built-in rules for examples.
+    * Have a .yml extension
+    * Be placed in the `rule_templates` subfolder of your plugin.
+
 ## Overriding other features
 * Overriding other features in SAM is done so at your own risk. 
 * Simply import the relevant class and reassign it your replacement.
