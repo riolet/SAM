@@ -32,7 +32,7 @@ class Rule(object):
         if self.definition is None:
             return "Error."
         else:
-            return self.definition.name
+            return self.definition.type
 
     def is_active(self):
         return self.active
