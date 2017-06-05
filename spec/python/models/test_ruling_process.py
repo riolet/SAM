@@ -41,6 +41,7 @@ def test_check_job():
         rp.spawn_if_not_alive = old_spawner
         reset_state()
 
+
 # This test should work, but fails unless there's a print statement in rp.ruling_process's while loop.
 # I do not know why that makes a difference.
 # Frequently getting:
@@ -78,6 +79,7 @@ def xtest_ruling_process():
         rp.RulesProcessor = old_processor
         reset_state()
 
+
 def test_evaluate_immediate_rule():
     rule1 = rule.Rule(1, True, 'test_rule1', 'test_rule1_desc', 'compromised.yml')
     rule2 = rule.Rule(2, True, 'test_rule2', 'test_rule2_desc', 'suspicious.yml')
@@ -100,6 +102,7 @@ def test_evaluate_immediate_rule():
     assert r2_alerts[0]['src'] == 169354287
     assert r2_alerts[0]['dst'] == 843074647
     assert r2_alerts[0]['port'] == 96
+
 
 def test_evaluate_periodic_rule():
     rule1 = rule.Rule(1, True, 'test_rule1', 'test_rule1_desc', 'dos.yml')

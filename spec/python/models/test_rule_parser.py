@@ -1,5 +1,7 @@
+from datetime import datetime
 import pytest
 from web.utils import IterBetter
+import web
 from spec.python import db_connection
 from sam.models import rule_parser
 
@@ -424,6 +426,35 @@ def simple_query(select, from_, where='', groupby='', having='', orderby='', lim
     return query
 
 
+def test_timerange():
+    s1 = 'having conn[links] > 1000'
+    parser = rule_parser.RuleParser({}, 'dst', s1)
+    sql = parser.sql
+    t_start = datetime(2014, 1, 1)
+    t_stop = datetime(2014, 1, 2)
+    assert sql.get_where() == ""
+    sql.set_timerange(t_start, t_stop)
+    assert sql.get_where() == "WHERE timerange BETWEEN {} AND {}".format(web.sqlquote(t_start), web.sqlquote(t_stop))
+
+    s2 = 'protocol UDP'
+    parser = rule_parser.RuleParser({}, 'dst', s2)
+    sql = parser.sql
+    t_start = datetime(2014, 1, 3)
+    t_stop = datetime(2014, 1, 4)
+    assert sql.get_where() == "WHERE protocol = 'UDP'"
+    sql.set_timerange(t_start, t_stop)
+    assert sql.get_where() == "WHERE timerange BETWEEN {} AND {} AND (protocol = 'UDP')".format(web.sqlquote(t_start), web.sqlquote(t_stop))
+
+    s3 = 'protocol UDP having conn[links] >1000'
+    parser = rule_parser.RuleParser({}, 'dst', s3)
+    sql = parser.sql
+    t_start = datetime(2014, 1, 5)
+    t_stop = datetime(2014, 1, 6)
+    assert sql.get_where() == "WHERE protocol = 'UDP'"
+    sql.set_timerange(t_start, t_stop)
+    assert sql.get_where() == "WHERE timerange BETWEEN {} AND {} AND (protocol = 'UDP')".format(web.sqlquote(t_start), web.sqlquote(t_stop))
+
+
 def test_valid_sql():
     table = 's{}_ds{}_Links'.format(sub_id, ds_full)
     s1 = 'dst port in [22, 33, 44]'
@@ -435,38 +466,32 @@ def test_valid_sql():
 
     parser = rule_parser.RuleParser({}, 'src', s1)
     sql = parser.sql
-    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
-    rows = db.query(query)
+    rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
     parser = rule_parser.RuleParser({}, 'src', s2)
     sql = parser.sql
-    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
-    rows = db.query(query)
+    rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
     parser = rule_parser.RuleParser({}, 'src', s3)
     sql = parser.sql
-    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
-    rows = db.query(query)
+    rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
     parser = rule_parser.RuleParser({}, 'src', s4)
     sql = parser.sql
-    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
-    rows = db.query(query)
+    rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
     parser = rule_parser.RuleParser({}, 'src', s5)
     sql = parser.sql
-    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
-    rows = db.query(query)
+    rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
     parser = rule_parser.RuleParser({'threshold': 100}, 'src', s6)
     sql = parser.sql
-    query = simple_query(sql.what, table, sql.where, sql.groupby, sql.having, limit='1')
-    rows = db.query(query)
+    rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
 

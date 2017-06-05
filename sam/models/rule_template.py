@@ -17,20 +17,48 @@ from sam import constants
 
 
 def get_all():
-    return filter(lambda f: f.endswith(".yml"), os.listdir(constants.rule_templates_path))
+    built_ins = filter(lambda f: f.endswith(".yml"), os.listdir(constants.rule_templates_path))
+    customs = []
+    for f_name in os.listdir(constants.security['rule_folder']):
+        if f_name.endswith(".yml"):
+            customs.append("custom: {}".format(f_name))
+    plugins = []
+    for plugin in constants.plugin_rules:
+        for f_name in os.listdir(os.path.join(constants.plugins['root'], plugin, constants.templates_folder)):
+            if f_name.endswith(".yml"):
+                customs.append("plugin: {}".format(f_name))
+    return built_ins + plugins + customs
 
 
 def abs_rule_path(path):
-    if path[0:7] == "plugin:":
-        abspath = os.path.join(constants.plugins['root'], path[7:])
-        if not os.path.exists(abspath):
+    """
+    :type path: str
+    :rtype: str or None
+    """
+    abspath = None
+    p_prefix = "plugin: "
+    c_prefix = "custom: "
+    if path.startswith(p_prefix):
+        f_name = path[len(p_prefix):]
+        for plugin in constants.plugin_rules:
+            p_path = os.path.join(constants.plugins['root'], plugin, constants.templates_folder)
+            if f_name in os.listdir(p_path):
+                abspath = os.path.join(p_path, f_name)
+        if not abspath or not os.path.exists(abspath):
             print('WARNING: absolute rule path not found.')
+            print('  (Checked "{}"->"{}")'.format(path, abspath))
+            return None
+    elif path.startswith(c_prefix):
+        f_name = path[len(c_prefix):]
+        abspath = os.path.join(constants.security['rule_folder'], f_name)
+        if not os.path.exists(abspath):
+            print('WARNING: Cannot find rule definition file.')
             print('  (Checked "{}"->"{}")'.format(path, abspath))
             return None
     else:
         abspath = os.path.join(constants.rule_templates_path, path)
         if not os.path.exists(abspath):
-            print('WARNING: Cannot find definition file.')
+            print('WARNING: Cannot find rule definition file.')
             print('  (Checked "{}"->"{}")'.format(path, abspath))
             return None
     return abspath
@@ -39,17 +67,19 @@ def abs_rule_path(path):
 def get_definition(path, cache={}):
     if path in cache:
         return cache[path]
-    else:
-        try:
-            with open(path, 'r') as f:
-                data = yaml.load(f)
-            rule_def = RuleTemplate(os.path.dirname(path), data)
-        except:
-            # print errors, but move on.
-            traceback.print_exc()
-            return None
-        cache[path] = rule_def
-        return rule_def
+    if not path:
+        return None
+
+    try:
+        with open(path, 'r') as f:
+            data = yaml.load(f)
+        rule_def = RuleTemplate(os.path.dirname(path), data)
+    except:
+        # print errors, but move on.
+        traceback.print_exc()
+        return None
+    cache[path] = rule_def
+    return rule_def
 
 
 class RuleTemplate(object):

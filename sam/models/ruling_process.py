@@ -65,7 +65,7 @@ def submit_job(job):
     _JOBS[job.id] = job
     # insert the job_id into the queue
     _QUEUE.put(job.id)
-    # if the rules process isn't running, start it.
+    # if the RulesProcessor process isn't running, start it.
     spawn_if_not_alive()
     # return the job_id
     return job.id
@@ -139,6 +139,7 @@ class RulesProcessor(object):
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
 
         parser = rule_parser.RuleParser(translations, subject, conditions)
+        parser.sql.set_timerange(job.time_start, job.time_end)
         query = parser.sql.get_query(table)
         # print(" QUERY ".center(80, '='))
         # print(query)

@@ -19,6 +19,7 @@ class RuleSQL(object):
         # self._having_columns = self._build_having_columns
 
         self.where = ""
+        self.when = ""
         self.having = ""
         self.groupby = ""
         self.what = ""
@@ -40,13 +41,13 @@ class RuleSQL(object):
             elif item[0] == 'CLAUSE':
                 clause = item[1]
                 if clause['type'] == 'port':
-                    clause_sql = 'port {} {}'.format(clause['comp'], web.db.sqlquote(clause['value']))
+                    clause_sql = 'port {} {}'.format(clause['comp'], web.sqlquote(clause['value']))
                     parts.append(clause_sql)
                 elif clause['type'] == 'host':
                     if isinstance(clause['value'], (str, unicode)):
-                        ips = web.db.sqlquote(common.IPStringtoInt(clause['value']))
+                        ips = web.sqlquote(common.IPStringtoInt(clause['value']))
                     else:
-                        ips = web.db.sqlquote(map(common.IPStringtoInt, clause['value']))
+                        ips = web.sqlquote(map(common.IPStringtoInt, clause['value']))
                     if clause['dir'] == 'src':
                         clause_sql = 'src {} {}'.format(clause['comp'], ips)
                     elif clause['dir'] == 'dst':
@@ -55,17 +56,20 @@ class RuleSQL(object):
                         clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
                     parts.append(clause_sql)
                 elif clause['type'] == 'protocol':
-                    val = web.db.sqlquote(clause['value'].upper())
+                    val = web.sqlquote(clause['value'].upper())
                     clause_sql = 'protocol {} {}'.format(clause['comp'], val)
                     parts.append(clause_sql)
                 elif clause['type'] == 'aggregate':
-                    val = web.db.sqlquote(clause['value'])
+                    val = web.sqlquote(clause['value'])
                     clause_sql = '`{0}[{1}]` {2} {3}'.format(clause['dir'], clause['agg'],
                                                              clause['comp'], val)
                     parts.append(clause_sql)
                 else:
                     raise RuleParseError('Cannot convert to sql: type "{}" is unhandled.'.format(clause['type']))
         return " ".join(parts)
+
+    def set_timerange(self, tstart, tend):
+        self.when = "timerange BETWEEN {} AND {}".format(web.sqlquote(tstart), web.sqlquote(tend))
 
     def _build_where_columns(self, wheres):
         columns = set()
@@ -123,10 +127,21 @@ class RuleSQL(object):
         column_names |= self._where_columns
         return column_names
 
-    def get_query(self, table, orderby='', limit=''):
-        query = "SELECT {}\nFROM {}".format(self.what, table)
+    def get_where(self):
         if self.where:
-            query = "{}\nWHERE {}".format(query, self.where)
+            if self.when:
+                query = "WHERE {} AND ({})".format(self.when, self.where)
+            else:
+                query = "WHERE {}".format(self.where)
+        elif self.when:
+            query = "WHERE {}".format(self.when)
+        else:
+            query = ""
+        return query
+
+    def get_query(self, table, orderby='', limit=''):
+        query = "SELECT {}\nFROM {}\n{}".format(self.what, table, self.get_where())
+
         if self.groupby:
             query = "{}\nGROUP BY {}".format(query, self.groupby)
         if self.having:

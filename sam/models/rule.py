@@ -45,7 +45,11 @@ class Rule(object):
 
     def get_initial_exposed_params(self):
         # get all exposed parameters
-        exposed = self.definition.get_exposed()
+        if self.definition:
+            exposed = self.definition.get_exposed()
+        else:
+            exposed = {}
+
         return exposed
 
     def get_initial_action_params(self):
@@ -61,10 +65,11 @@ class Rule(object):
             'sms_message': constants.security['sms_message']
         }
 
-        # update action parameters to rule definitions as needed
-        action_defaults = self.definition.get_action_defaults()
-        for k, v in action_defaults.iteritems():
-            a_params[k] = v
+        if self.definition:
+            # update action parameters to rule definitions as needed
+            action_defaults = self.definition.get_action_defaults()
+            for k, v in action_defaults.iteritems():
+                a_params[k] = v
 
         return a_params
 
