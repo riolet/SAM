@@ -1,5 +1,6 @@
-import web
+from datetime import datetime
 import re
+import web
 from sam import errors, common
 from sam.pages import base
 from sam.models import rule, rules, rule_template, ruling_process
@@ -268,14 +269,14 @@ class RulesApply(base.HeadlessPost):
             raise errors.RequiredKey('data source', 'ds')
 
         try:
-            end = int(data['end'])
+            end = datetime.fromtimestamp(int(data['end']))
         except:
-            end = 2**31 - 1
+            end = datetime.fromtimestamp(2**31 - 1)
 
         try:
-            start = int(data['start'])
+            start = datetime.fromtimestamp(int(data['start']))
         except:
-            start = 0
+            start = datetime.fromtimestamp(0)
 
         request = {
             'ds': ds,
