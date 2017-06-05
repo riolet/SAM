@@ -196,15 +196,13 @@ class RulesProcessor(object):
         print("    {}".format(message))
         print('    WARNING: sms alerts are not implemented yet.')
 
-    def trigger_actions(self, job, rule_, translation_table, matches):
+    def trigger_actions(self, job, rule_, matches):
         """
         Trigger/Create/Send any appropriate actions for all matches found.
         :param job:
          :type job: RuleJob
         :param rule_:
          :type rule_: rule.Rule
-        :param translation_table:
-         :type translation_table: dict[str, Any]
         :param matches:
          :type matches: list[ dict[basestring, Any] ]
         :return:
@@ -264,7 +262,7 @@ class RulesProcessor(object):
                     match.port,
                     match.links,
                     match.protocol))
-            self.trigger_actions(job, rule_, translation_table, matches)
+            self.trigger_actions(job, rule_, matches)
 
         job.status = "Complete"
         print('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
