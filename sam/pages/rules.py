@@ -27,6 +27,7 @@ class Rules(base.Headless):
                 'id': rule.id,
                 'name': rule.get_name(),
                 'desc': rule.get_desc(),
+                'template': rule.get_def_name(),
                 'type': rule.get_type(),
                 'active': rule.is_active()
             })

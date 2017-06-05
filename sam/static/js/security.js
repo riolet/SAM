@@ -390,10 +390,10 @@ function dateConverter() {
     update_table: function (new_rules) {
       rules.clear_table();
       new_rules.forEach(function (rule) {
-        rules.add_rule(rule.id, rule.active, rule.name, rule.desc, rule.type);
+        rules.add_rule(rule.id, rule.active, rule.name, rule.desc, rule.template);
       });
     },
-    add_rule: function(id, active, name, desc, type) {
+    add_rule: function(id, active, name, desc, template) {
       let table = document.getElementById("rules_table");
       let tr = document.createElement("TR");
       let td, div, input, button, i;
@@ -427,9 +427,9 @@ function dateConverter() {
       td.innerText = name;
       tr.appendChild(td);
 
-      //add type td
+      //add template name td
       td = document.createElement("TD");
-      td.innerText = type;
+      td.innerText = template;
       tr.appendChild(td);
 
       //add edit button td
