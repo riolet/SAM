@@ -1,0 +1,12 @@
+# compromised traffic -- traffic to know infected/bad hosts.
+# trigger an alert on {src} if {dst} in IP_LIST
+---
+name: Compromised Traffic
+type: immediate
+include:
+  bad_hosts: ./compromised_hosts.txt
+expose:
+actions:
+  alert_severity: 8
+subject: src
+when: dst host in $bad_hosts

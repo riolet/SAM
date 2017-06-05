@@ -3,8 +3,11 @@ base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
-subscription_tables = ['Nodes', 'Tags', 'PortAliases']
+subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
+
+templates_folder = 'rule_templates'
+rule_templates_path = os.path.join(base_path, templates_folder)
 
 config = ConfigEnvy('SAM')
 debug = config.get('debug', 'debug', default='False').lower() == 'true'
@@ -36,6 +39,8 @@ subscription = {
 LDAP = {
     'connection_string': config.get('LDAP', 'connection_string', default='')
 }
+
+security = dict(config.items('security'))
 
 collector = dict(config.items('collector'))
 aggregator = dict(config.items('aggregator'))
@@ -76,6 +81,7 @@ plugin_static = []
 plugin_importers = []
 plugin_urls = []
 plugin_models = []
+plugin_rules = []
 
 default_urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
@@ -89,6 +95,13 @@ default_urls = [
     '/settings', 'sam.pages.settings.Settings',
     '/settings_page', 'sam.pages.settings_page.SettingsPage',
     '/table', 'sam.pages.table.Table',
+    '/sec_dashboard', 'sam.pages.sec_dashboard.Dashboard',
+    '/sec_alerts', 'sam.pages.alerts.Alerts',
+    '/sec_alerts/details', 'sam.pages.alerts.AlertDetails',
+    '/sec_rules', 'sam.pages.rules.Rules',
+    '/sec_rules/new', 'sam.pages.rules.RulesNew',
+    '/sec_rules/edit', 'sam.pages.rules.RulesEdit',
+    '/sec_rules/reapply', 'sam.pages.rules.RulesApply',
 ]
 urls = []
 
@@ -122,6 +135,12 @@ navbar = [
         "name": "Stats",
         "icon": "filter",
         "link": "./stats",
+        "group": "any"
+    },
+    {
+        "name": "Dashboard",
+        "icon": "dashboard",
+        "link": "./sec_dashboard",
         "group": "any"
     },
     {

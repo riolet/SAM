@@ -85,3 +85,7 @@ div.ui.inverted.footer.segment {
   margin-top: 2em;
   margin-bottom: 0.5em;
 }
+
+input {
+  background: #F2F4F5 !important;
+}
