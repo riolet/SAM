@@ -34,6 +34,12 @@ class Rule(object):
         else:
             return self.definition.type
 
+    def get_def_name(self):
+        if self.definition is None:
+            return "Error."
+        else:
+            return self.definition.name
+
     def is_active(self):
         return self.active
 
