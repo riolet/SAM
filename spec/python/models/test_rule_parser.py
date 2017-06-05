@@ -434,7 +434,7 @@ def test_timerange():
     t_stop = datetime(2014, 1, 2)
     assert sql.get_where() == ""
     sql.set_timerange(t_start, t_stop)
-    assert sql.get_where() == "WHERE timerange BETWEEN {} AND {}".format(web.sqlquote(t_start), web.sqlquote(t_stop))
+    assert sql.get_where() == "WHERE timestamp BETWEEN {} AND {}".format(web.sqlquote(t_start), web.sqlquote(t_stop))
 
     s2 = 'protocol UDP'
     parser = rule_parser.RuleParser({}, 'dst', s2)
@@ -443,7 +443,7 @@ def test_timerange():
     t_stop = datetime(2014, 1, 4)
     assert sql.get_where() == "WHERE protocol = 'UDP'"
     sql.set_timerange(t_start, t_stop)
-    assert sql.get_where() == "WHERE timerange BETWEEN {} AND {} AND (protocol = 'UDP')".format(web.sqlquote(t_start), web.sqlquote(t_stop))
+    assert sql.get_where() == "WHERE timestamp BETWEEN {} AND {} AND (protocol = 'UDP')".format(web.sqlquote(t_start), web.sqlquote(t_stop))
 
     s3 = 'protocol UDP having conn[links] >1000'
     parser = rule_parser.RuleParser({}, 'dst', s3)
@@ -452,7 +452,7 @@ def test_timerange():
     t_stop = datetime(2014, 1, 6)
     assert sql.get_where() == "WHERE protocol = 'UDP'"
     sql.set_timerange(t_start, t_stop)
-    assert sql.get_where() == "WHERE timerange BETWEEN {} AND {} AND (protocol = 'UDP')".format(web.sqlquote(t_start), web.sqlquote(t_stop))
+    assert sql.get_where() == "WHERE timestamp BETWEEN {} AND {} AND (protocol = 'UDP')".format(web.sqlquote(t_start), web.sqlquote(t_stop))
 
 
 def test_valid_sql():
@@ -466,6 +466,11 @@ def test_valid_sql():
 
     parser = rule_parser.RuleParser({}, 'src', s1)
     sql = parser.sql
+    rows = db.query(sql.get_query(table, limit=1))
+    assert isinstance(rows, IterBetter)
+    t_start = datetime(2014, 1, 5)
+    t_stop = datetime(2014, 1, 6)
+    sql.set_timerange(t_start, t_stop)
     rows = db.query(sql.get_query(table, limit=1))
     assert isinstance(rows, IterBetter)
 
