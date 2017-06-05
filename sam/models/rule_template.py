@@ -19,14 +19,22 @@ from sam import constants
 def get_all():
     built_ins = filter(lambda f: f.endswith(".yml"), os.listdir(constants.rule_templates_path))
     customs = []
-    for f_name in os.listdir(constants.security['rule_folder']):
-        if f_name.endswith(".yml"):
-            customs.append("custom: {}".format(f_name))
-    plugins = []
-    for plugin in constants.plugin_rules:
-        for f_name in os.listdir(os.path.join(constants.plugins['root'], plugin, constants.templates_folder)):
+    try:
+        for f_name in os.listdir(constants.security['rule_folder']):
             if f_name.endswith(".yml"):
-                customs.append("plugin: {}".format(f_name))
+                customs.append("custom: {}".format(f_name))
+    except:
+        pass
+
+    plugins = []
+    try:
+        for plugin in constants.plugin_rules:
+            for f_name in os.listdir(os.path.join(constants.plugins['root'], plugin, constants.templates_folder)):
+                if f_name.endswith(".yml"):
+                    customs.append("plugin: {}".format(f_name))
+    except:
+        pass
+
     return built_ins + plugins + customs
 
 
