@@ -69,6 +69,7 @@ class RuleSQL(object):
         return " ".join(parts)
 
     def set_timerange(self, tstart, tend):
+        print("tstart is {0}, and type {0.__class__}".format(tstart))
         self.when = "timestamp BETWEEN {} AND {}".format(web.sqlquote(tstart), web.sqlquote(tend))
 
     def _build_where_columns(self, wheres):
