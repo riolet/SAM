@@ -107,6 +107,7 @@ def get_test_db_connection():
         params['db'] = TEST_DATABASE_MYSQL
     tdb, tdbq = sam.common.get_db(params)
     print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
+    sam.integrity.check_and_fix_db_access(params.copy())
     if params['dbn'] != 'sqlite':
         q = "DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_MYSQL)
         print("running: {}".format(q))
