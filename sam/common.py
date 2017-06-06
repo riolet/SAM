@@ -2,6 +2,7 @@ import os
 import sys
 import importlib
 import web
+import smtplib
 from sam import constants
 
 
@@ -50,6 +51,11 @@ def init_globals():
     web.config.debug = constants.debug
     web.config._session = None  # erase any erroneous session creation.
     web.config.session_parameters['cookie_path'] = "/"
+    web.config.smtp_server = constants.smtp['server']
+    web.config.smtp_port = int(constants.smtp.get('port', default='587'))
+    web.config.smtp_username = constants.smtp['username']
+    web.config.smtp_password = constants.config['password']
+    web.config.smtp_starttls = constants.smtp['starttls'].lower() == 'true'
 
     db, db_quiet = get_db(constants.dbconfig.copy())
 
@@ -203,6 +209,20 @@ def sqlite_udf(db):
                                                                                ip & 0xff))
     db._db_cursor().connection.create_function("encodeIP", 4,
                                                lambda a, b, c, d: a << 24 | b << 16 | c << 8 | d)
+
+
+def sendmail(to_address, subject, body, from_address=constants.smtp['from'], headers=None, **kw):
+    try:
+        web.sendmail(from_address, to_address, subject, body, headers=headers, **kw)
+    except OSError as e:
+        print("Could not send mail.")
+        print("OSError: {0}".format(e))
+    except smtplib.SMTPServerDisconnected as e:
+        print("Server Disconnected.")
+        print("SMTPServerDisconnected: {0}".format(e))
+    except Exception as e:
+        print("Other email error:")
+        print("{0.__class__}: {0}, {1}".format(e, e.message))
 
 
 class MultiRender(object):

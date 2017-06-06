@@ -1,4 +1,5 @@
 import os
+import datetime
 import time
 import cPickle
 import web
@@ -56,7 +57,7 @@ class Alerts():
         self.sub_id = sub_id
         self.table = Alerts.TABLE_FORMAT.format(sub_id)
 
-    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details):
+    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details, timestamp=None):
         """
         :param ipstart: integer ip address. 32-bit unsigned integer.
          :type ipstart: int
@@ -72,12 +73,23 @@ class Alerts():
          :type event_type: unicode
         :param details: Any extra details. Native python formats supported. Will be pickled and stored. 
          :type details: Any
+        :param timestamp: Optional timestamp to attach to the alert
+         :type timestamp: datetime.datetime or None
         :return: event id.
          :rtype: int
         """
-        unix_now = int(time.time())
-        new_id = self.db.insert(self.table, ipstart=ipstart, ipend=ipend, severity=severity, label=label,
-                      timestamp=unix_now, rule_id=rule_id, rule_name=rule_name, details=cPickle.dumps(details))
+        columns = {
+            'ipstart': ipstart,
+            'ipend': ipend,
+            'severity': severity,
+            'label': label,
+            'timestamp': int(time.time()) if timestamp is None else timestamp,
+            'rule_id': rule_id,
+            'rule_name': rule_name,
+            'details': cPickle.dumps(details)
+        }
+
+        new_id = self.db.insert(self.table, **columns)
         return new_id
 
     @staticmethod

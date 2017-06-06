@@ -41,6 +41,7 @@ LDAP = {
 }
 
 security = dict(config.items('security'))
+smtp = dict(config.items('smtp'))
 
 collector = dict(config.items('collector'))
 aggregator = dict(config.items('aggregator'))

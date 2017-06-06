@@ -7,6 +7,7 @@ from sam import constants
 from sam import common
 from sam import integrity
 from sam.models.datasources import Datasources
+from sam.models.subscriptions import Subscriptions
 
 
 class InvalidDatasource(ValueError):
@@ -588,11 +589,14 @@ class Preprocessor:
             db_transaction.commit()
             print("PREPROCESSOR: Pre-processing completed successfully.")
 
+
 # If running as a script
 if __name__ == "__main__":
     error_number = integrity.check_and_fix_db_access(constants.dbconfig)
     if error_number == 0:
-        sub_id = constants.demo['id']
+        sub_model = Subscriptions(common.db_quiet)
+        default_sub = sub_model.get_by_email(constants.subscription['default_email'])
+        sub_id = default_sub['subscription']
         try:
             ds = determine_datasource(common.db_quiet, sub_id, sys.argv)
             processor = Preprocessor(common.db_quiet, sub_id, ds)

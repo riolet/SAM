@@ -6,6 +6,7 @@ import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
 from sam import common, constants
 from sam.models import rule, rule_parser, alerts
+import smtplib
 
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
@@ -27,7 +28,7 @@ def __testing_only_reset_state():
 
 
 class RuleJob(object):
-    def __init__(self, subscription_id, datasource_id, start, end, ruleset):
+    def __init__(self, subscription_id, datasource_id, start, end, ruleset, time_reported='now'):
         """
         For use with the RuleProcessor subprocess
         :param subscription_id: the subscription this job applies to
@@ -40,7 +41,10 @@ class RuleJob(object):
          :type end: int
         :param ruleset: a list of rules to check traffic against
          :type ruleset: list[ rule.Rule ]
+        :param time_reported: the timestamp to report in any alert raised. One of: "now", "log"
+         :type time_reported: str
         """
+        self.time_reported = 'now' if time_reported.lower() == 'now' else 'log'
         self.sub_id = subscription_id
         self.ds_id = datasource_id
         self.time_start = start
@@ -114,7 +118,7 @@ def ruling_process(queue, stayalive=_PROCESSOR_STAYALIVE):
     return engine
 
 
-def translate_symbols(self, s, tr):
+def translate_symbols(s, tr):
     result = re.sub(r'\$(\S+)',
                     lambda match: tr[match.group(1)] if match.group(1) in tr else match.group(1),
                     unicode(s))
@@ -160,40 +164,65 @@ class RulesProcessor(object):
 
         return alerts_discovered
 
-    def trigger_alert(self, sub_id, rule_, severity, label, subject, match):
-        """
+    @staticmethod
+    def send_email_alert(email, subject, rule_, matches):
 
+        matches_string = "\n".join(["{}: {}".format(m['timestamp'], m[rule_.definition.subject]) for m in matches])
+
+        body = """
+Hello,
+
+This is an email alert from System Architecture Mapper to let you know that one of your security rules ({rule_name}) has been triggered.
+The complete list of traffic that triggered the rule is:
+
+{match_traffic}
+
+Thanks,
+SAM
+""".format(rule_name=rule_.get_name(), match_traffic=matches_string)
+        common.sendmail(email, subject, body)
+
+    def trigger_alert(self, job, rule_, action, match):
+        """
         sql debugging:
         # SELECT id, decodeIP(ipstart), FROM_UNIXTIME(timestamp), severity, viewed, label, rule_id FROM s1_Alerts;
-
-        :param sub_id:
-         :type sub_id: int
+        :param job:
+         :type job: RuleJob
         :param rule_:
          :type rule_: rule.Rule
         :param severity:
          :type severity: int or str
         :param label:
          :type label: str
-        :param subject:
-         :type subject: str
         :param match:
          :type match: dict[basestring, Any]
         :return:
          :rtype: None
         """
+        m_alerts = alerts.Alerts(self.db, job.sub_id)
+        ip = match.get(rule_.definition.subject, 0)
+        severity = action['severity']
+        label = action['label']
 
-        m_alerts = alerts.Alerts(self.db, sub_id)
-        ip = match.get(subject, 0)
-        m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match)
+        if job.time_reported == 'now':
+            m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match)
+        else:
+            m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match, match['timestamp'])
         print("  Triggering alert: {} ({}): {}".format(common.IPtoString(ip), severity, label))
 
-    def trigger_email(self, address, email_subject, subject, matches, translations):
-        print("  Triggering email to {}: re: {}".format(address, email_subject))
-        print('    WARNING: email alerts are not implemented yet.')
+    def trigger_email(self, job, rule_, action, matches):
+        address = action['address']
+        subject_fstring = action['subject']
+        subject = translate_symbols(subject_fstring, rule_.get_translation_table())
+        self.send_email_alert(address, subject, rule_, matches)
+        print("  Triggering email to {}: re: {}".format(address, subject))
 
-    def trigger_sms(self, number, message, subject, matches, translations):
+    def trigger_sms(self, job, rule_, action, matches):
+        number = action['number']
+        message_fstring = action['message']
+        message = translate_symbols(message_fstring, rule_.get_translation_table())
         print("  Triggering sms to {} ({}/160 chars):".format(number, len(message)))
-        print("    {}".format(message))
+        print("    {}".format(message[:160]))
         print('    WARNING: sms alerts are not implemented yet.')
 
     def trigger_actions(self, job, rule_, matches):
@@ -216,11 +245,11 @@ class RulesProcessor(object):
         for action in actions:
             if action['type'] == 'alert':
                 for match in matches:
-                    self.trigger_alert(job.sub_id, rule_, action['severity'], action['label'], rule_.definition.subject, match)
+                    self.trigger_alert(job, rule_, action, match)
             elif action['type'] == 'email':
-                self.trigger_email(action['address'], action['subject'], rule_.definition.subject, matches)
+                self.trigger_email(job, rule_, action, matches)
             elif action['type'] == 'sms':
-                self.trigger_sms(action['number'], action['message'], rule_.definition.subject, matches)
+                self.trigger_sms(job, rule_, action, matches)
             else:
                 print('WARNING: action "{}" not supported'.format(action['type']))
                 continue
