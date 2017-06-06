@@ -32,7 +32,7 @@ class AlertFilter():
     def get_where(self, preexisting=None):
         if self.age_limit:
             age = int(time.time()) - int(self.age_limit)
-            where = "severity >= {sev} AND timestamp > {age}".format(sev=self.min_severity, age=age)
+            where = "severity >= {sev} AND report_time > {age}".format(sev=self.min_severity, age=age)
         else:
             where = "severity >= {sev}".format(sev=self.min_severity)
 
@@ -57,7 +57,7 @@ class Alerts():
         self.sub_id = sub_id
         self.table = Alerts.TABLE_FORMAT.format(sub_id)
 
-    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details, timestamp=None):
+    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details, timestamp):
         """
         :param ipstart: integer ip address. 32-bit unsigned integer.
          :type ipstart: int
@@ -73,8 +73,8 @@ class Alerts():
          :type event_type: unicode
         :param details: Any extra details. Native python formats supported. Will be pickled and stored. 
          :type details: Any
-        :param timestamp: Optional timestamp to attach to the alert
-         :type timestamp: datetime.datetime or None
+        :param timestamp: timestamp (syslog time) to attach to the alert
+         :type timestamp: datetime.datetime
         :return: event id.
          :rtype: int
         """
@@ -83,7 +83,8 @@ class Alerts():
             'ipend': ipend,
             'severity': severity,
             'label': label,
-            'timestamp': int(time.time()) if timestamp is None else timestamp,
+            'log_time': int(time.mktime(timestamp.timetuple())),
+            'report_time': int(time.time()),
             'rule_id': rule_id,
             'rule_name': rule_name,
             'details': cPickle.dumps(details)
@@ -105,7 +106,7 @@ class Alerts():
         """
 
         where = filters.get_where()
-        what = 'id, ipstart, ipend, timestamp, severity, label, rule_name, rule_id'
+        what = 'id, ipstart, ipend, log_time, report_time, severity, label, rule_name, rule_id'
 
         rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.limit)
         rows = list(rows)
@@ -126,7 +127,7 @@ class Alerts():
             'ipe': ipend
         }
         where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
-        what = 'id, ipstart, ipend, timestamp, severity, label, rule_name, rule_id'
+        what = 'id, ipstart, ipend, log_time, report_time, severity, label, rule_name, rule_id'
         rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.limit)
         rows = list(rows)
         return rows

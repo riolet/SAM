@@ -155,8 +155,11 @@ def launch_importer(parsed, args):
             d_model = Datasources(common.db_quiet, {}, subscription_id)
             ds_id = d_model.name_to_id(datasource)
         except:
-            print("Could not read datasource. Exiting.")
+            print('Please specify a datasource. "--dest=???". Exiting.')
             return
+    if not ds_id:
+        print('Please specify a datasource. "--dest=???". Exiting.')
+        return
     importer = sam.importers.import_base.get_importer(format, subscription_id, ds_id)
     if not importer:
         print("Could not find importer for given format. ({})".format(format))

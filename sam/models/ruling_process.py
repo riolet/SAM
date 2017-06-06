@@ -6,7 +6,6 @@ import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
 from sam import common, constants
 from sam.models import rule, rule_parser, alerts
-import smtplib
 
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
@@ -28,7 +27,7 @@ def __testing_only_reset_state():
 
 
 class RuleJob(object):
-    def __init__(self, subscription_id, datasource_id, start, end, ruleset, time_reported='now'):
+    def __init__(self, subscription_id, datasource_id, start, end, ruleset):
         """
         For use with the RuleProcessor subprocess
         :param subscription_id: the subscription this job applies to
@@ -36,15 +35,14 @@ class RuleJob(object):
         :param datasource_id: the datasource in which to analyze traffic
          :type datasource_id: int
         :param start: the start of the analysis timerange 
-         :type start: int
+         :type start: datetime
         :param end: the end of the analysis timerange
-         :type end: int
+         :type end: datetime
         :param ruleset: a list of rules to check traffic against
          :type ruleset: list[ rule.Rule ]
         :param time_reported: the timestamp to report in any alert raised. One of: "now", "log"
          :type time_reported: str
         """
-        self.time_reported = 'now' if time_reported.lower() == 'now' else 'log'
         self.sub_id = subscription_id
         self.ds_id = datasource_id
         self.time_start = start
@@ -204,10 +202,7 @@ SAM
         severity = action['severity']
         label = action['label']
 
-        if job.time_reported == 'now':
-            m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match)
-        else:
-            m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match, match['timestamp'])
+        m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match, match['timestamp'])
         print("  Triggering alert: {} ({}): {}".format(common.IPtoString(ip), severity, label))
 
     def trigger_email(self, job, rule_, action, matches):

@@ -52,9 +52,9 @@ def init_globals():
     web.config._session = None  # erase any erroneous session creation.
     web.config.session_parameters['cookie_path'] = "/"
     web.config.smtp_server = constants.smtp['server']
-    web.config.smtp_port = int(constants.smtp.get('port', default='587'))
+    web.config.smtp_port = int(constants.smtp.get('port', '587'))
     web.config.smtp_username = constants.smtp['username']
-    web.config.smtp_password = constants.config['password']
+    web.config.smtp_password = constants.smtp['password']
     web.config.smtp_starttls = constants.smtp['starttls'].lower() == 'true'
 
     db, db_quiet = get_db(constants.dbconfig.copy())

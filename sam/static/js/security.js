@@ -977,7 +977,7 @@ function dateConverter() {
             alerts.add_alert([
               alert.id,
               alert.host,
-              alert.timestamp,
+              alert.report_time,
               alert.severity,
               alert.label,
               alert.rule_name

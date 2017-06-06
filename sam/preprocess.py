@@ -3,11 +3,13 @@ Preprocess the data in the database's upload table Syslog
 """
 import os
 import sys
+import web
 from sam import constants
 from sam import common
 from sam import integrity
 from sam.models.datasources import Datasources
 from sam.models.subscriptions import Subscriptions
+from sam.models import ruling_process, rules
 
 
 class InvalidDatasource(ValueError):
@@ -34,10 +36,14 @@ def determine_datasource(db, sub, argv):
 
 
 class Preprocessor:
-    def __init__(self, database, subscription, datasource):
+    def __init__(self, database, subscription, datasource, security_rules=True):
+        """
+        :type database: web.DB
+        """
         self.db = database
         self.sub_id = subscription
         self.ds_id = datasource
+        self.use_sec_rules = security_rules
         self.whois_thread = None
         if self.db.dbname == 'mysql':
             self.divop = 'DIV'
@@ -560,6 +566,14 @@ class Preprocessor:
         """.format(div=self.divop, **self.tables)
         self.db.query(query, vars=time_vars)
 
+    def get_staging_timerange(self):
+        rows = self.db.select(self.tables['table_staging_links'], what="MIN(timestamp) AS 'tstart', MAX(timestamp) AS 'tend'")
+        row = rows.first()
+        if row:
+            return row['tstart'], row['tend']
+        else:
+            return 1, 1
+
     def staging_to_null(self):
         replacements = {
             'acct': self.sub_id,
@@ -567,9 +581,16 @@ class Preprocessor:
         }
         common.exec_sql(self.db, os.path.join(constants.base_path, "sql", "delete_staging_data.sql"), replacements)
 
+    def run_security_rules(self, t_start, t_end):
+        rules_models = rules.Rules(self.db, self.sub_id)
+        active_rules = rules_models.get_ruleset()
+        job = ruling_process.RuleJob(self.sub_id, self.ds_id, t_start, t_end, active_rules)
+        ruling_process.submit_job(job)
+
     def run_all(self):
         print("PREPROCESSOR: beginning preprocessing...")
         db_transaction = self.db.transaction()
+        t_range = (1, 1)
         try:
             print("PREPROCESSOR: importing nodes...")
             self.syslog_to_nodes()  # import all nodes into the shared Nodes table
@@ -579,7 +600,9 @@ class Preprocessor:
             self.staging_links_to_links()  # copy data from staging to master tables
             print("PREPROCESSOR: precomputing aggregates...")
             self.links_to_links_in_out()  # merge new data into the existing aggregates
+
             print("PREPROCESSOR: deleting from staging...")
+            t_range = self.get_staging_timerange() # must do this before deleting staging data
             self.staging_to_null()  # delete all data from staging tables
         except:
             db_transaction.rollback()
@@ -588,6 +611,9 @@ class Preprocessor:
         else:
             db_transaction.commit()
             print("PREPROCESSOR: Pre-processing completed successfully.")
+
+        if self.use_sec_rules:
+            self.run_security_rules(t_range[0], t_range[1])
 
 
 # If running as a script

@@ -104,7 +104,8 @@ class Alerts(base.headless):
             alert_list.append({
                 'id': str(alert['id']),
                 'host': iprange_to_string(alert['ipstart'], alert['ipend']),
-                'timestamp': datetime.fromtimestamp(alert['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+                'log_time': datetime.fromtimestamp(alert['log_time']).strftime('%Y-%m-%d %H:%M:%S'),
+                'report_time': datetime.fromtimestamp(alert['report_time']).strftime('%Y-%m-%d %H:%M:%S'),
                 'severity': "sev{}".format(alert['severity']),
                 'label': alert['label'],
                 'rule_name': alert['rule_name']
@@ -163,7 +164,7 @@ class AlertDetails(base.headless_post):
         host = iprange_to_string(details['ipstart'], details['ipend'])
         encoded = {
             'for': response['for'],
-            'time': datetime.fromtimestamp(details['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+            'time': datetime.fromtimestamp(details['report_time']).strftime('%Y-%m-%d %H:%M:%S'),
             'host': host,
             'severity': details['severity'],
             'label': details['label'],

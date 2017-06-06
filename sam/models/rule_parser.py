@@ -1,4 +1,4 @@
-from pprint import pprint
+import datetime
 from sam import common
 import re
 import web.db
@@ -69,7 +69,14 @@ class RuleSQL(object):
         return " ".join(parts)
 
     def set_timerange(self, tstart, tend):
-        print("tstart is {0}, and type {0.__class__}".format(tstart))
+        """
+
+        :param tstart:
+         :type tstart: datetime.datetime
+        :param tend:
+         :type tend: datetime.datetime
+        :return:
+        """
         self.when = "timestamp BETWEEN {} AND {}".format(web.sqlquote(tstart), web.sqlquote(tend))
 
     def _build_where_columns(self, wheres):
