@@ -78,6 +78,9 @@ class Alerts():
         :return: event id.
          :rtype: int
         """
+
+        old_id = self.alert_already_exists(ipstart, ipend, rule_id, timestamp)
+
         columns = {
             'ipstart': ipstart,
             'ipend': ipend,
@@ -89,9 +92,31 @@ class Alerts():
             'rule_name': rule_name,
             'details': cPickle.dumps(details)
         }
-
-        new_id = self.db.insert(self.table, **columns)
+        if old_id:
+            # if the alert exists, update the details and report time.
+            qvars = {
+                'oid': old_id
+            }
+            where = "id=$oid"
+            self.db.update(self.table, where=where, vars=qvars, details=columns['details'], report_time=columns['report_time'])
+            new_id = old_id
+        else:
+            new_id = self.db.insert(self.table, **columns)
         return new_id
+
+    def alert_already_exists(self, ipstart, ipend, rule_id, timestamp):
+        qvars = {
+            'ips': ipstart,
+            'ipe': ipend,
+            'log': int(time.mktime(timestamp.timetuple())),
+            'rid': rule_id,
+        }
+        where = "ipstart=$ips AND ipend=$ipe AND log_time=$log AND rule_id=$rid"
+        rows = self.db.select(self.table, what='id', where=where, vars=qvars)
+        row = rows.first()
+        if row:
+            return row['id']
+        return None
 
     @staticmethod
     def decode_details(rowlist):

@@ -180,7 +180,7 @@ SAM
 """.format(rule_name=rule_.get_name(), match_traffic=matches_string)
         common.sendmail(email, subject, body)
 
-    def trigger_alert(self, job, rule_, action, match):
+    def trigger_alert(self, job, rule_, action, match, tr_table):
         """
         sql debugging:
         # SELECT id, decodeIP(ipstart), FROM_UNIXTIME(timestamp), severity, viewed, label, rule_id FROM s1_Alerts;
@@ -200,22 +200,22 @@ SAM
         m_alerts = alerts.Alerts(self.db, job.sub_id)
         ip = match.get(rule_.definition.subject, 0)
         severity = action['severity']
-        label = action['label']
+        label = translate_symbols(action['label'], tr_table)
 
         m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match, match['timestamp'])
         print("  Triggering alert: {} ({}): {}".format(common.IPtoString(ip), severity, label))
 
-    def trigger_email(self, job, rule_, action, matches):
+    def trigger_email(self, job, rule_, action, matches, tr_table):
         address = action['address']
         subject_fstring = action['subject']
-        subject = translate_symbols(subject_fstring, rule_.get_translation_table())
+        subject = translate_symbols(subject_fstring, tr_table)
         self.send_email_alert(address, subject, rule_, matches)
         print("  Triggering email to {}: re: {}".format(address, subject))
 
-    def trigger_sms(self, job, rule_, action, matches):
+    def trigger_sms(self, job, rule_, action, matches, tr_table):
         number = action['number']
         message_fstring = action['message']
-        message = translate_symbols(message_fstring, rule_.get_translation_table())
+        message = translate_symbols(message_fstring, tr_table)
         print("  Triggering sms to {} ({}/160 chars):".format(number, len(message)))
         print("    {}".format(message[:160]))
         print('    WARNING: sms alerts are not implemented yet.')
@@ -233,6 +233,7 @@ SAM
          :rtype: None
         """
         actions = rule_.get_actions()
+        tr_table = rule_.get_translation_table()
         print('    Rule actions:')
         for action in actions:
             print('      {}'.format(repr(action)))
@@ -240,11 +241,11 @@ SAM
         for action in actions:
             if action['type'] == 'alert':
                 for match in matches:
-                    self.trigger_alert(job, rule_, action, match)
+                    self.trigger_alert(job, rule_, action, match, tr_table)
             elif action['type'] == 'email':
-                self.trigger_email(job, rule_, action, matches)
+                self.trigger_email(job, rule_, action, matches, tr_table)
             elif action['type'] == 'sms':
-                self.trigger_sms(job, rule_, action, matches)
+                self.trigger_sms(job, rule_, action, matches, tr_table)
             else:
                 print('WARNING: action "{}" not supported'.format(action['type']))
                 continue
