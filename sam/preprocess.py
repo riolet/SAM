@@ -4,12 +4,14 @@ Preprocess the data in the database's upload table Syslog
 import os
 import sys
 import web
+import logging
 from sam import constants
 from sam import common
 from sam import integrity
 from sam.models.datasources import Datasources
 from sam.models.subscriptions import Subscriptions
 from sam.models import ruling_process, rules
+logger = logging.getLogger(__name__)
 
 
 class InvalidDatasource(ValueError):
@@ -588,29 +590,29 @@ class Preprocessor:
         ruling_process.submit_job(job)
 
     def run_all(self):
-        print("PREPROCESSOR: beginning preprocessing...")
+        logger.info("PREPROCESSOR: beginning preprocessing...")
         db_transaction = self.db.transaction()
         t_range = (1, 1)
         try:
-            print("PREPROCESSOR: importing nodes...")
+            logger.debug("PREPROCESSOR: importing nodes...")
             self.syslog_to_nodes()  # import all nodes into the shared Nodes table
-            print("PREPROCESSOR: importing links...")
+            logger.debug("PREPROCESSOR: importing links...")
             self.syslog_to_staging_links()  # import all link info into staging tables
-            print("PREPROCESSOR: copying from staging to master...")
+            logger.debug("PREPROCESSOR: copying from staging to master...")
             self.staging_links_to_links()  # copy data from staging to master tables
-            print("PREPROCESSOR: precomputing aggregates...")
+            logger.debug("PREPROCESSOR: precomputing aggregates...")
             self.links_to_links_in_out()  # merge new data into the existing aggregates
 
-            print("PREPROCESSOR: deleting from staging...")
+            logger.debug("PREPROCESSOR: deleting from staging...")
             t_range = self.get_staging_timerange() # must do this before deleting staging data
             self.staging_to_null()  # delete all data from staging tables
         except:
             db_transaction.rollback()
-            print("PREPROCESSOR: Pre-processing rolled back.")
+            logger.info("PREPROCESSOR: Pre-processing rolled back.")
             raise
         else:
             db_transaction.commit()
-            print("PREPROCESSOR: Pre-processing completed successfully.")
+            logger.info("PREPROCESSOR: Pre-processing completed successfully.")
 
         if self.use_sec_rules:
             self.run_security_rules(t_range[0], t_range[1])
@@ -628,7 +630,7 @@ if __name__ == "__main__":
             processor = Preprocessor(common.db_quiet, sub_id, ds)
             processor.run_all()
         except InvalidDatasource:
-            print("PREPROCESSOR: Data source missing or invalid. Aborting.")
-            print("PREPROCESSOR: please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
+            logger.error("PREPROCESSOR: Data source missing or invalid. Aborting.")
+            logger.error("PREPROCESSOR: please run as \n\t`python {0} <datasource>`".format(sys.argv[0]))
     else:
-        print("PREPROCESSOR: Preprocess aborted. Database check failed.")
+        logger.error("PREPROCESSOR: Preprocess aborted. Database check failed.")

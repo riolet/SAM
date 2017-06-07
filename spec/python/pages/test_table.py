@@ -392,7 +392,11 @@ def test_download():
                     u'50.0.0.0/8',
                     u'50.64.0.0/16',
                     u'50.64.76.0/24',
-                    u'50.64.76.86/32']
+                    u'50.64.76.86/32',
+                    u'101.0.0.0/8',
+                    u'101.99.0.0/16',
+                    u'101.99.86.0/24',
+                    u'101.99.86.58/32']
         assert addresses == expected
         assert headers == 'Address,Hostname,"Role (0 = client, 1 = server)",' \
                           'Environment,Tags,Bytes Handled,Packets Handled'

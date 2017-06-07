@@ -2,11 +2,11 @@ import sys
 import os
 import getopt
 import multiprocessing
-import importlib
-import traceback
+import logging
 sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
 from sam import constants
-
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=constants.log_level)
 application = None
 
 # targets:
@@ -68,7 +68,7 @@ def main(argv=None):
             parsed_args['sub'] = val
 
     if parsed_args['target'] not in valid_targets:
-        print("Invalid target")
+        logger.critical("Invalid target")
         sys.exit(1)
     if parsed_args['whois']:
         constants.use_whois = True
@@ -83,13 +83,13 @@ def main(argv=None):
     elif parsed_args['target'] == 'import':
         launch_importer(parsed_args, args)
     else:
-        print("Error determining what to launch.")
+        logger.critical("Error determining what to launch.")
 
 
 def launch_webserver(parsed):
     import sam.server_webserver
     if parsed['wsgi']:
-        print('launching wsgi webserver')
+        logger.info('launching wsgi webserver')
         global application
         application = sam.server_webserver.start_wsgi()
     else:
@@ -101,9 +101,9 @@ def launch_webserver(parsed):
         port = parsed['port']
         if port is None:
             port = constants.webserver['listen_port']
-        print('launching dev webserver on {}'.format(port))
+        logger.info('launching dev webserver on {}'.format(port))
         sam.server_webserver.start_server(port=port)
-        print('webserver shut down.')
+        logger.info('webserver shut down.')
 
 
 def launch_collector(parsed):
@@ -111,25 +111,25 @@ def launch_collector(parsed):
     port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
-    print('launching collector on {}'.format(parsed['port']))
+    logger.info('launching collector on {}'.format(parsed['port']))
     collector = server_collector.Collector()
     collector.run(port=parsed['port'], format=parsed['format'])
-    print('collector shut down.')
+    logger.info('collector shut down.')
 
 
 def launch_aggregator(parsed):
     import server_aggregator
+    global application
     if parsed['wsgi']:
-        print("launching wsgi aggregator")
-        global application
+        logger.info("launching wsgi aggregator")
         application = server_aggregator.start_wsgi()
     else:
         port = parsed.get('port', None)
         if port is None:
             port = constants.aggregator['listen_port']
-        print('launching dev aggregator on {}'.format(port))
+        logger.info('launching dev aggregator on {}'.format(port))
         server_aggregator.start_server(port=port)
-        print('aggregator shut down.')
+        logger.info('aggregator shut down.')
 
 
 def launch_importer(parsed, args):
@@ -144,7 +144,7 @@ def launch_importer(parsed, args):
     format = parsed['format']
 
     if len(args) != 1:
-        print("Please specify one source file. Exiting.")
+        logger.error("Please specify one source file. Exiting.")
         return
 
     try:
@@ -155,19 +155,19 @@ def launch_importer(parsed, args):
             d_model = Datasources(common.db_quiet, {}, subscription_id)
             ds_id = d_model.name_to_id(datasource)
         except:
-            print('Please specify a datasource. "--dest=???". Exiting.')
+            logger.error('Please specify a datasource. "--dest=???". Exiting.')
             return
     if not ds_id:
-        print('Please specify a datasource. "--dest=???". Exiting.')
+        logger.error('Please specify a datasource. "--dest=???". Exiting.')
         return
     importer = sam.importers.import_base.get_importer(format, subscription_id, ds_id)
     if not importer:
-        print("Could not find importer for given format. ({})".format(format))
+        logger.error("Could not find importer for given format. ({})".format(format))
         return
     if importer.validate_file(args[0]):
         importer.import_file(args[0])
     else:
-        print("Could not open source file. Exiting.")
+        logger.error("Could not open source file. Exiting.")
         return
 
     from sam.preprocess import Preprocessor
@@ -247,7 +247,7 @@ def launch_localmode(parsed):
 
     # launch whois service (if requested)
     if parsed['whois']:
-        print("Starting whois service")
+        logger.info("Starting whois service")
         import models.nodes
         whois_thread = models.nodes.WhoisService(db, sub_id)
         whois_thread.start()
@@ -258,21 +258,22 @@ def launch_localmode(parsed):
     launch_webserver(parsed)
 
     # pressing ctrl-C sends SIGINT to all child processes. The shutdown order is not guaranteed.
-    print("joining collector")
+    logger.debug("joining collector")
     p_collector.join()
-    print("collector joined")
+    logger.debug("collector joined")
 
-    print("joining aggregator")
+    logger.debug("joining aggregator")
     p_aggregator.join()
-    print("aggregator joined")
+    logger.debug("aggregator joined")
 
     if parsed['whois']:
-        print('joining whois')
+        logger.debug('joining whois')
         if whois_thread:
             if whois_thread.is_alive():
                 whois_thread.shutdown()
             whois_thread.join()
-        print('whois joined')
+        logger.debug('whois joined')
+    logger.info("SAM can be safely shut down.")
 
 
 if __name__ == '__main__':

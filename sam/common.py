@@ -1,9 +1,11 @@
 import os
 import sys
 import importlib
+import logging
 import web
 import smtplib
 from sam import constants
+logger = logging.getLogger(__name__)
 
 
 def load_plugins():
@@ -26,7 +28,7 @@ def load_plugins():
             mod.sam_installer.install()
             loaded.append(plugin)
         except:
-            print("Failed to load {}".format(plugin))
+            logger.error("Failed to load {}".format(plugin))
             raise
 
     constants.plugins['loaded'] = loaded
@@ -214,15 +216,12 @@ def sqlite_udf(db):
 def sendmail(to_address, subject, body, from_address=constants.smtp['from'], headers=None, **kw):
     try:
         web.sendmail(from_address, to_address, subject, body, headers=headers, **kw)
-    except OSError as e:
-        print("Could not send mail.")
-        print("OSError: {0}".format(e))
-    except smtplib.SMTPServerDisconnected as e:
-        print("Server Disconnected.")
-        print("SMTPServerDisconnected: {0}".format(e))
-    except Exception as e:
-        print("Other email error:")
-        print("{0.__class__}: {0}, {1}".format(e, e.message))
+    except OSError:
+        logger.exception("Could not send mail.")
+    except smtplib.SMTPServerDisconnected:
+        logger.exception("Server Disconnected.")
+    except:
+        logger.exception("Other email error:")
 
 
 class MultiRender(object):

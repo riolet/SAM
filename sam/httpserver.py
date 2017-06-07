@@ -4,7 +4,8 @@ import urllib
 import web
 from sam import constants
 
-# Overrides and augmentations for classes in web.httpserver
+# Overrides and augmentations of classes in web.httpserver
+# Used in server_*.py
 
 
 class StaticApp(web.httpserver.StaticApp):
