@@ -1,4 +1,5 @@
 import os
+import datetime
 import time
 import cPickle
 import web
@@ -9,8 +10,10 @@ base_path = os.path.dirname(__file__)
 
 
 class AlertFilter():
-    def __init__(self, min_severity=0, limit=20, age_limit=None, sort="id", order="DESC"):
+    def __init__(self, min_severity=0, limit=20, offset=0, age_limit=None, sort="id", order="DESC"):
         """
+        :param offset: first result to return
+         :type offset: int
         :param min_severity: minimum severity (inclusive) to get.
          :type min_severity: int
         :param limit: maximum number of results to get.
@@ -23,6 +26,7 @@ class AlertFilter():
          :type order: unicode
         """
         self.limit = int(limit)
+        self.offset = int(offset)
         self.age_limit = age_limit
         self.min_severity = int(min_severity)
         self.sort = sort
@@ -31,7 +35,7 @@ class AlertFilter():
     def get_where(self, preexisting=None):
         if self.age_limit:
             age = int(time.time()) - int(self.age_limit)
-            where = "severity >= {sev} AND timestamp > {age}".format(sev=self.min_severity, age=age)
+            where = "severity >= {sev} AND report_time > {age}".format(sev=self.min_severity, age=age)
         else:
             where = "severity >= {sev}".format(sev=self.min_severity)
 
@@ -42,6 +46,9 @@ class AlertFilter():
 
     def get_orderby(self):
         return "{} {}".format(self.sort, self.order)
+
+    def get_limit(self):
+        return "{offset}, {count}".format(offset=self.offset, count=self.limit)
 
 
 class Alerts():
@@ -56,7 +63,7 @@ class Alerts():
         self.sub_id = sub_id
         self.table = Alerts.TABLE_FORMAT.format(sub_id)
 
-    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details):
+    def add_alert(self, ipstart, ipend, severity, rule_id, rule_name, label, details, timestamp):
         """
         :param ipstart: integer ip address. 32-bit unsigned integer.
          :type ipstart: int
@@ -72,20 +79,61 @@ class Alerts():
          :type event_type: unicode
         :param details: Any extra details. Native python formats supported. Will be pickled and stored. 
          :type details: Any
+        :param timestamp: timestamp (syslog time) to attach to the alert
+         :type timestamp: datetime.datetime
         :return: event id.
          :rtype: int
         """
-        unix_now = int(time.time())
-        new_id = self.db.insert(self.table, ipstart=ipstart, ipend=ipend, severity=severity, label=label,
-                      timestamp=unix_now, rule_id=rule_id, rule_name=rule_name, details=cPickle.dumps(details))
+
+        old_id = self.alert_already_exists(ipstart, ipend, rule_id, timestamp)
+
+        columns = {
+            'ipstart': ipstart,
+            'ipend': ipend,
+            'severity': severity,
+            'label': label,
+            'log_time': int(time.mktime(timestamp.timetuple())),
+            'report_time': int(time.time()),
+            'rule_id': rule_id,
+            'rule_name': rule_name,
+            'details': cPickle.dumps(details)
+        }
+        if old_id:
+            # if the alert exists, update the details and report time.
+            qvars = {
+                'oid': old_id
+            }
+            where = "id=$oid"
+            self.db.update(self.table, where=where, vars=qvars, details=columns['details'], report_time=columns['report_time'])
+            new_id = old_id
+        else:
+            new_id = self.db.insert(self.table, **columns)
         return new_id
+
+    def count(self):
+        rows = self.db.select(self.table, what="COUNT(0) AS 'count'")
+        return rows.first()['count']
+
+    def alert_already_exists(self, ipstart, ipend, rule_id, timestamp):
+        qvars = {
+            'ips': ipstart,
+            'ipe': ipend,
+            'log': int(time.mktime(timestamp.timetuple())),
+            'rid': rule_id,
+        }
+        where = "ipstart=$ips AND ipend=$ipe AND log_time=$log AND rule_id=$rid"
+        rows = self.db.select(self.table, what='id', where=where, vars=qvars)
+        row = rows.first()
+        if row:
+            return row['id']
+        return None
 
     @staticmethod
     def decode_details(rowlist):
         for row in rowlist:
             row['details'] = cPickle.loads(str(row['details']))
 
-    def get_recent(self, filters):
+    def get(self, filters):
         """
         :param filters: standard filters for alert events
          :type filters: AlertFilter
@@ -93,9 +141,9 @@ class Alerts():
         """
 
         where = filters.get_where()
-        what = 'id, ipstart, ipend, timestamp, severity, label, rule_name, rule_id'
+        what = 'id, ipstart, ipend, log_time, report_time, severity, label, rule_name, rule_id'
 
-        rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.limit)
+        rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.get_limit())
         rows = list(rows)
         return rows
 
@@ -114,8 +162,8 @@ class Alerts():
             'ipe': ipend
         }
         where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
-        what = 'id, ipstart, ipend, timestamp, severity, label, rule_name, rule_id'
-        rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.limit)
+        what = 'id, ipstart, ipend, log_time, report_time, severity, label, rule_name, rule_id'
+        rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.get_limit())
         rows = list(rows)
         return rows
 
@@ -135,6 +183,9 @@ class Alerts():
             print('Failed to update alert event status. Status text was "{}".'.format(repr(label)))
             return None
         return self.db.update(self.table, where=where, vars=qvars, label=label)
+
+    def delete(self, alert_id):
+        return self.db.delete(self.table, where="id=$aid", vars={'aid': alert_id})
 
     def clear(self):
         return self.db.delete(self.table, where="1")

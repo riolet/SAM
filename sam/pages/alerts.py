@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import datetime
 from sam import errors, common
@@ -63,23 +64,44 @@ def fuzzy_time(seconds):
     return "{:.0f} years".format(seconds)
 
 
-class Alerts(base.headless):
+class Alerts(base.headless_post):
     REGEX = re.compile(r'(\d+)\s*([ywdhms])', re.I)
 
     # ------------------- GET ---------------------
 
     def decode_get_request(self, data):
-        # request should (but doesn't need to) include: 'subnet', 'severity', 'time', 'sort', 'sort_dir'
-        request = {'subnet': data.get('subnet', None)}
+        # request should (but doesn't need to) include: 'subnet', 'severity', 'time', 'sort', 'sort_dir', 'page_size', 'page_num'
+        subnet = data.get('subnet', None)
+
 
         try:
-            request['severity'] = int(data.get('severity', 1))
+            severity = int(data.get('severity', 1))
         except:
-            request['severity'] = 1
+            severity = 1
 
-        request['time'] = time_to_seconds(data.get('time', '1 week'))
-        request['sort'] = data.get('sort', 'id')
-        request['sort_dir'] = 'ASC' if data.get('sort_dir', 'DESC').upper() == 'ASC' else 'DESC'
+        time = time_to_seconds(data.get('time', '1 week'))
+        sort = data.get('sort', 'id')
+        sort_dir = 'ASC' if data.get('sort_dir', 'DESC').upper() == 'ASC' else 'DESC'
+
+        try:
+            page_size = int(data['page_size'])
+        except:
+            page_size = 50
+
+        try:
+            page_num = int(data['page_num'])
+        except:
+            page_num = 1
+
+        request = {
+            'subnet': subnet,
+            'severity': severity,
+            'time': time,
+            'sort': sort,
+            'sort_dir': sort_dir,
+            'page_size': page_size,
+            'page_num': page_num
+        }
 
         return request
 
@@ -87,12 +109,19 @@ class Alerts(base.headless):
         response = {}
         m_alerts = alerts.Alerts(common.db, self.page.user.viewing)
 
-        alert_filters = alerts.AlertFilter(min_severity=request['severity'], sort=request['sort'], order=request['sort_dir'], age_limit=request['time'])
+        page_offset = (request['page_num'] - 1) * request['page_size']
+
+        alert_filters = alerts.AlertFilter(min_severity=request['severity'], sort=request['sort'], order=request['sort_dir'], age_limit=request['time'], limit=request['page_size'], offset=page_offset)
         if request['subnet'] is None:
-            response['alerts'] = m_alerts.get_recent(alert_filters)
+            response['alerts'] = m_alerts.get(alert_filters)
         else:
             ipstart, ipend = common.determine_range_string(request['subnet'])
             response['alerts'] = m_alerts.get_by_host(alert_filters, ipstart, ipend)
+
+        total_alerts = m_alerts.count()
+        response['results'] = total_alerts
+        response['page'] = request['page_num']
+        response['pages'] = int(math.ceil(float(total_alerts) / request['page_size']))
 
         return response
 
@@ -104,14 +133,56 @@ class Alerts(base.headless):
             alert_list.append({
                 'id': str(alert['id']),
                 'host': iprange_to_string(alert['ipstart'], alert['ipend']),
-                'timestamp': datetime.fromtimestamp(alert['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+                'log_time': datetime.fromtimestamp(alert['log_time']).strftime('%Y-%m-%d %H:%M:%S'),
+                'report_time': datetime.fromtimestamp(alert['report_time']).strftime('%Y-%m-%d %H:%M:%S'),
                 'severity': "sev{}".format(alert['severity']),
                 'label': alert['label'],
                 'rule_name': alert['rule_name']
             })
         encoded['alerts'] = alert_list
+        encoded['results'] = response['results']
+        encoded['page'] = response['page']
+        encoded['pages'] = response['pages']
 
         return encoded
+
+    # ------------------- POST ---------------------
+
+    def decode_post_request(self, data):
+        method = data.get('method', None)
+        if method not in ('delete_all', 'delete'):
+            raise errors.MalformedRequest("method must be either 'delete' or 'delete_all'")
+
+        alert_id = None
+
+        if method == 'delete':
+            try:
+                alert_id = int(data.get('id'))
+            except:
+                raise errors.RequiredKey('alert id', 'id')
+
+        request = {
+            'method': method,
+            'id': alert_id
+        }
+        return request
+
+    def perform_post_command(self, request):
+        m_alerts = alerts.Alerts(common.db, self.page.user.viewing)
+
+        if request['method'] == 'delete_all':
+            m_alerts.clear()
+        elif request['method'] == 'delete':
+            m_alerts.delete(request['id'])
+        else:
+            raise errors.MalformedRequest('Method not understood.')
+
+        return "success"
+
+    def encode_post_response(self, response):
+        encoded = {'result': response}
+        return encoded
+
 
 
 class AlertDetails(base.headless_post):
@@ -163,7 +234,7 @@ class AlertDetails(base.headless_post):
         host = iprange_to_string(details['ipstart'], details['ipend'])
         encoded = {
             'for': response['for'],
-            'time': datetime.fromtimestamp(details['timestamp']).strftime('%Y-%m-%d %H:%M:%S'),
+            'time': datetime.fromtimestamp(details['report_time']).strftime('%Y-%m-%d %H:%M:%S'),
             'host': host,
             'severity': details['severity'],
             'label': details['label'],

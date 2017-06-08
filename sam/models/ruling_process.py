@@ -35,11 +35,13 @@ class RuleJob(object):
         :param datasource_id: the datasource in which to analyze traffic
          :type datasource_id: int
         :param start: the start of the analysis timerange 
-         :type start: int
+         :type start: datetime
         :param end: the end of the analysis timerange
-         :type end: int
+         :type end: datetime
         :param ruleset: a list of rules to check traffic against
          :type ruleset: list[ rule.Rule ]
+        :param time_reported: the timestamp to report in any alert raised. One of: "now", "log"
+         :type time_reported: str
         """
         self.sub_id = subscription_id
         self.ds_id = datasource_id
@@ -114,7 +116,7 @@ def ruling_process(queue, stayalive=_PROCESSOR_STAYALIVE):
     return engine
 
 
-def translate_symbols(self, s, tr):
+def translate_symbols(s, tr):
     result = re.sub(r'\$(\S+)',
                     lambda match: tr[match.group(1)] if match.group(1) in tr else match.group(1),
                     unicode(s))
@@ -160,41 +162,63 @@ class RulesProcessor(object):
 
         return alerts_discovered
 
-    def trigger_alert(self, sub_id, rule_, severity, label, subject, match):
-        """
+    @staticmethod
+    def send_email_alert(email, subject, rule_, matches):
 
+        matches_string = "\n".join(["{}: {}".format(m['timestamp'], m[rule_.definition.subject]) for m in matches])
+
+        body = """
+Hello,
+
+This is an email alert from System Architecture Mapper to let you know that one of your security rules ({rule_name}) has been triggered.
+The complete list of traffic that triggered the rule is:
+
+{match_traffic}
+
+Thanks,
+SAM
+""".format(rule_name=rule_.get_name(), match_traffic=matches_string)
+        common.sendmail(email, subject, body)
+
+    def trigger_alert(self, job, rule_, action, match, tr_table):
+        """
         sql debugging:
         # SELECT id, decodeIP(ipstart), FROM_UNIXTIME(timestamp), severity, viewed, label, rule_id FROM s1_Alerts;
-
-        :param sub_id:
-         :type sub_id: int
+        :param job:
+         :type job: RuleJob
         :param rule_:
          :type rule_: rule.Rule
         :param severity:
          :type severity: int or str
         :param label:
          :type label: str
-        :param subject:
-         :type subject: str
         :param match:
          :type match: dict[basestring, Any]
         :return:
          :rtype: None
         """
+        m_alerts = alerts.Alerts(self.db, job.sub_id)
+        ip = match.get(rule_.definition.subject, 0)
+        severity = action['severity']
+        label = translate_symbols(action['label'], tr_table)
 
-        m_alerts = alerts.Alerts(self.db, sub_id)
-        ip = match.get(subject, 0)
-        m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match)
-        print("  Triggering alert: {} ({}): {}".format(common.IPtoString(ip), severity, label))
+        m_alerts.add_alert(ip, ip, severity, rule_.id, rule_.get_name(), label, match, match['timestamp'])
+        # print("  Triggering alert: {} ({}): {}".format(common.IPtoString(ip), severity, label))
 
-    def trigger_email(self, address, email_subject, subject, matches, translations):
-        print("  Triggering email to {}: re: {}".format(address, email_subject))
-        print('    WARNING: email alerts are not implemented yet.')
+    def trigger_email(self, job, rule_, action, matches, tr_table):
+        address = action['address']
+        subject_fstring = action['subject']
+        subject = translate_symbols(subject_fstring, tr_table)
+        self.send_email_alert(address, subject, rule_, matches)
+        # print("  Triggering email to {}: re: {}".format(address, subject))
 
-    def trigger_sms(self, number, message, subject, matches, translations):
-        print("  Triggering sms to {} ({}/160 chars):".format(number, len(message)))
-        print("    {}".format(message))
-        print('    WARNING: sms alerts are not implemented yet.')
+    def trigger_sms(self, job, rule_, action, matches, tr_table):
+        number = action['number']
+        message_fstring = action['message']
+        message = translate_symbols(message_fstring, tr_table)
+        # print("  Triggering sms to {} ({}/160 chars):".format(number, len(message)))
+        # print("    {}".format(message[:160]))
+        # print('    WARNING: sms alerts are not implemented yet.')
 
     def trigger_actions(self, job, rule_, matches):
         """
@@ -209,18 +233,19 @@ class RulesProcessor(object):
          :rtype: None
         """
         actions = rule_.get_actions()
-        print('    Rule actions:')
-        for action in actions:
-            print('      {}'.format(repr(action)))
+        tr_table = rule_.get_translation_table()
+        # print('    Rule actions:')
+        # for action in actions:
+        #     print('      {}'.format(repr(action)))
 
         for action in actions:
             if action['type'] == 'alert':
                 for match in matches:
-                    self.trigger_alert(job.sub_id, rule_, action['severity'], action['label'], rule_.definition.subject, match)
+                    self.trigger_alert(job, rule_, action, match, tr_table)
             elif action['type'] == 'email':
-                self.trigger_email(action['address'], action['subject'], rule_.definition.subject, matches)
+                self.trigger_email(job, rule_, action, matches, tr_table)
             elif action['type'] == 'sms':
-                self.trigger_sms(action['number'], action['message'], rule_.definition.subject, matches)
+                self.trigger_sms(job, rule_, action, matches, tr_table)
             else:
                 print('WARNING: action "{}" not supported'.format(action['type']))
                 continue
@@ -254,14 +279,14 @@ class RulesProcessor(object):
                 print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'.format(job.status, rule_.get_name(), rule_type))
                 continue
             print('    {} alerts discovered,'.format(len(matches)))
-            for match in matches:
-                print('      {}: {} -> {}:{} x{} using {}'.format(
-                    datetime.fromtimestamp(int(time.mktime(match.timestamp.timetuple()))),
-                    common.IPtoString(match.src),
-                    common.IPtoString(match.dst),
-                    match.port,
-                    match.links,
-                    match.protocol))
+            # for match in matches:
+            #     print('      {}: {} -> {}:{} x{} using {}'.format(
+            #         datetime.fromtimestamp(int(time.mktime(match.timestamp.timetuple()))),
+            #         common.IPtoString(match.get('src', 0)),
+            #         common.IPtoString(match.get('dst', 0)),
+            #         match.get('port', 0),
+            #         match.get('links', 0),
+            #         match.get('protocol', 0)))
             self.trigger_actions(job, rule_, matches)
 
         job.status = "Complete"

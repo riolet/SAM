@@ -1,19 +1,18 @@
 import SocketServer
 import importlib
+import logging
 import signal
 import threading
 import time
 import traceback
-
 import web
-
 from sam import constants
 import sam.importers.import_base as base_importer
-
 web.config.debug = constants.debug
 import requests
 import cPickle
 import select
+logger = logging.getLogger(__name__)
 
 """
 Live Collector
@@ -105,13 +104,13 @@ class Collector(object):
             try:
                 self.listen_address = (self.listen_address[0], int(port))
             except (ValueError, TypeError) as e:
-                print('Collector: Invalid port: {}'.format(e))
+                logger.critical('Collector: Invalid port: {}'.format(e))
                 return
         if format is None:
             format = self.default_format
         self.importer = base_importer.get_importer(format, 0, 0)
         if not self.importer:
-            print("Collector: Failed to load importer; aborting")
+            logger.critical("Collector: Failed to load importer; aborting")
             return
         if access_key is not None:
             self.access_key = access_key
@@ -122,7 +121,7 @@ class Collector(object):
 
             # register signals for safe shut down
         def sig_handler(num, frame):
-            print('\nInterrupt received.')
+            logger.debug('\nInterrupt received.')
             self.shutdown()
 
         signal.signal(signal.SIGINT, sig_handler)
@@ -131,17 +130,15 @@ class Collector(object):
         # Start the daemon listening on the port in an infinite loop that exits when the program is killed
         self.listener_thread = threading.Thread(target=self.listener.serve_forever)
         self.listener_thread.start()
-        print("Live Collector listening on {0}:{1}.".format(*self.listen_address))
+        logger.info("Live Collector listening on {0}:{1}.".format(*self.listen_address))
 
         try:
             self.thread_batch_processor()
         except:
-            print("Live_collector server has encountered a critical error.")
-            traceback.print_exc()
-            print("==>--<" * 10)
+            logger.exception("Live_collector server has encountered a critical error.")
             self.shutdown()
 
-        print("Live_collector server shut down successfully.")
+        logger.info("Live_collector server shut down successfully.")
 
     def run_streamreader(self, stream, format=None, access_key=None):
         # set up the importer
@@ -149,7 +146,7 @@ class Collector(object):
             format = self.default_format
         self.importer = base_importer.get_importer(format, 0, 0)
         if not self.importer:
-            print("Collector: Failed to load importer; aborting")
+            logger.critical("Collector: Failed to load importer; aborting")
             return
         if access_key is not None:
             self.access_key = access_key
@@ -161,12 +158,12 @@ class Collector(object):
             time.sleep(1)
             connected = self.test_connection()
         if not connected:
-            print('Collector: Failed to connect to aggregator; aborting')
+            logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
             # register signals for safe shut down
         def sig_handler(num, frame):
-            print('\nInterrupt received.')
+            logger.debug('\nInterrupt received.')
             self.shutdown()
 
         signal.signal(signal.SIGINT, sig_handler)
@@ -177,17 +174,15 @@ class Collector(object):
         self.listener_thread = self.listener
         self.listener_thread.daemon = True
         self.listener_thread.start()
-        print('Collector: listening to {}.'.format(stream.name if hasattr(stream, 'name') else 'stream'))
+        logger.info('Collector: listening to {}.'.format(stream.name if hasattr(stream, 'name') else 'stream'))
 
         try:
             self.thread_batch_processor()
         except:
-            print("Collector: server has encountered a critical error.")
-            traceback.print_exc()
-            print("==>--<" * 10)
+            logger.exception("Collector: server has encountered a critical error.")
             self.shutdown()
 
-        print("Collector: server shut down successfully.")
+        logger.info("Collector: server shut down successfully.")
 
     def thread_batch_processor(self):
         global SOCKET_BUFFER
@@ -205,15 +200,15 @@ class Collector(object):
 
             deltatime = time.time() - last_processing
             if self.transmit_buffer_size > self.transmit_buffer_threshold:
-                print("COLLECTOR: process server running batch (due to buffer cap reached)")
+                logger.debug("COLLECTOR: process server running batch (due to buffer cap reached)")
                 self.transmit_lines()
                 last_processing = time.time()
             elif deltatime > self.time_between_transmits and self.transmit_buffer_size > 0:
-                print("COLLECTOR: process server running batch (due to time)")
+                logger.debug("COLLECTOR: process server running batch (due to time)")
                 self.transmit_lines()
                 last_processing = time.time()
             elif self.transmit_buffer_size > 0:
-                print("COLLECTOR: waiting for time limit or a full buffer. "
+                logger.debug("COLLECTOR: waiting for time limit or a full buffer. "
                       "Time at {0:.1f}, Size at {1}".format(deltatime, self.transmit_buffer_size))
             else:
                 # Don't let time accumulate while the buffer is empty
@@ -223,7 +218,7 @@ class Collector(object):
             if len(SOCKET_BUFFER) > 0:
                 self.import_lines()
 
-        print("COLLECTOR: process server shutting down")
+        logger.info("COLLECTOR: process server shutting down")
 
     def import_lines(self):
         global SOCKET_BUFFER
@@ -261,20 +256,18 @@ class Collector(object):
             'lines': lines
         }
 
-        print("COLLECTOR: Sending package...")
+        logger.info("COLLECTOR: Sending package...")
         try:
             response = requests.request('POST', self.target_address, data=cPickle.dumps(package))
             reply = response.content
-            print("COLLECTOR: Received reply: {0}".format(reply))
+            logger.debug("COLLECTOR: Received reply: {0}".format(reply))
         except Exception as e:
-            print("COLLECTOR: Error sending package: {0}".format(e))
+            logger.error("COLLECTOR: Error sending package: {0}".format(e))
             # keep the unsent lines around
             self.transmit_buffer.extend(lines)
             self.transmit_buffer_size = len(self.transmit_buffer)
 
     def test_connection(self):
-        print "Collector: Testing connection...",
-
         package = {
             'access_key': self.access_key,
             'version': '1.0',
@@ -286,24 +279,23 @@ class Collector(object):
             response = requests.request('POST', self.target_address, data=cPickle.dumps(package))
             reply = response.content
         except Exception as e:
-            print("Failed.")
-            print(e)
+            logger.exception("Collector: Testing connection...Failed")
             return False
         if reply == 'handshake':
-            print("Succeeded.")
+            logger.exception("Collector: Testing connection...Succeeded")
             return True
         else:
-            print("Bad reply.")
-            print('  "{}"'.format(reply))
+            logger.error("Bad reply. Aborting")
+            logger.debug('  "{}"'.format(reply))
             return False
 
     def shutdown(self):
-        print("Collector: Shutting down handler.")
+        logger.info("Collector: Shutting down handler.")
         self.listener.shutdown()
         if self.listener_thread:
             self.listener_thread.join()
-            print("Collector: Handler stopped.")
-        print("Collector: Shutting down batch processor.")
+            logger.info("Collector: Handler stopped.")
+        logger.info("Collector: Shutting down batch processor.")
         self.shutdown_event.set()
 
 

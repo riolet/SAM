@@ -282,13 +282,11 @@ class Table(base.headed):
 
     def decode_get_request(self, data):
         ds, filters = self.decode_filters(data)
-        print("ds filter-decoded to {}".format(ds))
 
         # fall back to default data source if not provided in query string.
         if ds is None:
             settings_model = sam.models.settings.Settings(common.db, self.page.session, self.page.user.viewing)
             ds = settings_model['datasource']
-        print("ds is now {} (sub {})".format(ds, self.page.user.viewing))
 
         try:
             page = int(data.get('page', self.default_page))
@@ -306,10 +304,6 @@ class Table(base.headed):
         if download:
             page = 1
             page_size = self.download_max
-
-        print("datasources: {}".format(self.dsModel.datasources))
-        print("datasources[ds] is {0} ({0.__class__})".format(self.dsModel.datasources[ds]))
-        print("the .get is {}".format(self.dsModel.datasources[ds].get))
 
         request = {
             'download': download,

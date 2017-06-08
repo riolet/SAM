@@ -215,6 +215,7 @@ def test_get_all_endpoints():
         '50.64.76.86',
         '50.64.76.87',
         '59.69.79.89',
+        '101.99.86.58',
         '110.20.30.40',
         '110.20.30.41',
         '110.20.32.42',
@@ -231,8 +232,12 @@ def test_get_all_endpoints():
         '150.64.74.85',
         '150.64.76.86',
         '150.64.76.87',
-        '159.69.79.89'])
+        '159.69.79.89',
+        '199.29.39.40'])
     eps.sort()
+    from pprint import pprint
+    pprint(map(common.IPtoString,expected))
+    pprint(map(common.IPtoString,eps))
     assert eps == expected
 
     l_model = Links(db, sub_id, ds_empty)

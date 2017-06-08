@@ -308,15 +308,12 @@ def readEncoded(db, sub_id, filterString):
     fstrings = filterString.split("|")
 
     # identify data source
-    print("ds string: {}".format(fstrings[0]))
     ds_match = re.search("(\d+)", fstrings[0])
     if ds_match:
         ds = int(ds_match.group())
-        print("ds matched as {}".format(ds))
     else:
         settings_model = Settings(db, {}, sub_id)
         ds = settings_model['datasource']
-        print("ds unmatched. assigned as {} (sub {})".format(ds, sub_id))
 
     for encodedFilter in fstrings[1:]:
         try:

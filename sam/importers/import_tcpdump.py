@@ -1,10 +1,13 @@
 import sys
+import re
 from sam.importers.import_base import BaseImporter
 from datetime import datetime
 import time
 
 
 class TCPDumpImporter(BaseImporter):
+    len_finder = re.compile(r'length (\d+)')
+
     def translate(self, line, line_num, dictionary):
         """
         Converts a given syslog line into a dictionary of (ip, port, ip, port)
@@ -38,11 +41,9 @@ class TCPDumpImporter(BaseImporter):
             if a[5].startswith('UDP'):
                 protocol = 'UDP'
 
-            if a[-2] == 'length':
-                try:
-                    nBytes = int(a[-1])
-                except:
-                    nBytes = 1
+            len_match = TCPDumpImporter.len_finder.search(line)
+            if len_match:
+                nBytes = int(len_match.group(1))
             else:
                 nBytes = 1
 

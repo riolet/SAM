@@ -1,8 +1,11 @@
 import os
 import sys
 import importlib
+import logging
 import web
+import smtplib
 from sam import constants
+logger = logging.getLogger(__name__)
 
 
 def load_plugins():
@@ -25,7 +28,7 @@ def load_plugins():
             mod.sam_installer.install()
             loaded.append(plugin)
         except:
-            print("Failed to load {}".format(plugin))
+            logger.error("Failed to load {}".format(plugin))
             raise
 
     constants.plugins['loaded'] = loaded
@@ -50,6 +53,11 @@ def init_globals():
     web.config.debug = constants.debug
     web.config._session = None  # erase any erroneous session creation.
     web.config.session_parameters['cookie_path'] = "/"
+    web.config.smtp_server = constants.smtp['server']
+    web.config.smtp_port = int(constants.smtp.get('port', '587'))
+    web.config.smtp_username = constants.smtp['username']
+    web.config.smtp_password = constants.smtp['password']
+    web.config.smtp_starttls = constants.smtp['starttls'].lower() == 'true'
 
     db, db_quiet = get_db(constants.dbconfig.copy())
 
@@ -203,6 +211,17 @@ def sqlite_udf(db):
                                                                                ip & 0xff))
     db._db_cursor().connection.create_function("encodeIP", 4,
                                                lambda a, b, c, d: a << 24 | b << 16 | c << 8 | d)
+
+
+def sendmail(to_address, subject, body, from_address=constants.smtp['from'], headers=None, **kw):
+    try:
+        web.sendmail(from_address, to_address, subject, body, headers=headers, **kw)
+    except OSError:
+        logger.exception("Could not send mail.")
+    except smtplib.SMTPServerDisconnected:
+        logger.exception("Server Disconnected.")
+    except:
+        logger.exception("Other email error:")
 
 
 class MultiRender(object):

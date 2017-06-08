@@ -1,6 +1,7 @@
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
+import logging
 import time
 import cPickle
 import threading
@@ -12,7 +13,7 @@ import sam.models.nodes
 import sam.importers.import_base
 import sam.preprocess
 import sam.httpserver
-
+logger = logging.getLogger(__name__)
 
 """
 Live Server
@@ -129,11 +130,11 @@ class DatabaseInserter(threading.Thread):
 
                 if rows >= self.SIZE_QUOTA:
                     # process the buffer
-                    print("PREPROCESSOR: exceeded size quota")
+                    logger.debug("PREPROCESSOR: exceeded size quota")
                     self.syslog_to_tables(buff)
                     buff.flag_unexpired()
                 elif time.time() > buff.last_proc_time + self.TIME_QUOTA:
-                    print("PREPROCESSOR: exceeded time quota")
+                    logger.debug("PREPROCESSOR: exceeded time quota")
                     if rows > 0:
                         # process the buffer
                         self.syslog_to_tables(buff)
@@ -141,11 +142,11 @@ class DatabaseInserter(threading.Thread):
                     else:
                         if buff.expiring:
                             # remove the buffer from the buffer list
-                            print("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
+                            logger.debug("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
                             self.buffers.remove(buff.sub, buff.ds)
                         else:
                             # flag the buffer as inactive for future removal
-                            print("PREPROCESSOR: flagging for removal {0}: {1}".format(buff.sub, buff.ds))
+                            logger.debug("PREPROCESSOR: flagging for removal {0}: {1}".format(buff.sub, buff.ds))
                             buff.flag_expired()
                 else:
                     # rows are under quota, and time is not up. Move on
@@ -171,7 +172,7 @@ class DatabaseInserter(threading.Thread):
 
     @staticmethod
     def run_preprocessor(sub_id, ds):
-        print("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub_id, ds))
+        logger.debug("PREPROCESSOR: running syslog to tables for {0}: {1}".format(sub_id, ds))
         processor = sam.preprocess.Preprocessor(sam.common.db_quiet, sub_id, ds)
         processor.run_all()
 
@@ -187,10 +188,11 @@ class DatabaseInserter(threading.Thread):
         buff.last_proc_time = time.time()
         DatabaseInserter.run_preprocessor(sub, ds)
 
+
 class Aggregator(object):
     @staticmethod
     def handle(rawdata):
-        # print("SERVER: Handling input!")
+        # logger.debug("SERVER: Handling input!")
         try:
             data = cPickle.loads(rawdata)
         except:
@@ -210,7 +212,7 @@ class Aggregator(object):
 
     @staticmethod
     def validate_data(data):
-        # print("SERVER: validating...")
+        # logger.debug("SERVER: validating...")
         if type(data) is not dict:
             return {}, "Cannot interpret data."
         access_key = data.pop('access_key', None)
@@ -246,11 +248,11 @@ class Aggregator(object):
 
         # read lines/etc
         # insert lines into buffer
-        print("SERVER: Received input.")
+        logger.info("SERVER: Received input.")
         BUFFERS.add(sub, ds, data)
-        buffers = BUFFERS.get_all()
-        #print("SERVER: Number of Buffers = {0}".format(len(buffers)))
-        #print("SERVER: Buffer[0] = {0}".format(buffers[0]))
+        # buffers = BUFFERS.get_all()
+        # logger.debug("SERVER: Number of Buffers = {0}".format(len(buffers)))
+        # logger.debug("SERVER: Buffer[0] = {0}".format(buffers[0]))
         return False
 
     @staticmethod
@@ -271,7 +273,7 @@ class Aggregator(object):
 def start_server(port=None):
     sam.common.load_plugins()
 
-    if port == None:
+    if port is None:
         port = constants.aggregator['listen_port']
 
     urls = ['/', 'Aggregator']
@@ -279,7 +281,7 @@ def start_server(port=None):
     try:
         sam.httpserver.runwsgi(app.wsgifunc(sam.httpserver.PluginStaticMiddleware), port)
     finally:
-        print("{} shutting down.".format(sys.argv[0]))
+        logger.info("{} shutting down.".format(sys.argv[0]))
 
 
 def start_wsgi():

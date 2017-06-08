@@ -107,8 +107,14 @@ def get_test_db_connection():
         params['db'] = TEST_DATABASE_MYSQL
     tdb, tdbq = sam.common.get_db(params)
     print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
+    sam.integrity.check_and_fix_db_access(params.copy())
     if params['dbn'] != 'sqlite':
+        q = "DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_MYSQL)
+        print("running: {}".format(q))
         tdbq.query("DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_MYSQL))
+
+        q = "CREATE DATABASE IF NOT EXISTS {};".format(TEST_DATABASE_MYSQL)
+        print("running: {}".format(q))
         tdbq.query("CREATE DATABASE IF NOT EXISTS {};".format(TEST_DATABASE_MYSQL))
         tdbq.query("USE {}".format(TEST_DATABASE_MYSQL))
     sam.common.db = tdb
@@ -140,7 +146,7 @@ def setup_network(db, sub_id, ds_id):
     loader = sam.importers.import_base.BaseImporter()
     loader.set_subscription(sub_id)
     loader.set_datasource_id(ds_id)
-    processor = sam.preprocess.Preprocessor(db, sub_id, ds_id)
+    processor = sam.preprocess.Preprocessor(db, sub_id, ds_id, security_rules=False)
 
     # used to generate network data for testing
     #def rand_time():

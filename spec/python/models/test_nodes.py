@@ -78,6 +78,7 @@ def test_get_all_endpoints():
         '50.64.76.86',
         '50.64.76.87',
         '59.69.79.89',
+        '101.99.86.58',
         '110.20.30.40',
         '110.20.30.41',
         '110.20.32.42',
@@ -94,7 +95,8 @@ def test_get_all_endpoints():
         '150.64.74.85',
         '150.64.76.86',
         '150.64.76.87',
-        '159.69.79.89'])
+        '159.69.79.89',
+        '199.29.39.40'])
     assert expected == actual
 
 
@@ -113,16 +115,16 @@ def test_get_root_nodes():
     roots = m_nodes.get_root_nodes()
     ips = [root['ipstart'] for root in roots]
     ips.sort()
-    assert len(ips) == 6
-    assert set(ips) == set(map(common.IPStringtoInt, ['10.0.0.0', '50.0.0.0', '59.0.0.0',
-                                                      '110.0.0.0', '150.0.0.0', '159.0.0.0']))
+    assert len(ips) == 8
+    assert set(ips) == set(map(common.IPStringtoInt, ['10.0.0.0', '50.0.0.0', '59.0.0.0', '101.0.0.0',
+                                                      '110.0.0.0', '150.0.0.0', '159.0.0.0', '199.0.0.0']))
 
 
 def test_get_flat_nodes():
     m_nodes = nodes.Nodes(db, sub_id)
     roots = m_nodes.get_flat_nodes(ds_full)
     ips = ["{}/{}".format(n['ipstart'], n['subnet']) for n in roots]
-    assert len(ips) == 34
+    assert len(ips) == 36
 
 
 def test_tags():

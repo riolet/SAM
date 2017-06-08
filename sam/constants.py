@@ -1,3 +1,4 @@
+import logging
 import os
 base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
@@ -9,6 +10,7 @@ datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 templates_folder = 'rule_templates'
 rule_templates_path = os.path.join(base_path, templates_folder)
 
+log_level = logging.INFO
 config = ConfigEnvy('SAM')
 debug = config.get('debug', 'debug', default='False').lower() == 'true'
 
@@ -41,6 +43,7 @@ LDAP = {
 }
 
 security = dict(config.items('security'))
+smtp = dict(config.items('smtp'))
 
 collector = dict(config.items('collector'))
 aggregator = dict(config.items('aggregator'))

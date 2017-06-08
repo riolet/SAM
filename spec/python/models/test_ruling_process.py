@@ -1,3 +1,4 @@
+from datetime import datetime
 from spec.python import db_connection
 from sam import common
 import time
@@ -16,6 +17,7 @@ def test_submit_job():
     old_spawner = rp.spawn_if_not_alive
     rp.spawn_if_not_alive = lambda: 0
     try:
+        reset_state()
         job = rp.RuleJob(1,1,1,1,[])
         job_id = rp.submit_job(job)
         assert isinstance(job_id, int)
@@ -32,6 +34,7 @@ def test_check_job():
     old_spawner = rp.spawn_if_not_alive
     rp.spawn_if_not_alive = lambda: 0
     try:
+        reset_state()
         job = rp.RuleJob(1,1,1,1,[])
         job_id = rp.submit_job(job)
         assert rp.check_job(job.sub_id, job_id) == (job.status, job.completion)
@@ -56,10 +59,10 @@ def xtest_ruling_process():
     # run process
     rule1 = rule.Rule(1, True, 'test_rule1', 'test_rule1_desc', 'compromised.yml')
     rule2 = rule.Rule(2, True, 'test_rule2', 'test_rule2_desc', 'dos.yml')
-    job1 = rp.RuleJob(sub_id, ds_full, 1, 2**32-1, [rule1, rule2])
+    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule1, rule2])
     rule3 = rule.Rule(3, True, 'test_rule3', 'test_rule3_desc', 'portscan.yml')
     rule4 = rule.Rule(4, True, 'test_rule4', 'test_rule4_desc', 'suspicious.yml')
-    job2 = rp.RuleJob(sub_id, ds_full, 1, 2**32-1, [rule3, rule4])
+    job2 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule3, rule4])
 
     old_processor = rp.RulesProcessor
     try:
@@ -88,7 +91,7 @@ def test_evaluate_immediate_rule():
         'dest_ip': '50.64.76.87',
         'port': 96
     })
-    job1 = rp.RuleJob(sub_id, ds_full, 1, 2**32-1, [rule1, rule2])
+    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule1, rule2])
 
     processor = rp.RulesProcessor(db)
     r1_alerts = processor.evaluate_immediate_rule(job1, rule1)
@@ -112,7 +115,7 @@ def test_evaluate_periodic_rule():
     rule3 = rule.Rule(3, True, 'test_rule3', 'test_rule3_desc', 'portscan.yml')
     rule3.set_params({}, {'threshold': '1'})
 
-    job1 = rp.RuleJob(sub_id, ds_full, 1, 2**32-1, [rule1, rule2, rule3])
+    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule1, rule2, rule3])
     processor = rp.RulesProcessor(db)
 
     r1_alerts = processor.evaluate_immediate_rule(job1, rule1)

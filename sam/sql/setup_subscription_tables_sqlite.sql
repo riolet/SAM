@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS s{acct}_Alerts
 (id                INTEGER NOT NULL PRIMARY KEY
 ,ipstart           INT UNSIGNED NOT NULL
 ,ipend             INT UNSIGNED NOT NULL
-,timestamp         INT UNSIGNED NOT NULL
+,log_time          INT UNSIGNED NOT NULL
+,report_time       INT UNSIGNED NOT NULL
 ,severity          TINYINT(1) NOT NULL
 ,viewed            TINYINT(1) NOT NULL DEFAULT 0
 ,label             VARCHAR(32) NOT NULL
