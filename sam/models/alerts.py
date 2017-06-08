@@ -10,8 +10,10 @@ base_path = os.path.dirname(__file__)
 
 
 class AlertFilter():
-    def __init__(self, min_severity=0, limit=20, age_limit=None, sort="id", order="DESC"):
+    def __init__(self, min_severity=0, limit=20, offset=0, age_limit=None, sort="id", order="DESC"):
         """
+        :param offset: first result to return
+         :type offset: int
         :param min_severity: minimum severity (inclusive) to get.
          :type min_severity: int
         :param limit: maximum number of results to get.
@@ -24,6 +26,7 @@ class AlertFilter():
          :type order: unicode
         """
         self.limit = int(limit)
+        self.offset = int(offset)
         self.age_limit = age_limit
         self.min_severity = int(min_severity)
         self.sort = sort
@@ -43,6 +46,9 @@ class AlertFilter():
 
     def get_orderby(self):
         return "{} {}".format(self.sort, self.order)
+
+    def get_limit(self):
+        return "{offset}, {count}".format(offset=self.offset, count=self.limit)
 
 
 class Alerts():
@@ -104,6 +110,10 @@ class Alerts():
             new_id = self.db.insert(self.table, **columns)
         return new_id
 
+    def count(self):
+        rows = self.db.select(self.table, what="COUNT(0) AS 'count'")
+        return rows.first()['count']
+
     def alert_already_exists(self, ipstart, ipend, rule_id, timestamp):
         qvars = {
             'ips': ipstart,
@@ -123,7 +133,7 @@ class Alerts():
         for row in rowlist:
             row['details'] = cPickle.loads(str(row['details']))
 
-    def get_recent(self, filters):
+    def get(self, filters):
         """
         :param filters: standard filters for alert events
          :type filters: AlertFilter
@@ -133,7 +143,7 @@ class Alerts():
         where = filters.get_where()
         what = 'id, ipstart, ipend, log_time, report_time, severity, label, rule_name, rule_id'
 
-        rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.limit)
+        rows = self.db.select(self.table, where=where, what=what, order=filters.get_orderby(), limit=filters.get_limit())
         rows = list(rows)
         return rows
 
@@ -153,7 +163,7 @@ class Alerts():
         }
         where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
         what = 'id, ipstart, ipend, log_time, report_time, severity, label, rule_name, rule_id'
-        rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.limit)
+        rows = self.db.select(self.table, where=where, what=what, vars=qvars, order=filters.get_orderby(), limit=filters.get_limit())
         rows = list(rows)
         return rows
 

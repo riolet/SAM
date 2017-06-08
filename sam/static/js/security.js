@@ -869,15 +869,19 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       // column sorting button
       $("#alert_headers th").click(alerts.column_clicked);
 
+      //pagination buttons
+      document.getElementById("alert_prev_page").onclick = alerts.prev_page;
+      document.getElementById("alert_next_page").onclick = alerts.next_page;
+
       //populate table!
-      alerts.GET_alerts();
+      alerts.GET_alerts(document.getElementById("alert_page_num").innerText);
     },
 
     subnet_validator: function () {
       let alert = document.getElementById("alert_host_filter");
       let new_str = normalizeIP(alert.value);
       alert.value = new_str;
-      alerts.GET_alerts();
+      alerts.GET_alerts(document.getElementById("alert_page_num").innerText);
     },
 
     timerange_validator: function () {
@@ -907,7 +911,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       }
       timerange.value = new_string;
       timerange.dataset['old'] = new_string;
-      alerts.GET_alerts();
+      alerts.GET_alerts(document.getElementById("alert_page_num").innerText);
     },
 
     select_alert: function (e) {
@@ -960,7 +964,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         .removeClass('sorted')
       ;
       deselectText();
-      alerts.GET_alerts();
+      alerts.GET_alerts(document.getElementById("alert_page_num").innerText);
     },
 
     build_alert_request: function () {
@@ -993,8 +997,12 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       });
     },
 
-    GET_alerts: function (callbacks) {
+    GET_alerts_success: function (response, callback) {
+    },
+
+    GET_alerts: function (page, callback) {
       let requestData = alerts.build_alert_request();
+      requestData.page_num = (typeof(page) == "number" ? page : 1);
       requestData.type = "alerts";
       $.ajax({
         url: alerts.endpoint,
@@ -1004,6 +1012,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         error: generic_ajax_failure,
         success: function (response) {
           alerts.clear_alerts();
+          console.log(response);
           response.alerts.forEach(function (alert) {
             alerts.add_alert([
               alert.id,
@@ -1014,8 +1023,27 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
               alert.rule_name
             ]);
           })
+          
+          let prev_page = document.getElementById("alert_prev_page");
+          let next_page = document.getElementById("alert_next_page");
+          let span_page = document.getElementById("alert_page_num");
+          let span_pages = document.getElementById("alert_page_count");
+          
           if (response.alerts.length == 0) {
             alerts.add_alert(["0 Alerts to Display."]);
+          } else {
+            span_page.innerText = response.page;
+            span_pages.innerText = response.pages;
+            if (response.page == 1) {
+              prev_page.classList.add("disabled");
+            } else {
+              prev_page.classList.remove("disabled");
+            }
+            if (response.page < response.pages) {
+              next_page.classList.remove("disabled");
+            } else {
+              next_page.classList.add("disabled");
+            }
           }
           alerts.deselect_alert();
           if (typeof(callback) === "function") {
@@ -1095,6 +1123,12 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       });
     },
 
+    prev_page: function () {
+      alerts.GET_alerts(parseInt(document.getElementById("alert_page_num").innerText) - 1);
+    },
+    next_page: function () {
+      alerts.GET_alerts(parseInt(document.getElementById("alert_page_num").innerText) + 1);
+    },
     clear_alerts: function () {
       let alert_window = document.getElementById("alert_table_body")
       alert_window.innerHTML = "";

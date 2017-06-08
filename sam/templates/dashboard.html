@@ -15,7 +15,7 @@ $def with ()
   <!--==================  Latest Alerts  ==================-->
   <div id="Alerts" class="sixteen wide column">
     <div class="ui blue raised segment">
-      <h2 class="ui header">Latest Alerts</h2>
+      <h2 class="ui header">Security Alerts</h2>
       <div class="alertfilter">
         <label class="configlabel">Refresh</label>
         <button id="alert_refresh" class="ui icon button"><i class="refresh icon"></i></button>
@@ -75,6 +75,12 @@ $def with ()
           </tbody>
         </table>
       </div>
+      <div class="alertfilter">
+        <button id="alert_prev_page" class="ui icon button"><i class="caret left icon"></i></button>
+        Page <span id="alert_page_num">1</span> of <span id="alert_page_count">1</span>
+        <button id="alert_next_page" class="ui icon button"><i class="caret right icon"></i></button>
+      </div>
+
       <h2 class="ui header">Selection Details</h2>
       <div id="alert_details" class="ui fluid card">
         <div class="content">
