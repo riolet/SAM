@@ -174,5 +174,8 @@ class Alerts():
             return None
         return self.db.update(self.table, where=where, vars=qvars, label=label)
 
+    def delete(self, alert_id):
+        return self.db.delete(self.table, where="id=$aid", vars={'aid': alert_id})
+
     def clear(self):
         return self.db.delete(self.table, where="1")

@@ -97,6 +97,19 @@ function dateConverter() {
     return cnv;
 }
 
+function getConfirmation(msg, confirmCallback, denyCallback) {
+    "use strict";
+    let modal = document.getElementById("deleteModal");
+    let modalMsg = document.getElementById("deleteMessage")
+    modalMsg.innerHTML = "";
+    modalMsg.appendChild(document.createTextNode(msg));
+    $(modal).modal({
+        onDeny: denyCallback,
+        onApprove: confirmCallback
+    })
+    .modal("show");
+}
+
 //settings
 (function () {
   "use strict"
@@ -847,6 +860,12 @@ function dateConverter() {
       // timerange filter validator
       document.getElementById("alert_time_filter").onchange = alerts.timerange_validator;
 
+      // delete all button
+      document.getElementById("alert_del_all").onclick = alerts.confirm_del_all;
+
+      // delete button
+      document.getElementById("alert_del").onclick = alerts.confirm_del;
+
       // column sorting button
       $("#alert_headers th").click(alerts.column_clicked);
 
@@ -919,6 +938,7 @@ function dateConverter() {
       document.getElementById("alert_details_host").innerText = "";
       document.getElementById("alert_details_severity").innerText = "";
       document.getElementById("alert_details_desc").innerText = "";
+      document.getElementById("alert_del").classList.add("disabled");
     },
 
     column_clicked: function (column) {
@@ -960,6 +980,17 @@ function dateConverter() {
       }
 
       return request;
+    },
+
+    confirm_del_all: function () {
+      getConfirmation("Are you sure you want to delete all alerts?", alerts.POST_delete_all);
+    },
+
+    confirm_del: function () {
+      getConfirmation("Are you sure you want to delete this alert?", function () {
+        var id = document.getElementById("alert_details_id").innerText;
+        alerts.POST_delete(id);
+      });
     },
 
     GET_alerts: function (callbacks) {
@@ -1011,6 +1042,7 @@ function dateConverter() {
           alerts.update_details(details);
 
           loader.classList.remove("active");
+          document.getElementById("alert_del").classList.remove("disabled")
           if (typeof(callback) === "function") {
             callback(details);
           }
@@ -1031,6 +1063,35 @@ function dateConverter() {
         dataType: "json",
         error: generic_ajax_failure,
         success: generic_ajax_success
+      });
+    },
+
+    POST_delete_all: function () {
+      let requestData = {
+        "method": "delete_all"
+      };
+      $.ajax({
+        url: alerts.endpoint,
+        type: "POST",
+        data: requestData,
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: alerts.GET_alerts
+      });
+    },
+
+    POST_delete: function (alert_id) {
+      let requestData = {
+        "method": "delete",
+        "id": alert_id,
+      };
+      $.ajax({
+        url: alerts.endpoint,
+        type: "POST",
+        data: requestData,
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: alerts.GET_alerts
       });
     },
 

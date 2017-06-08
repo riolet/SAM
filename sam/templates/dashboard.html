@@ -52,6 +52,10 @@ $def with ()
           <i class="clock icon"></i>
         </div>
       </div>
+      <div class="alertfilter">
+        <label class="configlabel">Delete All</label>
+        <button id="alert_del_all" class="ui icon button"><i class="red remove icon"></i></button>
+      </div>
       <div class="scrollbox">
         <table class="ui selectable sortable table">
           <thead>
@@ -60,8 +64,8 @@ $def with ()
             <th data-value="ipstart">Host</th>
             <th data-value="report_time">Timestamp</th>
             <th data-value="severity">Severity</th>
-            <th data-value="status">Label</th>
-            <th data-value="event_type">Rule</th>
+            <th data-value="label">Label</th>
+            <th data-value="rule_name">Rule</th>
           </tr>
           </thead>
           <tbody id="alert_table_body">
@@ -93,6 +97,9 @@ $def with ()
                 Severity: <span id="alert_details_severity"></span>
               </div>
               <div id="alert_details_desc" class="description">
+              </div>
+              <div>
+                <button id="alert_del" class="ui icon button disabled"><i class="red remove icon"></i>Delete</button>
               </div>
             </div>
             <div class="column">
@@ -354,6 +361,32 @@ $def with ()
     <div class="ui ok green button">
       <i class="checkmark icon"></i>
       Apply
+    </div>
+  </div>
+</div>
+
+<!--=====================  Confirmation modal  =======================-->
+<div id="deleteModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Confirm Delete
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="trash outline icon"></i>
+    </div>
+    <div class="description">
+      <p id="deleteMessage">Are you sure?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Cancel
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Confirm
     </div>
   </div>
 </div>

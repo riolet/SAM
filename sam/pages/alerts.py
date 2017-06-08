@@ -63,7 +63,7 @@ def fuzzy_time(seconds):
     return "{:.0f} years".format(seconds)
 
 
-class Alerts(base.headless):
+class Alerts(base.headless_post):
     REGEX = re.compile(r'(\d+)\s*([ywdhms])', re.I)
 
     # ------------------- GET ---------------------
@@ -113,6 +113,44 @@ class Alerts(base.headless):
         encoded['alerts'] = alert_list
 
         return encoded
+
+    # ------------------- POST ---------------------
+
+    def decode_post_request(self, data):
+        method = data.get('method', None)
+        if method not in ('delete_all', 'delete'):
+            raise errors.MalformedRequest("method must be either 'delete' or 'delete_all'")
+
+        alert_id = None
+
+        if method == 'delete':
+            try:
+                alert_id = int(data.get('id'))
+            except:
+                raise errors.RequiredKey('alert id', 'id')
+
+        request = {
+            'method': method,
+            'id': alert_id
+        }
+        return request
+
+    def perform_post_command(self, request):
+        m_alerts = alerts.Alerts(common.db, self.page.user.viewing)
+
+        if request['method'] == 'delete_all':
+            m_alerts.clear()
+        elif request['method'] == 'delete':
+            m_alerts.delete(request['id'])
+        else:
+            raise errors.MalformedRequest('Method not understood.')
+
+        return "success"
+
+    def encode_post_response(self, response):
+        encoded = {'result': response}
+        return encoded
+
 
 
 class AlertDetails(base.headless_post):
