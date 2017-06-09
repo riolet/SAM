@@ -1014,7 +1014,6 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         error: generic_ajax_failure,
         success: function (response) {
           alerts.clear_alerts();
-          console.log(response);
           response.alerts.forEach(function (alert) {
             alerts.add_alert([
               alert.id,

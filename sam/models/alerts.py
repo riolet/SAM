@@ -72,7 +72,7 @@ class Alerts():
         :param severity: How significant is the event? higher number is more severe.
          :type severity: int
         :param rule_id: The id of the rule that spawned this alert
-         :type rule_id: int
+         :type rule_id: int or None
         :param rule_name: The name of the rule that spawned this alert
          :type rule_name: str
         :param event_type: A generic type by which one might categorize events
