@@ -1,4 +1,5 @@
 import os
+import cPickle
 from sam import constants
 import web
 from sam import common
@@ -100,3 +101,37 @@ class Subscriptions:
                 response = sought_sub['subscription']
 
         return response
+
+    def get_plugin_data(self, sub_id, plugin_name):
+        qvars = {'sid': sub_id}
+        rows = self.db.select(self.table, what="plugins", where="subscription=$sid", vars=qvars)
+        row = rows.first()
+        if not row:
+            raise ValueError("invalid subscription id")
+        try:
+            plugins = cPickle.loads(str(row['plugins']))
+        except:
+            print("error decoding")
+            plugins = {}
+        if plugin_name not in plugins:
+            print("plugin not found")
+        data = plugins.get(plugin_name, {})
+        return data
+
+    def set_plugin_data(self, sub_id, plugin_name, data):
+        qvars = {'sid': int(sub_id)}
+        rows = self.db.select(self.table, what="plugins", where="subscription=$sid", vars=qvars)
+        row = rows.first()
+        if not row:
+            raise ValueError("invalid subscription id")
+        try:
+            plugins = cPickle.loads(row['plugins'])
+        except:
+            plugins = {}
+
+        try:
+            plugins[plugin_name] = data
+        except:
+            print("cannot encode data")
+            raise
+        self.db.update(self.table, where="subscription=$sid", vars=qvars, plugins=cPickle.dumps(plugins))
