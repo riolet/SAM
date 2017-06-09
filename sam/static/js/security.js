@@ -1,3 +1,5 @@
+plugins = [];
+
 function deselectText() {
     "use strict";
     if (window.getSelection) {
@@ -122,7 +124,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
     callbacks: [],
 
     GET_settings: function () {
-      var requestData = {"headless": 1};
+      let requestData = {"headless": 1};
       $.ajax({
           url: user.endpoint,
           type: "GET",
@@ -585,12 +587,12 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         }
       });
 
-      var inputA = document.getElementById('input-start');
-      var inputB = document.getElementById('input-end');
-      var converter = dateConverter();
+      let inputA = document.getElementById('input-start');
+      let inputB = document.getElementById('input-end');
+      let converter = dateConverter();
 
       dateSlider.noUiSlider.on('update', function( values, handle ) {
-        var value = values[handle];
+        let value = values[handle];
         if ( handle ) {
           inputB.value = converter.to(Math.round(value));
           range.end = Math.round(value);
@@ -992,7 +994,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
 
     confirm_del: function () {
       getConfirmation("Are you sure you want to delete this alert?", function () {
-        var id = document.getElementById("alert_details_id").innerText;
+        let id = document.getElementById("alert_details_id").innerText;
         alerts.POST_delete(id);
       });
     },
@@ -1205,6 +1207,10 @@ function init() {
   "use strict";
   alerts.init();
   rules.init();
+
+  plugins.forEach(function (p) {
+    p.init();
+  });
 
   $('.ui.sticky')
     .sticky({
