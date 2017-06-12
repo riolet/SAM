@@ -1,8 +1,7 @@
 from datetime import datetime
 from spec.python import db_connection
-from sam import common
 import time
-from sam.models import ruling_process as rp, rule
+from sam.models.security import ruling_process as rp, rule
 
 db = db_connection.db
 sub_id = db_connection.default_sub

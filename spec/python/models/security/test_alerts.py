@@ -1,7 +1,7 @@
 from datetime import datetime
 from spec.python import db_connection
 from sam import common
-from sam.models.alerts import Alerts, AlertFilter
+from sam.models.security.alerts import Alerts, AlertFilter
 
 session = {}
 db = db_connection.db
@@ -67,7 +67,7 @@ def test_add():
 
         # Did it work?
         filters = AlertFilter(sort='severity')
-        stored = a_model.get_recent(filters)
+        stored = a_model.get(filters)
 
         assert len(stored) == 8
         groups = [(row['ipstart'], row['rule_name']) for row in stored]
@@ -84,7 +84,7 @@ def test_add():
         # put it back the way we found it...
     finally:
         a_model.clear()
-    stored = a_model.get_recent(filters)
+    stored = a_model.get(filters)
     assert len(stored) == 0
 
 
@@ -159,15 +159,15 @@ def test_set_label():
     try:
         e_id = a.add_alert(low, high, 1, None, "Network Scanning", 'scan', "details", datetime(2017,6,5,4,3,2))
 
-        groups = a.get_recent(AlertFilter())
+        groups = a.get(AlertFilter())
         assert groups[0]['label'] == 'scan'
 
         a.set_label(e_id, 'alternative')
-        groups = a.get_recent(AlertFilter())
+        groups = a.get(AlertFilter())
         assert groups[0]['label'] == 'alternative'
 
         a.set_label(e_id, None)
-        groups = a.get_recent(AlertFilter())
+        groups = a.get(AlertFilter())
         assert groups[0]['label'] == 'alternative'
     finally:
         a.clear()

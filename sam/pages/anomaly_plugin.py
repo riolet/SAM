@@ -1,7 +1,7 @@
 from datetime import datetime
 from sam import errors, common
 from sam.pages import base
-from sam.models import security_plugin
+from sam.models.security import anomaly_plugin
 
 
 class ADPlugin(base.headless_post):
@@ -9,7 +9,7 @@ class ADPlugin(base.headless_post):
 
     def __init__(self):
         super(ADPlugin, self).__init__()
-        self.SP = security_plugin.SecurityPlugin(common.db, self.page.user.viewing)
+        self.SP = anomaly_plugin.ADPlugin(common.db, self.page.user.viewing)
 
     # ================== GET ===================
 

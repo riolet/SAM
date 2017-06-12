@@ -3,7 +3,7 @@ import re
 import web
 from sam import errors, common
 from sam.pages import base
-from sam.models import rule, rules, rule_template, ruling_process
+from sam.models.security import rule, rules, rule_template, ruling_process
 
 
 class Rules(base.Headless):

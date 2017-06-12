@@ -4,8 +4,8 @@ Adaptor/Interface between SAM and security plugin
 from datetime import datetime
 import logging
 from sam.models.subscriptions import Subscriptions
-from sam.models.alerts import Alerts
-from sam.models.warnings import Warnings
+from sam.models.security.alerts import Alerts
+from sam.models.security.warnings import Warnings
 from sam import errors
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,6 @@ class ADPlugin(object):
             self.adele = None
 
     def get_status(self):
-        if PLUGIN_INSTALLED:
-            self.status = ADELE.Adele.get_status()
         return self.status
 
     def get_active(self):
