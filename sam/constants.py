@@ -4,7 +4,7 @@ base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
-subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules']
+subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules', 'ADWarnings']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']
 
 templates_folder = 'rule_templates'
@@ -105,6 +105,7 @@ default_urls = [
     '/sec_rules/new', 'sam.pages.rules.RulesNew',
     '/sec_rules/edit', 'sam.pages.rules.RulesEdit',
     '/sec_rules/reapply', 'sam.pages.rules.RulesApply',
+    '/sec_plugin', 'sam.pages.anomaly_plugin.ADPlugin',
 ]
 urls = []
 

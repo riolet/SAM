@@ -1,15 +1,10 @@
-import os
 import datetime
 import time
 import cPickle
 import web
-from sam import common, integrity
-from sam.models.base import DBPlugin
-
-base_path = os.path.dirname(__file__)
 
 
-class AlertFilter():
+class AlertFilter:
     def __init__(self, min_severity=0, limit=20, offset=0, age_limit=None, sort="id", order="DESC"):
         """
         :param offset: first result to return
@@ -51,7 +46,7 @@ class AlertFilter():
         return "{offset}, {count}".format(offset=self.offset, count=self.limit)
 
 
-class Alerts():
+class Alerts:
     TABLE_FORMAT = "s{}_Alerts"
 
     def __init__(self, db, sub_id):
@@ -75,9 +70,9 @@ class Alerts():
          :type rule_id: int or None
         :param rule_name: The name of the rule that spawned this alert
          :type rule_name: str
-        :param event_type: A generic type by which one might categorize events
-         :type event_type: unicode
-        :param details: Any extra details. Native python formats supported. Will be pickled and stored. 
+        :param label: A short description by which one might recognize events
+         :type label: unicode
+        :param details: Any extra details. Native python formats supported. Will be pickled and stored.
          :type details: Any
         :param timestamp: timestamp (syslog time) to attach to the alert
          :type timestamp: datetime.datetime

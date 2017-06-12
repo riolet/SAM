@@ -5,7 +5,7 @@ import multiprocessing
 import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
 from sam import common, constants
-from sam.models import rule, rule_parser, alerts
+from sam.models.security import rule, rule_parser, alerts
 
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
@@ -15,6 +15,7 @@ _NEXT_ID = 1
 _DB, _DB_QUIET = common.get_db(constants.dbconfig.copy())
 # keep processor alive for xx seconds between jobs (to reduce shutdown/startup overhead
 _PROCESSOR_STAYALIVE = 10
+
 
 def __testing_only_reset_state():
     global _RULES_PROCESS, _QUEUE, _JOBS, _NEXT_ID
@@ -40,8 +41,6 @@ class RuleJob(object):
          :type end: datetime
         :param ruleset: a list of rules to check traffic against
          :type ruleset: list[ rule.Rule ]
-        :param time_reported: the timestamp to report in any alert raised. One of: "now", "log"
-         :type time_reported: str
         """
         self.sub_id = subscription_id
         self.ds_id = datasource_id
@@ -50,7 +49,7 @@ class RuleJob(object):
         self.rules = ruleset
         self.id = 0  # id to check on this job
         self.status = "Created."  # Created, Queued, Running rule_n / num_rules, Complete
-        self.completion = 0  #number from 0 to 1 representing the completion of this job.
+        self.completion = 0  # number from 0 to 1 representing the completion of this job.
 
 
 def submit_job(job):
@@ -103,9 +102,9 @@ def ruling_process(queue, stayalive=_PROCESSOR_STAYALIVE):
     :return: 
     """
     global _JOBS, _PROCESSOR_STAYALIVE
-    #print("Queue: {}".format(queue))
-    #print("Stayalive: {}".format(stayalive))
-    #print("_JOBS: {}".format(_JOBS))
+    # print("Queue: {}".format(queue))
+    # print("Stayalive: {}".format(stayalive))
+    # print("_JOBS: {}".format(_JOBS))
     engine = RulesProcessor(_DB_QUIET)
     while not queue.empty():
         job_id = queue.get()
@@ -188,12 +187,12 @@ SAM
          :type job: RuleJob
         :param rule_:
          :type rule_: rule.Rule
-        :param severity:
-         :type severity: int or str
-        :param label:
-         :type label: str
+        :param action:
+         :type action: dict[basestring, Any]
         :param match:
          :type match: dict[basestring, Any]
+        :param tr_table:
+         :type tr_table: dict[basestring, Any]
         :return:
          :rtype: None
         """

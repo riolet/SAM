@@ -6,29 +6,30 @@ $def with ()
     <div class="ui sticky">
       <div class="ui vertical menu">
         <a class="item" href="#Alerts">Alerts</a>
+        <a class="item" href="#AnomalyDetection">Anomaly Detection</a>
         <a class="item" href="#Rules">Rules</a>
       </div>
     </div>
   </div>
 <div id="stickyrailcontext" class="ui stackable grid">
 
-  <!--==================  Latest Alerts  ==================-->
+  <!--==================  Alerts  ==================-->
   <div id="Alerts" class="sixteen wide column">
-    <div class="ui blue raised segment">
+    <div class="ui orange raised segment">
       <h2 class="ui header">Security Alerts</h2>
       <div class="alertfilter">
         <label class="configlabel">Refresh</label>
         <button id="alert_refresh" class="ui icon button"><i class="refresh icon"></i></button>
       </div>
       <div class="alertfilter">
-        <label class="configlabel" for="host_filter">Subnet Filter</label>
+        <label class="configlabel" for="alert_host_filter">Subnet Filter</label>
         <div class="ui icon input" data-tooltip="Filter by host or subnet. " data-delay="500">
           <input id="alert_host_filter" placeholder="110.24.36.0/24" value="0.0.0.0/0" type="text">
           <i class="server icon"></i>
         </div>
       </div>
       <div class="alertfilter">
-        <label class="configlabel" for="min_severity">Min Severity</label>
+        <label class="configlabel" for="alert_min_severity">Min Severity</label>
         <div class="ui filtering selection dropdown" data-tooltip="Minimum alert severity to display. " data-delay="500">
           <input id="alert_min_severity" name="min_severity" value="sev1" data-old="sev1" type="hidden">
           <i class="dropdown icon"></i>
@@ -46,7 +47,7 @@ $def with ()
         </div>
       </div>
       <div class="alertfilter">
-        <label class="configlabel" for="host_filter">Timerange</label>
+        <label class="configlabel" for="alert_time_filter">Timerange</label>
         <div class="ui icon input" data-tooltip="Maximum age of alert to display. Use years, days, weeks, hours, minutes or seconds." data-delay="500">
           <input id="alert_time_filter" placeholder="1 week" value="1 week" data-old="1 week" type="text">
           <i class="clock icon"></i>
@@ -122,6 +123,65 @@ $def with ()
       </div> <!-- end card -->
     </div> <!-- end segment -->
   </div> <!-- end column (main panel) -->
+
+  <!--==================  AnomalyDetection  ==================-->
+  <div id="AnomalyDetection" class="sixteen wide column">
+    <div class="ui blue raised segment">
+      <div class="ui adpanel inverted dimmer">
+        <div class="content">
+          <div class="center">
+            <h2 class="ui icon header">
+              <i class="lock icon"></i>
+              Anomaly detection available with package subscription.
+              <div class="sub header">For more info, <a href="#">click here</a></div>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="ui grid">
+        <div class="six wide column">
+          <h2 class="ui header">Anomaly Detection</h2>
+          <div class="item">
+            <div id='ad_active' class="ui toggle checkbox">
+              <input tabindex="0" class="hidden" type="checkbox">
+              <label><span class="ad_active">Active</span><span class="ad_inactive">Inactive</span></label>
+            </div>
+            Status: <span id="ad_status"></span>
+          </div>
+        </div>
+        <div class="ten wide column">
+          <div id="ad_stats">
+          </div>
+        </div>
+      </div>
+      <h3 class="ui header">Warnings Identified:</h3>
+      <div class="scrollbox">
+        <table class="ui table">
+          <thead>
+          <tr id="ad_headers">
+            <th data-value="id">#</th>
+            <th data-value="host">Host</th>
+            <th data-value="log_time">Timestamp</th>
+            <th data-value="reason">Reason</th>
+            <th colspan="3" data-value="btns"></th>
+          </tr>
+          </thead>
+          <tbody id="ad_table_body">
+          <tr>
+            <td colspan="7">No warnings to display.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ui basic segment">
+        <button id="ad_show_all" class="ui small button" data-tooltip="Click to show all warnings.">Showing uncategorized</button>
+        <!-- Not implemented yet.
+        <button id="ad_reset" class="ui compact button">Reset profile...</button>
+        -->
+        <button id="ad_reset_all" class="ui right floated small button">Reset all profiles</button>
+      </div>
+    </div>
+  </div>
 
   <!--==================  Rules  ==================-->
   <div id="Rules" class="sixteen wide column">

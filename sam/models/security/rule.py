@@ -1,5 +1,5 @@
 import re
-from sam.models import rule_template
+from sam.models.security import rule_template
 from sam import constants
 
 

@@ -10,7 +10,7 @@ from sam import common
 from sam import integrity
 from sam.models.datasources import Datasources
 from sam.models.subscriptions import Subscriptions
-from sam.models import ruling_process, rules
+from sam.models.security import ruling_process, rules
 logger = logging.getLogger(__name__)
 
 

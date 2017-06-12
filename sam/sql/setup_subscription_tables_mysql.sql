@@ -56,3 +56,13 @@ CREATE TABLE IF NOT EXISTS s{acct}_Alerts
 ,rule_name         VARCHAR(64)
 ,details           TEXT
 );
+
+-- Create the table for Anomaly Detection
+CREATE TABLE IF NOT EXISTS s{acct}_ADWarnings
+(id                INT UNSIGNED NOT NULL PRIMARY KEY
+,host              INT UNSIGNED NOT NULL
+,log_time          INT UNSIGNED NOT NULL
+,reason            TEXT NOT NULL
+,status            VARCHAR(32) NOT NULL
+,details           TEXT
+);
