@@ -106,3 +106,32 @@
 #slider-date.noUi-vertical .noUi-handle:after {
 	top: 17px;
 }
+
+.ad_active, .ad_inactive {
+  width: 5em;
+}
+
+#ad_active label {
+  display: inline-block;
+}
+
+#ad_active .ad_active {
+  display: none;
+}
+#ad_active .ad_inactive {
+  display: inline-block;
+}
+#ad_active.checked .ad_active {
+  display: inline-block;
+}
+#ad_active.checked .ad_inactive {
+  display: none;
+}
+
+.ui.three.tiny.statistics {
+  margin-bottom: -1em;
+}
+
+#ad_table_body .inverted.grey.button {
+  color: #888;
+}
