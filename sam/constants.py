@@ -86,6 +86,8 @@ plugin_urls = []
 plugin_models = []
 plugin_rules = []
 
+plugin_hooks_traffic_import = []
+
 default_urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
     '/map', 'sam.pages.map.Map',
