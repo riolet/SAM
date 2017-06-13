@@ -877,7 +877,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         color = "inverted " + color;
       }
       btn.className = "ui compact " + color + " button";
-      btn.innerText = "accept";
+      btn.innerText = text;
       btn.dataset["tooltip"] = tooltip;
       btn.dataset["position"] = "top right";
       btn.dataset["warning_id"] = id;
@@ -1110,19 +1110,40 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
     },
 
     accept_btn: function () {
-      let warning_id = this.dataset["warning_id"];
-      console.log("accepting ", warning_id);
-      anomaly_detection.POST_accept(warning_id, anomaly_detection.GET_warnings);
+      let button = this;
+      let warning_id = button.dataset["warning_id"];
+
+      anomaly_detection.POST_accept(warning_id, function () {
+        let buttons = button.parentElement.parentElement.getElementsByTagName("BUTTON")
+        for (let i = 0; buttons[i]; i++) {
+          buttons[i].classList.add("inverted");
+        }
+        button.classList.remove("inverted");
+      });
     },
     reject_btn: function () {
-      let warning_id = this.dataset["warning_id"];
-      console.log("rejecting ", warning_id);
-      anomaly_detection.POST_reject(warning_id, anomaly_detection.GET_warnings);
+      let button = this;
+      let warning_id = button.dataset["warning_id"];
+
+      anomaly_detection.POST_reject(warning_id, function () {
+        let buttons = button.parentElement.parentElement.getElementsByTagName("BUTTON")
+        for (let i = 0; buttons[i]; i++) {
+          buttons[i].classList.add("inverted");
+        }
+        button.classList.remove("inverted");
+      });
     },
     ignore_btn: function () {
-      let warning_id = this.dataset["warning_id"];
-      console.log("ignoring ", warning_id);
-      anomaly_detection.POST_ignore(warning_id, anomaly_detection.GET_warnings);
+      let button = this;
+      let warning_id = button.dataset["warning_id"];
+
+      anomaly_detection.POST_ignore(warning_id, function () {
+        let buttons = button.parentElement.parentElement.getElementsByTagName("BUTTON")
+        for (let i = 0; buttons[i]; i++) {
+          buttons[i].classList.add("inverted");
+        }
+        button.classList.remove("inverted");
+      });
     },
     warning_info_btn: function () {
       let warning_id = this.dataset['warning_id'];
