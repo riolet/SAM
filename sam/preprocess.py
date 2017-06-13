@@ -589,6 +589,14 @@ class Preprocessor:
         job = ruling_process.RuleJob(self.sub_id, self.ds_id, t_start, t_end, active_rules)
         ruling_process.submit_job(job)
 
+    def run_import_hooks(self):
+        hooks = constants.plugin_hooks_traffic_import
+        for hook in hooks:
+            try:
+                hook(self.db, self.sub_id, self.ds_id)
+            except:
+                logger.error("Unable to call import hook {}. Is it callable?".format(hook))
+
     def run_all(self):
         logger.info("PREPROCESSOR: beginning preprocessing...")
         db_transaction = self.db.transaction()
@@ -603,6 +611,10 @@ class Preprocessor:
             logger.debug("PREPROCESSOR: precomputing aggregates...")
             self.links_to_links_in_out()  # merge new data into the existing aggregates
 
+            if self.use_sec_rules:
+                self.run_security_rules(t_range[0], t_range[1])
+            self.run_import_hooks()
+
             logger.debug("PREPROCESSOR: deleting from staging...")
             t_range = self.get_staging_timerange() # must do this before deleting staging data
             self.staging_to_null()  # delete all data from staging tables
@@ -613,9 +625,6 @@ class Preprocessor:
         else:
             db_transaction.commit()
             logger.info("PREPROCESSOR: Pre-processing completed successfully.")
-
-        if self.use_sec_rules:
-            self.run_security_rules(t_range[0], t_range[1])
 
 
 # If running as a script
