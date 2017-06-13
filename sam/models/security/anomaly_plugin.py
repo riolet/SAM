@@ -73,6 +73,11 @@ class ADPlugin(object):
         wlist = w_model.get_warnings(show_all=show_all)
         return wlist
 
+    def get_warning(self, warning_id):
+        w_model = Warnings(self.db, self.sub_id)
+        warning = w_model.get_warning(warning_id)
+        return warning
+
     def get_stats(self):
         if self.status == 'online':
             stats = self.adele.get_stats(self.sub_id)

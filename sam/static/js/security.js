@@ -842,7 +842,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
 (function () {
   "use strict"
   let anomaly_detection = {
-    endpoint: "./sec_plugin",
+    endpoint: "./ad_plugin",
     available: "unknown",
     show_all: false,
 
@@ -871,6 +871,22 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       span.innerText = text;
       return span
     },
+    build_categorizer: function (text, color, active, tooltip, id, action) {
+      let btn = document.createElement("BUTTON");
+      if (!active) {
+        color = "inverted " + color;
+      }
+      btn.className = "ui compact " + color + " button";
+      btn.innerText = "accept";
+      btn.dataset["tooltip"] = tooltip;
+      btn.dataset["position"] = "top right";
+      btn.dataset["warning_id"] = id;
+      btn.onclick = action;
+      let td = document.createElement("TD");
+      td.className = "collapsing";
+      td.appendChild(btn);
+      return td;
+    },
     clear_warnings: function () {
       let warning_tbody = document.getElementById("ad_table_body")
       warning_tbody.innerHTML = "";
@@ -885,7 +901,8 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         td.colSpan = "7";
         tr.appendChild(td);
       } else {
-        let columns = [warning.id, warning.host, warning.log_time, warning.reason];
+        //add id, host, log_time columns
+        let columns = [warning.id, warning.host, warning.log_time];
         columns.forEach(function (column) {
           let td = document.createElement("TD");
           if (!column) {
@@ -894,55 +911,30 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
           td.innerText = column;
           tr.appendChild(td);
         });
-        //add accept and reject buttons
+
+        //add reason column
         {
-          let btn = document.createElement("BUTTON");
-          btn.className = "ui compact inverted green button";
-          if (warning.status == "Accepted") {
-            btn.classList.remove("inverted");
-          }
-          btn.innerText = "accept";
-          btn.dataset["tooltip"] = "Accept this warning and promote it to an alert.";
-          btn.dataset["position"] = "top right";
-          btn.dataset["warning_id"] = warning.id;
-          btn.onclick = anomaly_detection.accept_btn;
           let td = document.createElement("TD");
-          td.className = "collapsing";
-          td.appendChild(btn);
+          let a = document.createElement("A");
+          a.innerText = warning.reason;
+          a.onclick = anomaly_detection.warning_info_btn;
+          a.href = "modal";  // having a .href attribute gives the link cursor.
+          td.appendChild(a);
+          a.dataset["warning_id"] = warning.id;
           tr.appendChild(td);
         }
-        {
-          let btn = document.createElement("BUTTON");
-          btn.className = "ui compact inverted red button"
-          if (warning.status == "Rejected") {
-            btn.classList.remove("inverted");
-          }
-          btn.innerText = "reject";
-          btn.dataset["tooltip"] = "Reject this warning as a false positive.";
-          btn.dataset["position"] = "top right";
-          btn.dataset["warning_id"] = warning.id;
-          btn.onclick = anomaly_detection.reject_btn;
-          let td = document.createElement("TD");
-          td.className = "collapsing";
-          td.appendChild(btn);
-          tr.appendChild(td);
-        }
-        {
-          let btn = document.createElement("BUTTON");
-          btn.className = "ui compact inverted grey button"
-          if (warning.status == "Ignored") {
-            btn.classList.remove("inverted");
-          }
-          btn.innerText = "ignore";
-          btn.dataset["tooltip"] = "Ignore this warning.";
-          btn.dataset["position"] = "top right";
-          btn.dataset["warning_id"] = warning.id;
-          btn.onclick = anomaly_detection.ignore_btn;
-          let td = document.createElement("TD");
-          td.className = "collapsing";
-          td.appendChild(btn);
-          tr.appendChild(td);
-        }
+
+        //add accept/reject/ignore buttons
+        let btn_td;
+        btn_td = anomaly_detection.build_categorizer("accept", "green", warning.status === "Accepted",
+          "Accept this warning and promote it to an alert.", warning.id, anomaly_detection.accept_btn);
+        tr.appendChild(btn_td);
+        btn_td = anomaly_detection.build_categorizer("reject", "red", warning.status === "Rejected",
+          "Reject this warning as a false positive.", warning.id, anomaly_detection.reject_btn);
+        tr.appendChild(btn_td);
+        btn_td = anomaly_detection.build_categorizer("ignore", "grey", warning.status === "Ignored",
+          "Ignore this warning.", warning.id, anomaly_detection.ignore_btn);
+        tr.appendChild(btn_td);
       }
       warning_tbody.appendChild(tr);
     },
@@ -961,6 +953,9 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       st.appendChild(val);
       st.appendChild(label);
       return st;
+    },
+    populate_warning_modal: function(response) {
+
     },
 
     GET_status: function (callback) {
@@ -1053,6 +1048,23 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         }
       });
     },
+    GET_warning: function (warning_id, callback) {
+      let requestData = {"method": "warning", "warning_id": warning_id};
+      $.ajax({
+        url: anomaly_detection.endpoint,
+        type: "GET",
+        data: requestData,
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: function (response) {
+          anomaly_detection.populate_warning_modal(response);
+
+          if (typeof(callback) === "function") {
+            callback(response);
+          }
+        }
+      });
+    },
     POST_enable: function (callback) {
       let requestData = {"method": "enable"};
       anomaly_detection.POST(requestData, callback);
@@ -1111,6 +1123,18 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       let warning_id = this.dataset["warning_id"];
       console.log("ignoring ", warning_id);
       anomaly_detection.POST_ignore(warning_id, anomaly_detection.GET_warnings);
+    },
+    warning_info_btn: function () {
+      let warning_id = this.dataset['warning_id'];
+      let modal = document.getElementById("ad_modal_content");
+      modal.classList.add("loading");
+      anomaly_detection.GET_warning(warning_id);
+
+
+      $(document.getElementById("ad_info_modal"))
+        .modal('show')
+      ;
+      return false;
     },
     reset_all_btn: function () {
       getConfirmation("Are you sure you want to delete all profile data?", anomaly_detection.POST_reset_all);

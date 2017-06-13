@@ -105,7 +105,7 @@ default_urls = [
     '/sec_rules/new', 'sam.pages.rules.RulesNew',
     '/sec_rules/edit', 'sam.pages.rules.RulesEdit',
     '/sec_rules/reapply', 'sam.pages.rules.RulesApply',
-    '/sec_plugin', 'sam.pages.anomaly_plugin.ADPlugin',
+    '/ad_plugin', 'sam.pages.anomaly_plugin.ADPlugin',
 ]
 urls = []
 

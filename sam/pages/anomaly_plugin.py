@@ -18,13 +18,20 @@ class ADPlugin(base.headless_post):
         # GET status()  # is STEVE accessible, alive, busy?
         # GET warnings(last_id)  # get all warnings where id >= last_id
         method = data.get('method', 'status')
-        if method not in ('status', 'warnings'):
+        if method not in ('status', 'warnings', 'warning'):
             raise errors.MalformedRequest('Invalid method.')
         request = {
             'method': method
         }
         if method == "warnings":
             request['show_all'] = data.get('all', 'false').lower() == 'true'
+        elif method == "warning":
+            try:
+                request['warning_id'] = int(data['warning_id'])
+            except KeyError:
+                raise errors.RequiredKey('Warning #', 'warning_id')
+            except:
+                raise errors.MalformedRequest('unable to read warning_id')
         return request
 
     def perform_get_command(self, request):
@@ -36,6 +43,9 @@ class ADPlugin(base.headless_post):
         elif request['method'] == 'warnings':
             wlist = self.SP.get_warnings(show_all=request['show_all'])
             response['warnings'] = wlist
+        elif request['method'] == 'warning':
+            warning = self.SP.get_warning(request['warning_id'])
+            response['warning'] = warning
         else:
             raise errors.MalformedRequest('Method could not be handled')
         return response
@@ -52,6 +62,17 @@ class ADPlugin(base.headless_post):
                     'status': warning['status']
                 })
             response['warnings'] = warnings
+        if 'warning' in response:
+            old = response['warning']
+            warning = {
+                'id': old['id'],
+                'host': common.IPtoString(old['host']),
+                'log_time': datetime.fromtimestamp(old['log_time']).strftime('%Y-%m-%d %H:%M:%S'),
+                'reason': old['reason'],
+                'status': old['status'],
+                'details': old['details']
+            }
+            response['warning'] = warning
         return response
 
     # ================== POST ===================
