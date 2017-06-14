@@ -3,7 +3,7 @@ import pytest
 from web.utils import IterBetter
 import web
 from spec.python import db_connection
-from sam.models import rule_parser
+from sam.models.security import rule_parser
 
 db = db_connection.db
 sub_id = db_connection.default_sub

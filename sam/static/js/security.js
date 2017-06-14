@@ -838,6 +838,347 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
   window.rules = rules;
 }());
 
+//anomaly detection object
+(function () {
+  "use strict"
+  let anomaly_detection = {
+    endpoint: "./ad_plugin",
+    available: "unknown",
+    show_all: false,
+
+    init: function() {
+      // enable toggle button to turn plugin on and off.
+      let chk_active = document.getElementById("ad_active")
+      $(chk_active).checkbox({
+        onChecked: anomaly_detection.POST_enable,
+        onUnchecked: anomaly_detection.POST_disable
+        })
+      ;
+      // hook up button to reset profiles
+      let btn_reset_all = document.getElementById("ad_reset_all");
+      btn_reset_all.onclick = anomaly_detection.reset_all_btn;
+
+      // hook up show_all button
+      let btn_show_all = document.getElementById("ad_show_all");
+      btn_show_all.onclick = anomaly_detection.show_all_btn;
+
+      anomaly_detection.GET_status();
+      anomaly_detection.GET_warnings();
+    },
+    build_label_span: function(text) {
+      let span = document.createElement("SPAN");
+      span.className = "ui horizontal label";
+      span.innerText = text;
+      return span
+    },
+    build_categorizer: function (text, color, active, tooltip, id, action) {
+      let btn = document.createElement("BUTTON");
+      if (!active) {
+        color = "inverted " + color;
+      }
+      btn.className = "ui compact " + color + " button";
+      btn.innerText = text;
+      btn.dataset["tooltip"] = tooltip;
+      btn.dataset["position"] = "top right";
+      btn.dataset["warning_id"] = id;
+      btn.onclick = action;
+      let td = document.createElement("TD");
+      td.className = "collapsing";
+      td.appendChild(btn);
+      return td;
+    },
+    clear_warnings: function () {
+      let warning_tbody = document.getElementById("ad_table_body")
+      warning_tbody.innerHTML = "";
+    },
+    add_warning: function (warning) {
+      //key names: id, host, log_time, reason, status
+      let warning_tbody = document.getElementById("ad_table_body")
+      let tr = document.createElement("TR");
+      if (warning.hasOwnProperty("empty")) {
+        let td = document.createElement("TD");
+        td.innerText = warning.empty;
+        td.colSpan = "7";
+        tr.appendChild(td);
+      } else {
+        //add id, host, log_time columns
+        let columns = [warning.id, warning.host, warning.log_time];
+        columns.forEach(function (column) {
+          let td = document.createElement("TD");
+          if (!column) {
+            column = "unknown";
+          }
+          td.innerText = column;
+          tr.appendChild(td);
+        });
+
+        //add reason column
+        {
+          let td = document.createElement("TD");
+          let a = document.createElement("A");
+          a.innerText = warning.reason;
+          a.onclick = anomaly_detection.warning_info_btn;
+          a.href = "modal";  // having a .href attribute gives the link cursor.
+          td.appendChild(a);
+          a.dataset["warning_id"] = warning.id;
+          tr.appendChild(td);
+        }
+
+        //add accept/reject/ignore buttons
+        let btn_td;
+        btn_td = anomaly_detection.build_categorizer("accept", "green", warning.status === "Accepted",
+          "Accept this warning and promote it to an alert.", warning.id, anomaly_detection.accept_btn);
+        tr.appendChild(btn_td);
+        btn_td = anomaly_detection.build_categorizer("reject", "red", warning.status === "Rejected",
+          "Reject this warning as a false positive.", warning.id, anomaly_detection.reject_btn);
+        tr.appendChild(btn_td);
+        btn_td = anomaly_detection.build_categorizer("ignore", "grey", warning.status === "Ignored",
+          "Ignore this warning.", warning.id, anomaly_detection.ignore_btn);
+        tr.appendChild(btn_td);
+      }
+      warning_tbody.appendChild(tr);
+    },
+    build_statistic: function(title, value) {
+      let st = document.createElement("DIV");
+      st.className = "statistic";
+
+      let val = document.createElement("DIV");
+      val.className = "value";
+      val.innerText = value.toLocaleString();
+
+      let label = document.createElement("DIV");
+      label.className = "label";
+      label.innerHTML = title.split(" ").join("<br>");
+
+      st.appendChild(val);
+      st.appendChild(label);
+      return st;
+    },
+    populate_warning_modal: function(response) {
+
+    },
+
+    GET_status: function (callback) {
+      $.ajax({
+        url: anomaly_detection.endpoint,
+        type: "GET",
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: function (response) {
+          let active = response["active"];  //boolean
+          let status = response["status"];  //string
+          anomaly_detection.available = status;
+
+          //update indicator
+          let indicator = document.getElementById("ad_status");
+          indicator.innerHTML = "";
+          indicator.appendChild(anomaly_detection.build_label_span(status));
+
+          if (status === "unavailable") {
+            // left button
+            $(".ui.adpanel.dimmer")
+              .dimmer({
+                closable: false
+              })
+              .dimmer("show")
+            ;
+
+            if (typeof(callback) == "function") {
+              callback(response);
+            }
+            return;
+          }  // ui n tiny statistics
+
+          //present statistics:
+          let statbox = document.getElementById("ad_stats");
+          statbox.innerHTML = "";
+          console.log(response);
+          if (typeof(response.stats) === "object" && response.stats !== null) {
+            let stats = Object.keys(response.stats);
+            if (stats.length === 1) statbox.className = "ui one tiny statistics";
+            else if (stats.length === 2) statbox.className = "ui two tiny statistics";
+            else if (stats.length === 3) statbox.className = "ui three tiny statistics";
+            else if (stats.length === 4) statbox.className = "ui four tiny statistics";
+            else if (stats.length === 5) statbox.className = "ui five tiny statistics";
+            stats.forEach(function (key) {
+              statbox.appendChild(anomaly_detection.build_statistic(key, response.stats[key]));
+            });
+          }
+
+          //make sure dimmer is gone.
+          $(".ui.adpanel.dimmer").dimmer("hide");
+
+          //update checkbox
+          let chk_active = document.getElementById("ad_active")
+          if (active) {
+            $(chk_active).checkbox("set checked");
+          } else {
+            $(chk_active).checkbox("set unchecked");
+          }
+
+          if (typeof(callback) == "function") {
+            callback(response);
+          }
+        }
+      });
+    },
+    GET_warnings: function (callback) {
+      let requestData = {"method": "warnings", "all": anomaly_detection.show_all};
+      $.ajax({
+        url: anomaly_detection.endpoint,
+        type: "GET",
+        data: requestData,
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: function (response) {
+          let wlist = response.warnings;
+
+          anomaly_detection.clear_warnings();
+          wlist.forEach(function (warning) {
+            anomaly_detection.add_warning(warning);
+          })
+
+          if (wlist.length == 0) {
+            anomaly_detection.add_warning({"empty":"No warnings to display."});
+          }
+
+          if (typeof(callback) === "function") {
+            callback(response);
+          }
+        }
+      });
+    },
+    GET_warning: function (warning_id, callback) {
+      let requestData = {"method": "warning", "warning_id": warning_id};
+      $.ajax({
+        url: anomaly_detection.endpoint,
+        type: "GET",
+        data: requestData,
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: function (response) {
+          anomaly_detection.populate_warning_modal(response);
+
+          if (typeof(callback) === "function") {
+            callback(response);
+          }
+        }
+      });
+    },
+    POST_enable: function (callback) {
+      let requestData = {"method": "enable"};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST_disable: function (callback) {
+      let requestData = {"method": "disable"};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST_accept: function (warning_id, callback) {
+      let requestData = {"method": "accept", "warning_id": warning_id};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST_reject: function (warning_id, callback) {
+      let requestData = {"method": "reject", "warning_id": warning_id};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST_ignore: function (warning_id, callback) {
+      let requestData = {"method": "ignore", "warning_id": warning_id};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST_reset: function (host_ip, callback) {
+      let requestData = {"method": "reset", "host": host_ip};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST_reset_all: function (callback) {
+      let requestData = {"method": "reset_all"};
+      anomaly_detection.POST(requestData, callback);
+    },
+    POST: function (requestData, callback) {
+      $.ajax({
+        url: anomaly_detection.endpoint,
+        type: "POST",
+        data: requestData,
+        dataType: "json",
+        error: generic_ajax_failure,
+        success: function (response) {
+          generic_ajax_success(response);
+          if (typeof(callback) == "function") {
+            callback(response);
+          }
+        }
+      });
+    },
+
+    accept_btn: function () {
+      let button = this;
+      let warning_id = button.dataset["warning_id"];
+
+      anomaly_detection.POST_accept(warning_id, function () {
+        let buttons = button.parentElement.parentElement.getElementsByTagName("BUTTON")
+        for (let i = 0; buttons[i]; i++) {
+          buttons[i].classList.add("inverted");
+        }
+        button.classList.remove("inverted");
+      });
+    },
+    reject_btn: function () {
+      let button = this;
+      let warning_id = button.dataset["warning_id"];
+
+      anomaly_detection.POST_reject(warning_id, function () {
+        let buttons = button.parentElement.parentElement.getElementsByTagName("BUTTON")
+        for (let i = 0; buttons[i]; i++) {
+          buttons[i].classList.add("inverted");
+        }
+        button.classList.remove("inverted");
+      });
+    },
+    ignore_btn: function () {
+      let button = this;
+      let warning_id = button.dataset["warning_id"];
+
+      anomaly_detection.POST_ignore(warning_id, function () {
+        let buttons = button.parentElement.parentElement.getElementsByTagName("BUTTON")
+        for (let i = 0; buttons[i]; i++) {
+          buttons[i].classList.add("inverted");
+        }
+        button.classList.remove("inverted");
+      });
+    },
+    warning_info_btn: function () {
+      let warning_id = this.dataset['warning_id'];
+      let modal = document.getElementById("ad_modal_content");
+      modal.classList.add("loading");
+      anomaly_detection.GET_warning(warning_id);
+
+
+      $(document.getElementById("ad_info_modal"))
+        .modal('show')
+      ;
+      return false;
+    },
+    reset_all_btn: function () {
+      getConfirmation("Are you sure you want to delete all profile data?", anomaly_detection.POST_reset_all);
+    },
+    show_all_btn: function () {
+      if (this.classList.contains("active")) {
+        this.classList.remove("active");
+        this.innerText = "Showing uncategorized";
+        this.dataset["tooltip"] = "Click to show all warnings.";
+        this.blur();
+        anomaly_detection.show_all = false;
+      } else {
+        this.classList.add("active");
+        this.innerText = "Showing all";
+        this.dataset["tooltip"] = "Click to only show uncategorized warnings.";
+        anomaly_detection.show_all = true;
+      }
+      anomaly_detection.GET_warnings();
+    }
+  };
+  window.anomaly_detection = anomaly_detection;
+}());
+
 //alerts object
 (function () {
   "use strict";
@@ -1206,6 +1547,7 @@ function init() {
   "use strict";
   alerts.init();
   rules.init();
+  anomaly_detection.init()
 
   plugins.forEach(function (p) {
     p.init();

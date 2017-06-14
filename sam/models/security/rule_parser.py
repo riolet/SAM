@@ -4,7 +4,8 @@ import re
 import web.db
 
 
-class RuleParseError(Exception): pass
+class RuleParseError(Exception):
+    pass
 
 
 class RuleSQL(object):
@@ -227,22 +228,22 @@ class RuleParser(object):
         self.sql = ""
 
         self.tokens = self.tokenize(self.original)
-        #print(" Tokens ".center(80, '='))
-        #pprint(self.tokens)
+        # print(" Tokens ".center(80, '='))
+        # pprint(self.tokens)
 
         self.decode_tokens(self.replacements, self.tokens)
         RuleParser.conform_to_syntax(self.tokens)
-        #print(" Decoded Tokens ".center(80, '='))
-        #pprint(self.tokens)
+        # print(" Decoded Tokens ".center(80, '='))
+        # pprint(self.tokens)
 
         self.where_clauses, self.having_clauses = self.clause_builder()
-        #print(" WHERE Clauses ".center(80, '='))
-        #pprint(self.where_clauses)
-        #print(" HAVING Clauses ".center(80, '='))
-        #pprint(self.having_clauses)
+        # print(" WHERE Clauses ".center(80, '='))
+        # pprint(self.where_clauses)
+        # print(" HAVING Clauses ".center(80, '='))
+        # pprint(self.having_clauses)
 
         self.sql = self.sql_encoder()
-        #print(" ".center(80, '='))
+        # print(" ".center(80, '='))
 
     @staticmethod
     def tokenize(s):
@@ -273,6 +274,8 @@ class RuleParser(object):
 
         TODO: add a stream_start and stream_end tokens to make sure we reach an exit point
            (Exit points are only after a LIT_LIST or LITERAL)
+        :param passed_having: Whether the parser has passed a HAVING token.
+         :type passed_having: bool
         :param token:
          :type token: str or None
         :return:
@@ -314,7 +317,6 @@ class RuleParser(object):
                 options = ['P_CLOSE', 'OR', 'AND', 'CONTEXT']
         elif token == 'CONTEXT':
             options = ['NOT', 'P_OPEN', 'AGGREGATE']
-
 
         return options
 

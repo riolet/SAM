@@ -1,12 +1,7 @@
 import os
 import cPickle
 import web
-from sam.models.base import DBPlugin
-from sam import integrity, common
-from sam.models import rule_template, rule
-
-BASE_PATH = os.path.dirname(__file__)
-# db: RULES(id, rule_path, active, name, description, params)
+from sam.models.security import rule_template, rule
 
 
 class Rules():
@@ -107,6 +102,3 @@ class Rules():
             params = old_rule.export_params()
             edits['params'] = cPickle.dumps(params)
         self.db.update(self.table, where='id=$rid', vars=qvars, **edits)
-
-    def validate_params(self, rule_id, params):
-        old = self.get_rule(rule_id)

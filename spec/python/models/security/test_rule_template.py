@@ -1,7 +1,7 @@
 import os
 import yaml
 from sam import constants
-from sam.models import rule_template
+from sam.models.security import rule_template
 
 
 def test_get_all():

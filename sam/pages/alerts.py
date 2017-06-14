@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from sam import errors, common
 from sam.pages import base
-from sam.models import alerts
+from sam.models.security import alerts
 
 
 def time_to_seconds(tstring):
