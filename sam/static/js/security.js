@@ -895,6 +895,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       //key names: id, host, log_time, reason, status
       let warning_tbody = document.getElementById("ad_table_body")
       let tr = document.createElement("TR");
+      tr.id = "ad_w" + warning.id;
       if (warning.hasOwnProperty("empty")) {
         let td = document.createElement("TD");
         td.innerText = warning.empty;
@@ -987,12 +988,11 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
               callback(response);
             }
             return;
-          }  // ui n tiny statistics
+          }
 
           //present statistics:
           let statbox = document.getElementById("ad_stats");
           statbox.innerHTML = "";
-          console.log(response);
           if (typeof(response.stats) === "object" && response.stats !== null) {
             let stats = Object.keys(response.stats);
             if (stats.length === 1) statbox.className = "ui one tiny statistics";
