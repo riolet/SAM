@@ -9,7 +9,7 @@ class ADPlugin(base.headless_post):
 
     def __init__(self):
         super(ADPlugin, self).__init__()
-        self.SP = anomaly_plugin.ADPlugin(common.db, self.page.user.viewing)
+        self.AD = anomaly_plugin.ADPlugin(common.db, self.page.user.viewing)
 
     # ================== GET ===================
 
@@ -37,14 +37,14 @@ class ADPlugin(base.headless_post):
     def perform_get_command(self, request):
         response = {}
         if request['method'] == 'status':
-            response['active'] = self.SP.get_active()
-            response['status'] = self.SP.get_status()
-            response['stats'] = self.SP.get_stats()
+            response['active'] = self.AD.get_active()
+            response['status'] = self.AD.get_status()
+            response['stats'] = self.AD.get_stats()
         elif request['method'] == 'warnings':
-            wlist = self.SP.get_warnings(show_all=request['show_all'])
+            wlist = self.AD.get_warnings(show_all=request['show_all'])
             response['warnings'] = wlist
         elif request['method'] == 'warning':
-            warning = self.SP.get_warning(request['warning_id'])
+            warning = self.AD.get_warning(request['warning_id'])
             response['warning'] = warning
         else:
             raise errors.MalformedRequest('Method could not be handled')
@@ -119,20 +119,20 @@ class ADPlugin(base.headless_post):
     def perform_post_command(self, request):
         m = request['method']
         if m in 'accept':
-            self.SP.accept_warning(request['warning_id'])
+            self.AD.accept_warning(request['warning_id'])
         elif m == 'reject':
-            self.SP.reject_warning(request['warning_id'])
+            self.AD.reject_warning(request['warning_id'])
         elif m == 'ignore':
-            self.SP.ignore_warning(request['warning_id'])
+            self.AD.ignore_warning(request['warning_id'])
         elif m == 'enable':
-            self.SP.enable()
+            self.AD.enable()
         elif m == 'disable':
-            self.SP.disable()
+            self.AD.disable()
         elif m == 'reset':
             host = request['host']
-            self.SP.reset_profile(host)
+            self.AD.reset_profile(host)
         elif m == 'reset_all':
-            self.SP.reset_all_profiles()
+            self.AD.reset_all_profiles()
         else:
             raise errors.MalformedRequest('Method could not be handled')
 
