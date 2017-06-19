@@ -16,16 +16,6 @@ except:
     PLUGIN_INSTALLED = False
 
 
-def import_hook(db, sub_id, ds_id):
-    if not PLUGIN_INSTALLED:
-        logger.error("Anomaly Detection plugin is missing")
-        return
-    table = 's{acct}_ds{id}_StagingLinks'.format(acct=sub_id, id=ds_id)
-    rows = db.select(table)
-    adele = ADELE.Adele(db)
-    adele.submit_traffic(sub_id, rows)
-
-
 class ADPlugin(object):
     def __init__(self, db, sub_id):
         global PLUGIN_INSTALLED
