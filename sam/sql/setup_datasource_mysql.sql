@@ -4,7 +4,7 @@ CREATE TABLE If NOT EXISTS s{acct}_ds{id}_Syslog
 ,srcport           INT NOT NULL
 ,dst               INT UNSIGNED NOT NULL
 ,dstport           INT NOT NULL
-,timestamp         TIMESTAMP NOT NULL
+,timestamp         TIMESTAMP NOT NULL  -- seconds precision
 ,protocol          CHAR(8) NOT NULL
 ,bytes_sent        INT NOT NULL
 ,bytes_received    INT
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_StagingLinks
 ,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
 ,protocol          CHAR(8) NOT NULL
-,timestamp         TIMESTAMP NOT NULL
+,timestamp         TIMESTAMP NOT NULL  -- quantized (5-minute) precision
 ,links             INT DEFAULT 1
 ,bytes_sent        INT NOT NULL
 ,bytes_received    INT
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_Links
 ,dst               INT UNSIGNED NOT NULL
 ,port              INT NOT NULL
 ,protocol          CHAR(8) NOT NULL
-,timestamp         TIMESTAMP NOT NULL
+,timestamp         TIMESTAMP NOT NULL  -- quantized (5-minute) precision
 ,links             INT DEFAULT 1 NOT NULL
 ,bytes_sent        INT NOT NULL
 ,bytes_received    INT
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_LinksIn
 ,dst_end           INT UNSIGNED NOT NULL
 ,protocols         VARCHAR(1024)
 ,port              INT NOT NULL
-,timestamp         TIMESTAMP NOT NULL
+,timestamp         TIMESTAMP NOT NULL  -- quantized (5-minute) precision
 ,links             INT DEFAULT 1
 ,bytes             INT NOT NULL
 ,packets           INT NOT NULL
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_ds{id}_LinksOut
 ,dst_end           INT UNSIGNED NOT NULL
 ,protocols         VARCHAR(1024)
 ,port              INT NOT NULL
-,timestamp         TIMESTAMP NOT NULL
+,timestamp         TIMESTAMP NOT NULL  -- quantized (5-minute) precision
 ,links             INT DEFAULT 1
 ,bytes             INT NOT NULL
 ,packets           INT NOT NULL
