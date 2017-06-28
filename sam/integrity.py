@@ -515,8 +515,13 @@ def fix_plugins(db, errors):
         errors = plugin.checkIntegrity(db)
         if errors:
             logger.info("\tfixing {}".format(plugin))
-            success = plugin.fixIntegrity(db, errors)
-            if not success:
+            try:
+                success = plugin.fixIntegrity(db, errors)
+                if not success:
+                    any_issues = True
+                    logger.error("\tunable to fix {}".format(plugin))
+            except Exception as e:
+                logger.error(e)
                 any_issues = True
                 logger.error("\tunable to fix {}".format(plugin))
     return any_issues
