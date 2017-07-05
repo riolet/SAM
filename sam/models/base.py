@@ -28,6 +28,7 @@ class DBPlugin(object):
 
     @staticmethod
     def simple_sub_table_check(*table_format_strings):
+        @staticmethod
         def check(db):
             all_tables = set(integrity.get_table_names(db))
             subs = integrity.get_all_subs(db)
@@ -44,6 +45,7 @@ class DBPlugin(object):
 
     @staticmethod
     def simple_sub_table_fix(**sql_scripts):
+        @staticmethod
         def fix(db, errors):
             missing_table_subs = errors['missing']
             for sub_id in missing_table_subs:
