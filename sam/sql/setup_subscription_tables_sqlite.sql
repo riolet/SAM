@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS s{acct}_Alerts
 -- Create the table for Anomaly Detection
 CREATE TABLE IF NOT EXISTS s{acct}_ADWarnings
 (id                INTEGER NOT NULL PRIMARY KEY
+,warning_id        INT UNSIGNED NOT NULL UNIQUE
 ,host              INT UNSIGNED NOT NULL
 ,log_time          INT UNSIGNED NOT NULL
 ,reason            TEXT NOT NULL
