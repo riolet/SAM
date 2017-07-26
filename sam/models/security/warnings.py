@@ -25,7 +25,7 @@ class Warnings(base.DBPlugin):
         :return: The id of the latest (newest) warning known in this database. If db is empty, gives 0.
          :rtype: int
         """
-        rows = self.db.select(self.table, what="MAX(id) AS 'latest'")
+        rows = self.db.select(self.table, what="MAX(warning_id) AS 'latest'")
         row = rows.first()
         if row is None or row['latest'] is None:
             return 0
