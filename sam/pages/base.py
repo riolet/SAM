@@ -18,6 +18,7 @@ class Page(object):
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
+        self.language = self.get_lang()
         self.inbound = web.input()
 
     def require_group(self, group):
@@ -36,6 +37,18 @@ class Page(object):
     def require_ownership(self):
         if not self.user.may_post():
             raise web.unauthorized("Cannot modify data. Do you have an active account?")
+
+    def get_lang(self):
+        # try cookie first
+        if False:
+            lang = "en"
+        # try HTTP_ACCEPT_LANGUAGE header next
+        elif False:
+            lang = "en"
+        # fallback to english.
+        else:
+            lang = "en"
+        return lang
 
 page = Page
 
