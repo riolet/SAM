@@ -25,11 +25,16 @@ def create_session(app):
 
 
 def start_server(port):
-    common.load_plugins()
+    # some of the following lines are commented out because start_wsgi()
+    # is run already when this module is loaded
+    # TODO: make the above excuse removable
+    # common.load_plugins()
     web.httpserver.StaticApp = httpserver.StaticApp
     app = web.application(constants.urls, globals())
-    check_database()
-    create_session(app)
+    #check_database()
+    #create_session(app)
+    #for hook in constants.plugin_hooks_server_start:
+    #    hook()
     httpserver.runwsgi(app.wsgifunc(httpserver.PluginStaticMiddleware), port)
 
 
@@ -38,7 +43,10 @@ def start_wsgi():
     app = web.application(constants.urls, globals())
     check_database()
     create_session(app)
+    for hook in constants.plugin_hooks_server_start:
+        hook()
     return app.wsgifunc(httpserver.PluginStaticMiddleware)
 
 
+# This line must be present for use on wsgi-based servers.
 application = start_wsgi()
