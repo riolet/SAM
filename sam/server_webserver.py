@@ -26,7 +26,6 @@ def create_session(app):
 
 
 def localization_hook():
-    print "my load hook"
     langs = ['en', 'fr']
     default_lang = 'en'  # default language
     lang = None
