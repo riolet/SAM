@@ -1,4 +1,5 @@
 import decimal
+import operator
 import json
 from sam import constants
 from sam import errors
@@ -15,6 +16,8 @@ def decimal_default(obj):
 
 
 class Page(object):
+    SUPPORTED_LANGUAGES = ['en', 'fr']
+
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
@@ -39,16 +42,30 @@ class Page(object):
             raise web.unauthorized("Cannot modify data. Do you have an active account?")
 
     def get_lang(self):
-        # try cookie first
+        # TODO: research hook and try first path element first.
+        # try cookie next
+        # try HTTP_ACCEPT_LANGUAGE header next
+        # fallback to english. ('en')
+        lang = 'en'
+
         if False:
             lang = "en"
-        # try HTTP_ACCEPT_LANGUAGE header next
-        elif False:
-            lang = "en"
-        # fallback to english.
+        elif 'HTTP_ACCEPT_LANGUAGE' in web.ctx.env:
+            accept_string = web.ctx.env['HTTP_ACCEPT_LANGUAGE']
+            langs = Page.decode_http_csv(accept_string)
+            langs = {k: langs[k] for k in langs.iterkeys() if k[:2] in Page.SUPPORTED_LANGUAGES}
+            best = max(langs.iteritems(), key=operator.itemgetter(1))[0]
+            if best:
+                lang = best
         else:
             lang = "en"
         return lang
+
+    @staticmethod
+    def decode_http_csv(accept_string):
+        items = [i.partition(';q=') for i in accept_string.split(",") if i]
+        decoded = {k.strip(): (float(v) if len(v) > 0 else 1.0) for k, _, v in items}
+        return decoded
 
 page = Page
 
