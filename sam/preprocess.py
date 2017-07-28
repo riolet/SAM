@@ -5,6 +5,7 @@ import os
 import sys
 import web
 import logging
+import traceback
 from sam import constants
 from sam import common
 from sam import integrity
@@ -595,6 +596,7 @@ class Preprocessor:
             try:
                 hook(self.db, self.sub_id, self.ds_id)
             except:
+                traceback.print_exc()
                 logger.error("Unable to call import hook {}. Is it callable?".format(hook))
 
     def run_all(self):

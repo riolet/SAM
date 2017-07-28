@@ -61,5 +61,5 @@ class_ = ASAImporter
 # If running as a script, begin by executing main.
 if __name__ == "__main__":
     sys.stderr.write("Warning: This importer is incomplete and uses empty data for some fields.")
-    importer = _class()
+    importer = class_()
     importer.main(sys.argv)

@@ -25,9 +25,9 @@ class Warnings(base.DBPlugin):
         :return: The id of the latest (newest) warning known in this database. If db is empty, gives 0.
          :rtype: int
         """
-        rows = self.db.select(self.table, what="MAX(id) AS 'latest'")
+        rows = self.db.select(self.table, what="MAX(warning_id) AS 'latest'")
         row = rows.first()
-        if row is None:
+        if row is None or row['latest'] is None:
             return 0
         else:
             return row['latest']
@@ -63,14 +63,19 @@ class Warnings(base.DBPlugin):
         transformed = []
         for warning in wlist:
             transformed.append({
-                'id': warning['id'],
+                'warning_id': warning['id'],
                 'host': warning['host'],
                 'log_time': warning['log_time'],
                 'reason': warning['reason'],
                 'status': self._warning_status(warning.get('status', 'unknown')),
                 'details': cPickle.dumps(warning['details'])
             })
-        self.db.multiple_insert(self.table, transformed)
+        # insert in chunks of at most 1000
+        n = 0
+        high = len(transformed)
+        while n < high:
+            self.db.multiple_insert(self.table, transformed[n:n+1000])
+            n += 1000
 
     def update_status(self, warning_id, status):
         qvars = {

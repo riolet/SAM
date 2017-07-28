@@ -895,6 +895,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       //key names: id, host, log_time, reason, status
       let warning_tbody = document.getElementById("ad_table_body")
       let tr = document.createElement("TR");
+      tr.id = "ad_w" + warning.id;
       if (warning.hasOwnProperty("empty")) {
         let td = document.createElement("TD");
         td.innerText = warning.empty;
@@ -987,12 +988,11 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
               callback(response);
             }
             return;
-          }  // ui n tiny statistics
+          }
 
           //present statistics:
           let statbox = document.getElementById("ad_stats");
           statbox.innerHTML = "";
-          console.log(response);
           if (typeof(response.stats) === "object" && response.stats !== null) {
             let stats = Object.keys(response.stats);
             if (stats.length === 1) statbox.className = "ui one tiny statistics";
@@ -1508,8 +1508,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       let details_window = document.getElementById("alert_details_details")
       details_window.innerHTML = "";
     },
-    add_details_meta: function (key, value) {
-      let details_window = document.getElementById("alert_details_details")
+    build_table_row: function (key, value) {
       let tr = document.createElement("TR");
 
       let td = document.createElement("TD");
@@ -1520,7 +1519,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       td.innerText = value;
       tr.appendChild(td);
 
-      details_window.appendChild(tr);
+      return tr;
     },
     update_details: function (details) {
       /*
@@ -1533,10 +1532,12 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       document.getElementById("alert_details_severity").innerText = details.severity;
       document.getElementById("alert_details_desc").innerText = details.description;
 
+      let details_window = document.getElementById("alert_details_details")
       alerts.clear_details_meta();
       Object.keys(details.details).forEach(function (key) {
         let value = details.details[key];
-        alerts.add_details_meta(key, value);
+        let row = alerts.build_table_row(key, value);
+        details_window.appendChild(row);
       });
     },
   }
