@@ -203,6 +203,20 @@ def determine_range_string(ip=u"0/0"):
     return low, high
 
 
+def get_domain():
+    domain = web.ctx.home
+    prefix = domain.find("//")
+    if prefix != -1:
+        domain = domain[prefix + 2:]
+    prefix = domain.find('@')
+    if prefix != -1:
+        domain = domain[prefix + 1:]
+    suffix = domain.find(":")
+    if suffix != -1:
+        domain = domain[:suffix]
+    return domain
+
+
 def sqlite_udf(db):
     db._db_cursor().connection.create_function("decodeIP", 1,
                                                lambda ip: "{}.{}.{}.{}".format(ip >> 24,
