@@ -3,6 +3,9 @@ import os
 base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
 
+supported_languages = ['en', 'fr', 'rv']
+default_lang = ['en']
+
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules', 'ADWarnings']
 datasource_tables = ['StagingLinks', 'Links', 'LinksIn', 'LinksOut', 'Syslog']

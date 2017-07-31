@@ -17,7 +17,6 @@ def check_database():
 
 def create_session(app):
     # Create the session object
-
     if web.config.get('_session') is None:
         common.session = web.session.Session(app, common.session_store)
         web.config._session = common.session
@@ -26,26 +25,25 @@ def create_session(app):
 
 
 def localization_hook():
-    langs = ['en', 'fr']
     default_lang = 'en'  # default language
     lang = None
     path_info = web.ctx.env['PATH_INFO']
     cookie = web.cookies().get("lang")
 
-    if not lang and path_info[1:3] in langs:
+    if not lang and path_info[1:3] in constants.supported_languages:
         web.ctx['fullpath'] = web.ctx['fullpath'][3:]
         web.ctx['path'] = web.ctx['path'][3:]
         web.ctx.env['REQUEST_URI'] = web.ctx.env['REQUEST_URI'][3:]
         web.ctx.env['PATH_INFO'] = path_info[3:]
         lang = path_info[1:3]
     if not lang and cookie:
-        if cookie in langs:
+        if cookie in constants.supported_languages:
             lang = cookie
     if not lang and 'HTTP_ACCEPT_LANGUAGE' in web.ctx.env:
         lang_accept = web.ctx.env['HTTP_ACCEPT_LANGUAGE']
         items = [i.partition(';q=') for i in lang_accept.split(",") if i]
         decoded = {k.strip(): (float(v) if len(v) > 0 else 1.0) for k, _, v in items}
-        langs = {k: decoded[k] for k in decoded.iterkeys() if k[:2] in langs}
+        langs = {k: decoded[k] for k in decoded.iterkeys() if k[:2] in constants.supported_languages}
         best = max(langs.iteritems(), key=operator.itemgetter(1))[0]
         if best:
             lang = best[:2]

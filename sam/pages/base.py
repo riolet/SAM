@@ -1,5 +1,5 @@
 import decimal
-import operator
+import os
 import json
 from sam import constants
 from sam import errors
@@ -16,13 +16,11 @@ def decimal_default(obj):
 
 
 class Page(object):
-    SUPPORTED_LANGUAGES = ['en', 'fr']
 
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
         self.language = self.session['lang']
-        print("Language set: {}".format(self.language))
         self.inbound = web.input()
 
     def require_group(self, group):
@@ -54,20 +52,24 @@ class Headed(object):
         self.header = header
         self.footer = footer
 
-    def render(self, page, *args, **kwargs):
-        head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
+    def render(self, page_template, *args, **kwargs):
+        lang_prefix = '{}{}'.format(self.page.language, os.path.sep)
+        head = str(common.renderer.render('_head', self.page_title, lang=self.page.language, stylesheets=self.styles, scripts=self.scripts))
         if self.header:
-            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
+            header = str(common.renderer.render(lang_prefix + '_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
         else:
             header = ''
-        page = str(common.renderer.render(page, *args, **kwargs))
+        try:
+            body = str(common.renderer.render(lang_prefix + page_template, *args, **kwargs))
+        except:
+            body = str(common.renderer.render(page_template, *args, **kwargs))
         if self.footer:
-            footer = str(common.renderer.render('_footer'))
+            footer = str(common.renderer.render(lang_prefix + '_footer'))
         else:
             footer = ''
         tail = str(common.renderer.render('_tail'))
 
-        return head+header+page+footer+tail
+        return head+header+body+footer+tail
 
 
 headed = Headed

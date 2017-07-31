@@ -1,13 +1,13 @@
 $def with ()
 <div class="ui container">
-<h1 class="ui center aligned header">Security Dashboard</h1>
+<h1 class="ui center aligned header">Ytiruces Draobhsad</h1>
 <div class="ui basic segment">
   <div class="ui right rail">
     <div class="ui sticky">
       <div class="ui vertical menu">
-        <a class="item" href="#Alerts">Alerts</a>
-        <a class="item" href="#AnomalyDetection">Anomaly Detection</a>
-        <a class="item" href="#Rules">Rules</a>
+        <a class="item" href="#Alerts">Strela</a>
+        <a class="item" href="#AnomalyDetection">Ylamona Noitceted</a>
+        <a class="item" href="#Rules">Selur</a>
       </div>
     </div>
   </div>
@@ -16,20 +16,20 @@ $def with ()
   <!--==================  Alerts  ==================-->
   <div id="Alerts" class="sixteen wide column">
     <div class="ui orange raised segment">
-      <h2 class="ui header">Security Alerts</h2>
+      <h2 class="ui header">Ytiruces Strela</h2>
       <div class="alertfilter">
-        <label class="configlabel">Refresh</label>
+        <label class="configlabel">Hserfer</label>
         <button id="alert_refresh" class="ui icon button"><i class="refresh icon"></i></button>
       </div>
       <div class="alertfilter">
-        <label class="configlabel" for="alert_host_filter">Subnet Filter</label>
+        <label class="configlabel" for="alert_host_filter">Tenbus Retlif</label>
         <div class="ui icon input" data-tooltip="Filter by host or subnet. " data-delay="500">
           <input id="alert_host_filter" placeholder="110.24.36.0/24" value="0.0.0.0/0" type="text">
           <i class="server icon"></i>
         </div>
       </div>
       <div class="alertfilter">
-        <label class="configlabel" for="alert_min_severity">Min Severity</label>
+        <label class="configlabel" for="alert_min_severity">Nim Ytireves</label>
         <div class="ui filtering selection dropdown" data-tooltip="Minimum alert severity to display. " data-delay="500">
           <input id="alert_min_severity" name="min_severity" value="sev1" data-old="sev1" type="hidden">
           <i class="dropdown icon"></i>
@@ -47,14 +47,14 @@ $def with ()
         </div>
       </div>
       <div class="alertfilter">
-        <label class="configlabel" for="alert_time_filter">Timerange</label>
+        <label class="configlabel" for="alert_time_filter">Egnaremit</label>
         <div class="ui icon input" data-tooltip="Maximum age of alert to display. Use years, days, weeks, hours, minutes or seconds." data-delay="500">
           <input id="alert_time_filter" placeholder="1 week" value="1 week" data-old="1 week" type="text">
           <i class="clock icon"></i>
         </div>
       </div>
       <div class="alertfilter">
-        <label class="configlabel">Delete All</label>
+        <label class="configlabel">Eteled Lla</label>
         <button id="alert_del_all" class="ui icon button"><i class="red remove icon"></i></button>
       </div>
       <div class="scrollbox">
@@ -62,16 +62,16 @@ $def with ()
           <thead>
           <tr id="alert_headers">
             <th data-value="id" class="sorted descending">#</th>
-            <th data-value="ipstart">Host</th>
-            <th data-value="report_time">Timestamp</th>
-            <th data-value="severity">Severity</th>
-            <th data-value="label">Label</th>
-            <th data-value="rule_name">Rule</th>
+            <th data-value="ipstart">Tsoh</th>
+            <th data-value="report_time">Pmatsemit</th>
+            <th data-value="severity">Ytireves</th>
+            <th data-value="label">Lebal</th>
+            <th data-value="rule_name">Elur</th>
           </tr>
           </thead>
           <tbody id="alert_table_body">
           <tr>
-            <td colspan="6">No Alerts to display.</td>
+            <td colspan="6">On strela ot yalpsid.</td>
           </tr>
           </tbody>
         </table>
@@ -82,11 +82,11 @@ $def with ()
         <button id="alert_next_page" class="ui icon button"><i class="caret right icon"></i></button>
       </div>
 
-      <h2 class="ui header">Selection Details</h2>
+      <h2 class="ui header">Noitceles Sliated</h2>
       <div id="alert_details" class="ui fluid card">
         <div class="content">
           <div id="alert_details_loader" class="ui inverted dimmer">
-            <div class="ui text loader">Loading</div>
+            <div class="ui text loader">Gnidaol</div>
           </div>
           <div class="ui two column grid">
             <div class="column">
@@ -186,7 +186,7 @@ $def with ()
   <!--==================  Rules  ==================-->
   <div id="Rules" class="sixteen wide column">
     <div class="ui orange raised segment">
-      <h2 class="ui header">Rules</h2>
+      <h2 class="ui header">Selur</h2>
       <p>Selur era snoitcurtsni desu ediced rehtehw ro ton ot galf krowten ciffart sa suoicipsus.</p>
       <p>Yeht era deilppa tsniaga evil krowten ciffart sa ti semoc ni dna nac eb yllaunam deilppa
         ro deilppaer tsniaga emos ro lla derots atad sa dedeen.</p>
