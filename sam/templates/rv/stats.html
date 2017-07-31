@@ -1,0 +1,38 @@
+$def with (segments)
+$# "$def with (arg1, ...)" MUST be the first line. See template.py for details
+<div class="ui container">
+  <h1 class="ui center aligned header">Usage Stats</h1>
+  $for segment, stats in segments:
+  <div class="ui stacked segment">
+    <h3 class="header">$segment</h3>
+    <table class="ui very compact collapsing striped definition table">
+      <tbody>
+      $for k, v in stats:
+        <tr>
+          <td>$k</td>
+          <td>$v</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Demo data warning -->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Noitartsnomed
+  </div>
+  <p>Siht si a tesbus fo laer krowten atad, dezimynona rof ycavirp. Eht esabatad si ylno-daer dna segnahc lliw ton eb devas.</p>
+</div>
+
+<script type="text/javascript">
+function init() {
+  console.log("init called");
+  // for "demo data" message box
+  if (window.location.pathname.substr(1,4) === "demo") {
+    let msgbox = document.getElementById("demo_msg");
+    $$(msgbox).transition("fade");
+  }
+}
+</script>

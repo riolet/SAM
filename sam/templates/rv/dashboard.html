@@ -1,0 +1,470 @@
+$def with ()
+<div class="ui container">
+<h1 class="ui center aligned header">Security Dashboard</h1>
+<div class="ui basic segment">
+  <div class="ui right rail">
+    <div class="ui sticky">
+      <div class="ui vertical menu">
+        <a class="item" href="#Alerts">Alerts</a>
+        <a class="item" href="#AnomalyDetection">Anomaly Detection</a>
+        <a class="item" href="#Rules">Rules</a>
+      </div>
+    </div>
+  </div>
+<div id="stickyrailcontext" class="ui stackable grid">
+
+  <!--==================  Alerts  ==================-->
+  <div id="Alerts" class="sixteen wide column">
+    <div class="ui orange raised segment">
+      <h2 class="ui header">Security Alerts</h2>
+      <div class="alertfilter">
+        <label class="configlabel">Refresh</label>
+        <button id="alert_refresh" class="ui icon button"><i class="refresh icon"></i></button>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel" for="alert_host_filter">Subnet Filter</label>
+        <div class="ui icon input" data-tooltip="Filter by host or subnet. " data-delay="500">
+          <input id="alert_host_filter" placeholder="110.24.36.0/24" value="0.0.0.0/0" type="text">
+          <i class="server icon"></i>
+        </div>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel" for="alert_min_severity">Min Severity</label>
+        <div class="ui filtering selection dropdown" data-tooltip="Minimum alert severity to display. " data-delay="500">
+          <input id="alert_min_severity" name="min_severity" value="sev1" data-old="sev1" type="hidden">
+          <i class="dropdown icon"></i>
+          <div class="default text">1</div>
+          <div class="menu">
+            <div class="item" data-value="sev1"><i class="circle icon severe1"></i>1</div>
+            <div class="item" data-value="sev2"><i class="circle icon severe2"></i>2</div>
+            <div class="item" data-value="sev3"><i class="circle icon severe3"></i>3</div>
+            <div class="item" data-value="sev4"><i class="circle icon severe4"></i>4</div>
+            <div class="item" data-value="sev5"><i class="circle icon severe5"></i>5</div>
+            <div class="item" data-value="sev6"><i class="circle icon severe6"></i>6</div>
+            <div class="item" data-value="sev7"><i class="circle icon severe7"></i>7</div>
+            <div class="item" data-value="sev8"><i class="circle icon severe8"></i>8</div>
+          </div>
+        </div>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel" for="alert_time_filter">Timerange</label>
+        <div class="ui icon input" data-tooltip="Maximum age of alert to display. Use years, days, weeks, hours, minutes or seconds." data-delay="500">
+          <input id="alert_time_filter" placeholder="1 week" value="1 week" data-old="1 week" type="text">
+          <i class="clock icon"></i>
+        </div>
+      </div>
+      <div class="alertfilter">
+        <label class="configlabel">Delete All</label>
+        <button id="alert_del_all" class="ui icon button"><i class="red remove icon"></i></button>
+      </div>
+      <div class="scrollbox">
+        <table class="ui selectable sortable table">
+          <thead>
+          <tr id="alert_headers">
+            <th data-value="id" class="sorted descending">#</th>
+            <th data-value="ipstart">Host</th>
+            <th data-value="report_time">Timestamp</th>
+            <th data-value="severity">Severity</th>
+            <th data-value="label">Label</th>
+            <th data-value="rule_name">Rule</th>
+          </tr>
+          </thead>
+          <tbody id="alert_table_body">
+          <tr>
+            <td colspan="6">No Alerts to display.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alertfilter">
+        <button id="alert_prev_page" class="ui icon button"><i class="caret left icon"></i></button>
+        Page <span id="alert_page_num">1</span> of <span id="alert_page_count">1</span>
+        <button id="alert_next_page" class="ui icon button"><i class="caret right icon"></i></button>
+      </div>
+
+      <h2 class="ui header">Selection Details</h2>
+      <div id="alert_details" class="ui fluid card">
+        <div class="content">
+          <div id="alert_details_loader" class="ui inverted dimmer">
+            <div class="ui text loader">Loading</div>
+          </div>
+          <div class="ui two column grid">
+            <div class="column">
+              <h3 id="alert_details_name" class="ui header">On trela detceles.</h3>
+              <div class="meta">
+                Trela #: <span id="alert_details_id"></span>
+              </div>
+              <div class="meta">
+                Emit: <span id="alert_details_time"></span>
+              </div>
+              <div class="meta">
+                Tsoh: <span id="alert_details_host"></span>
+              </div>
+              <div class="meta">
+                Ytireves: <span id="alert_details_severity"></span>
+              </div>
+              <div id="alert_details_desc" class="description">
+              </div>
+              <div>
+                <button id="alert_del" class="ui icon button disabled"><i class="red remove icon"></i>Eteled</button>
+              </div>
+            </div>
+            <div class="column">
+              <h3 class="ui header">Atadatem</h3>
+              <div class="scrollbox">
+                <table class="ui very basic compact table">
+                  <tbody id="alert_details_details">
+                  </tbody>
+                </table>
+              </div>
+            </div> <!-- end column-->
+          </div>
+        </div> <!-- end card content -->
+      </div> <!-- end card -->
+    </div> <!-- end segment -->
+  </div> <!-- end column (main panel) -->
+
+  <!--==================  AnomalyDetection  ==================-->
+  <div id="AnomalyDetection" class="sixteen wide column">
+    <div class="ui blue raised segment">
+      <div class="ui adpanel inverted dimmer">
+        <div class="content">
+          <div class="center">
+            <h2 class="ui icon header">
+              <i class="lock icon"></i>
+                Ylamona noitceted elbaliava htiw egakcap noitpircsbus.
+              <div class="sub header">Rof erom ofni,<a href="#">ereh kcilc</a></div>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="ui grid">
+        <div class="six wide column">
+          <h2 class="ui header">Ylamona Noitceted</h2>
+          <div class="item">
+            <div id='ad_active' class="ui toggle checkbox">
+              <input tabindex="0" class="hidden" type="checkbox">
+              <label><span class="ad_active">Evitca</span><span class="ad_inactive">Evitcani</span></label>
+            </div>
+            Sutats: <span id="ad_status"></span>
+          </div>
+        </div>
+        <div class="ten wide column">
+          <div id="ad_stats">
+          </div>
+        </div>
+      </div>
+      <h3 class="ui header">Sgninraw Deifitnedi:</h3>
+      <div class="scrollbox">
+        <table class="ui table">
+          <thead>
+          <tr id="ad_headers">
+            <th data-value="id">#</th>
+            <th data-value="host">Tsoh</th>
+            <th data-value="log_time">Pmatsemit</th>
+            <th data-value="reason">Nosaer</th>
+            <th colspan="3" data-value="btns"></th>
+          </tr>
+          </thead>
+          <tbody id="ad_table_body">
+          <tr>
+            <td colspan="7">On sgninraw ot yalpsid.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ui basic segment">
+        <button id="ad_show_all" class="ui small button" data-tooltip="Click to show all warnings.">Gniwohs dezirogetacnu</button>
+        <!-- Not implemented yet.
+        <button id="ad_reset" class="ui compact button">Reset profile...</button>
+        -->
+        <button id="ad_reset_all" class="ui right floated small button">Teser lla seliforp</button>
+      </div>
+    </div>
+  </div>
+
+  <!--==================  Rules  ==================-->
+  <div id="Rules" class="sixteen wide column">
+    <div class="ui orange raised segment">
+      <h2 class="ui header">Rules</h2>
+      <p>Selur era snoitcurtsni desu ediced rehtehw ro ton ot galf krowten ciffart sa suoicipsus.</p>
+      <p>Yeht era deilppa tsniaga evil krowten ciffart sa ti semoc ni dna nac eb yllaunam deilppa
+        ro deilppaer tsniaga emos ro lla derots atad sa dedeen.</p>
+      <div class="ui basic segment">
+        <div id="rules_loader" class="ui inverted dimmer">
+          <div class="ui text loader">Gnidaol</div>
+        </div>
+        <table class="ui selectable celled table">
+        <thead class="full-width">
+        <tr>
+          <th class="collapsing" data-tooltip="Check this box to apply the rule against new live traffic data.">Evitca</th>
+          <th>Enam Elur</th>
+          <th data-tooltip="The template used for this rule.">Epyt</th>
+          <th data-tooltip="Edit any settings available for this rule.">Tide</th>
+          <th data-tooltip="Remove this rule from the rule set. Can only be done for custom rules.">Evomer</th>
+        </tr>
+        </thead>
+        <tbody id="rules_table">
+        </tbody>
+      </table>
+      </div>
+      <button id="add_rule" class="ui small green button">
+        <i class="add icon"></i>Wen Motsuc Elur
+      </button>
+      <button id="reapply_rules" class="ui small button">Ylppaer Selur ot Ciffart Atad...</button>
+    </div>
+  </div>
+
+</div></div></div> <!-- end container -->
+
+<!--=====================  Add rule modal  =======================-->
+<div id="newRuleModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Elur Wen
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="alarm icon"></i>
+    </div>
+    <div class="ui form">
+      <div class="field">
+        <label>Eman:</label>
+        <input id="newRuleName" type="text" placeholder="Rule label">
+      </div>
+      <div class="field">
+        <label>Noitpircsed:</label>
+        <input id="newRuleDesc" type="text" placeholder="Brief description of rule">
+      </div>
+      <div class="field">
+        <label>Etalpmet:</label>
+        <div class="ui selection dropdown">
+          <input name="newRuleTemplate" id="newRuleTemplate" type="hidden">
+          <i class="dropdown icon"></i>
+          <div class="default text">etalpmet</div>
+          <div class="menu" id="newRuleTemplateList">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Etaerc
+    </div>
+  </div>
+</div>
+
+<!--=====================  Edit rule modal  =======================-->
+<div id="er_modal" class="ui modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Elur Tide
+  </div>
+  <div class="content">
+    <div class="ui two column grid">
+      <div class="column">
+        <div class="ui form" id="er_meta">
+          <input type="hidden" id="er_rule_id">
+          <!-- Rule description -->
+          <div class="two fields">
+            <div class="field">
+              <label>Evitca:</label>
+              <div class="ui toggle checkbox">
+                <input tabindex="0" id="er_active" class="hidden" type="checkbox">
+                <label></label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Eman:</label>
+              <input id="er_name" type="text" placeholder="Rule label">
+            </div>
+          </div>
+          <div class="field">
+            <label>Noitpircsed:</label>
+            <input id="er_desc" type="text" placeholder="Brief description of rule">
+          </div>
+        </div>
+
+        <h3 class="header">Snoitca:</h3>
+        <div class="ui form" id="er_actions">
+          <!-- Actions: alert? -->
+          <div class="ui yellow top attached segment">
+            <div class="two fields">
+              <div class="field">
+                <label>Etaerc Trela:</label>
+                <div class="ui toggle checkbox">
+                  <input tabindex="0" id="er_alert" class="hidden" type="checkbox">
+                  <label></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Trela Ytireves:</label>
+                <input id="er_alert_sev" type="text" placeholder="1-8">
+              </div>
+            </div>
+            <div class="field">
+              <label>Trela Lebal:</label>
+              <input id="er_alert_label" type="text" placeholder="ex: Main server connected to DB">
+            </div>
+          </div>
+
+          <!-- Actions: email? -->
+          <div class="ui attached segment">
+            <div class="two fields">
+              <div class="field">
+                <label>Dnes Liame:</label>
+                <div class="ui toggle checkbox">
+                  <input tabindex="0" id="er_email" class="hidden" type="checkbox">
+                  <label></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Liame sserdda:</label>
+                <input id="er_email_address" type="text" placeholder="jdoe@example.com">
+              </div>
+            </div>
+            <div class="field">
+              <label>Tcejbus:</label>
+              <input id="er_email_subject" type="text" placeholder="Subject of email">
+            </div>
+          </div>
+
+          <!-- Actions: sms? -->
+          <div class="ui bottom attached segment">
+            <div class="two fields">
+              <div class="field">
+                <label>Ndes SMS:</label>
+                <div class="ui toggle checkbox">
+                  <input tabindex="0" id="er_sms" class="hidden" type="checkbox">
+                  <label></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Rebmun:</label>
+                <input id="er_sms_number" type="text" placeholder="1-123-456-7890">
+              </div>
+            </div>
+            <div class="field">
+              <label>Egassem:</label>
+              <input id="er_sms_message" type="text" placeholder="Brief message">
+            </div>
+          </div>
+          <!-- -->
+        </div>
+      </div>
+      <div class="column">
+        <h3 class="header">Sgnittes:</h3>
+        <div class="ui form">
+          <div class="ui blue segment" id="er_params">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Etadpu
+    </div>
+  </div>
+</div>
+
+<!--=====================  Reapply Rules modal  =======================-->
+<div id="reapplyRulesModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Ylppa selur ot krowten atad
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="alarm outline icon"></i>
+    </div>
+    <div class="ui form">
+      <div class="field">
+        <label>Atad ecruos</label>
+        <div class="ui selection dropdown">
+          <input name="rules_ds_input" id="rules_ds_input" type="hidden">
+          <i class="dropdown icon"></i>
+          <div class="default text">Ecruosatad</div>
+          <div class="menu" id="rules_ds_list">
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Ylppa selur revo siht :doirep</label>
+        <div class="slider-box">
+          <div id="slider-date"></div>
+        </div>
+        <div class="ui right labeled fluid input">
+          <input class="slider-input" id="input-start" value="2016-06-19 19:00">
+          <div class="ui label">From</div>
+        </div>
+        <div class="ui right labeled fluid input">
+          <input class="slider-input" id="input-end" value="2016-06-20 08:00">
+          <div class="ui label">To</div>
+        </div>
+      </div>
+
+      <p>Siht noitarepo yam ekat emit. Stluser yam ton wohs pu yletaidemmi.</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Ylppa
+    </div>
+  </div>
+</div>
+
+<!--=====================  Confirmation modal  =======================-->
+<div id="deleteModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Mrifnoc Eteled
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="trash outline icon"></i>
+    </div>
+    <div class="description">
+      <p id="deleteMessage">Era uoy erus?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Mrifnoc
+    </div>
+  </div>
+</div>
+<!--=====================  Anomaly Detector modal  =======================-->
+<div id="ad_info_modal" class="ui long modal">
+  <div id="ad_modal_title" class="header">
+    Esaelp llatsni eht Ylamona Noitceted nigulp rof siht erutaef.
+  </div>
+  <div class="content">
+    <div id="ad_modal_content" class="basic segment">
+    </div>
+  </div>
+  <div id="ad_modal_actions" class="actions">
+  </div>
+</div>

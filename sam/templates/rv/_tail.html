@@ -1,0 +1,14 @@
+<script type="text/javascript">
+window.onload = function () {
+    //enable header dropdown
+    $$(document.getElementById("support_menu")).dropdown({
+      on: 'hover'
+    });
+
+    if (typeof(init) === "function") {
+        init();
+    }
+};
+</script>
+</body>
+</html>

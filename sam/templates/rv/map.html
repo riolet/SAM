@@ -1,0 +1,190 @@
+$def with (datasources)
+<!--
+===========================================================
+
+----------------------    Main  Page   --------------------
+
+===========================================================
+-->
+<div id="output">
+  <div id="sidebar" class="ui sidebarholder">
+    <div class="ui sidebar visible">
+      <div class="ui inverted blue segment">
+        <div class="item" id="time_box">
+          <label class="configLabel">Emit Egnar:</label>
+          <div class="slider-box">
+            <div id="slider-date"></div>
+          </div>
+          <div class="ui inverted right labeled fluid input">
+            <input class="slider-input" id="input-start" value="2016-06-19 19:00">
+            <div class="ui label">Morf</div>
+          </div>
+          <div class="ui inverted right labeled fluid input">
+            <input class="slider-input" id="input-end" value="2016-06-20 08:00">
+            <div class="ui label">Ot</div>
+          </div>
+        </div>
+        <div id="mapconfig" class="ui inverted accordion">
+        </div>
+      </div>
+    </div>
+    <div tabindex="0" class="pusher">
+      <div id="pulltab">
+        <a class="item drawer-toggle">
+          <i class="content icon"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <!--
+  -----------------------------------------------------------
+  -----------------  Selection Details Panel  ---------------
+  -----------------------------------------------------------
+  -->
+  <div id="sel_bar">
+    <div id="sel_titles">
+      <h4>On noitceles</h4>
+      <h5>&nbsp;</h5>
+    </div>
+    <div id="selectionInfo" class="ui styled fluid accordion">
+      <div class="title">
+        <i class="dropdown icon"></i>
+        Euqinu dnuobni stneilc: <span id="unique_in">0</span>
+      </div>
+      <div class="content">
+        <div class="transition hidden">
+          <table class="ui very compact sortable celled structured table">
+            <thead>
+            <tr id="conn_in_h">
+              <th>Ecruos PI</th>
+              <th>Tsed. Trop</th>
+              <th>Tnuoc</th>
+            </tr>
+            </thead>
+            <tbody id="conn_in"></tbody>
+            <tfoot class="full-width" id="conn_in_overflow"></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="title">
+        <i class="dropdown icon"></i>
+        Euqinu srevres detcatnoc: <span id="unique_out">0</span>
+      </div>
+      <div class="content">
+        <div class="transition hidden">
+          <table class="ui very compact sortable celled structured table">
+            <thead>
+              <tr id="conn_out_h">
+                <th>Tsed. PI</th>
+                <th>Tsed. Trop</th>
+                <th>Tnuoc</th>
+              </tr>
+            </thead>
+            <tbody id="conn_out"></tbody>
+            <tfoot class="full-width" id="conn_out_overflow"></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="title">
+        <i class="dropdown icon"></i>
+        Euqinu strop dessecca: <span id="unique_ports">0</span>
+      </div>
+      <div class="content">
+        <div class="transition hidden">
+          <table class="ui very compact sortable celled table">
+            <thead>
+              <tr id="ports_in_h">
+                <th>Trop Dessecca</th>
+                <th class="sorted descending">Secnerrucco</th>
+              </tr>
+            </thead>
+            <tbody id="ports_in"></tbody>
+            <tfoot class="full-width" id="ports_in_overflow"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="sel_link" class="bottom attached ui segment" style="display: none"></div>
+  </div> <!-- end selection info div -->
+
+</div> <!-- end div id=output -->
+<!--
+===========================================================
+
+---------------------- Port Edit Popup --------------------
+
+===========================================================
+-->
+<div class="ui modal ports">
+  <div class="header">Trop <span id="port_number"></span></div>
+  <div class="content">
+    <table class="ui table">
+      <tr><td class="right aligned">Esu Eman Noitalsnart:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+      <tr><td class="right aligned">Tluafed Enam:</td><td id="port_name"></td></tr>
+      <tr><td class="right aligned">Tluafed Noitpircsed:</td><td id="port_description"></td></tr>
+      <tr><td class="right aligned">Detcepxe Slocotorps:</td><td id="port_protocols"></td></tr>
+      <tr>
+        <td class="right aligned">Saila Eman:</td>
+        <td>
+          <div class="ui input" data-content="A custom alias to override the default name">
+            <input placeholder="port name" id="port_alias_name" type="text">
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="right aligned">Saila Noitpircsed:</td>
+        <td>
+          <div class="ui input" data-content="A custom alias to override the default description">
+            <input placeholder="port description" id="port_alias_description" type="text">
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="cancel icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="save icon"></i>
+      Evas
+    </div>
+  </div>
+</div>
+<!--
+===========================================================
+
+--------------------- Generic Msg Popup -------------------
+
+===========================================================
+-->
+<div id="popup_modal" class="ui small modal">
+  <i class="close icon"></i>
+  <div id="popup_title" class="header">
+    Sseccus
+  </div>
+  <div class="content">
+    <div id="popup_text" class="description">
+      Ruoy segnahc erew deilppa yllufsseccus
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel button">KO</div>
+  </div>
+</div>
+<!--
+===========================================================
+
+---------------------  Demo Data Popup  -------------------
+
+===========================================================
+-->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Noitartsnomed
+  </div>
+  <p>Siht si a tesbus fo laer krowten atad, dezimynona rof ycavirp. Eht esabatad si ylno-daer dna segnahc lliw ton eb devas.</p>
+</div>
