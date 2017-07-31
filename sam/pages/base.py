@@ -21,7 +21,8 @@ class Page(object):
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
-        self.language = self.get_lang()
+        self.language = self.session['lang']
+        print("Language set: {}".format(self.language))
         self.inbound = web.input()
 
     def require_group(self, group):
@@ -40,32 +41,6 @@ class Page(object):
     def require_ownership(self):
         if not self.user.may_post():
             raise web.unauthorized("Cannot modify data. Do you have an active account?")
-
-    def get_lang(self):
-        # TODO: research hook and try first path element first.
-        # try cookie next
-        # try HTTP_ACCEPT_LANGUAGE header next
-        # fallback to english. ('en')
-        lang = 'en'
-
-        if False:
-            lang = "en"
-        elif 'HTTP_ACCEPT_LANGUAGE' in web.ctx.env:
-            accept_string = web.ctx.env['HTTP_ACCEPT_LANGUAGE']
-            langs = Page.decode_http_csv(accept_string)
-            langs = {k: langs[k] for k in langs.iterkeys() if k[:2] in Page.SUPPORTED_LANGUAGES}
-            best = max(langs.iteritems(), key=operator.itemgetter(1))[0]
-            if best:
-                lang = best
-        else:
-            lang = "en"
-        return lang
-
-    @staticmethod
-    def decode_http_csv(accept_string):
-        items = [i.partition(';q=') for i in accept_string.split(",") if i]
-        decoded = {k.strip(): (float(v) if len(v) > 0 else 1.0) for k, _, v in items}
-        return decoded
 
 page = Page
 
