@@ -21,10 +21,10 @@ def decimal_default(obj):
 
 
 class Stats(base.headed):
-    pageTitle = "Stats"
 
     def __init__(self):
-        super(Stats, self).__init__('Stats', True, True)
+        super(Stats, self).__init__(True, True)
+        self.set_title(self.page.strings.stats_title)
         # common.demo(on=False)
         # TODO: restructure this file.
         self.styles = ['/static/css/general.css']

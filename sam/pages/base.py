@@ -1,3 +1,4 @@
+import importlib
 import decimal
 import os
 import json
@@ -21,6 +22,7 @@ class Page(object):
         self.session = common.session
         self.user = User(self.session)
         self.language = self.session['lang']
+        self.strings = importlib.import_module("sam.local." + self.language)
         self.inbound = web.input()
 
     def require_group(self, group):
@@ -44,19 +46,23 @@ page = Page
 
 
 class Headed(object):
-    def __init__(self, title, header, footer):
+    def __init__(self, header, footer):
         self.page = page()
         self.scripts = []
         self.styles = []
-        self.page_title = title
+        self.page_title = "Untitled"
         self.header = header
         self.footer = footer
+
+    def set_title(self, title):
+        self.page_title = title
 
     def render(self, page_template, *args, **kwargs):
         lang_prefix = '{}{}'.format(self.page.language, os.path.sep)
         head = str(common.renderer.render('_head', self.page_title, lang=self.page.language, stylesheets=self.styles, scripts=self.scripts))
+        navbar = constants.get_navbar(self.page.language)
         if self.header:
-            header = str(common.renderer.render(lang_prefix + '_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
+            header = str(common.renderer.render(lang_prefix + '_header', navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
         else:
             header = ''
         try:

@@ -1,6 +1,6 @@
 const strings = {
-   loading: "Loading..."
-  ,map_empty: "No data available"
+   loading: "Gnidaol..."
+  ,map_empty: "On atad elbaliava"
   ,map_set_search: "Hcraes"
   ,map_set_search_default: "Dnif PI..."
   ,map_set_search_hint: "Dnif na PI ssredda. g.e. 192.168.0.12"
@@ -19,7 +19,7 @@ const strings = {
   ,map_set_lw_lc_hint: "Htdiw desab no rebmun fo secnerrucco"
   ,map_set_lw_bc: "Etyb Tnuoc"
   ,map_set_lw_bc_hint: "Htdiw desab no rebmun fo setyb derrefsnart"
-  ,map_set_lw_pc: "Packet Count"
+  ,map_set_lw_pc: "Tekcap Tnuoc"
   ,map_set_lw_pc_hint: "Htdiw desab no rebmun fo stekcap derrefsnart"
   ,map_set_vis: "Wohs/Edih"
   ,map_set_vis_c: "Wohs erup stneilc"

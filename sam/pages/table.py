@@ -234,7 +234,8 @@ class Table(base.headed):
     download_max = 1000000
 
     def __init__(self):
-        super(Table, self).__init__("Table View", True, False)
+        super(Table, self).__init__(True, False)
+        self.set_title(self.page.strings.table_title)
         self.scripts = ["/static/js/table.js",
                         "/static/js/table_filters.js"]
         self.styles = ["/static/css/table.css",

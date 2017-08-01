@@ -1,0 +1,6 @@
+map_title = "Pam"
+meta_title = "Tsoh Sliated"
+stats_title = "Stats"
+table_title = "Elbat Weiv"
+settings_title = "Sngittes"
+dashboard_title = "Draobhsad"

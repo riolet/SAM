@@ -7,7 +7,8 @@ from sam import common
 
 class Metadata(base.headed):
     def __init__(self):
-        super(Metadata, self).__init__("Host Details", True, False)
+        super(Metadata, self).__init__(True, False)
+        self.set_title(self.page.strings.meta_title)
         self.scripts = ["/static/js/metadata.js",
                         "/static/js/map_ports.js",
                         "/static/js/map_selection.js",

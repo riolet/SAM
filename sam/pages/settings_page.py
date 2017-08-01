@@ -19,7 +19,8 @@ def nice_name(s):
 
 class SettingsPage(base.headed):
     def __init__(self):
-        super(SettingsPage, self).__init__("Settings", True, True)
+        super(SettingsPage, self).__init__(True, True)
+        self.set_title(self.page.strings.settings_title)
         self.styles = ["/static/css/general.css"]
         self.scripts = ["/static/js/settings.js"]
         self.settingsModel = None

@@ -1,0 +1,6 @@
+map_title = "Map"
+meta_title = "Host Details"
+stats_title = "Stats"
+table_title = "Table View"
+settings_title = "Settings"
+dashboard_title = "Dashboard"

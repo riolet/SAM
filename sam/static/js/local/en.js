@@ -201,23 +201,3 @@ const strings = {
   ,sec_alert_del: "Are you sure you want to delete this alert?"
   ,sec_alert_zero: "0 alerts to display."
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
