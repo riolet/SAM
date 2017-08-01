@@ -295,7 +295,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         let modalTitle = document.getElementById("popup_title");
         let modalMsg = document.getElementById("popup_text");
         modalTitle.innerHTML = "";
-        modalTitle.appendChild(document.createTextNode("Not Supported"));
+        modalTitle.appendChild(document.createTextNode(strings.map_set_lay_m_error));
         modalMsg.innerHTML = "";
         modalMsg.appendChild(document.createTextNode(response.error));
         $(modal).modal("show");
