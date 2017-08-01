@@ -165,4 +165,59 @@ const strings = {
   ,table_sum_role: "% server"
   ,table_sum_empty: "none"
   ,table_type: "Filter Type"
+  ,set_del_host: "Are you sure you want to permanently delete all hostnames? (Across all data sources)"
+  ,set_del_tags: "Are you sure you want to permanently delete all host/subnet metadata tags? (Across all data sources)"
+  ,set_del_envs: "Are you sure you want to permanently delete all host/subnet environment data? (Across all data sources)"
+  ,set_del_conns: "Are you sure you want to permanently delete connection information for "
+  ,set_del_ds: "Are you sure you want to permanently delete datasource "
+  ,set_ds_name: "Name:"
+  ,set_ds_ar: "Auto-refresh (map view):"
+  ,set_ds_ari: "Auto-refresh interval (seconds):"
+  ,set_ds_flat: "Flat mode (map view):"
+  ,set_ds_del: "Delete Connections"
+  ,set_ds_del_hint: "Delete all connection information:"
+  ,set_ds_up: "Upload Log"
+  ,set_ds_up_hint: "Upload a connection log:"
+  ,set_livekey_empty: "none"
+  ,set_upload_success: "Success"
+  ,set_upload_success_d: "Your log file was uploaded successfully."
+  ,set_upload_fail: "Error"
+  ,set_upload_fail_d: "There was an error uploading your log file."
+  ,sec_edit_none: "No parameters available to adjust."
+  ,sec_ad_accept: "accept"
+  ,sec_ad_accept_hint: "Accept this warning and promote it to an alert."
+  ,sec_ad_reject: "reject"
+  ,sec_ad_reject_hint: "Reject this warning as a false positive."
+  ,sec_ad_ignore: "ignore"
+  ,sec_ad_ignore_hint: "Ignore this warning."
+  ,sec_ad_empty: "No warnings to display."
+  ,sec_ad_del_profiles: "Are you sure you want to delete all profile data?"
+  ,sec_ad_show_some: "Showing uncategorized"
+  ,sec_ad_show_some_hint: "Click to show all warnings."
+  ,sec_ad_show_all: "Showing all"
+  ,sec_ad_show_all_hint: "Click to only show uncategorized warnings."
+  ,sec_alert_none: "No alert selected."
+  ,sec_alert_del_all: "Are you sure you want to delete all alerts?"
+  ,sec_alert_del: "Are you sure you want to delete this alert?"
+  ,sec_alert_zero: "0 alerts to display."
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
