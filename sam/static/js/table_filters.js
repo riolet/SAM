@@ -111,7 +111,7 @@
         buttonApply.className = "ui compact icon button";
         buttonApply.onclick = filters.applyCallback;
         buttonApply.appendChild(buttonIcon);
-        buttonApply.appendChild(document.createTextNode("Apply Filter"));
+        buttonApply.appendChild(document.createTextNode(strings.table_apply));
 
         //DS Switcher
         var DSSelector = document.createElement("DIV");
@@ -120,8 +120,8 @@
           pairs.push([g_dses[key], key]);
         });
         var ds = filters.ds || Object.values(g_dses)[0];
-        DSSelector.appendChild(filters.private.markupSelection("ds_choice", "Data source", pairs, ds, filters.private.dsCallback));
-        DSSelector.appendChild(filters.private.markupSpan("Data Source"))
+        DSSelector.appendChild(filters.private.markupSelection("ds_choice", strings.table_ds, pairs, ds, filters.private.dsCallback));
+        DSSelector.appendChild(filters.private.markupSpan(strings.table_ds))
 
         // Clear the div
         filters.displayDiv.innerHTML = "";
@@ -183,8 +183,8 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Return results from subnet "));
-        parts.push(filters.private.markupSelection("subnet", "Choose subnet...", [
+        parts.push(filters.private.markupSpan(strings.table_f_subnet1));
+        parts.push(filters.private.markupSelection("subnet", strings.table_f_subnet2_hint, [
             ["8", "/8"],
             ["16", "/16"],
             ["24", "/24"],
@@ -198,8 +198,8 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Search children of "));
-        parts.push(filters.private.markupInput("mask", "192.168.0.0/24", params.mask));
+        parts.push(filters.private.markupSpan(strings.table_f_mask1));
+        parts.push(filters.private.markupInput("mask", strings.table_f_mask2_hint, params.mask));
         return parts;
     };
     filters.private.createRoleFilterRow = function (params) {
@@ -208,13 +208,13 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Client/Server ratio is "));
-        parts.push(filters.private.markupSelection("comparator", "more/less than", [
-            [">", "more than"],
-            ["<", "less than"]
+        parts.push(filters.private.markupSpan(strings.table_f_role1));
+        parts.push(filters.private.markupSelection("comparator", strings.table_f_role2_hint, [
+            [">", strings.table_f_role2_op1],
+            ["<", strings.table_f_role2_op2]
         ], params.comparator));
-        parts.push(filters.private.markupInput("ratio", "0.5", params.ratio));
-        parts.push(filters.private.markupSpan(" (0 = client, 1 = server)"));
+        parts.push(filters.private.markupInput("ratio", strings.table_f_role3_default, params.ratio));
+        parts.push(filters.private.markupSpan(strings.table_f_role4));
         return parts;
     };
     filters.private.createEnvFilterRow = function (params) {
@@ -223,8 +223,8 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Node environment is "));
-        parts.push(filters.private.markupSelection("env", "Choose environment",
+        parts.push(filters.private.markupSpan(strings.table_f_env1));
+        parts.push(filters.private.markupSelection("env", strings.table_f_env2_hint,
                 g_known_envs.map(function (e) { return [e, e];}), params.env));
         return parts;
     };
@@ -234,15 +234,15 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSelection("connection", "Filter type...", [
-            ["0", "Connects to"],
-            ["1", "Doesn't connect to"],
-            ["2", "Receives connections from"],
-            ["3", "Doesn't receive connections from"]
+        parts.push(filters.private.markupSelection("connection", strings.table_f_port1_hint, [
+            ["0", strings.table_f_port1_op1],
+            ["1", strings.table_f_port1_op2],
+            ["2", strings.table_f_port1_op3],
+            ["3", strings.table_f_port1_op4]
         ], params.connection));
-        parts.push(filters.private.markupSpan("another host via port"));
+        parts.push(filters.private.markupSpan(strings.table_f_port2));
         //parts.push(filters.private.markupInput("port", "80,443,8000-8888", port));
-        parts.push(filters.private.markupInput("port", "443", params.port));
+        parts.push(filters.private.markupInput("port", strings.table_f_port3_default, params.port));
         return parts;
     };
     filters.private.createProtocolFilterRow = function (params) {
@@ -251,14 +251,14 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSelection("handles", "handles in/outbound", [
-            ["0", "Handles inbound"],
-            ["1", "Doesn't handle inbound"],
-            ["2", "Initiates outbound"],
-            ["3", "Doesn't intiate outbound"]
+        parts.push(filters.private.markupSelection("handles", strings.table_f_protocol1_hint, [
+            ["0", strings.table_f_protocol1_op1],
+            ["1", strings.table_f_protocol1_op2],
+            ["2", strings.table_f_protocol1_op3],
+            ["3", strings.table_f_protocol1_op4]
         ], params.handles));
-        parts.push(filters.private.markupSpan("connections using protocol"));
-        parts.push(filters.private.markupInput("protocol", "UDP", params.protocol));
+        parts.push(filters.private.markupSpan(strings.table_f_protocol2));
+        parts.push(filters.private.markupInput("protocol", strings.table_f_protocol3_default, params.protocol));
         return parts;
     };
     filters.private.createTagFilterRow = function (params) {
@@ -267,13 +267,13 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("host "));
-        parts.push(filters.private.markupSelection("has", "has/not", [
-            ["1", "has"],
-            ["0", "doesn't have"]
+        parts.push(filters.private.markupSpan(strings.table_f_tag1));
+        parts.push(filters.private.markupSelection("has", strings.table_f_tag2_hint, [
+            ["1", strings.table_f_tag2_op1],
+            ["0", strings.table_f_tag2_op2]
         ], params.has));
-        parts.push(filters.private.markupSpan(" tags: "));
-        parts.push(filters.private.markupTags("tags", "Choose tag(s)",
+        parts.push(filters.private.markupSpan(strings.table_f_tag3));
+        parts.push(filters.private.markupTags("tags", strings.table_f_tag4_hint,
                 g_known_tags.map(function (tag) { return [tag, tag];}), params.tags));
         return parts;
     };
@@ -283,15 +283,15 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Show only hosts that "));
-        parts.push(filters.private.markupSelection("to", "connect to/from", [
-            ["0", "connect to"],
-            ["1", "don't connect to"],
-            ["2", "receive connections from"],
-            ["3", "don't receive connections from"]
+        parts.push(filters.private.markupSpan(strings.table_f_target1));
+        parts.push(filters.private.markupSelection("to", strings.table_f_target2_hint, [
+            ["0", strings.table_f_target2_op1],
+            ["1", strings.table_f_target2_op2],
+            ["2", strings.table_f_target2_op3],
+            ["3", strings.table_f_target2_op4]
         ], params.to));
-        parts.push(filters.private.markupSpan(" IP address:"));
-        parts.push(filters.private.markupInput("target", "192.168.0.4", params.target));
+        parts.push(filters.private.markupSpan(strings.table_f_target3));
+        parts.push(filters.private.markupInput("target", strings.table_f_target4_default, params.target));
         return parts;
     };
     filters.private.createConnectionsFilterRow = function (params) {
@@ -300,18 +300,18 @@
           params = {};
         }
 
-        parts.push(filters.private.markupSpan("Handles "));
-        parts.push(filters.private.markupSelection("comparator", "Filter type...", [
-            [">", "more than"],
-            ["<", "fewer than"]
+        parts.push(filters.private.markupSpan(strings.table_f_conn1));
+        parts.push(filters.private.markupSelection("comparator", strings.table_f_conn2_hint, [
+            [">", strings.table_f_conn2_op1],
+            ["<", strings.table_f_conn2_op2]
         ], params.comparator));
-        parts.push(filters.private.markupInput("limit", "a number of", params.limit));
-        parts.push(filters.private.markupSelection("direction", "in/outbound", [
-            ["i", "inbound"],
-            ["o", "outbound"],
-            ["c", "combined"]
+        parts.push(filters.private.markupInput("limit", strings.table_f_conn3_default, params.limit));
+        parts.push(filters.private.markupSelection("direction", strings.table_f_conn4_hint, [
+            ["i", strings.table_f_conn4_op1],
+            ["o", strings.table_f_conn4_op2],
+            ["c", strings.table_f_conn4_op3]
         ], params.direction));
-        parts.push(filters.private.markupSpan("connections / second."));
+        parts.push(filters.private.markupSpan(strings.table_f_conn5));
         return parts;
     };
 
@@ -328,7 +328,7 @@
 
         //The Enable/Disable toggle
         var toggleInput = document.createElement("input");
-        toggleInput.title = "Enable this filter";
+        toggleInput.title = strings.table_enable;
         toggleInput.type = "checkbox";
         toggleInput.checked = enabled;
         toggleInput.name = "enabled";
@@ -526,71 +526,71 @@
         var span;
 
         //span = filters.private.markupSpan("Filter: ");
-        header.appendChild(document.createTextNode("Filter: "));
+        header.appendChild(document.createTextNode(strings.table_sum));
 
         //span.style = "color: grey;";
         if (filters.filters.length > 0) {
             filters.filters.forEach(function (filter) {
                 if (filter.type === "subnet") {
-                    span = filters.private.markupSpan("subnet /" + filter.subnet);
+                    span = filters.private.markupSpan(strings.table_sum_sub + " /" + filter.subnet);
 
                 } else if (filter.type === "mask") {
-                    span = filters.private.markupSpan("within " + filter.mask);
+                    span = filters.private.markupSpan(strings.table_sum_sub + " " + filter.mask);
 
                 } else if (filter.type === "port") {
                     if (filter.connection === "0") {
-                        span = filters.private.markupSpan("conn to (" + filter.port + ")");
+                        span = filters.private.markupSpan(strings.table_sum_port1 + "(" + filter.port + ")");
                     } else if (filter.connection === "1") {
-                        span = filters.private.markupSpan("X conn to (" + filter.port + ")");
+                        span = filters.private.markupSpan(strings.table_sum_port2 + "(" + filter.port + ")");
                     } else if (filter.connection === "2") {
-                        span = filters.private.markupSpan("conn from (" + filter.port + ")");
+                        span = filters.private.markupSpan(strings.table_sum_port3 + "(" + filter.port + ")");
                     } else if (filter.connection === "3") {
-                        span = filters.private.markupSpan("X conn from (" + filter.port + ")");
+                        span = filters.private.markupSpan(strings.table_sum_port4 + "(" + filter.port + ")");
                     }
 
                 } else if (filter.type === "connections") {
                     var dir = ""
                     if (filter.direction == 'i') {
-                      dir = " (in)";
+                      dir = strings.table_sum_conn1;
                     } else if (filter.direction == 'o') {
-                      dir = " (out)";
+                      dir = strings.table_sum_conn2;
                     }
-                    span = filters.private.markupSpan(filter.comparator + filter.limit + " conns/s" + dir);
+                    span = filters.private.markupSpan(filter.comparator + filter.limit + dir);
 
                 } else if (filter.type === "protocol") {
                     if (filter.handles === "0") {
-                        span = filters.private.markupSpan(filter.protocol+ " in");
+                        span = filters.private.markupSpan(filter.protocol+ strings.table_sum_protocol2);
                     } else if (filter.handles === "1") {
-                        span = filters.private.markupSpan("no " + filter.protocol + " in");
+                        span = filters.private.markupSpan(strings.table_sum_protocol1 + filter.protocol + strings.table_sum_protocol2);
                     } else if (filter.handles === "2") {
-                        span = filters.private.markupSpan(filter.protocol + " out");
+                        span = filters.private.markupSpan(filter.protocol + strings.table_sum_protocol3);
                     } else if (filter.handles === "3") {
-                        span = filters.private.markupSpan("no " + filter.protocol + " out");
+                        span = filters.private.markupSpan(strings.table_sum_protocol1 + filter.protocol + strings.table_sum_protocol3);
                     }
 
                 } else if (filter.type === "target") {
                     if (filter.to === "0") {
-                        span = filters.private.markupSpan("to " + filter.target);
+                        span = filters.private.markupSpan(strings.table_sum_target1 + filter.target);
                     } else if (filter.to === "1") {
-                        span = filters.private.markupSpan("not to " + filter.target);
+                        span = filters.private.markupSpan(strings.table_sum_target2 + filter.target);
                     } else if (filter.to === "2") {
-                        span = filters.private.markupSpan("from " + filter.target);
+                        span = filters.private.markupSpan(strings.table_sum_target3 + filter.target);
                     } else if (filter.to === "3") {
-                        span = filters.private.markupSpan("not from " + filter.target);
+                        span = filters.private.markupSpan(strings.table_sum_target4 + filter.target);
                     }
 
                 } else if (filter.type === "tags") {
                     if (filter.has === "1") {
-                        span = filters.private.markupSpan("tagged (" + filter.tags + ")");
+                        span = filters.private.markupSpan(strings.table_sum_tags1 + "(" + filter.tags + ")");
                     } else {
-                        span = filters.private.markupSpan("no tag (" + filter.tags + ")");
+                        span = filters.private.markupSpan(strings.table_sum_tags2 + "(" + filter.tags + ")");
                     }
 
                 } else if (filter.type === "env") {
-                    span = filters.private.markupSpan("env: " + filter.env);
+                    span = filters.private.markupSpan(strings.table_sum_env + filter.env);
 
                 } else if (filter.type === "role") {
-                    span = filters.private.markupSpan(filter.comparator + Math.round(filter.ratio * 100) + "% server");
+                    span = filters.private.markupSpan(filter.comparator + Math.round(filter.ratio * 100) + strings.table_sum_role);
                 }
                 if (!filter.enabled) {
                     span.style = "color: LightGray;";
@@ -601,7 +601,7 @@
             //remove last comma
             header.lastChild.remove();
         } else {
-            header.appendChild(document.createTextNode("none"));
+            header.appendChild(document.createTextNode(strings.table_sum_empty));
         }
     };
     filters.private.encodeFilters = function (filterArray) {
@@ -688,7 +688,7 @@
         var typeOptions = Object.keys(filters.private.types).map(function (x) {
             return [x, x];
         });
-        var typeSelector = filters.private.markupSelection("type", "Filter Type", typeOptions);
+        var typeSelector = filters.private.markupSelection("type", strings.table_type, typeOptions);
         typeSelector.id = "addFilterType";
 
         //The encompassing div

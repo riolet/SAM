@@ -30,15 +30,18 @@ def localization_hook():
     path_info = web.ctx.env['PATH_INFO']
     cookie = web.cookies().get("lang")
 
+    # try reading language from URL path
     if not lang and path_info[1:3] in constants.supported_languages:
         web.ctx['fullpath'] = web.ctx['fullpath'][3:]
         web.ctx['path'] = web.ctx['path'][3:]
         web.ctx.env['REQUEST_URI'] = web.ctx.env['REQUEST_URI'][3:]
         web.ctx.env['PATH_INFO'] = path_info[3:]
         lang = path_info[1:3]
+    # try reading language from cookie
     if not lang and cookie:
         if cookie in constants.supported_languages:
             lang = cookie
+    # try reading language from browser
     if not lang and 'HTTP_ACCEPT_LANGUAGE' in web.ctx.env:
         lang_accept = web.ctx.env['HTTP_ACCEPT_LANGUAGE']
         items = [i.partition(';q=') for i in lang_accept.split(",") if i]
@@ -47,6 +50,7 @@ def localization_hook():
         best = max(langs.iteritems(), key=operator.itemgetter(1))[0]
         if best:
             lang = best[:2]
+    # use default language
     if not lang:
         lang = default_lang
 
