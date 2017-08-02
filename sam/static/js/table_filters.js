@@ -665,15 +665,24 @@
 
     //Register filter types, and their constructors
     // format: [row-builder(), type"", param_names[]]
-    filters.private.types.connections = [filters.private.createConnectionsFilterRow, "connections", ["comparator", "direction", "limit"]];
-    filters.private.types.env = [filters.private.createEnvFilterRow, "env", ["env"]];
-    filters.private.types.mask = [filters.private.createMaskFilterRow, "mask", ["mask"]];
-    filters.private.types.port = [filters.private.createPortFilterRow, "port", ["connection", "port"]];
-    filters.private.types.protocol = [filters.private.createProtocolFilterRow, "protocol", ["handles", "protocol"]];
-    filters.private.types.role = [filters.private.createRoleFilterRow, "role", ["comparator", "ratio"]];
-    filters.private.types.tags = [filters.private.createTagFilterRow, "tags", ["has", "tags"]];
-    filters.private.types.target = [filters.private.createTargetFilterRow, "target", ["target", "to"]];
-    filters.private.types.subnet = [filters.private.createSubnetFilterRow, "subnet", ["subnet"]];
+    filters.private.types.connections = [filters.private.createConnectionsFilterRow,
+      strings.table_f_conn, ["comparator", "direction", "limit"]];
+    filters.private.types.env = [filters.private.createEnvFilterRow,
+      strings.table_f_env, ["env"]];
+    filters.private.types.mask = [filters.private.createMaskFilterRow,
+      strings.table_f_mask, ["mask"]];
+    filters.private.types.port = [filters.private.createPortFilterRow,
+      strings.table_f_port, ["connection", "port"]];
+    filters.private.types.protocol = [filters.private.createProtocolFilterRow,
+      strings.table_f_protocol, ["handles", "protocol"]];
+    filters.private.types.role = [filters.private.createRoleFilterRow,
+      strings.table_f_role, ["comparator", "ratio"]];
+    filters.private.types.tags = [filters.private.createTagFilterRow,
+      strings.table_f_tag, ["has", "tags"]];
+    filters.private.types.target = [filters.private.createTargetFilterRow,
+      strings.table_f_target, ["target", "to"]];
+    filters.private.types.subnet = [filters.private.createSubnetFilterRow,
+      strings.table_f_subnet, ["subnet"]];
 
     filters.private.createFilterCreator = function () {
         //The add button
@@ -686,7 +695,7 @@
 
         //The type selector
         var typeOptions = Object.keys(filters.private.types).map(function (x) {
-            return [x, x];
+            return [x, filters.private.types[x][1]];
         });
         var typeSelector = filters.private.markupSelection("type", strings.table_type, typeOptions);
         typeSelector.id = "addFilterType";

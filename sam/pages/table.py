@@ -9,72 +9,72 @@ import sam.models.datasources
 import sam.models.nodes
 
 
-def role_text(ratio):
+def role_text(strings, ratio):
     if ratio <= 0:
-        desc = u"client"
+        desc = strings.units_role_cc
     elif ratio < 0.35:
-        desc = u"mostly client"
+        desc = strings.units_role_c
     elif ratio < 0.65:
-        desc = u"mixed client/server"
+        desc = strings.units_role_cs
     elif ratio < 1:
-        desc = u"mostly server"
+        desc = strings.units_role_s
     else:
-        desc = u"server"
+        desc = strings.units_role_ss
 
     return u"{0:.2f} ({1})".format(ratio, desc)
 
 
-def bytes_text(bytes):
+def bytes_text(strings, bytes):
     if bytes < 10000:
-        return u"{0} B".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_tbytes)
     bytes /= 1024
     if bytes < 10000:
-        return u"{0} KB".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_kbytes)
     bytes /= 1024
     if bytes < 10000:
-        return u"{0} MB".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_mbytes)
     bytes /= 1024
     if bytes < 10000:
-        return u"{0} GB".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_gbytes)
     bytes /= 1024
-    return u"{0} TB".format(int(bytes))
+    return u"{} {}".format(int(bytes), strings.units_tbytes)
 
 
-def byte_rate_text(bytes, time):
+def byte_rate_text(strings, bytes, time):
     bytes = bytes / time
     if bytes < 2000:
-        return u"{0} B/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_bps)
     bytes /= 1024
     if bytes < 2000:
-        return u"{0} KB/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_kbps)
     bytes /= 1024
     if bytes < 2000:
-        return u"{0} MB/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_mbps)
     bytes /= 1024
     if bytes < 2000:
-        return u"{0} GB/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_gbps)
     bytes /= 1024
-    return u"{0} TB/s".format(int(bytes))
+    return u"{} {}".format(int(bytes), strings.units_tbps)
 
 
-def packet_rate_text(bytes, time):
+def packet_rate_text(strings, bytes, time):
     bytes = bytes / time
     if bytes < 10000:
-        return u"{0} p/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_pps)
     bytes /= 1000
     if bytes < 10000:
-        return u"{0} Kp/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_kpps)
     bytes /= 1000
     if bytes < 10000:
-        return u"{0} Mp/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_mpps)
     bytes /= 1000
     if bytes < 10000:
-        return u"{0} Gp/s".format(int(bytes))
+        return u"{} {}".format(int(bytes), strings.units_gpps)
     bytes /= 1000
-    return u"{0} Tp/s".format(int(bytes))
+    return u"{} {}".format(int(bytes), strings.units_tpps)
 
 
-def nice_protocol(p_in, p_out):
+def nice_protocol(strings, p_in, p_out):
     """
     :param p_in: comma-seperated protocol list for inbound connections
      :type p_in: unicode
@@ -92,11 +92,11 @@ def nice_protocol(p_in, p_out):
     both = []
     for p in protocols:
         if p in pin and p in pout:
-            both.append(u'{} (i/o)'.format(p))
+            both.append(u'{} {}'.format(p, strings.table_proto_io))
         elif p in pin:
-            ins.append(u'{} (in)'.format(p))
+            ins.append(u'{} {}'.format(p, strings.table_proto_i))
         else:
-            outs.append(u'{} (out)'.format(p))
+            outs.append(u'{} {}'.format(p, strings.table_proto_o))
     return u', '.join(ins + both + outs)
 
 
@@ -164,53 +164,53 @@ def csv_encode(data, colsep, rowsep, escape):
 
 
 class Columns(object):
-    def __init__(self, **kwargs):
+    def __init__(self, strings, **kwargs):
         # manually specified here to give them an order
         self.all = ['address', 'alias', 'conn_in', 'conn_out', 'role', 'environment', 'tags', 'bytes', 'packets',
                     'protocols']
 
         self.columns = {
             'address': {
-                'nice_name': "Address",
+                'nice_name': strings.table_col_address,
                 'active': 'address' in kwargs,
                 'get': lambda x: x['address']},
             'alias': {
-                'nice_name': "Hostname",
+                'nice_name': strings.table_col_alias,
                 'active': 'alias' in kwargs,
                 'get': lambda x: '' if not x['alias'] else x['alias']},
             'conn_in': {
-                'nice_name': "Total inbound connections",
+                'nice_name': strings.table_col_conn_in,
                 'active': 'conn_in' in kwargs,
                 'get': lambda x: x['conn_in']},
             'conn_out': {
-                'nice_name': "Total outbound connections",
+                'nice_name': strings.table_col_conn_out,
                 'active': 'conn_out' in kwargs,
                 'get': lambda x: x['conn_out']},
             'role': {
-                'nice_name': "Role (0 = client, 1 = server)",
+                'nice_name': strings.table_col_role,
                 'active': 'role' in kwargs,
-                'get': lambda x: role_text(float(x['conn_in']) / max(1.0, float(x['conn_in'] + x['conn_out'])))},
+                'get': lambda x: role_text(strings, float(x['conn_in']) / max(1.0, float(x['conn_in'] + x['conn_out'])))},
             'environment': {
-                'nice_name': "Environment",
+                'nice_name': strings.table_col_environment,
                 'active': 'environment' in kwargs,
                 'get': lambda x: x['env']},
             'tags': {
-                'nice_name': "Tags",
+                'nice_name': strings.table_col_tags,
                 'active': 'tags' in kwargs,
                 'get': lambda x: [
                     x['tags'].split(",") if x['tags'] else [], x['parent_tags'].split(",") if x['parent_tags'] else []]},
             'bytes': {
-                'nice_name': "Bytes Handled",
+                'nice_name': strings.table_col_bytes,
                 'active': 'bytes' in kwargs,
-                'get': lambda x: byte_rate_text(x['bytes_in'] + x['bytes_out'], x['seconds'])},
+                'get': lambda x: byte_rate_text(strings, x['bytes_in'] + x['bytes_out'], x['seconds'])},
             'packets': {
-                'nice_name': "Packets Handled",
+                'nice_name': strings.table_col_packets,
                 'active': 'packets' in kwargs,
-                'get': lambda x: packet_rate_text(x['packets_in'] + x['packets_out'], x['seconds'])},
+                'get': lambda x: packet_rate_text(strings, x['packets_in'] + x['packets_out'], x['seconds'])},
             'protocols': {
-                'nice_name': "Protocols used",
+                'nice_name': strings.table_col_protocols,
                 'active': 'protocols' in kwargs,
-                'get': lambda x: nice_protocol(x['proto_in'], x['proto_out'])},
+                'get': lambda x: nice_protocol(strings, x['proto_in'], x['proto_out'])},
         }
 
     def translate_row(self, data):
@@ -248,7 +248,7 @@ class Table(base.headed):
         self.tableModel = None
         self.nodesModel = None
         self.dsModel = sam.models.datasources.Datasources(common.db, self.page.session, self.page.user.viewing)
-        self.columns = Columns(address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
+        self.columns = Columns(self.page.strings, address=1, alias=1, protocol=1, role=1, bytes=1, packets=1, environment=1, tags=1)
 
     def decode_filters(self, data):
         fs = []
@@ -371,7 +371,7 @@ class Table(base.headed):
             'envs': self.nodesModel.get_env_list(),
             'nextPage': self.next_page(response, self.request['page'], self.request['page_size']),
             'prevPage': self.prev_page(self.request['page']),
-            'spread': self.spread(response, self.request['page'], self.request['page_size']),
+            'spread': self.spread(self.page.strings, response, self.request['page'], self.request['page_size']),
         }
         return outbound
 
@@ -432,13 +432,13 @@ class Table(base.headed):
         return p_prev
 
     @staticmethod
-    def spread(rows, page, page_size):
+    def spread(strings, rows, page, page_size):
         if rows:
             start = page * page_size + 1
             end = start + len(rows[:page_size]) - 1
-            spread = "Results: {0} to {1}".format(start, end)
+            spread = strings.table_spread.format(start, end)
         else:
-            spread = "No matching results."
+            spread = strings.table_spread_none
         return spread
 
     def GET(self):
