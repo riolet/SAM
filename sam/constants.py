@@ -3,6 +3,7 @@ import logging
 import os
 base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
+logger = logging.getLogger(__name__)
 
 supported_languages = ['en', 'fr', 'rv']
 default_lang = ['en']
@@ -89,6 +90,7 @@ plugin_importers = []
 plugin_urls = []
 plugin_models = []
 plugin_rules = []
+plugin_navbar_edits = []  # format to append is (link, dict) and each is applied with a dict.update() call.
 
 plugin_hooks_traffic_import = []
 plugin_hooks_server_start = []
@@ -164,4 +166,13 @@ def get_navbar(lang):
             "group": "any"
         }
     ]
+    for edit in plugin_navbar_edits:
+        try:
+            for link in navbar:
+                if link['link'] == edit[0]:
+                    link.update(edit[1])
+                    break
+        except:
+            logger.warning("Unable to update navbar: {}".format(edit))
+
     return navbar
