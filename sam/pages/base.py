@@ -64,9 +64,9 @@ class Headed(object):
         navbar = constants.get_navbar(self.page.language)
         if self.header:
             if self.page.language == "en":
-                lang = ("version Français", "/fr{}".format(web.ctx.env['PATH_INFO']))
+                lang = ("version Français", "/fr{}".format(web.ctx.env['REQUEST_URI']))
             else:
-                lang = ("English version", "/en{}".format(web.ctx.env['PATH_INFO']))
+                lang = ("English version", "/en{}".format(web.ctx.env['REQUEST_URI']))
             header = str(common.renderer.render(lang_prefix + '_header', navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control, lang))
         else:
             header = ''
@@ -75,8 +75,8 @@ class Headed(object):
         except:
             body = str(common.renderer.render(page_template, *args, **kwargs))
         if self.footer:
-            links = {"English": "/en{}".format(web.ctx.env['PATH_INFO']),
-                     "Français": "/fr{}".format(web.ctx.env['PATH_INFO'])}
+            links = {"English": "/en{}".format(web.ctx.env['REQUEST_URI']),
+                     "Français": "/fr{}".formatweb.ctx.env['REQUEST_URI']}
             footer = str(common.renderer.render(lang_prefix + '_footer', links))
         else:
             footer = ''

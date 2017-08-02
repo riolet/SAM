@@ -14,10 +14,9 @@ $def with (menuItems, selected, user, debug, path, login, language)
             </a>
     <div class="ui simple float right item">
         <a class="langlink" href="$language[1]">$language[0]</a>
-    </div>
     $if login['active']:
         $if user.logged_in:
-            <div class="ui simple float right dropdown item">
+            <div class="ui simple dropdown item">
                 <i class="user icon"></i>
                 $if user.name:
                     $user.name
@@ -33,4 +32,5 @@ $def with (menuItems, selected, user, debug, path, login, language)
                 <i class="user icon"></i>
                 Log in
             </a>
+    </div>
 </div>
