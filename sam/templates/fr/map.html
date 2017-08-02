@@ -1,0 +1,190 @@
+$def with (datasources)
+<!--
+===========================================================
+
+----------------------    Main  Page   --------------------
+
+===========================================================
+-->
+<div id="output">
+  <div id="sidebar" class="ui sidebarholder">
+    <div class="ui sidebar visible">
+      <div class="ui inverted blue segment">
+        <div class="item" id="time_box">
+          <label class="configLabel">Time Range:</label>
+          <div class="slider-box">
+            <div id="slider-date"></div>
+          </div>
+          <div class="ui inverted right labeled fluid input">
+            <input class="slider-input" id="input-start" value="2016-06-19 19:00">
+            <div class="ui label">From</div>
+          </div>
+          <div class="ui inverted right labeled fluid input">
+            <input class="slider-input" id="input-end" value="2016-06-20 08:00">
+            <div class="ui label">To</div>
+          </div>
+        </div>
+        <div id="mapconfig" class="ui inverted accordion">
+        </div>
+      </div>
+    </div>
+    <div tabindex="0" class="pusher">
+      <div id="pulltab">
+        <a class="item drawer-toggle">
+          <i class="content icon"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <!--
+  -----------------------------------------------------------
+  -----------------  Selection Details Panel  ---------------
+  -----------------------------------------------------------
+  -->
+  <div id="sel_bar">
+    <div id="sel_titles">
+      <h4>No selection</h4>
+      <h5>&nbsp;</h5>
+    </div>
+    <div id="selectionInfo" class="ui styled fluid accordion">
+      <div class="title">
+        <i class="dropdown icon"></i>
+        Unique inbound clients: <span id="unique_in">0</span>
+      </div>
+      <div class="content">
+        <div class="transition hidden">
+          <table class="ui very compact sortable celled structured table">
+            <thead>
+            <tr id="conn_in_h">
+              <th>Source IP</th>
+              <th>Dest. Port</th>
+              <th>Count</th>
+            </tr>
+            </thead>
+            <tbody id="conn_in"></tbody>
+            <tfoot class="full-width" id="conn_in_overflow"></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="title">
+        <i class="dropdown icon"></i>
+        Unique servers contacted: <span id="unique_out">0</span>
+      </div>
+      <div class="content">
+        <div class="transition hidden">
+          <table class="ui very compact sortable celled structured table">
+            <thead>
+              <tr id="conn_out_h">
+                <th>Dest. IP</th>
+                <th>Dest. Port</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="conn_out"></tbody>
+            <tfoot class="full-width" id="conn_out_overflow"></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="title">
+        <i class="dropdown icon"></i>
+        Unique ports accessed: <span id="unique_ports">0</span>
+      </div>
+      <div class="content">
+        <div class="transition hidden">
+          <table class="ui very compact sortable celled table">
+            <thead>
+              <tr id="ports_in_h">
+                <th>Port Accessed</th>
+                <th class="sorted descending">Occurrences</th>
+              </tr>
+            </thead>
+            <tbody id="ports_in"></tbody>
+            <tfoot class="full-width" id="ports_in_overflow"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="sel_link" class="bottom attached ui segment" style="display: none"></div>
+  </div> <!-- end selection info div -->
+
+</div> <!-- end div id=output -->
+<!--
+===========================================================
+
+---------------------- Port Edit Popup --------------------
+
+===========================================================
+-->
+<div class="ui modal ports">
+  <div class="header">Port <span id="port_number"></span></div>
+  <div class="content">
+    <table class="ui table">
+      <tr><td class="right aligned">Use Name Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+      <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
+      <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+      <tr><td class="right aligned">Expected Protocols:</td><td id="port_protocols"></td></tr>
+      <tr>
+        <td class="right aligned">Alias Name:</td>
+        <td>
+          <div class="ui input" data-content="A custom alias to override the default name">
+            <input placeholder="port name" id="port_alias_name" type="text">
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="right aligned">Alias Description:</td>
+        <td>
+          <div class="ui input" data-content="A custom alias to override the default description">
+            <input placeholder="port description" id="port_alias_description" type="text">
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="cancel icon"></i>
+      Cancel
+    </div>
+    <div class="ui ok green button">
+      <i class="save icon"></i>
+      Save
+    </div>
+  </div>
+</div>
+<!--
+===========================================================
+
+--------------------- Generic Msg Popup -------------------
+
+===========================================================
+-->
+<div id="popup_modal" class="ui small modal">
+  <i class="close icon"></i>
+  <div id="popup_title" class="header">
+    Success
+  </div>
+  <div class="content">
+    <div id="popup_text" class="description">
+      Your changes were applied successfully
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel button">OK</div>
+  </div>
+</div>
+<!--
+===========================================================
+
+---------------------  Demo Data Popup  -------------------
+
+===========================================================
+-->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Demonstration
+  </div>
+  <p>This is a subset of real network data, anonymized for privacy. The database is read-only and changes will not be saved.</p>
+</div>
