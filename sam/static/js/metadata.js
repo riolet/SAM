@@ -246,7 +246,7 @@ function build_pagination(page, page_size, component, total) {
 
     // PREV button
     button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode("prev"));
+    button.appendChild(document.createTextNode(strings.paginate_prev));
     if (has_prev) {
         button.className = "ui button";
         button.onclick = function () {
@@ -269,7 +269,7 @@ function build_pagination(page, page_size, component, total) {
 
     // NEXT button
     button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode("next"));
+    button.appendChild(document.createTextNode(strings.paginate_next));
     if (has_next) {
         button.className = "ui button";
         button.onclick = function () {
@@ -481,7 +481,7 @@ function present_quick_info(info) {
             table.className = "ui celled striped structured definition table";
             table.appendChild(buildKeyValueRow(strings.meta_sips, info.in.u_ip));
             table.appendChild(buildKeyValueRow(strings.meta_uconns, info.in.u_conn));
-            table.appendChild(buildKeyValueRow(strings.meta_conns, info.in.total + " over " + build_label_duration(info.in.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_conns, info.in.total + strings.meta_conns2 + build_label_duration(info.in.seconds)));
             table.appendChild(buildKeyValueRow(strings.meta_connps, parseFloat(info.in.total / info.in.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.in.bytes_sent)));
             table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.in.bytes_received)));
@@ -507,7 +507,7 @@ function present_quick_info(info) {
             table.className = "ui celled striped structured definition table";
             table.appendChild(buildKeyValueRow(strings.meta_dips, info.out.u_ip));
             table.appendChild(buildKeyValueRow(strings.meta_uconns, info.out.u_conn));
-            table.appendChild(buildKeyValueRow(strings.meta_conns, info.out.total + " over " + build_label_duration(info.out.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_conns, info.out.total + strings.meta_conns2 + build_label_duration(info.out.seconds)));
             table.appendChild(buildKeyValueRow(strings.connps, parseFloat(info.out.total / info.out.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.out.bytes_sent)));
             table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.out.bytes_received)));

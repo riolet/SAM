@@ -1,5 +1,7 @@
 const strings = {
    loading: "Gnidaol..."
+  ,paginate_next: "txen"
+  ,paginate_prev: "verp"
   ,map_empty: "On atad elbaliava"
   ,map_set_search: "Hcraes"
   ,map_set_search_default: "Dnif PI..."
@@ -81,6 +83,7 @@ const strings = {
   ,meta_dips: "Euqinu noitanitsed PIs:"
   ,meta_uconns: "Euqinu snoitcennoc (crs, tsed, trop):"
   ,meta_conns: "Latot snoitcennoc dedrocer:"
+  ,meta_conns2: " revo "  // (total connections recorded: 12345) over (60 seconds.)
   ,meta_connps: "Snoitcennoc rep dnoces:"
   ,meta_b_snt: "Setyb Tnes:"
   ,meta_b_rcv: "Setyb Deviecer:"

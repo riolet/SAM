@@ -9,6 +9,9 @@ units_role_c = "mostly client"
 units_role_cs = "mixed client/server"
 units_role_s = "mostly server"
 units_role_ss = "server"
+units_kilo = "K"
+units_mega = "M"
+units_giga = "G"
 units_bytes = "B"  # bytes
 units_kbytes = "KB"
 units_mbytes = "MB"
@@ -53,3 +56,32 @@ table_proto_o = "(out)"  # out (outbound)
 table_proto_io = "(i/o)"  # in / out
 table_spread = "Results: {0} to {1}"
 table_spread_none = "No matching results."
+meta_none = "No host found at this address"
+meta_src = "Source IP"
+meta_dst = "Dest. IP"
+meta_port = "Dest. Port"
+meta_ports = "Port Accessed"
+meta_links = "Count / Min"
+meta_protocols = "Protocols"
+meta_sum_bytes = "Sum Bytes"
+meta_avg_bytes = "Avg Bytes"
+meta_sum_packets = "Sum Packets"
+meta_avg_packets = "Avg Packets"
+meta_avg_duration = "Avg Duration"
+meta_child_ip = "Address"
+meta_child_name = "Name"
+meta_child_count = "Active Endpoints"
+meta_child_ratio = "Role (0=client, 1=server)"
+
+
+
+
+
+
+
+
+
+
+
+
+

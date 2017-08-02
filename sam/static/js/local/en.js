@@ -1,5 +1,7 @@
 const strings = {
    loading: "Loading..."
+  ,paginate_next: "next"
+  ,paginate_prev: "prev"
   ,map_empty: "No data available"
   ,map_set_search: "Search"
   ,map_set_search_default: "Find IP..."
@@ -81,6 +83,7 @@ const strings = {
   ,meta_dips: "Unique destination IPs:"
   ,meta_uconns: "Unique connections (src, dest, port):"
   ,meta_conns: "Total Connections recorded:"
+  ,meta_conns2: " over "  // (total connections recorded: 12345) over (60 seconds.)
   ,meta_connps: "Connections per second:"
   ,meta_b_snt: "Bytes Sent:"
   ,meta_b_rcv: "Bytes Received:"
