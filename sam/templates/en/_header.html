@@ -1,4 +1,4 @@
-$def with (menuItems, selected, user, debug, path, login)
+$def with (menuItems, selected, user, debug, path, login, language)
 <div class="ui inverted main menu" id="navbar">
     <div class="header item">
         <a href="/"><img class="logo ui middle aligned spaced image" width="32px" height="32px" src="/static/img/logo_light.png">Systems Architecture Mapper</a>
@@ -12,6 +12,9 @@ $def with (menuItems, selected, user, debug, path, login)
                 <i class="$menuItem['icon'] icon"></i>
                 $menuItem['name']
             </a>
+    <div class="ui simple float right item">
+        <a class="langlink" href="$language[1]">$language[0]</a>
+    </div>
     $if login['active']:
         $if user.logged_in:
             <div class="ui simple float right dropdown item">

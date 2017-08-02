@@ -2,6 +2,7 @@ map_title = "Map"
 meta_title = "Host Details"
 stats_title = "Stats"
 table_title = "Table View"
+login_title = "Login"
 settings_title = "Settings"
 dashboard_title = "Dashboard"
 
