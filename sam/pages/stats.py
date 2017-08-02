@@ -39,25 +39,25 @@ class Stats(base.headed):
         # get unique host information
         end_ips = set([row.ip for row in common.db.query("SELECT dst AS 'ip' FROM {table_links} GROUP BY ip"
                                                          .format(table_links=table_links))])
-        stats.append(("Unique destination IP addresses:", str(len(end_ips))))
+        stats.append((self.page.strings.stats_udips, str(len(end_ips))))
 
         source_ips = set([row.ip for row in common.db.query("SELECT src AS 'ip' FROM {table_links} GROUP BY ip"
                                                             .format(table_links=table_links))])
-        stats.append(("Unique source IP addresses:", str(len(source_ips))))
+        stats.append((self.page.strings.stats_usips, str(len(source_ips))))
 
-        stats.append(("Unique IP addresses:", str(len(end_ips | source_ips))))
+        stats.append((self.page.strings.stats_uips, str(len(end_ips | source_ips))))
 
         # get unique destination ports and spread
         rows = common.db.query("SELECT DISTINCT port AS 'Port' FROM {table_links};"
                                .format(table_links=table_links))
         row_list = rows.list()
-        stats.append(("Unique destination ports used:", str(len(row_list))))
+        stats.append((self.page.strings.stats_ports, str(len(row_list))))
         sys_row_list = [i for i in row_list if i['Port'] < 1024]
-        stats.append(("Unique system ports used (0..1023):", str(len(sys_row_list))))
+        stats.append((self.page.strings.stats_sports, str(len(sys_row_list))))
         usr_row_list = [i for i in row_list if 1024 <= i['Port'] < 49152]
-        stats.append(("Unique user ports used (1024..49151):", str(len(usr_row_list))))
+        stats.append((self.page.strings.stats_uports, str(len(usr_row_list))))
         prv_row_list = [i for i in row_list if 49152 <= i['Port'] < 65536]
-        stats.append(("Unique private ports used (49152..65535):", str(len(prv_row_list))))
+        stats.append((self.page.strings.stats_pports, str(len(prv_row_list))))
 
         rows = common.db.query(
             "SELECT dst AS 'Address', COUNT(DISTINCT port) AS 'Ports', COUNT(links) AS 'Connections' "
@@ -65,28 +65,28 @@ class Stats(base.headed):
                 .format(table_links=table_links))
         row_list = list(rows)
         if len(row_list) > 0:
-            stats.append(("Max ports for one destination: ", str(row_list[0]['Ports'])))
+            stats.append((self.page.strings.stats_ports_max, str(row_list[0]['Ports'])))
             count = 0
             while count < len(row_list) and row_list[count]['Ports'] > 10:
                 count += 1
             if count != len(row_list):
-                stats.append(("Percent of destinations with fewer than 10 ports: ", "{0:0.3f}%"
+                stats.append((self.page.strings.stats_ports_few, "{0:0.3f}%"
                               .format((len(end_ips) - count) * 100 / float(len(end_ips)))))
 
         rows = common.db.query("SELECT 1 FROM {table_links} GROUP BY src, dst, port;".format(table_links=table_links))
         row_list = list(rows)
-        stats.append(("Total Number of distinct connections (node -> node:port) stored:", str(len(row_list))))
+        stats.append((self.page.strings.stats_conns, str(len(row_list))))
         rows = common.db.query("SELECT SUM(links) AS 'links' FROM {table_links} "
                                "GROUP BY src, dst, port HAVING links > 100;".format(table_links=table_links))
         row_list = list(rows)
-        stats.append(("Number of distinct connections occurring more than 100 times:", str(len(row_list))))
+        stats.append((self.page.strings.stats_conns_many, str(len(row_list))))
 
         return stats
 
     def overall_stats(self):
         # ds_model = Datasources(self.session, self.sub)
         node_model = Nodes(common.db, self.sub)
-        stats = [('Total hosts recorded', len(node_model.get_all_endpoints()))]
+        stats = [(self.page.strings.stats_hosts, len(node_model.get_all_endpoints()))]
         return stats
 
     def decode_ds(self, data):
@@ -153,10 +153,10 @@ class Stats(base.headed):
         self.table_links = "s{acct}_ds{{id}}_Links".format(acct=self.sub)
 
         segments = []
-        segments.append(('Overall', self.overall_stats()))
+        segments.append((self.page.strings.stats_overall, self.overall_stats()))
         ds_model = Datasources(common.db, self.page.session, self.sub)
         for ds_id in ds_model.ds_ids:
-            section_name = 'Datasource: {0}'.format(ds_model.datasources[ds_id]['name'])
+            section_name = self.page.strings.stats_datasource.format(ds_model.datasources[ds_id]['name'])
             segments.append((section_name, self.ds_stats(ds_id)))
 
         return self.render('stats', segments)
