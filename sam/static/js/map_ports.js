@@ -186,8 +186,8 @@
     };
     ports.show_edit_window = function (port) {
         document.getElementById("port_number").innerHTML = port;
-        document.getElementById("port_name").innerHTML = "loading...";
-        document.getElementById("port_description").innerHTML = "loading...";
+        document.getElementById("port_name").innerHTML = strings.loading;
+        document.getElementById("port_description").innerHTML = strings.loading;
         document.getElementById("port_protocols").innerHTML = "";
         document.getElementById("port_alias_name").value = "";
         document.getElementById("port_alias_description").value = "";

@@ -1,6 +1,6 @@
-$def with (title, stylesheets=[], scripts=[])
+$def with (title, lang, stylesheets=[], scripts=[])
 <!DOCTYPE html>
-<html lang="en-CA">
+<html lang="$lang">
 <head>
     <meta charset="utf-8"/>
     <link type="text/css" rel="stylesheet" href="/static/semantic/semantic.css">
@@ -8,6 +8,7 @@ $def with (title, stylesheets=[], scripts=[])
         <link type="text/css" rel="stylesheet" href="$sheet">
     <script src="/static/js/jquery-3.1.0.min.js"></script>
     <script src="/static/semantic/semantic.js"></script>
+    <script src="/static/js/local/$(lang).js"></script>
     $for script in scripts:
         <script src="$script"></script>
     <title>$title</title>

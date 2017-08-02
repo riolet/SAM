@@ -736,7 +736,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       });
       if (Object.keys(rule_data.exposed).length == 0) {
         let p = document.createElement("P");
-        p.innerText = "No parameters available to adjust.";
+        p.innerText = strings.sec_edit_none;
         parambox.appendChild(p);
       }
     },
@@ -927,14 +927,14 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
 
         //add accept/reject/ignore buttons
         let btn_td;
-        btn_td = anomaly_detection.build_categorizer("accept", "green", warning.status === "Accepted",
-          "Accept this warning and promote it to an alert.", warning.id, anomaly_detection.accept_btn);
+        btn_td = anomaly_detection.build_categorizer(strings.sec_ad_accept, "green", warning.status === "Accepted",
+          strings.sec_ad_accept_hint, warning.id, anomaly_detection.accept_btn);
         tr.appendChild(btn_td);
-        btn_td = anomaly_detection.build_categorizer("reject", "red", warning.status === "Rejected",
-          "Reject this warning as a false positive.", warning.id, anomaly_detection.reject_btn);
+        btn_td = anomaly_detection.build_categorizer(strings.sec_ad_reject, "red", warning.status === "Rejected",
+          strings.sec_ad_reject_hint, warning.id, anomaly_detection.reject_btn);
         tr.appendChild(btn_td);
-        btn_td = anomaly_detection.build_categorizer("ignore", "grey", warning.status === "Ignored",
-          "Ignore this warning.", warning.id, anomaly_detection.ignore_btn);
+        btn_td = anomaly_detection.build_categorizer(strings.sec_ad_ignore, "grey", warning.status === "Ignored",
+          strings.sec_ad_ignore_hint, warning.id, anomaly_detection.ignore_btn);
         tr.appendChild(btn_td);
       }
       warning_tbody.appendChild(tr);
@@ -1039,7 +1039,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
           })
 
           if (wlist.length == 0) {
-            anomaly_detection.add_warning({"empty":"No warnings to display."});
+            anomaly_detection.add_warning({"empty":strings.sec_ad_empty});
           }
 
           if (typeof(callback) === "function") {
@@ -1151,26 +1151,25 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       modal.classList.add("loading");
       anomaly_detection.GET_warning(warning_id);
 
-
       $(document.getElementById("ad_info_modal"))
         .modal('show')
       ;
       return false;
     },
     reset_all_btn: function () {
-      getConfirmation("Are you sure you want to delete all profile data?", anomaly_detection.POST_reset_all);
+      getConfirmation(strings.sec_ad_del_profiles, anomaly_detection.POST_reset_all);
     },
     show_all_btn: function () {
       if (this.classList.contains("active")) {
         this.classList.remove("active");
-        this.innerText = "Showing uncategorized";
-        this.dataset["tooltip"] = "Click to show all warnings.";
+        this.innerText = strings.sec_ad_show_some;
+        this.dataset["tooltip"] = strings.sec_ad_show_some_hint;
         this.blur();
         anomaly_detection.show_all = false;
       } else {
         this.classList.add("active");
-        this.innerText = "Showing all";
-        this.dataset["tooltip"] = "Click to only show uncategorized warnings.";
+        this.innerText = strings.sec_ad_show_all;
+        this.dataset["tooltip"] = strings.sec_ad_show_all_hint;
         anomaly_detection.show_all = true;
       }
       anomaly_detection.GET_warnings();
@@ -1228,6 +1227,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
     },
 
     timerange_validator: function () {
+      //TODO: This needs to be localized. It only works on english input.
       let timerange = document.getElementById("alert_time_filter");
       let str = timerange.value;
       let old_string = timerange.dataset['old'];
@@ -1279,7 +1279,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       // clear the meta details
       alerts.clear_details_meta();
       // clear all values
-      document.getElementById("alert_details_name").innerText = "No alert selected.";
+      document.getElementById("alert_details_name").innerText = strings.sec_alert_none;
       document.getElementById("alert_details_id").innerText = "";
       document.getElementById("alert_details_time").innerText = "";
       document.getElementById("alert_details_host").innerText = "";
@@ -1330,17 +1330,51 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
     },
 
     confirm_del_all: function () {
-      getConfirmation("Are you sure you want to delete all alerts?", alerts.POST_delete_all);
+      getConfirmation(strings.sec_alert_del_all, alerts.POST_delete_all);
     },
 
     confirm_del: function () {
-      getConfirmation("Are you sure you want to delete this alert?", function () {
+      getConfirmation(strings.sec_alert_del, function () {
         let id = document.getElementById("alert_details_id").innerText;
         alerts.POST_delete(id);
       });
     },
 
-    GET_alerts_success: function (response, callback) {
+    GET_alerts_success: function (response) {
+      alerts.clear_alerts();
+      response.alerts.forEach(function (alert) {
+        alerts.add_alert([
+          alert.id,
+          alert.host,
+          alert.report_time,
+          alert.severity,
+          alert.label,
+          alert.rule_name
+        ]);
+      })
+      
+      let prev_page = document.getElementById("alert_prev_page");
+      let next_page = document.getElementById("alert_next_page");
+      let span_page = document.getElementById("alert_page_num");
+      let span_pages = document.getElementById("alert_page_count");
+      
+      if (response.alerts.length == 0) {
+        alerts.add_alert([strings.sec_alert_zero]);
+      } else {
+        span_page.innerText = response.page;
+        span_pages.innerText = response.pages;
+        if (response.page == 1) {
+          prev_page.classList.add("disabled");
+        } else {
+          prev_page.classList.remove("disabled");
+        }
+        if (response.page < response.pages) {
+          next_page.classList.remove("disabled");
+        } else {
+          next_page.classList.add("disabled");
+        }
+      }
+      alerts.deselect_alert();
     },
 
     GET_alerts: function (page, callback) {
@@ -1354,40 +1388,7 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
         dataType: "json",
         error: generic_ajax_failure,
         success: function (response) {
-          alerts.clear_alerts();
-          response.alerts.forEach(function (alert) {
-            alerts.add_alert([
-              alert.id,
-              alert.host,
-              alert.report_time,
-              alert.severity,
-              alert.label,
-              alert.rule_name
-            ]);
-          })
-          
-          let prev_page = document.getElementById("alert_prev_page");
-          let next_page = document.getElementById("alert_next_page");
-          let span_page = document.getElementById("alert_page_num");
-          let span_pages = document.getElementById("alert_page_count");
-          
-          if (response.alerts.length == 0) {
-            alerts.add_alert(["0 Alerts to Display."]);
-          } else {
-            span_page.innerText = response.page;
-            span_pages.innerText = response.pages;
-            if (response.page == 1) {
-              prev_page.classList.add("disabled");
-            } else {
-              prev_page.classList.remove("disabled");
-            }
-            if (response.page < response.pages) {
-              next_page.classList.remove("disabled");
-            } else {
-              next_page.classList.add("disabled");
-            }
-          }
-          alerts.deselect_alert();
+          alerts.GET_alerts_success(response);
           if (typeof(callback) === "function") {
             callback(alerts);
           }

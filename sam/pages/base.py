@@ -1,4 +1,7 @@
+# coding=utf-8
+import importlib
 import decimal
+import os
 import json
 from sam import constants
 from sam import errors
@@ -15,9 +18,12 @@ def decimal_default(obj):
 
 
 class Page(object):
+
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
+        self.language = self.session['lang']
+        self.strings = importlib.import_module("sam.local." + self.language)
         self.inbound = web.input()
 
     def require_group(self, group):
@@ -41,28 +47,42 @@ page = Page
 
 
 class Headed(object):
-    def __init__(self, title, header, footer):
+    def __init__(self, header, footer):
         self.page = page()
         self.scripts = []
         self.styles = []
-        self.page_title = title
+        self.page_title = "Untitled"
         self.header = header
         self.footer = footer
 
-    def render(self, page, *args, **kwargs):
-        head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
+    def set_title(self, title):
+        self.page_title = title
+
+    def render(self, page_template, *args, **kwargs):
+        lang_prefix = '{}{}'.format(self.page.language, os.path.sep)
+        head = str(common.renderer.render('_head', self.page_title, lang=self.page.language, stylesheets=self.styles, scripts=self.scripts))
+        navbar = constants.get_navbar(self.page.language)
         if self.header:
-            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
+            if self.page.language == "en":
+                lang = ("version Français", "/fr{}".format(web.ctx.env['REQUEST_URI']))
+            else:
+                lang = ("English version", "/en{}".format(web.ctx.env['REQUEST_URI']))
+            header = str(common.renderer.render(lang_prefix + '_header', navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control, lang))
         else:
             header = ''
-        page = str(common.renderer.render(page, *args, **kwargs))
+        try:
+            body = str(common.renderer.render(lang_prefix + page_template, *args, **kwargs))
+        except:
+            body = str(common.renderer.render(page_template, *args, **kwargs))
         if self.footer:
-            footer = str(common.renderer.render('_footer'))
+            links = {"English": "/en{}".format(web.ctx.env['REQUEST_URI']),
+                     "Français": "/fr{}".formatweb.ctx.env['REQUEST_URI']}
+            footer = str(common.renderer.render(lang_prefix + '_footer', links))
         else:
             footer = ''
         tail = str(common.renderer.render('_tail'))
 
-        return head+header+page+footer+tail
+        return head+header+body+footer+tail
 
 
 headed = Headed

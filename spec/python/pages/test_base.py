@@ -23,6 +23,25 @@ def test_page():
             assert p.require_all_groups({'read', 'write', 'arithemetic'})
 
 
+def test_decode_http_csv():
+    s = "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
+    expected = {'fr-CH': 1.0, 'fr': 0.9, 'en': 0.8, 'de': 0.7, '*': 0.5}
+    assert sam.pages.base.Page.decode_http_csv(s) == expected
+
+    s = "en-US, en;q=0.5"
+    expected = {'en-US': 1.0, 'en': 0.5}
+    assert sam.pages.base.Page.decode_http_csv(s) == expected
+
+    s = "es"
+    expected = {'es': 1.0}
+    assert sam.pages.base.Page.decode_http_csv(s) == expected
+
+    s = ""
+    expected = dict()
+    assert sam.pages.base.Page.decode_http_csv(s) == expected
+
+
+
 def test_headed():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
         p = sam.pages.base.Headed('TestTitle', True, True)

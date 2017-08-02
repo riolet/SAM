@@ -1,0 +1,375 @@
+$def with (user, settings, datasources, livekeys, importers, tags_preview, envs_preview, hosts_preview)
+$ disabled = "" if user.may_post() else "disabled"
+<div class="ui container">
+  <h1 class="ui center aligned header">Sgnittes</h1>
+
+  <!-- Data Sources -->
+  $if not disabled:
+    <div class="ui raised segment">
+      <h3 class="ui header">Atad Secruos</h3>
+      <p>Atad secruos tel uoy erots elpitlum stes fo krowten atad</p>
+      <p>Hcae atad ecruos derots rieht nwo tes fo noitcennoc yrotsih dna enilemit. Edon noitamrofni, hcus sa sgat, tnemnorivne, dna semantsoh, si derahs ssorca atad secruos.</p>
+      <div class="ui datasources grid">
+        <div class="four wide column">
+          <table class="ui very basic compact selectable table">
+            <tbody id="ds_tabs">
+              $if datasources:
+                $for ds in datasources:
+                  <tr class="$('active' if ds['id'] == settings['datasource'] else '') item" id="ds$ds['id']_tab_row">
+                    <td class="center aligned collapsing">
+                      <button class="ui small icon button del_ds" data-tab="ds$ds['id']"><i class="red delete icon"></i></button>
+                    </td>
+                    <td class="tablabel" data-tab="ds$ds['id']">$ds['name']</td>
+                  </tr>
+              $else:
+                <tr>
+                  <td class="center aligned collapsing">
+                    <button class="ui disabled icon button"><i class="disabled red delete icon"></i></button>
+                  </td>
+                  <td class="tablabel">
+                    Enon
+                  </td>
+                </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">
+                  <div id="add_ds" class="ui small green button">
+                    <i class="add icon"></i>Wen Atad Ecruos
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div id="ds_tab_contents" class="twelve wide stretched column">
+          $if datasources:
+            $for ds in datasources:
+              <div class="ui $('active' if ds['id'] == settings['datasource'] else '') tab segment" data-tab="ds$ds['id']">
+                <table class="ui fixed definition table">
+                  <tbody>
+                  <tr>
+                    <td>Eman:</td>
+                    <td>
+                      <div class="ui transparent left icon $disabled fluid input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Otua-Hserfer (pam weiv):</td>
+                    <td>
+                      <div class="ui toggle $disabled checkbox">
+                        <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
+                        <label>&nbsp;</label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Otua-Hserfer lavretni (sdnoces):</td>
+                    <td>
+                      <div class="ui transparent left icon $disabled fluid input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Talf edom (pam weiv):</td>
+                    <td>
+                      <div class="ui toggle $disabled checkbox">
+                        <input class="ds_flat" name="public" type="checkbox" $('checked=""' if ds['flat'] else '')>
+                        <label>&nbsp;</label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Eteled lla noitcennoc noitamrofni:</td>
+                    <td>
+                      <button class="ui compact icon button del_con"><i class="red trash icon"></i>Eteled Snoitcennoc</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Daolpu a noitcennoc gol:</td>
+                    <td>
+                      <button class="ui compact icon button upload_con"><i class="green upload icon"></i>Daolpu Gol</button>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+          $else:
+            <div class="active tab segment" data-tab="dsnone">
+              <table class="ui fixed definition table">
+                <tbody>
+                  <tr>
+                    <td>...</td>
+                    <td>...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="ui raised segment">
+      <h3 class="ui header">Atadetam</h3>
+      <p>Atem atad si derots tnadnepedni fo cificeps atad secruos. Ti sedulcni noitamrofni no
+        stsoh hcus sa emantsoh, tnemnorivne, dna sgat.</p>
+      <div class="meta_del">
+        <h4>Teser tsoh seman ot eb knalb.</h4>
+        <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Eteled Semantsoh</button>
+        $if len(hosts_preview) > 1:
+          <p>Tnerruc stsoh edulcni:
+          $for host in hosts_preview[:-1]:
+            <em>$host</em>,
+          dna <em>$hosts_preview[-1]</em>.</p>
+        $elif len(hosts_preview) == 1:
+          <p>Tnerruc stsoh edulcni: <em>$hosts_preview[0]</em></p>
+        $else:
+          <p>On semantsoh era yltnerruc derots.</p>
+      </div>
+      <div class="meta_del">
+        <h4>Remove all tags.</h4>
+        <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Eteled Sgat</button>
+        $if len(tags_preview) > 1:
+          <p>Tnerruc sgat edulcni:
+          $for tag in tags_preview[:-1]:
+            <em>$tag</em>,
+          dna <em>$tags_preview[-1]</em>.</p>
+        $elif len(tags_preview) == 1:
+          <p>Tnerruc sgat edulcni: <em>$tags_preview[0]</em></p>
+        $else:
+          <p>On sgat era yltnerruc derots.</p>
+      </div>
+      <div class="meta_del">
+        <h4>Teser lla tnemnorivne noitamrofni ot eb "noitcudorp".</h4>
+        <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Eteled Stnemnorivne</button>
+        $if len(envs_preview) > 1:
+          <p>Tnerruc stnemnorivne edulcni:
+          $for env in envs_preview[:-1]:
+            <em>$env</em>,
+          dna <em>$envs_preview[-1]</em>.</p>
+        $elif len(envs_preview) == 1:
+          <p>Tnerruc stnemnorivne edulcni: <em>envs_preview[0]</em></p>
+        $else:
+          <p>On tnemnorivne noitamrofni era yltnerruc derots.</p>
+      </div>
+    </div>
+
+
+    <!-- Live Updates -->
+    <div class="ui raised segment">
+      <h3 class="ui header">Evil Setadpu</h3>
+      <p>Evil setadpu era a yaw ot tcennoc ruoy retuor ro yawetag yltcerid ot eht esabatad.</p>
+      <p>Ot elbane siht, uoy deen ot nur a rotcelloc ssecorp no ruoy lacol krowten hcihw lliw eviecer dna etalsnart krowten
+        .atad Ecno detalsnart, eht rotcelloc snepo a eruces noitcennoc eht rotagergga, rehtona margorp taht sessecorp eht
+        atad dna stropmi ti otni ruoy esabatad. Morf ereht ti nac eb deweiv hguorht eht revresbew.</p>
+      <p>Eht evil rotcelloc sdeen ot eb derugifnoc yb( tnemnorivne )selbairav ot esu a ralucitrap tamrof, ssecca yek, dna tekcos.</p>
+      <p>Evil rotcelloc ssecca syek era desu yb eht rotagergga ot etacitnehtua ssecca morf srotcelloc erofeb gnitirw ot eht esabatad.</p>
+      <div class="field">
+        <table class="ui compact celled collapsing table">
+          <thead>
+            <tr>
+              <th>Evomer</th>
+              <th>Ssecca Yek</th>
+              <th>Noitanitsed</th>
+            </tr>
+          </thead>
+          <tbody id="live_update_tbody">
+            $for lk in livekeys:
+              <tr>
+                <td class="collapsing">
+                  <button class="remove_live_key $disabled ui small icon button">
+                    <i class="red delete icon"></i>
+                  </button>
+                </td>
+                <td class="secret key">$lk['access_key']</td>
+                <td>$lk['datasource']</td>
+              </tr>
+            $if not livekeys:
+              <tr>
+                <td class="collapsing">
+                  <button class="disabled ui small icon button">
+                    <i class="red delete icon"></i>
+                  </button>
+                </td>
+                <td colspan="2">enon</td>
+              </tr>
+          </tbody>
+          <tfoot class="full-width">
+            <tr>
+              <th colspan="3">
+                <div id="add_live_key" class="ui $disabled small green button">
+                  <i class="add icon"></i>Etareneg
+                </div>
+                <div class="ui selection $disabled dropdown">
+                  $if datasources:
+                    <input id="live_dest" name="live_dest" type="hidden" value="ds$datasources[0]['id']">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">atad ecruos</div>
+                    <div class="menu" id="live_dest_list">
+                      $for ds in datasources:
+                        <div class="item" data-value="ds$ds['id']">$ds['name']</div>
+                    </div>
+                  $else:
+                    <input id="live_dest" name="live_dest" type="hidden" value="dsnone">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">atad ecruos</div>
+                    <div class="menu" id="live_dest_list">
+                      <div class="item" data-value="dsnone">Enon</div>
+                    </div>
+                </div>
+              </th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  <!--
+  <div class="field">
+    <span class="text">** Some way to delete data that is older than X minutes. </span>
+    <span class="text">Maybe note the time range represented within the data source? </span>
+    <span class="text">Should this be part of the delete menu? (answer: yes)</span>
+  </div>
+  -->
+  <!-- Colors -->
+  <!-- <h3 class="ui header">Colors</h3> -->
+</div>
+
+<!-- Confirm Delete modal -->
+<div id="deleteModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Mrifnoc Eteled
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="trash outline icon"></i>
+    </div>
+    <div class="description">
+      <p id="deleteMessage">Era uoy erus?</p>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Mrifnoc
+    </div>
+  </div>
+</div>
+
+<!-- New Datasource modal -->
+<div id="newDSModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Wen Atad Ecruos
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="cube icon"></i>
+    </div>
+    <div class="ui form">
+      <h4 class="ui header">Esaelp retne a eman rof ruoy atad ecruos:</h4>
+      <div class="field">
+        <input id="newDSName" type="text" placeholder="Data source 1">
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Mrifnoc
+    </div>
+  </div>
+</div>
+
+<!-- Upload Log modal -->
+<div id="uploadModal" class="ui small modal">
+  <i class="close icon"></i>
+  <div class="header">
+    Daolpu Gol
+  </div>
+  <div class="image content">
+    <div class="image">
+      <i class="file text outline icon"></i>
+    </div>
+    <div class="ui transparent form">
+      <div class="field">
+        <label>Esoohc a elif ot daolpu</label>
+        <input id="log_path" type="file" placeholder="<log file>">
+      </div>
+      <div class="field">
+        <label>Gol tamrof</label>
+        <div class="ui selection dropdown">
+          $if importers:
+            <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">
+            <i class="dropdown icon"></i>
+            <div class="default text">Elif Tamrof</div>
+            <div class="menu">
+              $for imp in importers:
+                <div class="item" data-value="$imp[0]">$imp[1]</div>
+            </div>
+          $else:
+            <input name="log_format" id="log_format" type="hidden" value="none">
+            <i class="dropdown icon"></i>
+            <div class="default text">Elif Tamrof</div>
+            <div class="menu">
+              <div class="item" data-value="none">Enon</div>
+            </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Atad ecruos</label>
+        <div class="ui selection dropdown">
+          $if datasources:
+            <input name="log_ds" id="log_ds" type="hidden" value="ds$datasources[0]['id']">
+            <i class="dropdown icon"></i>
+            <div class="default text">atad ecruos</div>
+            <div class="menu" id="log_ds_list">
+              $for ds in datasources:
+                <div class="item" data-value="ds$ds['id']">$ds['name']</div>
+            </div>
+          $else:
+            <input name="log_ds" id="log_ds" type="hidden" value="dsnone">
+            <i class="dropdown icon"></i>
+            <div class="default text">atad ecruos</div>
+            <div class="menu" id="log_ds_list">
+              <div class="item" data-value="dsnone">Enon</div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel red basic button">
+      <i class="remove icon"></i>
+      Lecnac
+    </div>
+    <div class="ui ok green button">
+      <i class="checkmark icon"></i>
+      Mrifnoc
+    </div>
+  </div>
+</div>
+
+<div class="ui response small modal">
+  <i class="close icon"></i>
+  <div id="upload_results_title" class="header">
+    Sseccus
+  </div>
+  <div class="content">
+    <div id="upload_results" class="description">
+      Ruoy segnahc erew deilppa yllufsseccus
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui cancel button">KO</div>
+  </div>
+</div>

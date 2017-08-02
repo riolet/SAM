@@ -1,0 +1,36 @@
+$def with (menuItems, selected, user, debug, path, login, language)
+<div class="ui inverted main menu" id="navbar">
+    <div class="header item">
+        <a href="/"><img class="logo ui middle aligned spaced image" width="32px" height="32px" src="/static/img/logo_light.png">Smetsys Erutcetihcra Reppam</a>
+    </div>
+    $for menuItem in menuItems:
+        $ active = ''
+        $if menuItem['name']==selected:
+            $ active = 'active'
+        $if user.any_group(set(menuItem['group'].split())):
+            <a class="item $active" href="$menuItem['link']">
+                <i class="$menuItem['icon'] icon"></i>
+                $menuItem['name']
+            </a>
+    <div class="ui simple float right item">
+        <a class="langlink" href="$language[1]">$language[0]</a>
+    $if login['active']:
+        $if user.logged_in:
+            <div class="ui simple dropdown item">
+                <i class="user icon"></i>
+                $if user.name:
+                    $user.name
+                $else:
+                    $user.email
+                <i class="dropdown icon"></i>
+                <div class="menu">
+                    <a class="item" href="$login['logout_url']">Log out</a>
+                </div>
+            </div>
+        $else:
+            <a class="right floated item $active" href="$login['login_url']">
+                <i class="user icon"></i>
+                Gol ni
+            </a>
+    </div>
+</div>
