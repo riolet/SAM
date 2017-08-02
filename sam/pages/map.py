@@ -5,7 +5,8 @@ from sam import common
 
 class Map(base.headed):
     def __init__(self):
-        base.Headed.__init__(self, "Map", header=True, footer=False)
+        super(Map, self).__init__(True, False)
+        self.set_title(self.page.strings.map_title)
         self.scripts = ['/static/js/map.js',
                         '/static/js/map_node.js',
                         '/static/js/map_links.js',

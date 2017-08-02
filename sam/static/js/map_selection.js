@@ -22,7 +22,7 @@ function sel_set_selection(node) {
 
     if (node !== null && node.details.loaded === false) {
         // load details
-        m_selection["titles"].firstChild.innerHTML = "Loading selection...";
+        m_selection["titles"].firstChild.innerHTML = strings.sel_loading;
         GET_details(node, sel_update_display);
     } else {
         sel_update_display();
@@ -52,7 +52,7 @@ function sel_clear_display() {
 
     // add "No selection" title back in.
     var h4 = document.createElement("h4");
-    h4.appendChild(document.createTextNode("No selection"));
+    h4.appendChild(document.createTextNode(strings.sel_none));
     m_selection["titles"].appendChild(h4);
     // for spacing.
     m_selection["titles"].appendChild(document.createElement("h5"));
@@ -79,7 +79,7 @@ function sel_build_title(node) {
   var input = document.createElement("input");
   input.id = "node_alias_edit";
   input.type = "text";
-  input.placeholder = "Node Alias";
+  input.placeholder = strings.sel_alias;
   input.style.textAlign = "center";
   input.value = s_name;
   input.onkeyup = s_name_edit_callback;
@@ -167,7 +167,7 @@ function sel_build_overflow(amount, columns) {
     var row = document.createElement("tr");
     if (amount > 0) {
         var th = document.createElement("th");
-        th.appendChild(document.createTextNode("Plus " + amount + " more..."));
+        th.appendChild(document.createTextNode(strings.sel_more1 + amount + strings.sel_more2));
         row.appendChild(th);
 
         if (columns > 1) {
@@ -183,60 +183,60 @@ function sel_build_overflow(amount, columns) {
 function build_label_bytes(bytes) {
     "use strict";
     if (bytes < 10000) {
-        return bytes + " B";
+        return bytes + " " + strings.sel_b;
     }
     bytes /= 1024;
     if (bytes < 10000) {
-        return Math.round(bytes) + " KB";
+        return Math.round(bytes) + " " + strings.sel_kb;
     }
     bytes /= 1024;
     if (bytes < 10000) {
-        return Math.round(bytes) + " MB";
+        return Math.round(bytes) + " " + strings.sel_mb;
     }
     bytes /= 1024;
     if (bytes < 10000) {
-        return Math.round(bytes) + " GB";
+        return Math.round(bytes) + " " + strings.sel_gb;
     }
     bytes /= 1024;
-    return Math.round(bytes) + " TB";
+    return Math.round(bytes) + " " + strings.sel_tb;
 }
 
 function build_label_datarate(bps) {
   "use strict";
   if (bps < 1000) {
-    return bps.toFixed(2) + " B/s";
+    return bps.toFixed(2) + " " + strings.sel_bps;
   }
   bps /= 1024;
   if (bps < 1000) {
-    return bps.toFixed(2) + " KiB/s";
+    return bps.toFixed(2) + " " + strings.sel_kbps;
   }
   bps /= 1024;
   if (bps < 1000) {
-    return bps.toFixed(2) + " MiB/s";
+    return bps.toFixed(2) + " " + strings.sel_mbps;
   }
   bps /= 1024;
-  return bps.toFixed(2) + " GiB/s";
+  return bps.toFixed(2) + " " + strings.sel_gbps;
 }
 
 function build_label_duration(elapsed) {
     "use strict";
     if (elapsed < 120) {
-        return Math.round(elapsed) + " seconds";
+        return Math.round(elapsed) + " " + strings.sel_sec;
     }
     elapsed /= 60;
     if (elapsed < 120) {
-        return Math.round(elapsed) + " minutes";
+        return Math.round(elapsed) + " " + strings.sel_min;
     }
     elapsed /= 60;
     if (elapsed < 48) {
-        return Math.round(elapsed) + " hours";
+        return Math.round(elapsed) + " " + strings.sel_hour;
     }
     elapsed /= 24;
     if (elapsed < 14) {
-        return Math.round(elapsed) + " days";
+        return Math.round(elapsed) + " " + strings.sel_day;
     }
     elapsed /= 7;
-    return Math.round(elapsed) + " weeks";
+    return Math.round(elapsed) + " " + strings.sel_week;
 }
 
 function sel_panel_height() {
@@ -269,7 +269,7 @@ function sel_panel_height() {
 function sel_create_link(node) {
     var address = nodes.get_address(node);
     var link = "./metadata#ip=" + address + "&ds=" + controller.ds;
-    var text = "More details for " + address;
+    var text = strings.sel_more_info + address;
 
     var icon = document.createElement("I");
     icon.className = "tasks icon";

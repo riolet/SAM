@@ -661,8 +661,8 @@ function render(ctx, x, y, scale) {
     if (Object.keys(renderCollection).length === 0) {
         ctx.fillStyle = renderConfig.labelColorError;
         ctx.font = "3em sans";
-        var size = ctx.measureText("No connections to display.");
-        ctx.fillText("No data available", controller.rect.width / 2 - size.width / 2, controller.rect.height / 2);
+        var size = ctx.measureText(strings.map_empty);
+        ctx.fillText(strings.map_empty, controller.rect.width / 2 - size.width / 2, controller.rect.height / 2);
         return;
     }
 

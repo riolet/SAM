@@ -71,11 +71,11 @@ var g_timer = null;
     self.init_demo();
 
     // add ip_search to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("search", "Search", "search", "Find IP...", "Find an IP address. e.g. 192.168.0.12", onsearch));
+    map_settings.add_object(null, null, map_settings.create_input("search", strings.map_set_search, "search", strings.map_set_search_default, strings.map_set_search_hint, onsearch));
     // add port_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("filter", "Port Filter", "filter", "Filter by port...", "Filter by port number. Try: 80", onfilter));
+    map_settings.add_object(null, null, map_settings.create_input("filter", strings.map_set_port, "filter", strings.map_set_port_default, strings.map_set_port_hint, onfilter));
     // add protocol_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "exchange", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
+    map_settings.add_object(null, null, map_settings.create_input("proto_filter", strings.map_set_protocol, "exchange", strings.map_set_protocol_default, strings.map_set_protocol_hint, onProtocolFilter));
 
     // display intermediate menu.
     map_settings.rebuild();
@@ -90,13 +90,13 @@ var g_timer = null;
       let btn_list = []
 
       // auto-refresh button
-      map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", self.autorefresh, null), self.event_auto_refresh));
+      map_settings.add_object(strings.map_set_ds, null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", strings.map_set_ds_ar_hint, self.autorefresh, null), self.event_auto_refresh));
       // datasource buttons
       self.datasources.forEach(function (ds) {
-        btn_list.push(map_settings.create_labeliconbutton("ds_"+ds.id, "database", ds.name, "Use the " + ds.name + " datasource", ds.id==self.ds, null));
+        btn_list.push(map_settings.create_labeliconbutton("ds_"+ds.id, "database", ds.name, strings.map_set_ds_hint1 + ds.name + strings.map_set_ds_hint2, ds.id==self.ds, null));
       });
-      map_settings.add_object("Datasources", null, map_settings.create_divider());
-      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, "vertical labeled icon", self.event_datasource));
+      map_settings.add_object(strings.map_set_ds, null, map_settings.create_divider());
+      map_settings.add_object(strings.map_set_ds, null, map_settings.create_buttongroup(btn_list, "vertical labeled icon", self.event_datasource));
 
       self.GET_timerange(self.ds, function (result) {
         nodes.set_datasource(self.datasource);
@@ -117,29 +117,29 @@ var g_timer = null;
     //(id, icon_name, tooltip, active, callback)
 
     btn_list = [
-      map_settings.create_labelbutton("lw_links", "Link Count", "Width based on number of occurrences", true, null),
-      map_settings.create_labelbutton("lw_bytes", "Byte Count", "Width based on number of Bytes transferred", false, null),
-      map_settings.create_labelbutton("lw_packets", "Packet Count", "Width based on number of packets transmitted", false, null)
+      map_settings.create_labelbutton("lw_links", strings.map_set_lw_lc, strings.map_set_lw_lc_hint, true, null),
+      map_settings.create_labelbutton("lw_bytes", strings.map_set_lw_bc, strings.map_set_lw_bc_hint, false, null),
+      map_settings.create_labelbutton("lw_packets", strings.map_set_lw_pc, strings.map_set_lw_pc_hint, false, null)
     ];
-    map_settings.add_object("Line Width", null, map_settings.create_buttongroup(btn_list, "vertical", self.event_line_width));
+    map_settings.add_object(strings.map_set_lw, null, map_settings.create_buttongroup(btn_list, "vertical", self.event_line_width));
 
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", true, null), self.event_show_buttons));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", true, null), self.event_show_buttons));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_inputs", "sign in", "Show Inbound Connections", true, null), self.event_show_buttons));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_outputs", "sign out", "Show Outbound Connections", true, null), self.event_show_buttons));
-
-    btn_list = [
-      map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, null),
-      map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", isFlat, null)
-    ];
-    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, "icon", self.event_layout_mode));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", strings.map_set_vis_c, true, null), self.event_show_buttons));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", strings.map_set_vis_s, true, null), self.event_show_buttons));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_inputs", "sign in", strings.map_set_vis_i, true, null), self.event_show_buttons));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_outputs", "sign out", strings.map_set_vis_o, true, null), self.event_show_buttons));
 
     btn_list = [
-      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="Address", null),
-      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="Grid", null),
-      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="Circle", null)
+      map_settings.create_iconbutton("lm_Heirarchy", "cube", strings.map_set_lay_use, !isFlat, null),
+      map_settings.create_iconbutton("lm_Flat", "cubes", strings.map_set_lay_flat, isFlat, null)
     ];
-    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", self.event_layout_arrangement));
+    map_settings.add_object(strings.map_set_lay, strings.map_set_lay_m, map_settings.create_buttongroup(btn_list, "icon", self.event_layout_mode));
+
+    btn_list = [
+      map_settings.create_iconbutton("la_Address", "qrcode", strings.map_set_lay_a_add, layout=="Address", null),
+      map_settings.create_iconbutton("la_Grid", "table", strings.map_set_lay_a_grid, layout=="Grid", null),
+      map_settings.create_iconbutton("la_Circle", "maximize", strings.map_set_lay_a_circle, layout=="Circle", null)
+    ];
+    map_settings.add_object(strings.map_set_lay, strings.map_set_lay_a, map_settings.create_buttongroup(btn_list, "icon", self.event_layout_arrangement));
   };
 
   self.init_demo = function () {
@@ -281,11 +281,6 @@ var g_timer = null;
   self.event_auto_refresh = function (e_auto_refresh) {
     let button = self.event_to_tag(e_auto_refresh, "BUTTON");
     let active = button.classList.contains("active");
-    if (active) {
-      console.log("Enabling auto-refresh");
-    } else {
-      console.log("Disabling auto-refresh");
-    }
     controller.autorefresh = active;
     setAutoUpdate();
   }

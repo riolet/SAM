@@ -10,7 +10,7 @@ import sam.models.links
 # This class is for getting the main selection details, such as ins, outs, and ports.
 
 
-def nice_protocol(p_in, p_out):
+def nice_protocol(strings, p_in, p_out):
     """
     
     :param p_in: comma-seperated protocol list for inbound connections
@@ -29,15 +29,15 @@ def nice_protocol(p_in, p_out):
     both = []
     for p in protocols:
         if p in pin and p in pout:
-            both.append(u'{} (i/o)'.format(p))
+            both.append(u'{} {}'.format(p, strings.table_proto_io))
         elif p in pin:
-            ins.append(u'{} (in)'.format(p))
+            ins.append(u'{} {}'.format(p, strings.table_proto_i))
         else:
-            outs.append(u'{} (out)'.format(p))
+            outs.append(u'{} {}'.format(p, strings.table_proto_o))
     return u', '.join(ins+both+outs)
 
 
-def si_formatting(f, places=2):
+def si_formatting(strings, f, places=2):
     """
     :param f: real number, the value to express
      :type f: float 
@@ -52,12 +52,12 @@ def si_formatting(f, places=2):
         return format_string.format(val=f, prefix=u'')
     f /= 1000
     if f < 1000:
-        return format_string.format(val=f, prefix=u'K')
+        return format_string.format(val=f, prefix=strings.units_kilo)
     f /= 1000
     if f < 1000:
-        return format_string.format(val=f, prefix=u'M')
+        return format_string.format(val=f, prefix=strings.units_mega)
     f /= 1000
-    return format_string.format(val=f, prefix=u'G')
+    return format_string.format(val=f, prefix=strings.units_giga)
 
 
 class Details(base.headless):
@@ -184,7 +184,7 @@ class Details(base.headless):
                 elif c_name == 'summary':
                     details[c_name] = self.summary()
                 else:
-                    details[c_name] = {"result": "No data source matches request for {0}".format(c_name)}
+                    details[c_name] = {"result": "No component matches request for {0}".format(c_name)}
         else:
             details = self.selection_info(request['page'], request['order'], request['simple'])
 
@@ -231,7 +231,7 @@ class Details(base.headless):
             info['name'] = node_info.hostname
             info['tags'] = tags
             info['envs'] = envs
-            info['protocols'] = nice_protocol(node_info.in_protocols, node_info.out_protocols)
+            info['protocols'] = nice_protocol(self.page.strings, node_info.in_protocols, node_info.out_protocols)
             info['bps'] = node_info.overall_bps
             info['in'] = {}
             info['in']['total'] = node_info.total_in
@@ -277,29 +277,29 @@ class Details(base.headless):
             info['ports'] = node_info.ports_used
             info['endpoints'] = int(node_info.endpoints)
         else:
-            info['error'] = 'No host found this address'
+            info['error'] = self.page.strings.meta_none
         return info
 
     def inputs(self, page, order, simple):
         inputs = self.detailsModel.get_details_connections(inbound=True, page=page, order=order, simple=simple)
         if simple:
             headers = [
-                ['src', "Source IP"],
-                ['port', "Dest. Port"],
-                ['links', 'Count / min']
+                ['src', self.page.strings.meta_src],
+                ['port', self.page.strings.meta_port],
+                ['links', self.page.strings.meta_links]
             ]
         else:
             headers = [
-                ['src', "Source IP"],
-                ['dst', "Dest. IP"],
-                ['port', "Dest. Port"],
-                ['links', 'Count / min'],
-                # ['protocols', 'Protocols'],
-                ['sum_bytes', 'Sum Bytes'],
-                # ['avg_bytes', 'Avg Bytes'],
-                ['sum_packets', 'Sum Packets'],
-                # ['avg_packets', 'Avg Packets'],
-                ['avg_duration', 'Avg Duration'],
+                ['src', self.page.strings.meta_src],
+                ['dst', self.page.strings.meta_dst],
+                ['port', self.page.strings.meta_port],
+                ['links', self.page.strings.meta_links],
+                # ['protocols', self.page.strings.meta_protocols],
+                ['sum_bytes', self.page.strings.meta_sum_bytes],
+                # ['avg_bytes', self.page.strings.meta_avg_bytes],
+                ['sum_packets', self.page.strings.meta_sum_packets],
+                # ['avg_packets', self.page.strings.meta_avg_packets],
+                ['avg_duration', self.page.strings.meta_avg_duration],
             ]
         # convert list of dicts to ordered list of values
         minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
@@ -309,7 +309,7 @@ class Details(base.headless):
             conn_row = []
             for h in headers:
                 if h[0] == 'links':
-                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                    conn_row.append(si_formatting(self.page.strings, float(row['links']) / minutes))
                 else:
                     conn_row.append(row[h[0]])
             conn_in.append(conn_row)
@@ -329,22 +329,22 @@ class Details(base.headless):
 
         if simple:
             headers = [
-                ['dst', "Dest. IP"],
-                ['port', "Dest. Port"],
-                ['links', 'Count / min']
+                ['dst', self.page.strings.meta_dst],
+                ['port', self.page.strings.meta_port],
+                ['links', self.page.strings.meta_links]
             ]
         else:
             headers = [
-                ['src', "Source IP"],
-                ['dst', "Dest. IP"],
-                ['port', "Dest. Port"],
-                ['links', 'Count / min'],
-                # ['protocols', 'Protocols'],
-                ['sum_bytes', 'Sum Bytes'],
-                # ['avg_bytes', 'Avg Bytes'],
-                ['sum_packets', 'Sum Packets'],
-                # ['avg_packets', 'Avg Packets'],
-                ['avg_duration', 'Avg Duration'],
+                ['src', self.page.strings.meta_src],
+                ['dst', self.page.strings.meta_dst],
+                ['port', self.page.strings.meta_port],
+                ['links', self.page.strings.meta_links],
+                # ['protocols', self.page.strings.meta_protocols],
+                ['sum_bytes', self.page.strings.meta_sum_bytes],
+                # ['avg_bytes', self.page.strings.meta_avg_bytes],
+                ['sum_packets', self.page.strings.meta_sum_packets],
+                # ['avg_packets', self.page.strings.meta_avg_packets],
+                ['avg_duration', self.page.strings.meta_avg_duration],
             ]
         minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
         minutes = max(minutes, 1.0)
@@ -353,7 +353,7 @@ class Details(base.headless):
             conn_row = []
             for h in headers:
                 if h[0] == 'links':
-                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                    conn_row.append(si_formatting(self.page.strings, float(row['links']) / minutes))
                 else:
                     conn_row.append(row[h[0]])
             conn_out.append(conn_row)
@@ -372,8 +372,8 @@ class Details(base.headless):
         ports = self.detailsModel.get_details_ports(page, order)
 
         headers = [
-            ['port', "Port Accessed"],
-            ['links', 'Count / min']
+            ['port', self.page.strings.meta_ports],
+            ['links', self.page.strings.meta_links]
         ]
         minutes = float(self.request['time_range'][1] - self.request['time_range'][0]) / 60.0
         minutes = max(minutes, 1.0)
@@ -382,7 +382,7 @@ class Details(base.headless):
             conn_row = []
             for h in headers:
                 if h[0] == 'links':
-                    conn_row.append(si_formatting(float(row['links']) / minutes))
+                    conn_row.append(si_formatting(self.page.strings, float(row['links']) / minutes))
                 else:
                     conn_row.append(row[h[0]])
             ports_in.append(conn_row)
@@ -408,10 +408,10 @@ class Details(base.headless):
             "count": len(children),
             "component": "children",
             "headers": [
-                ['ipstart', "Address"],
-                ['hostname', 'Name'],
-                ['endpoints', 'Active Endpoints'],
-                ['ratio', 'Role (0=client, 1=server)']
+                ['ipstart', self.page.strings.meta_child_ip],
+                ['hostname', self.page.strings.meta_child_name],
+                ['endpoints', self.page.strings.meta_child_count],
+                ['ratio', self.page.strings.meta_child_ratio]
             ],
             "rows": children[first:last]
         }

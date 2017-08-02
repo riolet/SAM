@@ -1,0 +1,215 @@
+$def with (tags, envs, dses)
+<script>
+  var g_known_tags = [];
+  $for tag in tags:
+    g_known_tags.push("$tag");
+
+  var g_known_envs = [];
+  $for env in envs:
+    g_known_envs.push("$env");
+
+  g_ds = "ds$dses[0]['id']";
+</script>
+<style type="text/css">
+.ui.tab.segment {
+  min-height: 30em;
+  margin-bottom: 2em;
+}
+div.ui.message.transition {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}
+</style>
+<div class="ui container">
+  <h3 class="ui center aligned header">
+    <div id="hostSearch" class="ui icon input">
+      <input placeholder="Search IP (1.2.3.4/5)" type="text">
+      <i class="circular search link icon"></i>
+    </div>
+  </h3>
+  <div class="ui floating labeled right icon dropdown button">
+    <i class="cubes icon"></i>
+    <span class="text">Data source</span>
+    <div class="menu">
+      $for ds in dses:
+        <div class="item" data-value="ds$ds['id']">$ds['name']</div>
+    </div>
+  </div>
+<!--
+----------------- Quick Info -----------------
+-->
+  <div class="ui raised segment">
+    <table class="ui celled striped definition structured table">
+      <thead>
+        <tr><th colspan="2">
+          <h3>Quick Info</h3>
+        </th></tr>
+      </thead>
+      <tbody id="quickinfo">
+        <tr>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ui two column divided stackable grid">
+    <div class="row">
+      <div class="column">
+        <div id="in_col" class="ui raised segment">
+          <h3 class="ui centered header">Inbound Connections</h3>
+        </div>
+      </div>
+      <div class="column">
+        <div id="out_col" class="ui raised segment">
+          <h3 class="ui centered header">Outbound Connections</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+<!--
+----------------- Tab Headers-----------------
+-->
+  <div class="ui raised segment">
+    <div class="ui pointing secondary menu">
+      <a class="active item" data-tab="inputs">Unique Inputs</a>
+      <a class="item" data-tab="outputs">Unique Outputs</a>
+      <a class="item" data-tab="ports">Local Ports</a>
+      <a class="item" data-tab="children">Child Nodes</a>
+    </div>
+<!--
+----------------- TAB: inputs -----------------
+-->
+    <div class="ui active tab segment" data-tab="inputs" id="tab-input">
+      <div id="in_pagination">
+        <button class="ui button disabled">prev</button>
+        <span>No records to show</span>
+        <button class="ui button disabled">next</button>
+      </div>
+      <table class="ui very compact sortable celled striped structured table">
+          <thead>
+            <tr id="conn_in_h">
+              <th>Source IP</th>
+              <th>Dest. Port</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody id="conn_in"></tbody>
+          <tfoot class="full-width" id="conn_in_overflow"></tfoot>
+      </table>
+    </div>
+<!--
+----------------- TAB: outputs -----------------
+-->
+    <div class="ui tab segment" data-tab="outputs" id="tab-output">
+      <div id="out_pagination">
+        <button class="ui button disabled">prev</button>
+        <span>No records to show</span>
+        <button class="ui button disabled">next</button>
+      </div>
+      <table class="ui very compact sortable celled striped structured table">
+          <thead>
+            <tr id="conn_out_h">
+              <th>Dest. IP</th>
+              <th>Dest. Port</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody id="conn_out"></tbody>
+          <tfoot class="full-width" id="conn_out_overflow"></tfoot>
+      </table>
+    </div>
+<!--
+----------------- TAB: ports -----------------
+-->
+    <div class="ui tab segment" data-tab="ports" id="tab-ports">
+      <div id="port_pagination">
+        <button class="ui button disabled">prev</button>
+        <span>No records to show</span>
+        <button class="ui button disabled">next</button>
+      </div>
+      <table class="ui very compact sortable celled striped structured table">
+          <thead>
+            <tr id="ports_in_h">
+              <th>Port Accessed</th>
+              <th>Occurrences</th>
+            </tr>
+          </thead>
+          <tbody id="ports_in"></tbody>
+          <tfoot class="full-width" id="ports_in_overflow"></tfoot>
+      </table>
+    </div>
+<!--
+----------------- TAB: children -----------------
+-->
+    <div class="ui tab segment" data-tab="children" id="tab-children">
+      <div id="child_pagination">
+        <button class="ui button disabled">prev</button>
+        <span>No records to show</span>
+        <button class="ui button disabled">next</button>
+      </div>
+      <table class="ui very compact sortable celled striped structured table">
+          <thead>
+            <tr id="child_nodes_h">
+              <th>Address</th>
+              <th>Name</th>
+              <th>Active Endpoints</th>
+              <th>Role (0=client, 1=server)</th>
+            </tr>
+          </thead>
+          <tbody id="child_nodes"></tbody>
+          <tfoot class="full-width" id="child_nodes_overflow"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<!--
+----------------- Port info update dialog -----------------
+-->
+<div class="ui modal ports">
+    <div class="header">Port <span id="port_number"></span></div>
+    <div class="content">
+        <table class="ui table">
+            <tr><td class="right aligned">Use Name Translation:</td><td><div class="ui fitted toggle checkbox"><input id="port_active" type="checkbox"><label></label></div></td></tr>
+            <tr><td class="right aligned">Default Name:</td><td id="port_name"></td></tr>
+            <tr><td class="right aligned">Default Description:</td><td id="port_description"></td></tr>
+            <tr><td class="right aligned">Expected Protocols:</td><td id="port_protocols"></td></tr>
+            <tr>
+              <td class="right aligned">Alias Name:</td>
+              <td>
+                <div class="ui input" data-content="A custom alias to override the default name">
+                  <input placeholder="port name" id="port_alias_name" type="text">
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="right aligned">Alias Description:</td>
+              <td>
+                <div class="ui input" data-content="A custom alias to override the default description">
+                  <input placeholder="port description" id="port_alias_description" type="text">
+                </div>
+              </td>
+            </tr>
+        </table>
+    </div>
+    <div class="actions">
+        <div class="ui cancel red basic button">
+            <i class="cancel icon"></i>
+            Cancel
+        </div>
+        <div class="ui ok green button">
+            <i class="save icon"></i>
+            Save
+        </div>
+    </div>
+</div>
+
+<!-- Demo data warning -->
+<div id="demo_msg" class="ui message transition hidden">
+  <i class="close icon"></i>
+  <div class="header">
+    Demonstration
+  </div>
+  <p>This is a subset of real network data, anonymized for privacy. The database is read-only and changes will not be saved.</p>
+</div>

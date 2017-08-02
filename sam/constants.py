@@ -1,7 +1,11 @@
+import importlib
 import logging
 import os
 base_path = os.path.dirname(__file__)
 from sam.ConfigEnvy import ConfigEnvy
+
+supported_languages = ['en', 'fr', 'rv']
+default_lang = ['en']
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules', 'ADWarnings']
@@ -119,41 +123,45 @@ def find_url(target):
             return urls[i*2]
     return None
 
-navbar = [
-    {
-        "name": "Map",
-        "icon": "sitemap",
-        "link": "./map",
-        "group": "any"
-    },
-    {
-        "name": "Table View",
-        "icon": "list layout",
-        "link": "./table",
-        "group": "any"
-    },
-    {
-        "name": "Host Details",
-        "icon": "tasks",
-        "link": "./metadata",
-        "group": "any"
-    },
-    {
-        "name": "Stats",
-        "icon": "filter",
-        "link": "./stats",
-        "group": "any"
-    },
-    {
-        "name": "Dashboard",
-        "icon": "dashboard",
-        "link": "./sec_dashboard",
-        "group": "any"
-    },
-    {
-        "name": "Settings",
-        "icon": "settings",
-        "link": "./settings_page",
-        "group": "any"
-    }
-]
+
+def get_navbar(lang):
+    strings = importlib.import_module("sam.local." + lang)
+    navbar = [
+        {
+            "name": strings.map_title,
+            "icon": "sitemap",
+            "link": "./map",
+            "group": "any"
+        },
+        {
+            "name": strings.table_title,
+            "icon": "list layout",
+            "link": "./table",
+            "group": "any"
+        },
+        {
+            "name": strings.meta_title,
+            "icon": "tasks",
+            "link": "./metadata",
+            "group": "any"
+        },
+        {
+            "name": strings.stats_title,
+            "icon": "filter",
+            "link": "./stats",
+            "group": "any"
+        },
+        {
+            "name": strings.dashboard_title,
+            "icon": "dashboard",
+            "link": "./sec_dashboard",
+            "group": "any"
+        },
+        {
+            "name": strings.settings_title,
+            "icon": "settings",
+            "link": "./settings_page",
+            "group": "any"
+        }
+    ]
+    return navbar

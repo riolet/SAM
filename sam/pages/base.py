@@ -1,5 +1,7 @@
+# coding=utf-8
+import importlib
 import decimal
-import operator
+import os
 import json
 from sam import constants
 from sam import errors
@@ -16,12 +18,12 @@ def decimal_default(obj):
 
 
 class Page(object):
-    SUPPORTED_LANGUAGES = ['en', 'fr']
 
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
-        self.language = self.get_lang()
+        self.language = self.session['lang']
+        self.strings = importlib.import_module("sam.local." + self.language)
         self.inbound = web.input()
 
     def require_group(self, group):
@@ -41,58 +43,46 @@ class Page(object):
         if not self.user.may_post():
             raise web.unauthorized("Cannot modify data. Do you have an active account?")
 
-    def get_lang(self):
-        # TODO: research hook and try first path element first.
-        # try cookie next
-        # try HTTP_ACCEPT_LANGUAGE header next
-        # fallback to english. ('en')
-        lang = 'en'
-
-        if False:
-            lang = "en"
-        elif 'HTTP_ACCEPT_LANGUAGE' in web.ctx.env:
-            accept_string = web.ctx.env['HTTP_ACCEPT_LANGUAGE']
-            langs = Page.decode_http_csv(accept_string)
-            langs = {k: langs[k] for k in langs.iterkeys() if k[:2] in Page.SUPPORTED_LANGUAGES}
-            best = max(langs.iteritems(), key=operator.itemgetter(1))[0]
-            if best:
-                lang = best
-        else:
-            lang = "en"
-        return lang
-
-    @staticmethod
-    def decode_http_csv(accept_string):
-        items = [i.partition(';q=') for i in accept_string.split(",") if i]
-        decoded = {k.strip(): (float(v) if len(v) > 0 else 1.0) for k, _, v in items}
-        return decoded
-
 page = Page
 
 
 class Headed(object):
-    def __init__(self, title, header, footer):
+    def __init__(self, header, footer):
         self.page = page()
         self.scripts = []
         self.styles = []
-        self.page_title = title
+        self.page_title = "Untitled"
         self.header = header
         self.footer = footer
 
-    def render(self, page, *args, **kwargs):
-        head = str(common.renderer.render('_head', self.page_title, stylesheets=self.styles, scripts=self.scripts))
+    def set_title(self, title):
+        self.page_title = title
+
+    def render(self, page_template, *args, **kwargs):
+        lang_prefix = '{}{}'.format(self.page.language, os.path.sep)
+        head = str(common.renderer.render('_head', self.page_title, lang=self.page.language, stylesheets=self.styles, scripts=self.scripts))
+        navbar = constants.get_navbar(self.page.language)
         if self.header:
-            header = str(common.renderer.render('_header', constants.navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control))
+            if self.page.language == "en":
+                lang = ("version Français", "/fr{}".format(web.ctx.env['REQUEST_URI']))
+            else:
+                lang = ("English version", "/en{}".format(web.ctx.env['REQUEST_URI']))
+            header = str(common.renderer.render(lang_prefix + '_header', navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control, lang))
         else:
             header = ''
-        page = str(common.renderer.render(page, *args, **kwargs))
+        try:
+            body = str(common.renderer.render(lang_prefix + page_template, *args, **kwargs))
+        except:
+            body = str(common.renderer.render(page_template, *args, **kwargs))
         if self.footer:
-            footer = str(common.renderer.render('_footer'))
+            links = {"English": "/en{}".format(web.ctx.env['REQUEST_URI']),
+                     "Français": "/fr{}".formatweb.ctx.env['REQUEST_URI']}
+            footer = str(common.renderer.render(lang_prefix + '_footer', links))
         else:
             footer = ''
         tail = str(common.renderer.render('_tail'))
 
-        return head+header+page+footer+tail
+        return head+header+body+footer+tail
 
 
 headed = Headed
