@@ -1,5 +1,6 @@
+# coding=utf-8
 from spec.python import db_connection
-
+import web
 import pytest
 import sam.pages.login
 from sam import common
@@ -11,11 +12,12 @@ def test_render():
     with db_connection.env(mock_input=True, login_active=True, mock_session=True, mock_render=True):
         p = sam.pages.login.Login_LDAP()
         common.session.clear()
+        web.ctx.env = {'PATH_INFO': '/sam/testpage', 'QUERY_STRING': ''}
         dummy = p.GET()
         calls = common.renderer.calls
-        assert calls[0] == ('render', ('_head', 'Login',), {'stylesheets': ['/static/css/general.css'], 'scripts': []})
-        assert calls[1] == ('render', ('login', '/login',), {})
-        assert calls[2] == ('render', ('_footer', ), {})
+        assert calls[0] == ('render', ('_head', 'Login',), {'lang': 'en', 'stylesheets': ['/static/css/general.css'], 'scripts': []})
+        assert calls[1] == ('render', ('en/login', '/login',), {})
+        assert calls[2] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Français': '/fr/sam/testpage'}), {})
         assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"
 
