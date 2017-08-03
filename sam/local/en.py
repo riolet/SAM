@@ -5,7 +5,6 @@ table_title = "Table View"
 login_title = "Login"
 settings_title = "Settings"
 dashboard_title = "Dashboard"
-
 units_role_cc = "client"
 units_role_c = "mostly client"
 units_role_cs = "mixed client/server"

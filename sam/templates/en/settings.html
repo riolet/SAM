@@ -7,8 +7,9 @@ $ disabled = "" if user.may_post() else "disabled"
   $if not disabled:
     <div class="ui raised segment">
       <h3 class="ui header">Data Sources</h3>
-      <p>Data sources let you store multiple sets of network data</p>
-      <p>Each data source stored their own set of connection history and timeline.  Node information, such as tags, environment, and hostnames, is shared across data sources.</p>
+      <p>Data sources let you store multiple sets of network data.</p>
+      <p>Each data source stores its own log of connections over time.  Node information, such as tags,
+        environment, and hostnames, is shared across data sources.</p>
       <div class="ui datasources grid">
         <div class="four wide column">
           <table class="ui very basic compact selectable table">
@@ -111,7 +112,7 @@ $ disabled = "" if user.may_post() else "disabled"
     <!-- Metadata -->
     <div class="ui raised segment">
       <h3 class="ui header">Metadata</h3>
-      <p>Meta data is stored independant of specific data sources. It includes information on hosts
+      <p>Metadata is stored independantly of specific data sources. It includes information on hosts
         such as hostname, environment, and tags.</p>
       <div class="meta_del">
         <h4>Reset host names to be blank.</h4>
@@ -160,7 +161,7 @@ $ disabled = "" if user.may_post() else "disabled"
       <h3 class="ui header">Live Updates</h3>
       <p>Live updates are a way to connect your router or gateway directly to the database.</p>
       <p>To enable this, you need to run a collector process on your local network which will receive and translate network data.
-        Once translated, the collector opens a secure connection the aggregator, another program that processes the data
+        Once translated, the collector opens a secure connection to the aggregator, another program that processes the data
         and imports it into your database.  From there it can be viewed through the webserver.</p>
       <p>The live collector needs to be configured (by environment variables) to use a particular format, access key, and socket.</p>
       <p>Live collector access keys are used by the aggregator to authenticate access from collectors before writing to the database.</p>
@@ -306,7 +307,7 @@ $ disabled = "" if user.may_post() else "disabled"
         <input id="log_path" type="file" placeholder="<log file>">
       </div>
       <div class="field">
-        <label>Log format</label>
+        <label>Log Format</label>
         <div class="ui selection dropdown">
           $if importers:
             <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">

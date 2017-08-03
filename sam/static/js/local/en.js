@@ -82,7 +82,7 @@ const strings = {
   ,meta_sips: "Unique source IPs:"
   ,meta_dips: "Unique destination IPs:"
   ,meta_uconns: "Unique connections (src, dest, port):"
-  ,meta_conns: "Total Connections recorded:"
+  ,meta_conns: "Total connections recorded:"
   ,meta_conns2: " over "  // (total connections recorded: 12345) over (60 seconds.)
   ,meta_connps: "Connections per second:"
   ,meta_b_snt: "Bytes Sent:"
