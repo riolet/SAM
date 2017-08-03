@@ -10,7 +10,7 @@ def test_urls():
 
 
 def test_navbar():
-    nav = constants.navbar
+    nav = constants.get_navbar('en')
     assert type(nav) == list
     assert type(nav[0]) == dict
     for link in nav:
