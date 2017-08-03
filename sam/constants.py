@@ -6,7 +6,7 @@ from sam.ConfigEnvy import ConfigEnvy
 logger = logging.getLogger(__name__)
 
 supported_languages = ['en', 'fr', 'rv']
-default_lang = ['en']
+default_lang = 'en'
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules', 'ADWarnings']

@@ -23,7 +23,7 @@ def test_exists_map():
     with db_connection.env(login_active=False):
         req = app.request('/map', method='POST')
         assert req.status == "405 Method Not Allowed"
-        req = app.request('/map', method='GET')
+        req = app.request('/map?q=42', method='GET')
         assert req.status == "200 OK"
 
 

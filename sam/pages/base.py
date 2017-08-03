@@ -22,7 +22,7 @@ class Page(object):
     def __init__(self):
         self.session = common.session
         self.user = User(self.session)
-        self.language = self.session['lang']
+        self.language = self.session.get('lang', constants.default_lang)
         self.strings = importlib.import_module("sam.local." + self.language)
         self.inbound = web.input()
 
@@ -62,11 +62,12 @@ class Headed(object):
         lang_prefix = '{}{}'.format(self.page.language, os.path.sep)
         head = str(common.renderer.render('_head', self.page_title, lang=self.page.language, stylesheets=self.styles, scripts=self.scripts))
         navbar = constants.get_navbar(self.page.language)
+        uri_path = "{}?{}".format(web.ctx.env['PATH_INFO'], web.ctx.env['QUERY_STRING'])
         if self.header:
             if self.page.language == "en":
-                lang = ("version française", "/fr{}".format(web.ctx.env['REQUEST_URI']))
+                lang = ("version française", "/fr{}".format(uri_path))
             else:
-                lang = ("English version", "/en{}".format(web.ctx.env['REQUEST_URI']))
+                lang = ("English version", "/en{}".format(uri_path))
             header = str(common.renderer.render(lang_prefix + '_header', navbar, self.page_title, self.page.user, constants.debug, web.ctx.path, constants.access_control, lang))
         else:
             header = ''
@@ -75,8 +76,8 @@ class Headed(object):
         except:
             body = str(common.renderer.render(page_template, *args, **kwargs))
         if self.footer:
-            links = {"English": "/en{}".format(web.ctx.env['REQUEST_URI']),
-                     "Français": "/fr{}".format(web.ctx.env['REQUEST_URI'])}
+            links = {"English": "/en{}".format(uri_path),
+                     "Français": "/fr{}".format(uri_path)}
             footer = str(common.renderer.render(lang_prefix + '_footer', links))
         else:
             footer = ''
