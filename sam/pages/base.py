@@ -62,7 +62,11 @@ class Headed(object):
         lang_prefix = '{}{}'.format(self.page.language, os.path.sep)
         head = str(common.renderer.render('_head', self.page_title, lang=self.page.language, stylesheets=self.styles, scripts=self.scripts))
         navbar = constants.get_navbar(self.page.language)
-        uri_path = "{}?{}".format(web.ctx.env['PATH_INFO'], web.ctx.env['QUERY_STRING'])
+        if web.ctx.env['QUERY_STRING']:
+            uri_path = "{}?{}".format(web.ctx.env['PATH_INFO'], web.ctx.env['QUERY_STRING'])
+        else:
+            uri_path = web.ctx.env['PATH_INFO']
+
         if self.header:
             if self.page.language == "en":
                 lang = ("version française", "/fr{}".format(uri_path))
