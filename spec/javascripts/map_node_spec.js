@@ -1,4 +1,4 @@
-describe("map_node.js file", function () {
+xdescribe("map_node.js file", function () {
   beforeEach(function () {
     n1 = new Node("bob", "192.168", 168, 24, 1, 1, 1, 10);
   });

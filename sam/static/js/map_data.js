@@ -1,33 +1,3 @@
-function POST_portinfo(request) {
-    "use strict";
-    $.ajax({
-        url: "./portinfo",
-        type: "POST",
-        data: request,
-        error: generic_ajax_failure,
-        success: generic_ajax_success
-    });
-}
-
-function GET_portinfo(port, callback) {
-    "use strict";
-    var requestData = {"port": port.join(",")};
-    $.ajax({
-        url: "./portinfo",
-        type: "GET",
-        data: requestData,
-        dataType: "json",
-        error: generic_ajax_failure,
-        success: function (response) {
-            ports.private.GET_response(response);
-
-            if (typeof callback === "function") {
-                callback();
-            }
-        }
-    });
-}
-
 function checkLoD() {
   "use strict";
   let nodesToLoad = [];

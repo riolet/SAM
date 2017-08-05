@@ -1,4 +1,4 @@
-describe("map_selection.js file", function () {
+xdescribe("map_selection.js file", function () {
   describe("sel_init", function () {
     it(" ", function () {
       expect(1).toEqual(1);
