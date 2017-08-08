@@ -222,9 +222,9 @@
             success: generic_ajax_success
         });
     };
-    ports.GET_portinfo = function (ports, callback) {
+    ports.GET_portinfo = function (port_list, callback) {
         //ports is an array of Numbers
-        var requestData = {"port": ports.join(",")};
+        var requestData = {"port": port_list.join(",")};
         $.ajax({
             url: "./portinfo",
             type: "GET",

@@ -23,7 +23,7 @@ function sel_set_selection(node) {
     if (node !== null && node.details.loaded === false) {
         // load details
         m_selection["titles"].firstChild.innerHTML = strings.sel_loading;
-        GET_details(node, sel_update_display);
+        sel_GET_details(node, sel_update_display);
     } else {
         sel_update_display();
     }
@@ -52,7 +52,7 @@ function sel_clear_display() {
 
     // add "No selection" title back in.
     var h4 = document.createElement("h4");
-    h4.appendChild(document.createTextNode(strings.sel_none));
+    h4.innerText = strings.sel_none;
     m_selection["titles"].appendChild(h4);
     // for spacing.
     m_selection["titles"].appendChild(document.createElement("h5"));
@@ -132,7 +132,7 @@ function sel_build_table(headers, dataset) {
   return tbody;
 }
 
-function sel_build_table_headers(headers, order, callback) {
+function sel_build_table_headers(headers, order) {
     "use strict";
     var tr = document.createElement("tr");
     var th;
@@ -394,4 +394,101 @@ function sel_update_display(node) {
 
     //refresh the panel size
     sel_panel_height();
+}
+
+function sel_GET_details(node, callback) {
+    "use strict";
+
+    var requestData = {
+        "address": node.address + "/" + node.subnet,
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend,
+        "order": "-links",
+        "simple": true,
+        "ds": controller.ds
+        };
+
+    $.ajax({
+        url: "./details",
+        //dataType: "json",
+        type: "GET",
+        data: requestData,
+        error: generic_ajax_failure,
+        success: function (result) {
+            node.details["unique_in"] = result.unique_in;
+            node.details["unique_out"] = result.unique_out;
+            node.details["unique_ports"] = result.unique_ports;
+            node.details["inputs"] = result.inputs;
+            node.details["outputs"] = result.outputs;
+            node.details["ports"] = result.ports;
+            node.details["loaded"] = true;
+
+            var index;
+            for (index = result.inputs.headers.length - 1; index >= 0 && result.inputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.inputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+            for (index = result.outputs.headers.length - 1; index >= 0 && result.outputs.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.outputs.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+
+            for (index = result.ports.headers.length - 1; index >= 0 && result.ports.headers[index][0] !== "port"; index -= 1) {};
+            if (index >= 0) {
+                result.ports.rows.forEach(function (element) {
+                    ports.request_add(element[index]);
+                });
+            }
+            ports.request_submit();
+
+            if (typeof callback === "function") {
+                callback();
+            }
+        }
+    });
+}
+
+function sel_GET_details_sorted(node, component, order, callback) {
+    "use strict";
+
+    var requestData = {
+        "address": node.address + "/" + node.subnet,
+        "filter": config.filter,
+        "tstart": config.tstart,
+        "tend": config.tend,
+        "order": order,
+        "simple": true,
+        "component": component,
+        "ds": controller.ds
+        };
+
+    $.ajax({
+        url: "./details",
+        //dataType: "json",
+        type: "GET",
+        data: requestData,
+        error: generic_ajax_failure,
+        success: function (result) {
+            var index;
+            Object.keys(result).forEach(function (part) {
+                node.details[part] = result[part]
+                for (index = result[part].headers.length - 1; index >= 0 && result[part].headers[index][0] !== "port"; index -= 1) {};
+                if (index >= 0) {
+                    result[part].rows.forEach(function (element) {
+                        ports.request_add(element[index]);
+                    });
+                }
+            });
+            ports.request_submit();
+
+            if (typeof callback === "function") {
+                callback();
+            }
+        }
+    });
 }
