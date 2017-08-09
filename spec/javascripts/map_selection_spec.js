@@ -149,7 +149,7 @@ function get_dom() {
   return div;
 }
 
-describe("map_selection.js file", function () {
+xdescribe("map_selection.js file", function () {
   beforeEach(function () {
     dom = get_dom();
     //window.appendChild(dom.outerHTML);

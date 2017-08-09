@@ -1,219 +1,274 @@
-xdescribe("map_node.js file", function () {
-  beforeEach(function () {
-    n1 = new Node("bob", "192.168", 168, 24, 1, 1, 1, 10);
-  });
+describe("map_node.js file", function () {
   describe("Node", function () {
-    it("prepares details for population", function () {
+    beforeEach(function () {
+      n1 = new Node("bob", "192.168", 168, 24, 1, 1, 1, 10);
+    });
+    it("prepares details member", function () {
       expect(n1.hasOwnProperty("details")).toEqual(true);
       expect(n1.details.hasOwnProperty("loaded")).toEqual(true);
       expect(n1.details.loaded).toBe(false);
     });
-    it("prepares children for population", function () {
+    it("prepares children member", function () {
       expect(typeof(n1.children)).toEqual("object");
       expect(n1.childrenLoaded).toBe(false);
     });
   });
 
-
-  describe("get_node_name", function () {
-    it("uses name when it can", function () {
-      node = new Node("West", "192.168", 168, 16, 0, 0, 0, 0);
-      expect(get_node_name(node)).toEqual("West");
-    });
-    it("uses number when it must", function () {
-      node = new Node("", "192.168", 168, 16, 0, 0, 0, 0);
-      expect(get_node_name(node)).toEqual("168");
-    });
-  });
-
-
-  describe("get_node_address", function () {
-    it("returns a dotted decimal string", function () {
-      node = new Node("", "192.168.0.17", 17, 32, 9, 123, -123, 500);
-      expect(get_node_address(node)).toEqual("192.168.0.17");
-    });
-    it("displays subnet", function () {
-      node = new Node("", "192.168.0.16", 17, 30, 9, 123, -123, 500);
-      expect(get_node_address(node)).toEqual("192.168.0.16/30");
-    });
-    it("right pads with zeroes as needed.", function () {
-      node = new Node("", "192.168", 168, 16, 9, 123, -123, 500);
-      expect(get_node_address(node)).toEqual("192.168.0.0/16");
-      node = new Node("", "192.168.0", 168, 24, 9, 123, -123, 500);
-      expect(get_node_address(node)).toEqual("192.168.0.0/24");
-      node = new Node("", "192", 192, 8, 9, 123, -123, 500);
-      expect(get_node_address(node)).toEqual("192.0.0.0/8");
-    });
-  });
-
-
-  describe("set_node_name", function () {
+  describe("find_by_addr", function () {
     beforeEach(function () {
-      spyOn(window, "POST_node_alias");
-      spyOn(window, "render_all");
+      nodes.nodes = get_mock_node_tree();
     });
 
-    it("doesn't run if no change", function () {
-      node = new Node("old_name", "192.168", 168, 16, 9, 123, -123, 500);
-      set_node_name(node, "old_name");
-      expect(window.POST_node_alias).not.toHaveBeenCalled();
+    it("can find addresses", function () {
+      let n = nodes.find_by_addr("110");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+
+      n = nodes.find_by_addr("110.145");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.0.0");
+      
+      n = nodes.find_by_addr("110.145.200");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.0");
+
+      n = nodes.find_by_addr("110.145.200.79");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.79");
     });
-    it("runs if change happens", function () {
-      var old_name = "old"
-      var new_name = "new"
-      node = new Node(old_name, "192.168", 168, 16, 9, 123, -123, 500);
-      set_node_name(node, new_name);
-      expect(window.POST_node_alias).toHaveBeenCalledWith("192.168", new_name);
-    });
-    it("updates locally", function () {
-      var old_name = "old"
-      var new_name = "new"
-      node = new Node(old_name, "192.168", 168, 16, 9, 123, -123, 500);
-      set_node_name(node, new_name);
-      expect(window.render_all).toHaveBeenCalled();
-      expect(node.alias).toEqual(new_name)
+
+    it("works with subnets", function () {
+      let n = nodes.find_by_addr("110/8");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+      n = nodes.find_by_addr("110.0/8");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+      n = nodes.find_by_addr("110.0.0/8");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+      n = nodes.find_by_addr("110.0.0.0/8");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+
+      n = nodes.find_by_addr("110.145/16");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.0.0");
+      n = nodes.find_by_addr("110.145.0/16");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.0.0");
+      n = nodes.find_by_addr("110.145.0.0/16");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.0.0");
+      
+      n = nodes.find_by_addr("110.145.200/24");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.0");
+      n = nodes.find_by_addr("110.145.200.0/24");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.0");
+
+      n = nodes.find_by_addr("110.145.200.79/32");
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.79");
     });
   });
 
+  describe("find_by_range", function () {
+    beforeEach(function () {
+      nodes.nodes = get_mock_node_tree();
+    });
 
-  describe("node_alias_submit", function () {
-    it(" ", function () {
-      expect(1).toEqual(1);
+    it("finds nodes", function () {
+      let n = nodes.find_by_range(1845493760, 1862270975);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+
+      n = nodes.find_by_range(1854996480, 1855062015);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.0.0");
+
+      n = nodes.find_by_range(1855047680, 1855047935);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.0");
+
+      n = nodes.find_by_range(1855047759, 1855047759);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.79");
+    });
+
+    it("finds nearest node when missing", function () {
+      let n = nodes.find_by_range(1855062016, 1855127551);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.0.0.0");
+
+      n = nodes.find_by_range(1855047936, 1855048191);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.0.0");
+
+      n = nodes.find_by_range(1855047760, 1855047760);
+      expect(n).not.toBeNull();
+      expect(n.address).toEqual("110.145.200.0");
+    });
+
+    it("returns null when nothing available", function () {
+      let n = nodes.find_by_range(2147483648, 2164260863)
+      expect(n).toBeNull();
     });
   });
 
+  describe("find_common_root", function () {
+    beforeEach(function () {
+      nodes.nodes = get_mock_node_tree();
+    });
 
-  describe("node_info_click", function () {
-    it(" ", function () {
-      expect(1).toEqual(1);
+    it("finds parents", function () {
+      let nodeA = nodes.find_by_addr("110.145.200.77");
+      let nodeB = nodes.find_by_addr("110.145.216.179");
+      let nodeC = nodes.find_by_addr("110.145.200.146");
+      let parent;
+      parent = nodes.find_common_root(nodeA, nodeB);
+      expect(parent.address).toEqual("110.145.0.0")
+      parent = nodes.find_common_root(nodeA, nodeC);
+      expect(parent.address).toEqual("110.145.200.0")
+      parent = nodes.find_common_root(nodeB, nodeC);
+      expect(parent.address).toEqual("110.145.0.0")
+    })
+  });
+
+  describe("insert", function () {
+    beforeEach(function () {
+      nodes.nodes = get_mock_node_tree();
+    });
+
+    it("works in normal case", function () {
+      let n = nodes.find_by_addr("136.164");
+      expect(n.address).toEqual("136.0.0.0");
+      let record = {
+        "subnet":16,
+        "ipstart":2292449280,
+        "ipend":2292514815,
+        "alias":null,
+        "radius":864,
+        "env":null,
+        "y":29030.4,
+        "x":12441.6
+      };
+      let flat = false;
+      nodes.insert(record, flat);
+      n = nodes.find_by_addr("136.164");
+      expect(n.address).toEqual("136.164.0.0");
     });
   });
 
+  describe("GET_response", function () {
+    it("works in the root case", function () {
+      let root_response = {"_":[
+        {"subnet":8,"ipstart":352321536,"ipend":369098751,"alias":null,"radius":20736,"env":null,"y":-287539.188,"x":-110592},
+        {"subnet":8,"ipstart":889192448,"ipend":905969663,"alias":null,"radius":20736,"env":null,"y":-199065.594,"x":-110592},
+        {"subnet":8,"ipstart":1325400064,"ipend":1342177279,"alias":null,"radius":20736,"env":null,"y":-154828.797,"x":331776},
+        {"subnet":8,"ipstart":1845493760,"ipend":1862270975,"alias":null,"radius":20736,"env":null,"y":-66355.203,"x":287539.188},
+        {"subnet":8,"ipstart":2030043136,"ipend":2046820351,"alias":null,"radius":20736,"env":null,"y":-22118.4,"x":66355.203},
+        {"subnet":8,"ipstart":2281701376,"ipend":2298478591,"alias":null,"radius":20736,"env":null,"y":22118.4,"x":22118.4},
+        {"subnet":8,"ipstart":3170893824,"ipend":3187671039,"alias":null,"radius":20736,"env":null,"y":154828.797,"x":243302.406},
+        {"subnet":8,"ipstart":3489660928,"ipend":3506438143,"alias":null,"radius":20736,"env":null,"y":243302.406,"x":-331776}]};
+      nodes.nodes = {};
+      nodes.GET_response(root_response);
+      let expected = ["1325400064","1845493760","2030043136","2281701376","3170893824","3489660928","352321536","889192448"];
+      let real = Object.keys(nodes.nodes).sort();
+      expect(real).toEqual(expected);
+    });
+
+    it("works in the child case", function () {
+      nodes.nodes = get_mock_node_tree();
+      let response = {"136.0.0.0/8":[{"subnet":16,"ipstart":2292449280,"ipend":2292514815,"alias":null,"radius":864,"env":null,"y":29030.4,"x":12441.6}]};
+      let n = nodes.find_by_addr("136.164");
+      expect(n.address).toEqual("136.0.0.0");
+      nodes.GET_response(response);
+      n = nodes.find_by_addr("136.164");
+      expect(n.address).toEqual("136.164.0.0");
+    });
+  });
 
   describe("determine_number", function () {
-    it("works with /8", function () {
-      node = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3221225472, "ipend":3238002687};
-      expect(determine_number(node)).toEqual(192);
+    it("/8", function () {
+      let n = nodes.find_by_addr("110");
+      expect(nodes.determine_number(n)).toEqual(110);
     });
-    it("works with /16", function () {
-      node = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232301055};
-      expect(determine_number(node)).toEqual(168);
+    it("/16", function () {
+      let n = nodes.find_by_addr("110.145");
+      expect(nodes.determine_number(n)).toEqual(145);
     });
-    it("works with /24", function () {
-      node = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232235775};
-      expect(determine_number(node)).toEqual(0);
+    it("/24", function () {
+      let n = nodes.find_by_addr("110.145.200");
+      expect(nodes.determine_number(n)).toEqual(200);
     });
-    it("works with /32", function () {
-      node = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235527, "ipend":3232235527};
-      expect(determine_number(node)).toEqual(7);
+    it("/32", function () {
+      let n = nodes.find_by_addr("110.145.200.79");
+      expect(nodes.determine_number(n)).toEqual(79);
     });
   });
 
-
-  describe("import_node", function () {
-    it("/8 imports", function () {
-      m_nodes = {};
-      node8 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3221225472, "ipend":3238002687};
-      import_node(null, node8);
-      expect(Object.keys(m_nodes)).toContain("192");
-      expect(m_nodes[192].address).toEqual("192");
-    });
-    it("/16 imports", function () {
-      m_nodes = {};
-      node8 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3221225472, "ipend":3238002687};
-      node16 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232301055};
-      import_node(null, node8);
-      import_node(m_nodes[192], node16);
-      expect(Object.keys(m_nodes[192].children)).toContain("168");
-      expect(m_nodes[192].children[168].address).toEqual("192.168");
-    });
-    it("/24 imports", function () {
-      m_nodes = {};
-      node8 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3221225472, "ipend":3238002687};
-      node16 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232301055};
-      node24 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232235775};
-      import_node(null, node8);
-      import_node(m_nodes[192], node16);
-      import_node(m_nodes[192].children[168], node24);
-      expect(Object.keys(m_nodes[192].children[168].children)).toContain("0");
-      expect(m_nodes[192].children[168].children[0].address).toEqual("192.168.0");
-    });
-    it("/32 imports", function () {
-      m_nodes = {};
-      node8 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3221225472, "ipend":3238002687};
-      node16 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232301055};
-      node24 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235520, "ipend":3232235775};
-      node32 = { "alias":'', "radius":1, "y":1, "x":1,
-        "ipstart":3232235527, "ipend":3232235527};
-      import_node(null, node8);
-      import_node(m_nodes[192], node16);
-      import_node(m_nodes[192].children[168], node24);
-      import_node(m_nodes[192].children[168].children[0], node32);
-      expect(Object.keys(m_nodes[192].children[168].children[0].children)).toContain("7");
-      expect(m_nodes[192].children[168].children[0].children[7].address).toEqual("192.168.0.7");
+  describe("port_to_pos", function () {
+    it("matches correctly", function () {
+      let n = {"abs_x": 970, "abs_y": 50, "radius": 15};
+      expect(nodes.port_to_pos(n, 't-l')).toEqual([965, 29]);
+      expect(nodes.port_to_pos(n, 't-r')).toEqual([975, 29]);
+      expect(nodes.port_to_pos(n, 'b-l')).toEqual([965, 71]);
+      expect(nodes.port_to_pos(n, 'b-r')).toEqual([975, 71]);
+      expect(nodes.port_to_pos(n, 'l-t')).toEqual([949, 45]);
+      expect(nodes.port_to_pos(n, 'l-b')).toEqual([949, 55]);
+      expect(nodes.port_to_pos(n, 'r-t')).toEqual([991, 45]);
+      expect(nodes.port_to_pos(n, 'r-b')).toEqual([991, 55]);
     });
   });
 
+  describe("nearest_corner", function() {
+    it("matches corners", function() {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15};
+      expect(nodes.nearest_corner(n, 400, 30)).toEqual([485, 35]);
+      expect(nodes.nearest_corner(n, 400, 50)).toEqual([485, 65]);
+      expect(nodes.nearest_corner(n, 400, 70)).toEqual([485, 65]);
+      expect(nodes.nearest_corner(n, 500, 30)).toEqual([515, 35]);
+      expect(nodes.nearest_corner(n, 500, 50)).toEqual([515, 65]);
+      expect(nodes.nearest_corner(n, 500, 70)).toEqual([515, 65]);
+      expect(nodes.nearest_corner(n, 600, 30)).toEqual([515, 35]);
+      expect(nodes.nearest_corner(n, 600, 50)).toEqual([515, 65]);
+      expect(nodes.nearest_corner(n, 600, 70)).toEqual([515, 65]);
+    });
+  });
 
-  describe("node_update", function () {
-    beforeEach(function() {
-      m_nodes = {};
-      response1 = {
-        "192": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3221225472, "ipend":3238002687}]
-      };
-      response2 = {
-        "192.168": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3232235520, "ipend":3232301055}]
-      };
-      response3 = {
-        "192.168.0": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3232235520, "ipend":3232235775}]
-      };
-      response4 = {
-        "192.168.0.7": [{ "alias":'', "radius":1, "y":1, "x":1, "ipstart":3232235527, "ipend":3232235527}]
-      };
-      spyOn(window, "link_request_submit");
-      spyOn(window, "updateRenderRoot");
-      spyOn(window, "render_all");
+  describe("delta_to_dest", function () {
+    it("follows normal path", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15};
+      expect(nodes.delta_to_dest(n, 400, 30)).toEqual([485, 53]);
+      expect(nodes.delta_to_dest(n, 400, 50)).toEqual([485, 53]);
+      expect(nodes.delta_to_dest(n, 400, 70)).toEqual([485, 53]);
+      expect(nodes.delta_to_dest(n, 500, 30)).toEqual([497, 35]);
+      expect(nodes.delta_to_dest(n, 500, 50)).toEqual([497, 35]);
+      expect(nodes.delta_to_dest(n, 500, 70)).toEqual([503, 65]);
+      expect(nodes.delta_to_dest(n, 600, 30)).toEqual([515, 47]);
+      expect(nodes.delta_to_dest(n, 600, 50)).toEqual([515, 47]);
+      expect(nodes.delta_to_dest(n, 600, 70)).toEqual([515, 47]);
     });
-    it("single import", function () {
-      node_update(response1);
-      expect(m_nodes.hasOwnProperty("192")).toEqual(true);
+  });
+
+  describe("delta_to_src", function () {
+    it("follows normal path", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15};
+      expect(nodes.delta_to_src(n, 400, 30)).toEqual([485, 47]);
+      expect(nodes.delta_to_src(n, 400, 50)).toEqual([485, 47]);
+      expect(nodes.delta_to_src(n, 400, 70)).toEqual([485, 47]);
+      expect(nodes.delta_to_src(n, 500, 30)).toEqual([503, 35]);
+      expect(nodes.delta_to_src(n, 500, 50)).toEqual([503, 35]);
+      expect(nodes.delta_to_src(n, 500, 70)).toEqual([497, 65]);
+      expect(nodes.delta_to_src(n, 600, 30)).toEqual([515, 53]);
+      expect(nodes.delta_to_src(n, 600, 50)).toEqual([515, 53]);
+      expect(nodes.delta_to_src(n, 600, 70)).toEqual([515, 53]);
     });
-    it("/8 /16 import", function () {
-      node_update(response1);
-      node_update(response2);
-      expect(m_nodes.hasOwnProperty("192")).toEqual(true);
-      expect(m_nodes['192'].children.hasOwnProperty("168")).toEqual(true);
-    });
-    it("/8 /16 /24 import", function () {
-      node_update(response1);
-      node_update(response2);
-      node_update(response3);
-      expect(m_nodes.hasOwnProperty("192")).toEqual(true);
-      expect(m_nodes['192'].children.hasOwnProperty("168")).toEqual(true);
-      expect(m_nodes['192'].children['168'].children.hasOwnProperty("0")).toEqual(true);
-    });
-    it("/8 /16 /24 /32 import", function () {
-      node_update(response1);
-      node_update(response2);
-      node_update(response3);
-      node_update(response4);
-      expect(m_nodes.hasOwnProperty("192")).toEqual(true);
-      expect(m_nodes['192'].children.hasOwnProperty("168")).toEqual(true);
-      expect(m_nodes['192'].children['168'].children.hasOwnProperty("0")).toEqual(true);
-      expect(m_nodes['192'].children['168'].children['0'].children.hasOwnProperty("7")).toEqual(true);
-    });
+  });
+
+  describe("get_inbound_link_point", function () {
+
   });
 });

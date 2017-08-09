@@ -49,11 +49,11 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     layout_flat: false,
     layout_arrangement: "Address",
     endpoint: "./nodes",
-    ds: null,
+    dsid: null,
   };
   nodes.set_datasource = function (ds) {
-    if (ds.datasource !== nodes.ds) {
-      nodes.ds = ds.id;
+    if (ds.datasource !== nodes.dsid) {
+      nodes.dsid = ds.id;
       nodes.layout_flat = (ds.flat === 1);
       if (nodes.layout_flat) {
         nodes.layout_arrangement = "Circle";
@@ -71,9 +71,8 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       return;
     }
 
-    //only do stuff if the layout is changing.
     nodes.layout_flat = flat;
-    
+
     if (nodes.layout_flat) {
       document.getElementById("la_Circle").click();
     } else {
@@ -120,34 +119,27 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let start = 0;
     let end = 0;
     let subnet = -1;
+    let given_ip = 0;
     if (ip_subnet.length === 2) {
       subnet = Number(ip_subnet[1]);
     }
 
     let ip_segs = ip.split(".");
+    let ips = []
     if (subnet === -1) {
       subnet = ip_segs.length * 8;
     } else {
-      if (subnet <= 24) { ip_segs.pop(); }
-      if (subnet <= 16) { ip_segs.pop(); }
-      if (subnet <= 8) { ip_segs.pop(); }
+      ip_segs = ip_segs.slice(0, subnet / 8);
     }
 
-    if (ip_segs.length === 4) {
-        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256 + Number(ip_segs[3]);
-        end = start;
-    } else if (ip_segs.length === 3) {
-        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536 + Number(ip_segs[2]) * 256;
-        end = start + 255;
-    } else if (ip_segs.length === 2) {
-        start = Number(ip_segs[0]) * 16777216 + Number(ip_segs[1]) * 65536;
-        end = start + 65535;
-    } else if (ip_segs.length === 1) {
-        start = Number(ip_segs[0]) * 16777216;
-        end = start + 16777215;
-    } else {
-      return null;
+    for(let i = 0; i < 4; i += 1) {
+      let current = Number(ip_segs[i]) || 0;
+      given_ip = given_ip * 256 + current;
     }
+
+    start = given_ip - given_ip % (Math.pow(2, 32 - subnet));
+    end = start + Math.pow(2, 32 - subnet) - 1;
+
     //console.log("searching for '%s'", address);
     return nodes.find_by_range(start, end);
   };
@@ -349,7 +341,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }).join(",");
     }
     request.flat = nodes.layout_flat;
-    request.ds = nodes.ds;
+    request.ds = nodes.dsid;
     $.ajax({
       url: nodes.endpoint,
       type: "GET",
