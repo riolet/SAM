@@ -1,4 +1,4 @@
-describe("map_node.js file", function () {
+xdescribe("map_node.js file", function () {
   describe("Node", function () {
     beforeEach(function () {
       n1 = new Node("bob", "192.168", 168, 24, 1, 1, 1, 10);
@@ -456,7 +456,7 @@ describe("map_node.js file", function () {
   });
 });
 
-describe("address layout", function () {
+xdescribe("address layout", function () {
   beforeEach(function () {
     address = nodes.layouts.Address;
   });
@@ -520,7 +520,7 @@ describe("address layout", function () {
   describe("layout", function () {});
 });
 
-describe("grid layout", function () {
+xdescribe("grid layout", function () {
   beforeEach(function () {
     grid = nodes.layouts.Grid;
   });
@@ -528,7 +528,7 @@ describe("grid layout", function () {
   describe("layout", function () {});
 });
 
-describe("circle layout", function () {
+xdescribe("circle layout", function () {
   beforeEach(function () {
     circle = nodes.layouts.Circle;
   });

@@ -20,6 +20,7 @@ src_files:
   - js/timerange.js
   - js/map.js
   - js/map_*.js
+  - js/liveUpdate.js
 
 
 # stylesheets
