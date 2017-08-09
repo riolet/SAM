@@ -572,7 +572,7 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
         return nodes.determine_number(node).toString();
       }
     } else {
-        return node.alias;
+        return node.alias.toString();
     }
   };
   nodes.flat_scale = function () {
@@ -610,11 +610,14 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     nodes.layouts[layout_name].layout(node_coll, 0, size_x, size_y);
   };
   nodes.set_layout = function (style) {
-    if (typeof(style) !== "string") {
-      return;
+    if (nodes.layouts.hasOwnProperty(style)) {
+      nodes.layout_arrangement = style;
+      nodes.do_layout(nodes.nodes);
+      return true;
+    } else {
+      console.error("invalid layout style specified. Valid styles:", Object.keys(nodes.layouts));
+      return false;
     }
-    nodes.layout_arrangement = style;
-    nodes.do_layout(nodes.nodes);
   };
 
   // Export ports instance to global scope
@@ -635,17 +638,11 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
     let offset = side_length / 2;
     let x = -offset + (seg % 16) * spacing;
     let y = -offset + (Math.floor(seg / 16)) * spacing;
-    if (seg.length > 0) {
-      let blah = address.recursive_placement(side_length / 16, segments);
-      return {
-        "x": x + blah.x,
-        "y": y + blah.y
-      };
+    if (segments.length > 0) {
+      let refined = address.recursive_placement(side_length / 16, segments);
+      return {"x": x + refined.x, "y": y + refined.y};
     } else {
-      return {
-        "x": x,
-        "y": y
-      };
+      return {"x": x, "y": y};
     }
   };
   address.get_segment_difference = function (parent_subnet, subnet, address) {
@@ -825,11 +822,18 @@ function Node(alias, address, ipstart, ipend, subnet, x, y, radius) {
       }
     });
   };
+  circle.node_sorter = function(a, b) {
+    if (a.ipstart - b.ipstart === 0) {
+      return a.subnet - b.subnet;
+    } else {
+      return a.ipstart - b.ipstart;
+    }
+  }
   circle.layout = function (node_coll, subnet, size_x, size_y) {
     let center = circle.find_center_node(node_coll);
     circle.move_to_center(center);
     let attached = circle.get_all_attached_nodes(center);
-    attached = circle.sorted_unique(attached, function (a, b) { if (a.ipstart - b.ipstart === 0) { return a.subnet - b.subnet; } else { return a.ipstart - b.ipstart;}});
+    attached = circle.sorted_unique(attached, circle.node_sorter);
     circle.remove_item(attached, center);
     subnet = subnet || 0;
     circle.arrange_nodes_evenly(attached, size_x / 2, size_y / 2);

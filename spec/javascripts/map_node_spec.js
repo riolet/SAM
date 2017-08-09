@@ -269,6 +269,351 @@ describe("map_node.js file", function () {
   });
 
   describe("get_inbound_link_point", function () {
+    it("lines up to existing ports", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 32, "ports": {123: "t-l", 456: "r-b"}};
+      expect(nodes.get_inbound_link_point(n, 400, 30, 123)).toEqual(nodes.port_to_pos(n, "t-l"));
+      expect(nodes.get_inbound_link_point(n, 400, 30, 456)).toEqual(nodes.port_to_pos(n, "r-b"));
+    });
+    it("uses normal connection points when subnet is not 32", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 8, ports: {}};
+      let x = 400;
+      let y = 30;
+      let port = 123;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).toEqual(nodes.delta_to_dest(n, x, y));
+      n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 16, ports: {}};
+      x = 800;
+      y = 30;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).toEqual(nodes.delta_to_dest(n, x, y));
+      n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 24, ports: {}};
+      x = 800;
+      y = 90;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).toEqual(nodes.delta_to_dest(n, x, y));
+      n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 32, ports: {}};
+      x = 400;
+      y = 90;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).not.toEqual(nodes.delta_to_dest(n, x, y));
+    });
+    it("picks a corner if subnet is 32 but no port match", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 32, "ports": {123: "t-l", 456: "r-b"}};
+      let x = 400;
+      let y = 30;
+      let port = 80;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).toEqual(nodes.nearest_corner(n, x, y));
+      port = 123;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).not.toEqual(nodes.nearest_corner(n, x, y));
+      x = 600;
+      y = 70;
+      port = 443;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).toEqual(nodes.nearest_corner(n, x, y));
+      port = 456;
+      expect(nodes.get_inbound_link_point(n, x, y, port)).not.toEqual(nodes.nearest_corner(n, x, y));
+    });
+  });
 
+  describe("get_outbound_link_point", function () {
+    it("uses normal connection points when subnet is not 32", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 8, ports: {}};
+      let x = 400;
+      let y = 30;
+      let port = 123;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.delta_to_src(n, x, y));
+      n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 16, ports: {}};
+      x = 800;
+      y = 30;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.delta_to_src(n, x, y));
+      n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 24, ports: {}};
+      x = 800;
+      y = 90;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.delta_to_src(n, x, y));
+      n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 32, ports: {}};
+      x = 400;
+      y = 90;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).not.toEqual(nodes.delta_to_src(n, x, y));
+    });
+    it("picks a corner if subnet is 32", function () {
+      let n = {"abs_x": 500, "abs_y": 50, "radius": 15, "subnet": 32, "ports": {123: "t-l", 456: "r-b"}};
+      let x = 400;
+      let y = 30;
+      let port = 80;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.nearest_corner(n, x, y));
+      port = 123;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.nearest_corner(n, x, y));
+      x = 600;
+      y = 70;
+      port = 443;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.nearest_corner(n, x, y));
+      port = 456;
+      expect(nodes.get_outbound_link_point(n, x, y, port)).toEqual(nodes.nearest_corner(n, x, y));
+    });
+  });
+
+  describe("update_pos_tree", function () {
+    beforeEach(function () {
+      a = {address: "10.0.0.0", subnet: 8, children: {}, rel_x: 1000, rel_y: 1};
+      b = {address: "10.20.0.0", subnet: 16, children: {}, rel_x: 100, rel_y: 2};
+      c = {address: "10.20.30.0", subnet: 24, children: {}, rel_x: 10, rel_y: 4};
+      d = {address: "10.20.30.40", subnet: 32, children: {}, rel_x: 1, rel_y: 8};
+      a.children[169082880] = b;
+      b.children[169090560] = c;
+      c.children[169090600] = d;
+      b.parent = a;
+      c.parent = b;
+      d.parent = c;
+    });
+    it("calculates absolute pos, cascading", function () {
+      nodes.update_pos_tree(a, null);
+      expect(a.abs_x).toEqual(1000);
+      expect(a.abs_y).toEqual(1);
+      expect(b.abs_x).toEqual(1100);
+      expect(b.abs_y).toEqual(3);
+      expect(c.abs_x).toEqual(1110);
+      expect(c.abs_y).toEqual(7);
+      expect(d.abs_x).toEqual(1111);
+      expect(d.abs_y).toEqual(15);
+    });
+  });
+
+  describe("set_relative_pos", function () {
+    beforeEach(function () {
+      a = {address: "10.0.0.0", subnet: 8, children: {}, rel_x: 1000, rel_y: 1};
+      b = {address: "10.20.0.0", subnet: 16, children: {}, rel_x: 100, rel_y: 2};
+      c = {address: "10.20.30.0", subnet: 24, children: {}, rel_x: 10, rel_y: 4};
+      d = {address: "10.20.30.40", subnet: 32, children: {}, rel_x: 1, rel_y: 8};
+      a.children[169082880] = b;
+      b.children[169090560] = c;
+      c.children[169090600] = d;
+      b.parent = a;
+      c.parent = b;
+      d.parent = c;
+    });
+    it("cascades", function () {
+      nodes.set_relative_pos(a, 2000, 17);
+      expect(a.abs_x).toEqual(2000);
+      expect(a.abs_y).toEqual(17);
+      expect(b.abs_x).toEqual(2100);
+      expect(b.abs_y).toEqual(19);
+      expect(c.abs_x).toEqual(2110);
+      expect(c.abs_y).toEqual(23);
+      expect(d.abs_x).toEqual(2111);
+      expect(d.abs_y).toEqual(31);
+    });
+  });
+
+  describe("get_name", function () {
+    it("prefers an alias", function () {
+      let alias = "test1";
+      let n = {"alias": alias, address: "10.20.30.40", subnet: 32, children: {}, rel_x: 1, rel_y: 8};
+      expect(nodes.get_name(n)).toEqual(alias);
+      expect(typeof(nodes.get_name(n))).toEqual("string");
+    });
+    it("returns a number string otherwise", function () {
+      let addr = "10.20.30.40";
+      nodes.layout_flat = true;
+      let n = {alias: "", address: addr, subnet: 16, ipstart: 169082880, ipend: 169148415};
+      expect(nodes.get_name(n)).toEqual(addr);
+      expect(typeof(nodes.get_name(n))).toEqual("string");
+      nodes.layout_flat = false;
+      expect(nodes.get_name(n)).toEqual("20");
+      expect(typeof(nodes.get_name(n))).toEqual("string");
+    });
+  });
+
+  describe("flat_scale", function () {});
+
+  describe("get_address", function () {
+    it("appends subnet (unless =32)", function () {
+      let n = {address: "1.2.3.4", subnet: 32};
+      expect(nodes.get_address(n)).toEqual("1.2.3.4");
+      n = {address: "1.2.3.4", subnet: 24};
+      expect(nodes.get_address(n)).toEqual("1.2.3.4/24");
+      n = {address: "1.2.3.4", subnet: 16};
+      expect(nodes.get_address(n)).toEqual("1.2.3.4/16");
+      n = {address: "1.2.3.4", subnet: 8};
+      expect(nodes.get_address(n)).toEqual("1.2.3.4/8");
+    });
+    it("pads with zeroes", function () {
+      let n = {address: "1.2.3", subnet: 24};
+      expect(nodes.get_address(n)).toEqual("1.2.3.0/24");
+      n = {address: "1.2", subnet: 16};
+      expect(nodes.get_address(n)).toEqual("1.2.0.0/16");
+      n = {address: "1", subnet: 8};
+      expect(nodes.get_address(n)).toEqual("1.0.0.0/8");
+    });
+  });
+
+  describe("do_layout", function () {});
+
+  describe("set_layout", function () {
+    it("only works with valid styles", function () {
+      spyOn(nodes, "do_layout");
+      expect(nodes.set_layout("Circle")).toBe(true);
+      expect(nodes.set_layout("Square")).toBe(false);
+      expect(nodes.set_layout("Grid")).toBe(true);
+      expect(nodes.set_layout("Litmus")).toBe(false);
+      expect(nodes.set_layout("Address")).toBe(true);
+      expect(nodes.do_layout).toHaveBeenCalledTimes(3);
+    });
   });
 });
+
+describe("address layout", function () {
+  beforeEach(function () {
+    address = nodes.layouts.Address;
+  });
+  describe("recursive_placement", function () {
+    it("base case", function () {
+      expect(address.recursive_placement(150, [0])).toEqual({x: -75, y: -75});
+      expect(address.recursive_placement(150, [1])).toEqual({x: -65, y: -75});
+      expect(address.recursive_placement(150, [14])).toEqual({x: 65, y: -75});
+      expect(address.recursive_placement(150, [15])).toEqual({x: 75, y: -75});
+      expect(address.recursive_placement(150, [16])).toEqual({x: -75, y: -65});
+      expect(address.recursive_placement(150, [239])).toEqual({x: 75, y: 65});
+      expect(address.recursive_placement(150, [240])).toEqual({x: -75, y: 75});
+      expect(address.recursive_placement(150, [241])).toEqual({x: -65, y: 75});
+      expect(address.recursive_placement(150, [254])).toEqual({x: 65, y: 75});
+      expect(address.recursive_placement(150, [255])).toEqual({x: 75, y: 75});
+    });
+    it("recursive case", function () {
+      expect(address.recursive_placement(36000, [0, 0])).toEqual({x: -19125, y: -19125});
+      expect(address.recursive_placement(36000, [15, 0])).toEqual({x: -16875, y: -19125});
+      expect(address.recursive_placement(36000, [240, 0])).toEqual({x: -19125, y: -16875});
+      expect(address.recursive_placement(36000, [255, 0])).toEqual({x: -16875, y: -16875});
+
+      expect(address.recursive_placement(36000, [0, 15])).toEqual({x: 16875, y: -19125});
+      expect(address.recursive_placement(36000, [15, 15])).toEqual({x: 19125, y: -19125});
+      expect(address.recursive_placement(36000, [240, 15])).toEqual({x: 16875, y: -16875});
+      expect(address.recursive_placement(36000, [255, 15])).toEqual({x: 19125, y: -16875});
+      
+      expect(address.recursive_placement(36000, [0, 240])).toEqual({x: -19125, y: 16875});
+      expect(address.recursive_placement(36000, [15, 240])).toEqual({x: -16875, y: 16875});
+      expect(address.recursive_placement(36000, [240, 240])).toEqual({x: -19125, y: 19125});
+      expect(address.recursive_placement(36000, [255, 240])).toEqual({x: -16875, y: 19125});
+      
+      expect(address.recursive_placement(36000, [0, 255])).toEqual({x: 16875, y: 16875});
+      expect(address.recursive_placement(36000, [15, 255])).toEqual({x: 19125, y: 16875});
+      expect(address.recursive_placement(36000, [240, 255])).toEqual({x: 16875, y: 19125});
+      expect(address.recursive_placement(36000, [255, 255])).toEqual({x: 19125, y: 19125});
+    });
+  });
+
+  describe("get_segment_difference", function () {
+    it("base case", function () {
+      expect(address.get_segment_difference(0, 8, 169090600)).toEqual(["10"]);
+      expect(address.get_segment_difference(0, 16, 169090600)).toEqual(["10", "20"]);
+      expect(address.get_segment_difference(0, 24, 169090600)).toEqual(["10", "20", "30"]);
+      expect(address.get_segment_difference(0, 32, 169090600)).toEqual(["10", "20", "30", "40"]);
+      expect(address.get_segment_difference(8, 16, 169090600)).toEqual(["20"]);
+      expect(address.get_segment_difference(8, 24, 169090600)).toEqual(["20", "30"]);
+      expect(address.get_segment_difference(8, 32, 169090600)).toEqual(["20", "30", "40"]);
+      expect(address.get_segment_difference(16, 24, 169090600)).toEqual(["30"]);
+      expect(address.get_segment_difference(16, 32, 169090600)).toEqual(["30", "40"]);
+      expect(address.get_segment_difference(24, 32, 169090600)).toEqual(["40"]);
+      expect(address.get_segment_difference(0, 0, 169090600)).toEqual([]);
+      expect(address.get_segment_difference(8, 8, 169090600)).toEqual([]);
+      expect(address.get_segment_difference(16, 16, 169090600)).toEqual([]);
+      expect(address.get_segment_difference(24, 24, 169090600)).toEqual([]);
+      expect(address.get_segment_difference(32, 32, 169090600)).toEqual([]);
+    });
+  });
+
+  describe("arrange_collection", function () {});
+  describe("layout", function () {});
+});
+
+describe("grid layout", function () {
+  beforeEach(function () {
+    grid = nodes.layouts.Grid;
+  });
+  describe("arrange_collection", function () {});
+  describe("layout", function () {});
+});
+
+describe("circle layout", function () {
+  beforeEach(function () {
+    circle = nodes.layouts.Circle;
+  });
+  describe("find_center_node", function () {
+    it("finds the most-connected node", function () {
+      let tree = get_mock_node_tree();
+      let fake_tree = {
+        b: {inputs: [1,2], outputs: [4,5,6]},
+        a: {inputs: [1,2,3], outputs: [4,5,6]},
+        c: {inputs: [1,2,3], outputs: [4,5]},
+      };
+      expect(circle.find_center_node(fake_tree)).toEqual(fake_tree['a']);
+      expect(circle.find_center_node(tree)).toEqual(tree[352321536])
+    });
+  });
+
+  //cannot test because test data has input/output connections broken.
+  describe("get_all_attached_nodes", function () {});
+
+  describe("sorted_unique", function () {
+    it("sorts", function () {
+      sorter = function(a, b) {return a-b};
+      expect(circle.sorted_unique([3,2,7,6,8], sorter)).toEqual([2,3,6,7,8]);
+    });
+    it("uniquifies", function () {
+      sorter = function(a, b) {return a.ipstart-b.ipstart};
+      nodelist = [
+        {address: "30", ipstart: 30, subnet: 5},
+        {address: "10", ipstart: 10, subnet: 5},
+        {address: "20", ipstart: 20, subnet: 5},
+        {address: "30", ipstart: 30, subnet: 5},
+        {address: "20", ipstart: 20, subnet: 5},
+        {address: "10", ipstart: 10, subnet: 5},
+        {address: "10", ipstart: 10, subnet: 5},
+        {address: "30", ipstart: 30, subnet: 5},
+        {address: "20", ipstart: 20, subnet: 5},
+      ]
+      expected = [
+        {address: "10", ipstart: 10, subnet: 5},
+        {address: "20", ipstart: 20, subnet: 5},
+        {address: "30", ipstart: 30, subnet: 5},
+      ]
+
+      expect(circle.sorted_unique(nodelist, sorter)).toEqual(expected);
+    })
+  });
+
+  describe("remove_item", function () {
+    it("removes an item", function () {
+      numlist = [3,2,7,6,8];
+      circle.remove_item(numlist, 6);
+      expect(numlist).toEqual([3,2,7,8]);
+    });
+  });
+
+  describe("move_to_center", function () {});
+  describe("arrange_nodes_recursion", function () {});
+  describe("arrange_nodes_evenly", function () {});
+
+  describe("node_sorter", function () {
+    it("sorts", function () {
+      nodelist = [
+        {ipstart: 30, subnet: 5},
+        {ipstart: 25, subnet: 10},
+        {ipstart: 31, subnet: 1},
+        {ipstart: 20, subnet: 5},
+        {ipstart: 25, subnet: 5},
+        {ipstart: 10, subnet: 5},
+        {ipstart: 20, subnet: 10},
+        {ipstart: 15, subnet: 10},
+      ]
+      expected = [
+        {ipstart: 10, subnet: 5},
+        {ipstart: 15, subnet: 10},
+        {ipstart: 20, subnet: 5},
+        {ipstart: 20, subnet: 10},
+        {ipstart: 25, subnet: 5},
+        {ipstart: 25, subnet: 10},
+        {ipstart: 30, subnet: 5},
+        {ipstart: 31, subnet: 1},
+      ]
+      expect(circle.sorted_unique(nodelist, circle.node_sorter)).toEqual(expected);
+    });
+  });
+
+  describe("layout", function () {});
+});
+
