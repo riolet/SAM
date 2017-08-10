@@ -141,7 +141,7 @@ describe("map.js file", function () {
   describe("checkLoD", function () {});
 });
 
-xdescribe("controller", function () {
+describe("controller", function () {
   describe("init", function () {});
   describe("init_buttons", function () {});
   describe("init_demo", function () {});
@@ -240,7 +240,7 @@ xdescribe("controller", function () {
   describe("event_layout_arrangement", function () {});
 });
 
-xdescribe("map", function () {
+describe("map", function () {
   beforeEach(function () {
     map = map_settings;
   });

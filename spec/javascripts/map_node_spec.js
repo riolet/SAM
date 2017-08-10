@@ -1,4 +1,4 @@
-xdescribe("map_node.js file", function () {
+describe("map_node.js file", function () {
   describe("Node", function () {
     beforeEach(function () {
       n1 = new Node("bob", "192.168", 168, 24, 1, 1, 1, 10);
@@ -191,6 +191,9 @@ xdescribe("map_node.js file", function () {
   });
 
   describe("determine_number", function () {
+    beforeEach(function () {
+      nodes.nodes = get_mock_node_tree();
+    });
     it("/8", function () {
       let n = nodes.find_by_addr("110");
       expect(nodes.determine_number(n)).toEqual(110);
@@ -456,7 +459,7 @@ xdescribe("map_node.js file", function () {
   });
 });
 
-xdescribe("address layout", function () {
+describe("address layout", function () {
   beforeEach(function () {
     address = nodes.layouts.Address;
   });
@@ -520,7 +523,7 @@ xdescribe("address layout", function () {
   describe("layout", function () {});
 });
 
-xdescribe("grid layout", function () {
+describe("grid layout", function () {
   beforeEach(function () {
     grid = nodes.layouts.Grid;
   });
@@ -528,7 +531,7 @@ xdescribe("grid layout", function () {
   describe("layout", function () {});
 });
 
-xdescribe("circle layout", function () {
+describe("circle layout", function () {
   beforeEach(function () {
     circle = nodes.layouts.Circle;
   });

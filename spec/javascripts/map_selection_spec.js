@@ -149,7 +149,7 @@ function get_dom() {
   return div;
 }
 
-xdescribe("map_selection.js file", function () {
+describe("map_selection.js file", function () {
   beforeEach(function () {
     dom = get_dom();
     //window.appendChild(dom.outerHTML);
@@ -442,9 +442,10 @@ xdescribe("map_selection.js file", function () {
   describe("sel_create_link", function () {
     it("returns a link", function () {
       let node = get_loadednode();
+      controller.dsid = 6;
       let anchor = sel_create_link(node);
       expect(anchor.tagName).toEqual("A");
-      expect(anchor.href.endsWith("/metadata#ip=189.58.134.0/24&ds=0")).toBe(true);
+      expect(anchor.href.endsWith("/metadata#ip=189.58.134.0/24&ds=6")).toBe(true);
     });
   });
 

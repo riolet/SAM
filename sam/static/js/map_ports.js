@@ -223,8 +223,11 @@
         });
     };
     ports.GET_portinfo = function (port_list, callback) {
-        //ports is an array of Numbers
-        var requestData = {"port": port_list.join(",")};
+        //port_list is an array of Numbers
+        if (port_list.length == 0) {
+          return;
+        }
+        let requestData = {"port": port_list.join(",")};
         $.ajax({
             url: "./portinfo",
             type: "GET",

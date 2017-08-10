@@ -1,4 +1,4 @@
-xdescribe("map_ports.js file", function () {
+describe("map_ports.js file", function () {
   describe("ports.loaded", function () {
     beforeEach(function () {
       get_mock_m_ports();
@@ -278,22 +278,17 @@ xdescribe("map_ports.js file", function () {
 
 
   //don't know how to test this.
-  xdescribe("ports.GET_portinfo", function () {
+  describe("ports.GET_portinfo", function () {
     beforeEach(function () {
       spyOn($, "ajax")
-      spyOn(ports.private, "GET_response")
     })
     it("doesn't run with zero ports", function () {
-      expect(1).toEqual(1);
+      ports.GET_portinfo([]);
+      expect($.ajax).not.toHaveBeenCalled();
     });
-    it("one port", function () {
-      expect(1).toEqual(1);
-    });
-    it("many ports", function () {
-      expect(1).toEqual(1);
-    });
-    it("runs its callback", function () {
-      expect(1).toEqual(1);
+    it("runs ajax", function () {
+      ports.GET_portinfo([443]);
+      expect($.ajax).toHaveBeenCalledTimes(1);
     });
   });
 
