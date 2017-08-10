@@ -19,22 +19,26 @@ function dist_between_squared(x1, y1, x2, y2) {
     return Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
 }
 
+//Sort comparator function that sorts first by subnet (larger subnets first)puts items closer to the center of the screen first.
+//Then by distance from screen center.
 function link_comparator(a, b) {
     "use strict";
     //determine value of a and b
-    var map_centerx = (controller.rect.width - 2 * tx) / (2 * g_scale);
-    var map_centery = (controller.rect.height - 2 * ty) / (2 * g_scale);
+    var view_center = get_view_center(controller.rect, tx, ty, g_scale);
     var aNode = nodes.find_by_addr(a);
     var bNode = nodes.find_by_addr(b);
     if (aNode === null || bNode === null) {
         return 0;
     }
-    var aValue = 1 / Math.max(1, dist_between_squared(aNode.abs_x, aNode.abs_y, map_centerx, map_centery));
-    var bValue = 1 / Math.max(1, dist_between_squared(bNode.abs_x, bNode.abs_y, map_centerx, map_centery));
+    var aValue = 1 / Math.max(1, dist_between_squared(aNode.abs_x, aNode.abs_y, view_center.x, view_center.y));
+    var bValue = 1 / Math.max(1, dist_between_squared(bNode.abs_x, bNode.abs_y, view_center.x, view_center.y));
     // _Value is now a number between 0 and 1, where 1 is closer to center screen
 
     if (renderCollection.indexOf(aNode) != -1) {
         aValue += 32 - aNode.subnet;
+    }
+    if (renderCollection.indexOf(bNode) != -1) {
+        bValue += 32 - bNode.subnet;
     }
     // _Value is now a number between 0 and 25 based on being visible and zoomed further out
 
@@ -72,6 +76,7 @@ function link_remove_all(collection) {
     Object.keys(collection).forEach(function (node_name) {
         collection[node_name].inputs = [];
         collection[node_name].outputs = [];
+        collection[node_name].ports = {};
         collection[node_name].server = false;
         collection[node_name].client = false;
         link_remove_all(collection[node_name].children);
@@ -93,7 +98,7 @@ function GET_links(addrs) {
         "protocol": config.protocol,
         "tstart": config.tstart,
         "tend": config.tend,
-        "ds": controller.ds
+        "ds": controller.dsid
     };
     if (nodes.layout_flat) {
       requestData.flat = true;
@@ -147,10 +152,6 @@ function fix_link_pointers(node) {
   node.outputs.forEach(function (link_in) {
     link_in.src = node;
     let dest = nodes.find_by_range(link_in.dst_start, link_in.dst_end);
-    if (dest==null) {
-      console.log("cannot find a node: {} .. {}", link_in.dst_start, link_in.dst_end);
-      console.log("from link_in ", link_in);
-    }
     let root = nodes.find_common_root(node, dest);
     if (root == null) {
       link_in.dst = nodes.find_step_closer(nodes.nodes, dest);
@@ -231,7 +232,7 @@ function link_processPorts(links, dest) {
                      "l-t", "l-b",
                      "b-l", "b-r"];
 
-    var port_tracker = {};
+    var port_tracker = dest.ports;
     var j;
     var choice = 0;
     //the first 8 unique port numbers should be mapped to locations.

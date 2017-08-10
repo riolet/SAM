@@ -1,4 +1,4 @@
-xdescribe("map.js file", function () {  
+describe("map.js file", function () {  
   describe("zoom levels", function() {
     it("defined", function () {
       expect(zNodes16).toBeDefined();
@@ -46,6 +46,34 @@ xdescribe("map.js file", function () {
     });
     it("matches 24", function () {
       expect(currentSubnet(zNodes32)).toEqual(32);
+    });
+  });
+
+  describe("get_view_center", function () {
+    beforeEach(function () {
+      viewrect = { x: 0, y: 58, width: 959, height: 555, top: 58, right: 959, bottom: 613, left: 0 };
+    });
+    it("untransformed", function () {
+      expect(get_view_center(viewrect, 0, 0, 1)).toEqual({x: viewrect.width / 2, y: viewrect.height / 2});
+    });
+    it("translated", function () {
+      let x = viewrect.width / 2;
+      let y = viewrect.height / 2;
+      expect(get_view_center(viewrect, x, y, 1)).toEqual({x: 0, y: 0});
+      expect(get_view_center(viewrect, x - 100, y - 100, 1)).toEqual({x: 100, y: 100});
+      expect(get_view_center(viewrect, x + 100, y + 100, 1)).toEqual({x: -100, y: -100});
+    });
+    it("scaled", function () {
+      let x = viewrect.width / 2;
+      let y = viewrect.height / 2;
+      let scale = 0.5;
+      expect(get_view_center(viewrect, x, y, 1)).toEqual({x: 0, y: 0});
+      expect(get_view_center(viewrect, x - 100, y - 100, scale)).toEqual({x: 200, y: 200});
+      expect(get_view_center(viewrect, x + 100, y + 100, scale)).toEqual({x: -200, y: -200});
+      scale = 2;
+      expect(get_view_center(viewrect, x, y, 1)).toEqual({x: 0, y: 0});
+      expect(get_view_center(viewrect, x - 100, y - 100, scale)).toEqual({x: 50, y: 50});
+      expect(get_view_center(viewrect, x + 100, y + 100, scale)).toEqual({x: -50, y: -50});
     });
   });
 

@@ -5,6 +5,7 @@ var renderConfig = {
   show_servers: true,
   show_inputs: true,
   show_outputs: true,
+  show_axis: false,
   linewidth: "links",
 
   backgroundColor: "#F7F7F7",
@@ -650,6 +651,29 @@ function renderClusters(ctx, collection, x, y, scale) {
     }
 }
 
+function render_axis(ctx, x, y, scale) {
+  ctx.setTransform(scale, 0, 0, scale, x, y, 1);
+  ctx.fillStyle = "#000000";
+  ctx.globalAlpha = 1.0;
+  let size = 10 / scale;
+  let dist = 100 / scale
+  ctx.fillRect(-size / 2, -size / 2, size, size);
+
+  ctx.fillRect(-size / 8, -size / 2, size / 4, size + dist);
+  ctx.fillRect(-size / 2, -size / 2 + dist, size, size);
+
+  ctx.fillRect(-size / 2, -size / 8, size + dist, size / 4);
+  ctx.fillRect(-size / 2 + dist, -size / 2, size, size);
+
+  ctx.setTransform(1, 0, 0, 1, x, y, 1);
+  //ctx.font = Math.round(5/scale) + "em sans";
+  ctx.font = "1.3em sans";
+  console.log("font is", ctx.font);
+  ctx.fillText("(0, 0)", 5, -10);
+  ctx.fillText("+X", 100, -10);
+  ctx.fillText("+Y", 5, 90);
+}
+
 function render(ctx, x, y, scale) {
     "use strict";
 
@@ -666,6 +690,9 @@ function render(ctx, x, y, scale) {
         return;
     }
 
+    if (renderConfig.show_axis) {
+      render_axis(ctx, x, y, scale);
+    }
     ctx.setTransform(scale, 0, 0, scale, x, y, 1);
 
     if (renderCollection.length !== 0) {

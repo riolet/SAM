@@ -47,7 +47,7 @@ var g_timer = null;
     rect: {},
     datasources: [],
     datasource: {},
-    ds: 0,
+    dsid: 0,
     settings: {},
     autorefresh: false,
     autorefresh_period: 0,
@@ -627,6 +627,14 @@ function currentSubnet(scale) {
   }
   return 32;
   
+}
+
+function get_view_center(viewrect, x, y, scale) {
+  let center = {
+    x: ((viewrect.width / 2) - x) / (scale),
+    y: ((viewrect.height / 2) - y) / (scale)
+  };
+  return center;
 }
 
 function removeChildren(element) {

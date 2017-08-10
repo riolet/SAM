@@ -268,7 +268,7 @@ function sel_panel_height() {
 
 function sel_create_link(node) {
     var address = nodes.get_address(node);
-    var link = "./metadata#ip=" + address + "&ds=" + controller.ds;
+    var link = "./metadata#ip=" + address + "&ds=" + controller.dsid;
     var text = strings.sel_more_info + address;
 
     var icon = document.createElement("I");
@@ -406,7 +406,7 @@ function sel_GET_details(node, callback) {
         "tend": config.tend,
         "order": "-links",
         "simple": true,
-        "ds": controller.ds
+        "ds": controller.dsid
         };
 
     $.ajax({
@@ -464,7 +464,7 @@ function sel_GET_details_sorted(node, component, order, callback) {
         "order": order,
         "simple": true,
         "component": component,
-        "ds": controller.ds
+        "ds": controller.dsid
         };
 
     $.ajax({
