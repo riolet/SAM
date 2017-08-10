@@ -1,4 +1,4 @@
-describe("map.js file", function () {  
+xdescribe("map.js file", function () {  
   describe("zoom levels", function() {
     it("defined", function () {
       expect(zNodes16).toBeDefined();
@@ -113,7 +113,7 @@ describe("map.js file", function () {
   describe("checkLoD", function () {});
 });
 
-describe("controller", function () {
+xdescribe("controller", function () {
   describe("init", function () {});
   describe("init_buttons", function () {});
   describe("init_demo", function () {});
@@ -212,7 +212,7 @@ describe("controller", function () {
   describe("event_layout_arrangement", function () {});
 });
 
-describe("map", function () {
+xdescribe("map", function () {
   beforeEach(function () {
     map = map_settings;
   });
@@ -304,9 +304,24 @@ describe("map", function () {
     })
   });
   
-  describe("create_labeliconbutton", function () {});
-  describe("create_iconbutton", function () {});
-  describe("create_labelbutton", function () {});
+  describe("create_labeliconbutton", function () {
+    it("returns a button", function () {
+      let btn = map.create_labeliconbutton("id1", "lock", "Secure", "click me", true, null);
+      expect(btn.tagName).toEqual("BUTTON");
+    })
+  });
+  describe("create_iconbutton", function () {
+    it("returns a button", function () {
+      let btn = map.create_iconbutton("id1", "lock", "click me", true, null);
+      expect(btn.tagName).toEqual("BUTTON");
+    })
+  });
+  describe("create_labelbutton", function () {
+    it("returns a button", function () {
+      let btn = map.create_labelbutton("id1", "Secure", "click me", true, null);
+      expect(btn.tagName).toEqual("BUTTON");
+    })
+  });
   describe("create_divider", function () {});
   describe("btn_toggleable", function () {});
   describe("create_buttongroup", function () {});
