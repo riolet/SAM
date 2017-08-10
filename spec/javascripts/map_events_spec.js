@@ -8,7 +8,7 @@ describe("map_events.js file", function () {
       expect(distanceSquared(0, 10, 0, 0)).toEqual(100);
       expect(distanceSquared(10, 0, 0, 0)).toEqual(100);
       expect(distanceSquared(3, 4, 6, 8)).toEqual(25);
-    })
+    });
   });
   describe("contains", function () {
     it("works", function () {

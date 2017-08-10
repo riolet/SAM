@@ -22,15 +22,15 @@ function dist_between_squared(x1, y1, x2, y2) {
 function link_comparator(a, b) {
     "use strict";
     //determine value of a and b
-    var centerx = (controller.rect.width - 2 * tx) / (2 * g_scale);
-    var centery = (controller.rect.height - 2 * ty) / (2 * g_scale);
+    var map_centerx = (controller.rect.width - 2 * tx) / (2 * g_scale);
+    var map_centery = (controller.rect.height - 2 * ty) / (2 * g_scale);
     var aNode = nodes.find_by_addr(a);
     var bNode = nodes.find_by_addr(b);
     if (aNode === null || bNode === null) {
         return 0;
     }
-    var aValue = 1 / Math.max(1, dist_between_squared(aNode.abs_x, aNode.abs_y, centerx, centery));
-    var bValue = 1 / Math.max(1, dist_between_squared(bNode.abs_x, bNode.abs_y, centerx, centery));
+    var aValue = 1 / Math.max(1, dist_between_squared(aNode.abs_x, aNode.abs_y, map_centerx, map_centery));
+    var bValue = 1 / Math.max(1, dist_between_squared(bNode.abs_x, bNode.abs_y, map_centerx, map_centery));
     // _Value is now a number between 0 and 1, where 1 is closer to center screen
 
     if (renderCollection.indexOf(aNode) != -1) {
