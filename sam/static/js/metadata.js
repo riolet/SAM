@@ -5,6 +5,7 @@ var g_typing_timer = null;
 var g_running_requests = [];
 var g_state = null;
 var g_data = {"quick": null, "inputs": null, "outputs": null, "ports": null, "children": null};
+var g_ds;
 
 /********************
    Helper functions
@@ -119,7 +120,6 @@ function readHash() {
       ip_input.value = part.slice(3);
     }
   });
-
   // reload data
   dispatcher({
     type: "input",
@@ -855,14 +855,16 @@ function StateChangeEvent(newState) {
 function dispatcher(event) {
   "use strict";
   let success = false;
+  //change the state if needed
   if (event.type === "stateChange") {
     g_state = event.newState;
-    if (typeof(g_state) === "function") {
-      g_state(event);
-      success = true;
-    } else {
-      console.error("g_state is invalid");
-    }
+  }
+  //then fire this event to the current state (if possible)
+  if (typeof(g_state) === "function") {
+    g_state(event);
+    success = true;
+  } else {
+    console.error("g_state is invalid");
   }
   return success;
 }

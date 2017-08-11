@@ -1,4 +1,4 @@
-xdescribe("metadata.js file", function () {
+describe("metadata.js file", function () {
   describe("normalizeIP", function () {
     it("works with short IPs", function () {
       expect(normalizeIP("110")).toEqual("110.0.0.0/8");
@@ -145,15 +145,23 @@ xdescribe("metadata.js file", function () {
       let foo = {
         bar: function () {
           return true;
+        },
+        old: function () {
+          return true;
         }
       }
       spyOn(foo, "bar");
+      spyOn(foo, "old");
       let good = {type: "stateChange", newState: foo.bar};
       let bad = {type: "notStateChange", newState: foo.bar};
-      dispatcher(good);
-      expect(foo.bar).toHaveBeenCalledTimes(1);
+      g_state = foo.old;
       dispatcher(bad);
-      // it is not called a second time for bad.
+      // no state change so the old state is the recipient of the event.
+      expect(foo.old).toHaveBeenCalledTimes(1);
+      expect(foo.bar).toHaveBeenCalledTimes(0);
+      dispatcher(good);
+      // state change, so the new state is the recipient of the event.
+      expect(foo.old).toHaveBeenCalledTimes(1);
       expect(foo.bar).toHaveBeenCalledTimes(1);
     });
     it("executes or errors", function () {

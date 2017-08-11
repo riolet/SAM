@@ -93,7 +93,7 @@ function slider_create(dateSlider, tmin, tmax, tstart, tend) {
   });
 }
 
-function slider_hookup(dateslider, inputA, inputB) {
+function slider_hookup(dateSlider, inputA, inputB) {
   "use strict";
   let converter = dateConverter();
   dateSlider.noUiSlider.on('update', function( values, handle ) {
@@ -106,7 +106,7 @@ function slider_hookup(dateslider, inputA, inputB) {
       config.tstart = Math.round(value);
     }
   });
-  dateSlider.noUiSlider.on('end', function(){
+  dateSlider.noUiSlider.on('set', function(){
     sel_remove_all(nodes.nodes);
     sel_set_selection(m_selection.selection)
     links_reset();
@@ -117,13 +117,14 @@ function slider_hookup(dateslider, inputA, inputB) {
 
 function slider_build(tmin, tmax, tstart, tend) {
   "use strict";
-  var dateSlider = document.getElementById('slider-date');
+  let dateSlider = document.getElementById('slider-date');
   slider_create(dateSlider, tmin, tmax, tstart, tend);
 
-  var inputA = document.getElementById('input-start');
-  var inputB = document.getElementById('input-end');
+  let inputA = document.getElementById('input-start');
+  let inputB = document.getElementById('input-end');
   slider_hookup(dateSlider, inputA, inputB);
 
+  let converter = dateConverter();
   inputA.addEventListener('change', function(){
     dateSlider.noUiSlider.set([converter.from(this.value), null]);
   });
