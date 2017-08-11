@@ -149,7 +149,7 @@ function get_dom() {
   return div;
 }
 
-describe("map_selection.js file", function () {
+xdescribe("map_selection.js file", function () {
   beforeEach(function () {
     dom = get_dom();
     //window.appendChild(dom.outerHTML);
@@ -178,7 +178,7 @@ describe("map_selection.js file", function () {
   });
 
   //no branches or loops to test, skipped
-  xdescribe("sel_clear_display", function () {});
+  describe("sel_clear_display", function () {});
 
   describe("sel_set_selection", function () {
     beforeEach(function () {

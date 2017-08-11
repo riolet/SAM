@@ -1,4 +1,4 @@
-describe("map_events.js file", function () {
+xdescribe("map_events.js file", function () {
   describe("deselectText", function () {});
   
   describe("distanceSquared", function () {

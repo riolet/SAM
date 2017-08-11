@@ -1,4 +1,4 @@
-describe("map_ports.js file", function () {
+xdescribe("map_ports.js file", function () {
   describe("ports.loaded", function () {
     beforeEach(function () {
       get_mock_m_ports();

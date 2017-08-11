@@ -89,22 +89,29 @@ function opacity(subnet, type, scale) {
         }
     }
 
-    if (scale <= startZoom) {
-        // before it's time
-        return 0.0;
-    } else if (scale >= endZoom * 2) {
-        // after it's time
-        return 0.0;
-    } else if (scale >= startZoom * 2 && scale <= endZoom) {
-        // in it's time
-        return 1.0;
-    } else if (scale < startZoom * 2) {
-        // ramping up, linearly
-        return 1 - (scale - startZoom * 2) / (-startZoom);
-    } else {
-        // ramping down, linearly
-        return (scale - endZoom * 2) / (-endZoom);
-    }
+    let value = trapezoidInterpolation(startZoom, startZoom*2, endZoom, endZoom*2, scale);
+    return value;
+}
+
+function trapezoidInterpolation(start, peak1, peak2, end, value) {
+  /*         peak1     peak2
+    1.0    _ _ _ _______ _ _ _
+    0.5         /       \
+    0.0   _____/_ _ _ _ _\_____
+          start           end
+          <----- value ------>
+  */
+  if (value <= start || value >= end) {
+    return 0;
+  }
+  if (value >= peak1 && value <= peak2) {
+    return 1;
+  }
+  if (value < peak1) {
+    return (value - start) / (peak1 - start);
+  } else {
+    return (value - end) / (peak2 - end);
+  }
 }
 
 function magnitudeSquared(x, y) {
@@ -193,27 +200,32 @@ function onScreen(coll, x, y, scale) {
     return filtered;
 }
 
+function get_bbox(collection) {
+  let bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
+  Object.keys(collection).forEach(function (nodeKey) {
+    var node = collection[nodeKey];
+    if (node.abs_x - node.radius_orig < bbox.left) {
+      bbox.left = node.abs_x - node.radius_orig;
+    }
+    if (node.abs_x + node.radius_orig > bbox.right) {
+      bbox.right = node.abs_x + node.radius_orig;
+    }
+    if (node.abs_y - node.radius_orig < bbox.top) {
+      bbox.top = node.abs_y - node.radius_orig;
+    }
+    if (node.abs_y + node.radius_orig > bbox.bottom) {
+      bbox.bottom = node.abs_y + node.radius_orig;
+    }
+  });
+  return bbox;
+}
+
 function resetViewport(collection, fill) {
     "use strict";
     if (fill === undefined) {
         fill = 0.92;
     }
-    var bbox = {"left": Infinity, "right": -Infinity, "top": Infinity, "bottom": -Infinity};
-    Object.keys(collection).forEach(function (nodeKey) {
-        var node = collection[nodeKey];
-        if (node.abs_x - node.radius_orig < bbox.left) {
-            bbox.left = node.abs_x - node.radius;
-        }
-        if (node.abs_x + node.radius_orig > bbox.right) {
-            bbox.right = node.abs_x + node.radius;
-        }
-        if (node.abs_y - node.radius_orig < bbox.top) {
-            bbox.top = node.abs_y - node.radius;
-        }
-        if (node.abs_y + node.radius_orig > bbox.bottom) {
-            bbox.bottom = node.abs_y + node.radius;
-        }
-    });
+    let bbox = get_bbox(collection);
     var scaleA = fill * controller.rect.width / (bbox.right - bbox.left);
     var scaleB = fill * controller.rect.height / (bbox.bottom - bbox.top);
     g_scale = Math.min(scaleA, scaleB);
@@ -487,7 +499,7 @@ function renderNode(ctx, node) {
     ctx.moveTo(node.abs_x + node.radius, node.abs_y);
     ctx.arc(node.abs_x, node.abs_y, node.radius, 0, Math.PI * 2, 0);
   } else {
-    //terminal node (final IP address)
+    //terminal node (no child nodes)
     ctx.strokeRect(node.abs_x - node.radius, node.abs_y - node.radius, node.radius * 2, node.radius * 2);
     ctx.fillRect(node.abs_x - node.radius, node.abs_y - node.radius, node.radius * 2, node.radius * 2);
     //draw ports

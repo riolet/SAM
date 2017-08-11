@@ -14,7 +14,6 @@ function normalizeIP(ipString) {
     var add_sub = ipString.split("/");
 
     var address = add_sub[0];
-    var subnet = add_sub[1];
 
     var segments = address.split(".");
     var num;
@@ -27,6 +26,13 @@ function normalizeIP(ipString) {
         return list;
     }, []);
 
+    let subnet;
+    if (add_sub.length == 2) {
+      subnet = Number(add_sub[1]);
+    } else {
+      subnet = segments.length * 8;
+    }
+    segments = segments.slice(0, subnet / 8);
     final_ip = segments.join(".");
 
     var zeroes_to_add = 4 - segments.length;
@@ -64,18 +70,13 @@ function minimizeIP(ip) {
     if (isNaN(subnet)) {
         subnet = Math.min(4, segs.length);
     }
-    var i;
-    var minimized_ip = segs[0];
-    for (i = 1; i < subnet; i += 1) {
-        minimized_ip += "." + segs[i];
-    }
+    let minimized_ip = segs.slice(0, subnet).join(".");
     return minimized_ip;
 }
 
 function dsCallback(value) {
-  "user strict";
+  "use strict";
   g_ds = value;
-
   writeHash();
 }
 
@@ -84,7 +85,7 @@ function writeHash() {
   // grab the ip
   let searchbar = document.getElementById("hostSearch");
   let ip_input = searchbar.getElementsByTagName("input")[0];
-  let ip = ip_input.value
+  let ip = ip_input.value;
 
   // grab the ds
   let ds = $(".dropdown.button").dropdown('get value');
@@ -134,21 +135,21 @@ function buildKeyValueRow(key, value) {
     "use strict";
     var tr = document.createElement("TR");
     var td = document.createElement("TD");
-    td.appendChild(document.createTextNode(key));
+    td.innerText = key;
     tr.appendChild(td);
     if (typeof(value) === "undefined") {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode("undefined"));
+        td.innerText = "undefined";
         tr.appendChild(td);
     } else if (value === null) {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode("null"));
+        td.innerText = "null";
         tr.appendChild(td);
     } else if (typeof(value) === "object") {
         tr.appendChild(value);
     } else {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(value));
+        td.innerText = value;
         tr.appendChild(td);
     }
     return tr;
@@ -159,13 +160,13 @@ function buildKeyMultiValueRows(key, values) {
     var rows = [];
     var tr = document.createElement("TR");
     var td = document.createElement("TD");
-    td.appendChild(document.createTextNode(key));
+    td.innerText = key;
     tr.appendChild(td);
     td.rowSpan = values.length;
 
     values.forEach(function (e) {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(e));
+        td.innerText = e;
         tr.appendChild(td);
         rows.push(tr);
         tr = document.createElement("TR");
@@ -182,7 +183,7 @@ function build_link(address, subnet) {
 
     var a = document.createElement("A");
     a.appendChild(icon);
-    a.appendChild(document.createTextNode(text));
+    a.innerText = text;
     a.href = link;
     return a;
 }
@@ -205,6 +206,23 @@ function build_role_text(ratio) {
     return role_text;
 }
 
+function build_label_packetrate(packets) {
+  "use strict";
+  if (packets < 1000) {
+    return packets.toFixed(2) + " " + strings.meta_pps;
+  }
+  packets /= 1000;
+  if (packets < 1000) {
+    return packets.toFixed(2) + " " + strings.meta_kpps;
+  }
+  packets /= 1000;
+  if (packets < 1000) {
+    return packets.toFixed(2) + " " + strings.meta_mpps;
+  }
+  packets /= 1000;
+  return packets.toFixed(2) + " " + strings.meta_gpps;
+}
+
 function build_table_children(dataset) {
     "use strict";
     var tbody = document.createElement("TBODY");
@@ -217,13 +235,13 @@ function build_table_children(dataset) {
         td.appendChild(build_link(row.address, row.subnet));
         tr.appendChild(td);
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(row.hostname));
+        td.innerText = row.hostname;
         tr.appendChild(td);
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(row.endpoints));
+        td.innerText = row.endpoints;
         tr.appendChild(td);
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(build_role_text(row.ratio)));
+        td.innerText = build_role_text(row.ratio);
         tr.appendChild(td);
         tbody.appendChild(tr);
     });
@@ -246,7 +264,7 @@ function build_pagination(page, page_size, component, total) {
 
     // PREV button
     button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode(strings.paginate_prev));
+    button.innerText = strings.paginate_prev;
     if (has_prev) {
         button.className = "ui button";
         button.onclick = function () {
@@ -261,15 +279,15 @@ function build_pagination(page, page_size, component, total) {
     // descriptive text
     span = document.createElement("SPAN");
     if (total > 0) {
-        span.appendChild(document.createTextNode(strings.meta_window1 + page_first + "-" + page_last + strings.meta_window2 + total));
+        span.innerText = strings.meta_window1 + page_first + "-" + page_last + strings.meta_window2 + total;
     } else {
-        span.appendChild(document.createTextNode(strings.meta_window_empty));
+        span.innerText = strings.meta_window_empty;
     }
     div.appendChild(span);
 
     // NEXT button
     button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode(strings.paginate_next));
+    button.innerText = strings.paginate_next;
     if (has_next) {
         button.className = "ui button";
         button.onclick = function () {
@@ -290,25 +308,8 @@ function build_label(text, color, disabled) {
     if (disabled) {
         label.classList.add("disabled");
     }
-    label.appendChild(document.createTextNode(text));
+    label.innerText = text;
     return label;
-}
-
-function build_label_packetrate(packets) {
-  "use strict";
-  if (packets < 1000) {
-    return packets.toFixed(2) + " " + strings.meta_pps;
-  }
-  packets /= 1000;
-  if (packets < 1000) {
-    return packets.toFixed(2) + " " + strings.meta_kpps;
-  }
-  packets /= 1000;
-  if (packets < 1000) {
-    return packets.toFixed(2) + " " + strings.meta_mpps;
-  }
-  packets /= 1000;
-  return packets.toFixed(2) + " " + strings.meta_gpps;
 }
 
 function present_quick_info(info) {
@@ -377,7 +378,7 @@ function present_quick_info(info) {
             div.appendChild(i);
             key = document.createElement("DIV");
             key.className = "default text";
-            key.appendChild(document.createTextNode("tags"));
+            key.innerText = "tags";
             div.appendChild(key);
             values = document.createElement("DIV");
             values.className = "menu";
@@ -385,7 +386,7 @@ function present_quick_info(info) {
                 key = document.createElement("DIV");
                 key.className = "item";
                 key.dataset.value = tag;
-                key.appendChild(document.createTextNode(tag));
+                key.innerText = tag;
                 values.appendChild(key);
             });
             div.appendChild(values);
@@ -419,7 +420,7 @@ function present_quick_info(info) {
             div.appendChild(i);
             key = document.createElement("DIV");
             key.className = "default text";
-            key.appendChild(document.createTextNode("environment"));
+            key.innerText = "environment";
             div.appendChild(key);
             values = document.createElement("DIV");
             values.className = "menu";
@@ -428,9 +429,9 @@ function present_quick_info(info) {
                 key.className = "item";
                 key.dataset.value = tag;
                 if (tag === "inherit") {
-                    key.appendChild(document.createTextNode(tag + " (" + info.envs.p_env + ")"));
+                    key.innerText = tag + " (" + info.envs.p_env + ")";
                 } else {
-                    key.appendChild(document.createTextNode(tag));
+                    key.innerText = tag;
                 }
                 values.appendChild(key);
             });
@@ -474,7 +475,7 @@ function present_quick_info(info) {
             //Add Header
             td = document.createElement("H3");
             td.className = "ui centered header";
-            td.appendChild(document.createTextNode(strings.meta_inbound));
+            td.innerText = strings.meta_inbound;
             segment.appendChild(td);
             //Add datapoints
             table = document.createElement("TABLE");
@@ -500,7 +501,7 @@ function present_quick_info(info) {
             //Add Header
             td = document.createElement("H3");
             td.className = "ui centered header";
-            td.appendChild(document.createTextNode(strings.meta_outbound));
+            td.innerText = strings.meta_outbound;
             segment.appendChild(td);
             //Add datapoints
             table = document.createElement("TABLE");
@@ -661,7 +662,7 @@ function clear_quick_info() {
     segment.innerHTML = "";
     h3 = document.createElement("H3");
     h3.className = "ui centered header";
-    h3.appendChild(document.createTextNode(strings.meta_inbound));
+    h3.innerText = strings.meta_inbound;
     segment.appendChild(h3);
 
     //clear outputs
@@ -669,7 +670,7 @@ function clear_quick_info() {
     segment.innerHTML = "";
     h3 = document.createElement("H3");
     h3.className = "ui centered header";
-    h3.appendChild(document.createTextNode(strings.meta_outbound));
+    h3.innerText = strings.meta_outbound;
     segment.appendChild(h3);
 }
 
@@ -856,10 +857,10 @@ function dispatcher(event) {
     if (event.type === "stateChange") {
         g_state = event.newState;
     }
-    if (g_state === null) {
-        console.error("g_state is null");
-    } else {
+    if (typeof(g_state) === "function") {
         g_state(event);
+    } else {
+        console.error("g_state is invalid");
     }
 }
 

@@ -1,4 +1,4 @@
-describe("map.js file", function () {  
+xdescribe("map.js file", function () {  
   describe("zoom levels", function() {
     it("defined", function () {
       expect(zNodes16).toBeDefined();
@@ -141,7 +141,7 @@ describe("map.js file", function () {
   describe("checkLoD", function () {});
 });
 
-describe("controller", function () {
+xdescribe("controller", function () {
   describe("init", function () {});
   describe("init_buttons", function () {});
   describe("init_demo", function () {});
@@ -240,7 +240,7 @@ describe("controller", function () {
   describe("event_layout_arrangement", function () {});
 });
 
-describe("map", function () {
+xdescribe("map", function () {
   beforeEach(function () {
     map = map_settings;
   });
