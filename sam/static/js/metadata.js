@@ -853,15 +853,18 @@ function StateChangeEvent(newState) {
 }
 
 function dispatcher(event) {
-    "use strict";
-    if (event.type === "stateChange") {
-        g_state = event.newState;
-    }
+  "use strict";
+  let success = false;
+  if (event.type === "stateChange") {
+    g_state = event.newState;
     if (typeof(g_state) === "function") {
-        g_state(event);
+      g_state(event);
+      success = true;
     } else {
-        console.error("g_state is invalid");
+      console.error("g_state is invalid");
     }
+  }
+  return success;
 }
 
 function restartTypingTimer(event) {
@@ -892,8 +895,10 @@ function scanForPorts(response) {
     var index;
     if (response.hasOwnProperty("inputs")) {
         for (index = response.inputs.headers.length - 1; index >= 0 && response.inputs.headers[index][0] !== "port"; index -= 1) {};
+        console.log("port index is ", index);
         if (index >= 0) {
             response.inputs.rows.forEach(function (element) {
+                console.log("    adding ", element[index]);
                 ports.request_add(element[index]);
             });
         }

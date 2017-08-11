@@ -23,7 +23,6 @@ src_files:
   - js/metadata.js
   - js/liveUpdate.js
 
-
 # stylesheets
 #
 # Return an array of stylesheet filepaths relative to src_dir to include before jasmine specs.
