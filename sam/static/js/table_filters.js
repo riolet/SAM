@@ -94,6 +94,9 @@
     };
     filters.deleteFilter = function (index) {
         //remove a filter item from the list
+        if (index < 0 || index >= filters.filters.length) {
+          return;
+        }
         filters.filters.splice(index, 1);
         filters.private.updateSummary();
     };
@@ -135,19 +138,9 @@
         filters.private.updateSummary();
     };
     filters.getFilters = function () {
-        //collapse the filter list into a minimal set of data
-        var filterArray = filters.filters.reduce(function (data, filter) {
-            var newItem = {};
-            Object.keys(filter).forEach(function (key) {
-                if (key === "html") {
-                    return;
-                }
-                newItem[key] = filter[key];
-            });
-            data.push(newItem);
-            return data;
-        }, []);
-        return filters.private.encodeFilters(filterArray);
+      // makes a copy of filters.filters, but drops the html key from each element.
+      let filterArray = filters.private.dropKeys(filters.filters, ["html"]);
+      return filters.private.encodeFilters(filterArray);
     };
     filters.setFilters = function (filterString) {
         if (filterString === "") {
@@ -160,10 +153,10 @@
     // ==================================
     // Private methods
     // ==================================
-    filters.private.createFilter = function(enabled, type, params, row) {
+    filters.private.createFilter = function(enabled, type, params, rowmaker) {
       let filter = {};
       let filterdiv = filters.private.markupBoilerplate(enabled);
-      let parts = row(params);
+      let parts = rowmaker(params);
       parts.forEach(function (part) {
         filterdiv.appendChild(part);
       });
@@ -518,91 +511,107 @@
         });
     };
 
+    filters.private.writeSummary = function (filter) {
+      let span;
+      if (filter.type === "subnet") {
+        span = filters.private.markupSpan(strings.table_sum_sub + " /" + filter.subnet);
+
+      } else if (filter.type === "mask") {
+        span = filters.private.markupSpan(strings.table_sum_sub + " " + filter.mask);
+
+      } else if (filter.type === "port") {
+        if (filter.connection === "0") {
+          span = filters.private.markupSpan(strings.table_sum_port1 + "(" + filter.port + ")");
+        } else if (filter.connection === "1") {
+          span = filters.private.markupSpan(strings.table_sum_port2 + "(" + filter.port + ")");
+        } else if (filter.connection === "2") {
+          span = filters.private.markupSpan(strings.table_sum_port3 + "(" + filter.port + ")");
+        } else if (filter.connection === "3") {
+          span = filters.private.markupSpan(strings.table_sum_port4 + "(" + filter.port + ")");
+        }
+
+      } else if (filter.type === "connections") {
+        var dir = ""
+        if (filter.direction == 'i') {
+          dir = strings.table_sum_conn1;
+        } else if (filter.direction == 'o') {
+          dir = strings.table_sum_conn2;
+        } else if (filter.direction == 'c') {
+          dir = strings.table_sum_conn3;
+        }
+        span = filters.private.markupSpan(filter.comparator + filter.limit + dir);
+
+      } else if (filter.type === "protocol") {
+        if (filter.handles === "0") {
+          span = filters.private.markupSpan(filter.protocol+ strings.table_sum_protocol2);
+        } else if (filter.handles === "1") {
+          span = filters.private.markupSpan(strings.table_sum_protocol1 + filter.protocol + strings.table_sum_protocol2);
+        } else if (filter.handles === "2") {
+          span = filters.private.markupSpan(filter.protocol + strings.table_sum_protocol3);
+        } else if (filter.handles === "3") {
+          span = filters.private.markupSpan(strings.table_sum_protocol1 + filter.protocol + strings.table_sum_protocol3);
+        }
+
+      } else if (filter.type === "target") {
+        if (filter.to === "0") {
+          span = filters.private.markupSpan(strings.table_sum_target1 + filter.target);
+        } else if (filter.to === "1") {
+          span = filters.private.markupSpan(strings.table_sum_target2 + filter.target);
+        } else if (filter.to === "2") {
+          span = filters.private.markupSpan(strings.table_sum_target3 + filter.target);
+        } else if (filter.to === "3") {
+          span = filters.private.markupSpan(strings.table_sum_target4 + filter.target);
+        }
+
+      } else if (filter.type === "tags") {
+        if (filter.has === "1") {
+          span = filters.private.markupSpan(strings.table_sum_tags1 + "(" + filter.tags + ")");
+        } else {
+          span = filters.private.markupSpan(strings.table_sum_tags2 + "(" + filter.tags + ")");
+        }
+
+      } else if (filter.type === "env") {
+        span = filters.private.markupSpan(strings.table_sum_env + filter.env);
+
+      } else if (filter.type === "role") {
+        span = filters.private.markupSpan(filter.comparator + Math.round(filter.ratio * 100) + strings.table_sum_role);
+      }
+      if (!filter.enabled) {
+        span.style = "color: LightGray;";
+      }
+      return span;
+    };
     filters.private.updateSummary = function () {
         var header = filters.displayDiv.previousElementSibling;
         var icon = header.getElementsByTagName("i")[0];
         header.innerHTML = "";
         header.appendChild(icon);
-        var span;
 
         //span = filters.private.markupSpan("Filter: ");
         header.appendChild(document.createTextNode(strings.table_sum));
 
-        //span.style = "color: grey;";
         if (filters.filters.length > 0) {
-            filters.filters.forEach(function (filter) {
-                if (filter.type === "subnet") {
-                    span = filters.private.markupSpan(strings.table_sum_sub + " /" + filter.subnet);
-
-                } else if (filter.type === "mask") {
-                    span = filters.private.markupSpan(strings.table_sum_sub + " " + filter.mask);
-
-                } else if (filter.type === "port") {
-                    if (filter.connection === "0") {
-                        span = filters.private.markupSpan(strings.table_sum_port1 + "(" + filter.port + ")");
-                    } else if (filter.connection === "1") {
-                        span = filters.private.markupSpan(strings.table_sum_port2 + "(" + filter.port + ")");
-                    } else if (filter.connection === "2") {
-                        span = filters.private.markupSpan(strings.table_sum_port3 + "(" + filter.port + ")");
-                    } else if (filter.connection === "3") {
-                        span = filters.private.markupSpan(strings.table_sum_port4 + "(" + filter.port + ")");
-                    }
-
-                } else if (filter.type === "connections") {
-                    var dir = ""
-                    if (filter.direction == 'i') {
-                      dir = strings.table_sum_conn1;
-                    } else if (filter.direction == 'o') {
-                      dir = strings.table_sum_conn2;
-                    }
-                    span = filters.private.markupSpan(filter.comparator + filter.limit + dir);
-
-                } else if (filter.type === "protocol") {
-                    if (filter.handles === "0") {
-                        span = filters.private.markupSpan(filter.protocol+ strings.table_sum_protocol2);
-                    } else if (filter.handles === "1") {
-                        span = filters.private.markupSpan(strings.table_sum_protocol1 + filter.protocol + strings.table_sum_protocol2);
-                    } else if (filter.handles === "2") {
-                        span = filters.private.markupSpan(filter.protocol + strings.table_sum_protocol3);
-                    } else if (filter.handles === "3") {
-                        span = filters.private.markupSpan(strings.table_sum_protocol1 + filter.protocol + strings.table_sum_protocol3);
-                    }
-
-                } else if (filter.type === "target") {
-                    if (filter.to === "0") {
-                        span = filters.private.markupSpan(strings.table_sum_target1 + filter.target);
-                    } else if (filter.to === "1") {
-                        span = filters.private.markupSpan(strings.table_sum_target2 + filter.target);
-                    } else if (filter.to === "2") {
-                        span = filters.private.markupSpan(strings.table_sum_target3 + filter.target);
-                    } else if (filter.to === "3") {
-                        span = filters.private.markupSpan(strings.table_sum_target4 + filter.target);
-                    }
-
-                } else if (filter.type === "tags") {
-                    if (filter.has === "1") {
-                        span = filters.private.markupSpan(strings.table_sum_tags1 + "(" + filter.tags + ")");
-                    } else {
-                        span = filters.private.markupSpan(strings.table_sum_tags2 + "(" + filter.tags + ")");
-                    }
-
-                } else if (filter.type === "env") {
-                    span = filters.private.markupSpan(strings.table_sum_env + filter.env);
-
-                } else if (filter.type === "role") {
-                    span = filters.private.markupSpan(filter.comparator + Math.round(filter.ratio * 100) + strings.table_sum_role);
-                }
-                if (!filter.enabled) {
-                    span.style = "color: LightGray;";
-                }
-                header.appendChild(span);
-                header.appendChild(document.createTextNode(", "));
-            });
-            //remove last comma
-            header.lastChild.remove();
+          filters.filters.forEach(function (filter) {
+            let span = filters.private.writeSummary(filter);
+            header.appendChild(span)
+            header.appendChild(document.createTextNode(", "));
+          });
+          //remove last comma
+          header.lastChild.remove();
         } else {
-            header.appendChild(document.createTextNode(strings.table_sum_empty));
+          header.appendChild(document.createTextNode(strings.table_sum_empty));
         }
+    };
+    filters.private.dropKeys = function (list, drop) {
+      let accum = [];
+      list.forEach(function (elem) {
+        let dup = Object.assign({}, elem);
+        drop.forEach(function (key_to_drop) {
+          delete dup[key_to_drop];
+        });
+        accum.push(dup);
+      });
+      return accum;
     };
     filters.private.encodeFilters = function (filterArray) {
         var filterString = "";

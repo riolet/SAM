@@ -149,7 +149,7 @@ function get_dom() {
   return div;
 }
 
-xdescribe("map_selection.js file", function () {
+describe("map_selection.js file", function () {
   beforeEach(function () {
     dom = get_dom();
     //window.appendChild(dom.outerHTML);
@@ -177,7 +177,6 @@ xdescribe("map_selection.js file", function () {
     });
   });
 
-  //no branches or loops to test, skipped
   describe("sel_clear_display", function () {});
 
   describe("sel_set_selection", function () {
@@ -274,7 +273,6 @@ xdescribe("map_selection.js file", function () {
     });
   });
 
-  //no branches or loops to test, can skip
   describe("sel_build_title", function () {
     beforeEach(function () {
       loadednode = get_loadednode();
@@ -437,7 +435,7 @@ xdescribe("map_selection.js file", function () {
   });
 
   // bad candidate for unit testing
-  xdescribe("sel_panel_height", function () {});
+  describe("sel_panel_height", function () {});
 
   describe("sel_create_link", function () {
     it("returns a link", function () {
@@ -449,9 +447,6 @@ xdescribe("map_selection.js file", function () {
     });
   });
 
-  // bad candidate for unit testing
-  xdescribe("sel_details_sort_callback", function () {});
-
-  // bad candidate for unit testing
-  xdescribe("sel_update_display", function () {});
+  describe("sel_details_sort_callback", function () {});
+  describe("sel_update_display", function () {});
 });

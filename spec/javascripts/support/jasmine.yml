@@ -22,6 +22,7 @@ src_files:
   - js/map_*.js
   - js/metadata.js
   - js/liveUpdate.js
+  - js/table_filters.js
 
 # stylesheets
 #

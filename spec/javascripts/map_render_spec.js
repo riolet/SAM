@@ -1,4 +1,4 @@
-xdescribe("map_render.js file", function () {
+describe("map_render.js file", function () {
   describe("fadeFont", function () {
     it("works", function () {
       expect(fadeFont("#FFFFFF", 1.0)).toEqual("rgba(255,255,255,1)");
