@@ -2,6 +2,6 @@ MySQL-python==1.2.5
 py==1.4.31
 pytest==3.0.3
 web.py==0.38
-jasmine==2.5.0
+jasmine==2.7.0
 requests==2.13.0
 

@@ -88,7 +88,6 @@ def main(argv=None):
 
 def launch_webserver(parsed):
     import sam.server_webserver
-    print("parsed is: {}".format(repr(parsed)))
     if parsed.get('wsgi', False):
         logger.info('launching wsgi webserver')
         global application
@@ -112,9 +111,9 @@ def launch_collector(parsed):
     port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
-    logger.info('launching collector on {}'.format(parsed['port']))
+    logger.info('launching collector on {}'.format(port))
     collector = server_collector.Collector()
-    collector.run(port=parsed['port'], format=parsed['format'])
+    collector.run(port=port, format=parsed['format'])
     logger.info('collector shut down.')
 
 
@@ -281,7 +280,8 @@ def testing_entrypoint(environment, argv):
     os.environ.update(environment)
     # Reloading constants rereads the environment variables again. Otherwise stale values would be used.
     reload(constants)
-    main(argv)
+
+    main(argv=argv)
 
 
 if __name__ == '__main__':

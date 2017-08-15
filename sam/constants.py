@@ -119,6 +119,15 @@ default_urls = [
 urls = []
 
 
+def init_urls():
+    global urls
+    urls = []
+    urls.extend(plugin_urls)
+    urls.extend([access_control['login_url'], access_control['login_target']])
+    urls.extend([access_control['logout_url'], access_control['logout_target']])
+    urls.extend(default_urls)
+
+
 def find_url(target):
     for i in range(len(urls)/2):
         if urls[i*2+1] == target:
