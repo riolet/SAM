@@ -279,6 +279,8 @@ def launch_localmode(parsed):
 
 def testing_entrypoint(environment, argv):
     os.environ.update(environment)
+    # Reloading constants rereads the environment variables again. Otherwise stale values would be used.
+    reload(constants)
     main(argv)
 
 

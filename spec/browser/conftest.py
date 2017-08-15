@@ -8,7 +8,7 @@ import os
 import signal
 import traceback
 import pytest
-from multiprocessing import process
+import multiprocessing
 from sam import launcher
 from selenium import webdriver
 
@@ -35,11 +35,9 @@ def start_test_webserver():
     argv = "--port=8080 --target=webserver"
     environment = {
         'SAM__ACCESS_CONTROL__ACTIVE': 'TRUE',
-        'SAM__ACCESS_CONTROL__LOCAL_TLS': 'True',
-        'SAM__DATABASE__PW': 'bitnami'
     }
     launch_args = (environment, argv)
-    webserver_process = process.Process(target=launcher.testing_entrypoint, args=launch_args)
+    webserver_process = multiprocessing.Process(target=launcher.testing_entrypoint, args=launch_args)
     webserver_process.start()
 
 
