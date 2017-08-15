@@ -97,3 +97,17 @@ def get_path(browser):
     path = path[len(host):]
     path = path.lstrip("/")
     return path
+
+
+def modal_is_visible(modal):
+    classes = modal.get_attribute("class").split()
+
+    # wait until finished animating
+    max_wait = time.time() + 5
+    while "animating" in classes and time.time() < max_wait:
+        time.sleep(0.3)
+        classes = modal.get_attribute("class").split()
+
+    return "visible" in classes and \
+           "active" in classes and \
+           "hidden" not in classes
