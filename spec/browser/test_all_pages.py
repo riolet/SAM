@@ -1,4 +1,16 @@
 # coding=utf-8
+"""
+Tests:
+
+The home page at '/' should be the map page.
+The links in the navbar should all direct to real pages with matching titles.
+The main pages should load in all supported languages.
+All the links in the header should work:
+    Home page logo link
+    Main page links
+    Language links (english/french)
+The language switching links in the footer switch languages when clicked, but not switch pages.
+"""
 from sam import constants
 from spec.browser import conftest
 from sam.local import en as strings
@@ -14,11 +26,13 @@ def ensure_stats_page(browser):
 
 
 def test_home_page(browser):
+    """The home page at '/' should be the map page."""
     browser.get(conftest.host)
     assert browser.title == strings.map_title
 
 
 def test_navbar_pages(browser):
+    """The links in the navbar should all direct to real pages with matching titles."""
     urls = constants.get_navbar('en')
     for addr in urls:
         browser.get(conftest.host + addr['link'])
@@ -26,6 +40,7 @@ def test_navbar_pages(browser):
 
 
 def test_languages(browser):
+    """The main pages should load in all supported languages."""
     for lang in constants.supported_languages:
         urls = constants.get_navbar(lang)
         for addr in urls:
@@ -35,6 +50,11 @@ def test_languages(browser):
 
 
 def test_navbar(browser):
+    """All the links in the header should work:
+        Home page logo link
+        Main page links
+        Language links (english/french)
+    """
     # Starting state
     browser.get(conftest.host + "en/stats")
     assert at_stats_page(browser)
@@ -80,6 +100,7 @@ def test_navbar(browser):
 
 
 def test_footer_language_links(browser):
+    """The language switching links in the footer switch languages when clicked, but not switch pages."""
     # Starting state
     browser.get(conftest.host + "en/stats")
     assert at_stats_page(browser)
