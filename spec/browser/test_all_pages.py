@@ -2,7 +2,6 @@
 from sam import constants
 from spec.browser import conftest
 from sam.local import en as strings
-from sam.local import fr as fstrings
 
 
 def at_stats_page(browser):
