@@ -81,7 +81,7 @@ class Headed(object):
             body = str(common.renderer.render(page_template, *args, **kwargs))
         if self.footer:
             links = {"English": "/en{}".format(uri_path),
-                     "Français": "/fr{}".format(uri_path)}
+                     "Française": "/fr{}".format(uri_path)}
             footer = str(common.renderer.render(lang_prefix + '_footer', links))
         else:
             footer = ''

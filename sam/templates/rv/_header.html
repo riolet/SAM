@@ -1,14 +1,14 @@
 $def with (menuItems, selected, user, debug, path, login, language)
 <div class="ui inverted main menu" id="navbar">
     <div class="header item">
-        <a href="/"><img class="logo ui middle aligned spaced image" width="32px" height="32px" src="/static/img/logo_light.png">Smetsys Erutcetihcra Reppam</a>
+        <a id="link_home" href="/"><img class="logo ui middle aligned spaced image" width="32px" height="32px" src="/static/img/logo_light.png">Smetsys Erutcetihcra Reppam</a>
     </div>
     $for menuItem in menuItems:
         $ active = ''
         $if menuItem['name']==selected:
             $ active = 'active'
         $if user.any_group(set(menuItem['group'].split())):
-            <a class="item $active" href="$menuItem['link']">
+            <a class="navlink item $active" href="$menuItem['link']">
                 <i class="$menuItem['icon'] icon"></i>
                 $menuItem['name']
             </a>

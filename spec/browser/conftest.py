@@ -34,3 +34,9 @@ def browser():
     print("closing browser {}".format(id(browser_driver)))
     browser_driver.close()
     browser_driver = None
+
+def get_path(browser):
+    path = browser.current_url
+    path = path[len(host):]
+    path = path.lstrip("/")
+    return path
