@@ -2,7 +2,7 @@
 Tests:
 
 [Data Sources]
-  y Clicking on the datasource name should switch datasources.
+  Clicking on the datasource name should switch datasources.
   New Data Source button should open a [modal window] to collect name
     Cancel should close modal without action
     Confirm should show validation error or perform [action]
@@ -185,6 +185,16 @@ def test_create_delete_datasource(browser):
     assert UI_dses == UI_dses_init + ["ds{}".format(new_ds)]
     UI_dses_updated = UI_dses
 
+    # verify DS added to dropdowns
+    live_updates = browser.find_element_by_id("seg_live_updates")
+    lk_dropdown = live_updates.find_element_by_class_name("ui.selection.dropdown")
+    upload_modal = browser.find_element_by_id("uploadModal")
+    up_dropdown = upload_modal.find_element_by_class_name("ui.selection.dropdown.ds_selection")
+    ids = [item[0] for item in conftest.get_semantic_dropdown_data(lk_dropdown)]
+    assert sorted(ids) == sorted(UI_dses_updated)
+    ids = [item[0] for item in conftest.get_semantic_dropdown_data(up_dropdown)]
+    assert sorted(ids) == sorted(UI_dses_updated)
+
     # delete DS -- Cancel
     btnDelete = [btn for btn in tablist.find_elements_by_class_name("del_ds.button") if btn.get_attribute("data-tab") == "ds{}".format(new_ds)][0]
     modal = browser.find_element_by_id("deleteModal")
@@ -217,3 +227,38 @@ def test_create_delete_datasource(browser):
     ds_model.clear_cache()
     DB_dses = ds_model.ds_ids
     assert DB_dses == DB_dses_init
+
+    # verify new DS removed from dropdowns
+    live_updates = browser.find_element_by_id("seg_live_updates")
+    lk_dropdown = live_updates.find_element_by_class_name("ui.selection.dropdown")
+    upload_modal = browser.find_element_by_id("uploadModal")
+    up_dropdown = upload_modal.find_element_by_class_name("ui.selection.dropdown.ds_selection")
+    ids = [item[0] for item in conftest.get_semantic_dropdown_data(lk_dropdown)]
+    assert sorted(ids) == sorted(UI_dses_init)
+    ids = [item[0] for item in conftest.get_semantic_dropdown_data(up_dropdown)]
+    assert sorted(ids) == sorted(UI_dses_init)
+
+
+@ensure_settings_page
+def test_update_datasource(browser):
+    """
+    [Data Source]
+      "Name" should be editable and save
+      "Auto-refresh" should be editable and save
+      "Auto-refresh interval" should be editable and save
+      "Flat mode" should be editable and save
+      "Delete Connections" should open a [modal]
+        Cancel should close modal without action
+        Confirm should perform action (delete link information)
+      "Upload Log" should open [upload modal]
+        Modal should allow file picking, no type filter
+        Log Format dropdown should include all format options
+        Data source dropdown should include all available datasources
+        Cancel should close modal with no action
+        Upload should perform [uploading action]
+          If no file selected, nothing happens, modal stays open.
+          On completion, a new modal indicates success/failure of upload
+    :type browser: webdriver.Firefox
+    """
+    ds_model = Datasources(conftest.db, {}, conftest.sub_id)
+    assert True

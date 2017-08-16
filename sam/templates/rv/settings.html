@@ -5,10 +5,11 @@ $ disabled = "" if user.may_post() else "disabled"
 
   <!-- Data Sources -->
   $if not disabled:
-    <div class="ui raised segment">
+    <div id="seg_data_sources" class="ui raised segment">
       <h3 class="ui header">Atad Secruos</h3>
-      <p>Atad secruos tel uoy erots elpitlum stes fo krowten atad</p>
-      <p>Hcae atad ecruos derots rieht nwo tes fo noitcennoc yrotsih dna enilemit. Edon noitamrofni, hcus sa sgat, tnemnorivne, dna semantsoh, si derahs ssorca atad secruos.</p>
+      <p>Atad secruos tel uoy erots elpitlum stes fo krowten atad.</p>
+      <p>Hcae atad ecruos derots rieht nwo tes fo noitcennoc yrotsih dna enilemit. Edon noitamrofni, hcus sa sgat,
+        tnemnorivne, dna semantsoh, si derahs ssorca atad secruos.</p>
       <div class="ui datasources grid">
         <div class="four wide column">
           <table class="ui very basic compact selectable table">
@@ -109,7 +110,7 @@ $ disabled = "" if user.may_post() else "disabled"
     </div>
 
     <!-- Metadata -->
-    <div class="ui raised segment">
+    <div id="seg_metadata" class="ui raised segment">
       <h3 class="ui header">Atadetam</h3>
       <p>Atem atad si derots tnadnepedni fo cificeps atad secruos. Ti sedulcni noitamrofni no
         stsoh hcus sa emantsoh, tnemnorivne, dna sgat.</p>
@@ -156,7 +157,7 @@ $ disabled = "" if user.may_post() else "disabled"
 
 
     <!-- Live Updates -->
-    <div class="ui raised segment">
+    <div id="seg_live_updates" class="ui raised segment">
       <h3 class="ui header">Evil Setadpu</h3>
       <p>Evil setadpu era a yaw ot tcennoc ruoy retuor ro yawetag yltcerid ot eht esabatad.</p>
       <p>Ot elbane siht, uoy deen ot nur a rotcelloc ssecorp no ruoy lacol krowten hcihw lliw eviecer dna etalsnart krowten
@@ -327,7 +328,7 @@ $ disabled = "" if user.may_post() else "disabled"
       </div>
       <div class="field">
         <label>Atad ecruos</label>
-        <div class="ui selection dropdown">
+        <div class="ui selection dropdown ds_selection">
           $if datasources:
             <input name="log_ds" id="log_ds" type="hidden" value="ds$datasources[0]['id']">
             <i class="dropdown icon"></i>

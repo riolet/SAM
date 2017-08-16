@@ -582,7 +582,9 @@ function POST_ds_new(name) {
         if (response.result === 'success') {
             //successfully created new data source
             rebuild_tabs(response.settings, response.datasources);
-            populateLiveDestDSList(getDSs());
+            let dses = getDSs()
+            populateLiveDestDSList(dses);
+            populateUploadDSList(dses);
         }
     });
 }
@@ -593,7 +595,9 @@ function POST_ds_delete(id) {
         if (response.result === 'success') {
             //successfully deleted the data source
             rebuild_tabs(response.settings, response.datasources);
-            populateLiveDestDSList(getDSs());
+            let dses = getDSs()
+            populateLiveDestDSList(dses);
+            populateUploadDSList(dses);
             rebuildLiveKeys(response.livekeys)
         }
     });

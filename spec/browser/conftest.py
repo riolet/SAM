@@ -111,3 +111,8 @@ def modal_is_visible(modal):
     return "visible" in classes and \
            "active" in classes and \
            "hidden" not in classes
+
+def get_semantic_dropdown_data(dropdown):
+    items = dropdown.find_elements_by_class_name("item")
+    data_values = [(item.get_attribute("data-value"), item.text) for item in items]
+    return data_values
