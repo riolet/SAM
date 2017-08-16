@@ -645,6 +645,8 @@ function POST_ds_intervalchange(e) {
     if (newInterval !== parseInt(e.target.dataset['content'])) {
         //in case trim() changed the name
         e.target.value = newInterval;
+        console.log("updating dataset to {}", newInterval);
+        e.target.dataset['content'] = newInterval;
         var ds = getSelectedDS();
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
         POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});
