@@ -114,7 +114,7 @@ $ disabled = "" if user.may_post() else "disabled"
       <h3 class="ui header">Atadetam</h3>
       <p>Atem atad si derots tnadnepedni fo cificeps atad secruos. Ti sedulcni noitamrofni no
         stsoh hcus sa emantsoh, tnemnorivne, dna sgat.</p>
-      <div class="meta_del">
+      <div class="meta_del del_hostnames">
         <h4>Teser tsoh seman ot eb knalb.</h4>
         <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Eteled Semantsoh</button>
         $if len(hosts_preview) > 1:
@@ -127,7 +127,7 @@ $ disabled = "" if user.may_post() else "disabled"
         $else:
           <p>On semantsoh era yltnerruc derots.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_tags">
         <h4>Remove all tags.</h4>
         <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Eteled Sgat</button>
         $if len(tags_preview) > 1:
@@ -140,7 +140,7 @@ $ disabled = "" if user.may_post() else "disabled"
         $else:
           <p>On sgat era yltnerruc derots.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_envs">
         <h4>Teser lla tnemnorivne noitamrofni ot eb "noitcudorp".</h4>
         <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Eteled Stnemnorivne</button>
         $if len(envs_preview) > 1:

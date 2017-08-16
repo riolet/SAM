@@ -112,9 +112,9 @@ $ disabled = "" if user.may_post() else "disabled"
     <!-- Metadata -->
     <div id="seg_metadata" class="ui raised segment">
       <h3 class="ui header">Metadata</h3>
-      <p>Meta data is stored independant of specific data sources. It includes information on hosts
+      <p>Metadata is stored independantly of specific data sources. It includes information on hosts
         such as hostname, environment, and tags.</p>
-      <div class="meta_del">
+      <div class="meta_del del_hostnames">
         <h4>Reset host names to be blank.</h4>
         <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Delete Hostnames</button>
         $if len(hosts_preview) > 1:
@@ -127,7 +127,7 @@ $ disabled = "" if user.may_post() else "disabled"
         $else:
           <p>No hostnames are currently stored.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_tags">
         <h4>Remove all tags.</h4>
         <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Delete Tags</button>
         $if len(tags_preview) > 1:
@@ -140,7 +140,7 @@ $ disabled = "" if user.may_post() else "disabled"
         $else:
           <p>No tags are currently stored.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_envs">
         <h4>Reset all environment information to be "production".</h4>
         <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Delete Environments</button>
         $if len(envs_preview) > 1:

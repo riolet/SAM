@@ -16,7 +16,9 @@ from sam import launcher
 from selenium import webdriver
 
 
-browser_driver = None
+# driver = webdriver.Firefox
+driver = webdriver.Chrome
+_browser_ = None
 port = "8888"
 host = "http://localhost:{}/".format(port)
 webserver_process = None
@@ -29,16 +31,16 @@ ds_short = db_connection.dsid_short
 
 
 def get_browser():
-    global browser_driver
-    if browser_driver:
-        return browser_driver
+    global _browser_, driver
+    if _browser_:
+        return _browser_
     try:
-        browser_driver = webdriver.Firefox()
+        _browser_ = driver()
     except:
         print("Cannot load Firefox. Did you install the gecko webdriver?")
         traceback.print_exc()
 
-    return browser_driver
+    return _browser_
 
 
 def start_test_webserver():
@@ -78,17 +80,17 @@ def stop_test_webserver():
 @pytest.fixture(scope="session")
 def browser():
     # Setup code
-    global browser_driver
+    global _browser_
     start_test_webserver()
     wait_for_webserver_ready(3)
-    browser_driver = get_browser()
+    _browser_ = get_browser()
 
     # Run the tests with this instance of the browser
-    yield browser_driver
+    yield _browser_
 
     # Teardown code
-    browser_driver.close()
-    browser_driver = None
+    _browser_.close()
+    _browser_ = None
     stop_test_webserver()
 
 
@@ -114,5 +116,6 @@ def modal_is_visible(modal):
 
 def get_semantic_dropdown_data(dropdown):
     items = dropdown.find_elements_by_class_name("item")
-    data_values = [(item.get_attribute("data-value"), item.text) for item in items]
+    # Use .get_property("innerText") here instead of .text because the item is hidden
+    data_values = [(item.get_attribute("data-value"), item.get_property("innerText")) for item in items]
     return data_values

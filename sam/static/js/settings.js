@@ -461,12 +461,12 @@ function uploadLog() {
 
 function removeLiveKey(e) {
   "use strict";
-  let row = e.target.parentElement.parentElement;
-  console.log("row"); console.log(row);
+  let row = e.target;
+  while (row.tagName != "TR" && row.parentElement) {
+    row = row.parentElement;
+  }
   let key_collection = row.getElementsByClassName("secret key");
-  console.log("key collection"); console.log(key_collection);
   let key = key_collection[0].innerText;
-  console.log("key"); console.log(key);
   POST_del_live_key(key);
 }
 
