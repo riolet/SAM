@@ -129,8 +129,8 @@ var g_timer = null;
     map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_outputs", "sign out", strings.map_set_vis_o, true, null), controller.event_show_buttons));
 
     btn_list = [
-      map_settings.create_iconbutton("lm_Heirarchy", "cube", strings.map_set_lay_use, !isFlat, null),
-      map_settings.create_iconbutton("lm_Flat", "cubes", strings.map_set_lay_flat, isFlat, null)
+      map_settings.create_iconbutton("lm_Heirarchy", "cube", strings.map_set_lay_m_use, !isFlat, null),
+      map_settings.create_iconbutton("lm_Flat", "cubes", strings.map_set_lay_m_flat, isFlat, null)
     ];
     map_settings.add_object(strings.map_set_lay, strings.map_set_lay_m, map_settings.create_buttongroup(btn_list, "icon", controller.event_layout_mode));
 

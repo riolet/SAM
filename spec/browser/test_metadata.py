@@ -25,6 +25,9 @@ Quick Info
     Changing the name field will update the DB
     Changing the tags field will update the DB
     Changing the environment field will update the DB
+
+Untested / Not working:
+    Page hash updates as search and ds are updated.
 """
 import operator
 import time
