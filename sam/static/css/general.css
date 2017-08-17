@@ -97,3 +97,10 @@ div.ui.inverted.footer.segment {
 input {
   background: #F2F4F5 !important;
 }
+
+div.group {
+  display: inline;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}

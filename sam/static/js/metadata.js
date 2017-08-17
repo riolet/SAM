@@ -339,6 +339,7 @@ function present_quick_info(info) {
             input.dataset.content = info.name;
             input.onblur = hostname_edit_callback;
             input.onkeyup = hostname_edit_callback;
+            input.id = "edit_name"
             i = document.createElement("I");
             i.className = "write icon";
             div = document.createElement("DIV");
@@ -370,6 +371,7 @@ function present_quick_info(info) {
             div.className = "ui multiple search selection dropdown";
             input = document.createElement("INPUT");
             input.name = "tags";
+            input.id = "edit_tags";
             input.value = info.tags.tags.join(",");
             input.type = "hidden";
             div.appendChild(input);
@@ -394,7 +396,9 @@ function present_quick_info(info) {
 
             //display a span of inherited tags inline
             info.tags.p_tags.forEach(function (tag) {
-                tag_div.appendChild(build_label(tag, "teal", true));
+                let parent_tag = build_label(tag, "teal", true)
+                parent_tag.classList.add("parenttag")
+                tag_div.appendChild(parent_tag);
             });
             //attach the row to the table
             target.appendChild(buildKeyValueRow(strings.meta_tags, tag_div));
@@ -412,6 +416,7 @@ function present_quick_info(info) {
             div.className = "ui search selection dropdown";
             input = document.createElement("INPUT");
             input.name = "env";
+            input.id = "edit_env";
             input.value = info.envs.env;
             input.type = "hidden";
             div.appendChild(input);
@@ -424,14 +429,14 @@ function present_quick_info(info) {
             div.appendChild(key);
             values = document.createElement("DIV");
             values.className = "menu";
-            g_known_envs.forEach(function (tag) {
+            g_known_envs.forEach(function (env) {
                 key = document.createElement("DIV");
                 key.className = "item";
-                key.dataset.value = tag;
-                if (tag === "inherit") {
-                    key.innerText = tag + " (" + info.envs.p_env + ")";
+                key.dataset.value = env;
+                if (env === "inherit") {
+                    key.innerText = env + " (" + info.envs.p_env + ")";
                 } else {
-                    key.innerText = tag;
+                    key.innerText = env;
                 }
                 values.appendChild(key);
             });
@@ -509,7 +514,7 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow(strings.meta_dips, info.out.u_ip));
             table.appendChild(buildKeyValueRow(strings.meta_uconns, info.out.u_conn));
             table.appendChild(buildKeyValueRow(strings.meta_conns, info.out.total + strings.meta_conns2 + build_label_duration(info.out.seconds)));
-            table.appendChild(buildKeyValueRow(strings.connps, parseFloat(info.out.total / info.out.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow(strings.meta_connps, parseFloat(info.out.total / info.out.seconds).toFixed(3)));
             table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.out.bytes_sent)));
             table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.out.bytes_received)));
             table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.out.avg_bps)));

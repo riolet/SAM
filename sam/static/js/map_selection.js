@@ -132,7 +132,7 @@ function sel_build_table(headers, dataset) {
   return tbody;
 }
 
-function sel_build_table_headers(headers, order) {
+function sel_build_table_headers(headers, order, callback) {
     "use strict";
     var tr = document.createElement("tr");
     var th;

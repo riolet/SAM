@@ -16,8 +16,8 @@ from sam import launcher
 from selenium import webdriver
 
 
-# driver = webdriver.Firefox
-driver = webdriver.Chrome
+driver = webdriver.Firefox
+# driver = webdriver.Chrome
 _browser_ = None
 port = "8888"
 host = "http://localhost:{}/".format(port)
