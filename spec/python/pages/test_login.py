@@ -17,7 +17,7 @@ def test_render():
         calls = common.renderer.calls
         assert calls[0] == ('render', ('_head', 'Login',), {'lang': 'en', 'stylesheets': ['/static/css/general.css'], 'scripts': []})
         assert calls[1] == ('render', ('en/login', '/login',), {})
-        assert calls[2] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Français': '/fr/sam/testpage'}), {})
+        assert calls[2] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Française': '/fr/sam/testpage'}), {})
         assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"
 

@@ -37,7 +37,7 @@ def test_headed():
         assert calls[0] == ('render', ('_head', 'TestTitle'), {'lang': 'en', 'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
         assert calls[1] == ('render', ('en/_header', constants.get_navbar('en'), 'TestTitle', p.page.user, constants.debug, "/sam/testpage", constants.access_control, ('version française', '/fr/sam/testpage')), {})
         assert calls[2] == ('render', ('en/testPage', 'arg1', 'arg2'), {'start': 12, 'end': 15})
-        assert calls[3] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Français': '/fr/sam/testpage'}), {})
+        assert calls[3] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Française': '/fr/sam/testpage'}), {})
         assert calls[4] == ('render', ('_tail', ), {})
 
         common.renderer.clear()

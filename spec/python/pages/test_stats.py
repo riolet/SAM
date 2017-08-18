@@ -27,7 +27,7 @@ def test_render():
         section_headers = [x[0] for x in segments]
         assert section_headers == ['Overall', 'Datasource: default', 'Datasource: short', 'Datasource: live']
         assert calls[2][2] == {}
-        assert calls[3] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Français': '/fr/sam/testpage'}), {})
+        assert calls[3] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Française': '/fr/sam/testpage'}), {})
         assert calls[4] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNoneNone"
 
