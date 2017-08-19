@@ -79,15 +79,15 @@ def test_get_latest_warning_id():
 def test_get_warnings():
     w_model = warnings.Warnings(db, sub_id)
     ws = w_model.get_warnings()
-    ws = {w['id'] for w in ws}
+    ws = {w['warning_id'] for w in ws}
     assert ws == {1,5,8,10,14}
 
     ws = w_model.get_warnings(show_all=False)
-    ws = {w['id'] for w in ws}
+    ws = {w['warning_id'] for w in ws}
     assert ws == {1,5,8,10,14}
 
     ws = w_model.get_warnings(show_all=True)
-    ws = {w['id'] for w in ws}
+    ws = {w['warning_id'] for w in ws}
     assert ws == set(range(1, 15))
 
 

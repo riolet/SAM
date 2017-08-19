@@ -43,7 +43,7 @@ class Warnings(base.DBPlugin):
             return row['latest']
 
     def get_warnings(self, show_all=False):
-        what = "id, host, log_time, reason, status"
+        what = "id, warning_id, host, log_time, reason, status"
         if show_all:
             warnings = self.db.select(self.table, what=what, order="id DESC", limit=50)
         else:
