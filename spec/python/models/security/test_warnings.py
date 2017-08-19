@@ -77,6 +77,7 @@ def test_get_latest_warning_id():
 
 
 def test_get_warnings():
+    populate_db_warnings()
     w_model = warnings.Warnings(db, sub_id)
     ws = w_model.get_warnings()
     ws = {w['warning_id'] for w in ws}
@@ -92,6 +93,7 @@ def test_get_warnings():
 
 
 def test_get_warning():
+    populate_db_warnings()
     w_model = warnings.Warnings(db, sub_id)
     ws = w_model.get_warnings(show_all=True)
     i = ws[7]['id']
@@ -117,6 +119,7 @@ def test__warning_status():
 
 
 def test_insert_warnings():
+    populate_db_warnings()
     wlist = [
         {'id': 15, 'host': host1, 'log_time': time1, 'reason': 'tiw1', 'details': details2},
         {'id': 16, 'host': host2, 'log_time': time2, 'reason': 'tiw2', 'details': details2, 'status': statA},
@@ -139,11 +142,9 @@ def test_insert_warnings():
     w = w_model.get_warning(third_from_last)
     assert w['details'] == details1
 
-    # replace db content with original test content
-    populate_db_warnings()
-
 
 def test_update_status():
+    populate_db_warnings()
     w_model = warnings.Warnings(db, sub_id)
 
     # invalid warning_id
