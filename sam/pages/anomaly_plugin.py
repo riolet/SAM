@@ -16,7 +16,8 @@ class ADPlugin(base.headless_post):
     def decode_get_request(self, data):
         # GET requests are for:
         # GET status()  # is STEVE accessible, alive, busy?
-        # GET warnings(last_id)  # get all warnings where id >= last_id
+        # GET warnings()  # get uncategorized warnings (or all if "all" is sent as true)
+        # GET warning()  # get more detailed info on a particular warning
         method = data.get('method', 'status')
         if method not in ('status', 'warnings', 'warning'):
             raise errors.MalformedRequest('Invalid method.')
