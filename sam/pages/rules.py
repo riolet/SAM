@@ -124,26 +124,20 @@ class RulesEdit(base.HeadlessPost):
          :type response: rule.Rule
         :return: 
         """
-        if response is None:
-            encoded = {
-                'result': 'failure',
-                'message': 'Could not retrive rule {}'.format(self.request['id'])
-            }
-        else:
-            # Cannot transmit compiled regex expressions to client. They must be recompiled on the javascript side.
-            exposed_params = response.get_exposed_params()
-            for exposed_param in exposed_params.itervalues():
-                exposed_param.pop('regex_compiled', None)
+        # Cannot transmit compiled regex expressions to client. They must be recompiled on the javascript side.
+        exposed_params = response.get_exposed_params()
+        for exposed_param in exposed_params.itervalues():
+            exposed_param.pop('regex_compiled', None)
 
-            encoded = {
-                'id': response.id,
-                'name': response.get_name(),
-                'desc': response.get_desc(),
-                'type': response.get_type(),
-                'active': response.is_active(),
-                'exposed': exposed_params,
-                'actions': response.get_action_params()
-            }
+        encoded = {
+            'id': response.id,
+            'name': response.get_name(),
+            'desc': response.get_desc(),
+            'type': response.get_type(),
+            'active': response.is_active(),
+            'exposed': exposed_params,
+            'actions': response.get_action_params()
+        }
         return encoded
 
     # ----------- POST ------------
@@ -163,10 +157,11 @@ class RulesEdit(base.HeadlessPost):
             }
         """
         exposed = {}
+        token_string = 'edits[exposed]'
         for key in data.keys():
-            if not key.startswith("edits[exposed]"):
+            if not key.startswith(token_string):
                 continue
-            k = key[15:-1]
+            k = key[len(token_string) + 1:-1]
             v = data[key]
             exposed[k] = v
         return exposed
@@ -187,10 +182,11 @@ class RulesEdit(base.HeadlessPost):
             }
         """
         actions = {}
+        token_string = "edits[actions]"
         for key in data.keys():
-            if not key.startswith("edits[actions]"):
+            if not key.startswith(token_string):
                 continue
-            k = key[15:-1]
+            k = key[len(token_string) + 1:-1]
             v = data[key]
             actions[k] = v
         return actions
@@ -263,11 +259,14 @@ class RulesApply(base.HeadlessPost):
 
     def decode_post_request(self, data):
         if "ds" in data:
-            ds_match = re.search("(\d+)", data['ds'])
-            if ds_match:
-                ds = int(ds_match.group())
-            else:
-                raise errors.MalformedRequest("Could not read data source ('ds')")
+            try:
+                ds = int(data['ds'])
+            except:
+                ds_match = re.search("(\d+)", data['ds'])
+                if ds_match:
+                    ds = int(ds_match.group())
+                else:
+                    raise errors.MalformedRequest("Could not read data source ('ds')")
         else:
             raise errors.RequiredKey('data source', 'ds')
 
@@ -295,18 +294,17 @@ class RulesApply(base.HeadlessPost):
         r_model = rules.Rules(common.db, self.page.user.viewing)
         ruleset = r_model.get_ruleset()
         job = ruling_process.RuleJob(self.page.user.viewing, request['ds'], request['start'], request['end'], ruleset)
-        print("PAGE: submitting")
         job_id = ruling_process.submit_job(job)
-        print("PAGE: returning")
 
         return "success", job_id
 
     def encode_post_response(self, response):
         if isinstance(response, tuple):
             encoded = {
-                'result': response[0],
-                'job_id': response[1]
+                'result': response[0]
             }
+            if len(response) == 2:
+                encoded['job_id'] = response[1]
         else:
             encoded = {'result': response}
         return encoded

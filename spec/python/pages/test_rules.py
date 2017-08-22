@@ -1,8 +1,10 @@
 # coding=utf-8
 from spec.python import db_connection
+import web
 import pytest
+from datetime import datetime
 from sam.pages.rules import Rules, RulesApply, RulesEdit, RulesNew
-from sam.models.security import rules, rule_template
+from sam.models.security import rules, rule_template, ruling_process
 from sam import errors
 
 db = db_connection.db
@@ -82,14 +84,15 @@ def test_rulesnew_get_encode():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         r = RulesNew()
         response = r.encode_get_response(all_templates)
-        expected = {'templates': [
+        expected = {
             'portscan.yml',
             'netscan.yml',
             'suspicious.yml',
             'compromised.yml',
             'dos.yml',
-            'custom: test_rule.yml']}
-        assert response == expected
+            'custom: test_rule.yml'}
+        assert 'templates' in response
+        assert set(response['templates']) == expected
 
 
 def test_rulesnew_post_decode():
@@ -202,43 +205,356 @@ def test_rulesedit_get_perform():
 
 
 def test_rulesedit_get_encode():
-    assert False
+    reset_dummy_rules()
+    r_model = rules.Rules(db, sub_id)
+    all_rules = r_model.get_all_rules()
+    test_rule = all_rules[0]
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesEdit()
+        encoded = r.encode_get_response(test_rule)
+        assert set(encoded.keys()) == {'id', 'name', 'desc', 'type', 'active', 'exposed', 'actions'}
+        assert encoded['name'] == 'comp hosts'
+        assert encoded['desc'] == 'desc1'
+        assert set(encoded['actions'].keys()) == {
+            'alert_active', 'alert_severity', 'alert_label', 'email_active', 'email_address',
+            'email_subject', 'sms_active', 'sms_number', 'sms_message'}
+        assert set(encoded['exposed'].keys()) == set()
 
 
 def test_rulesedit_decode_exposed():
-    assert False
+    data = {
+        'edits[active]': u'false',
+        'edits[exposed][color]': u'blue',
+        'edits[actions][alert_label]': u'label of alert',
+        'edits[exposed][pattern]': u'src_port > 1024',
+        'edits[actions][sms_message]': u'secret message',
+        'edits[exposed][sendmail]': u'true',
+    }
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesEdit()
+        exposed = r.decode_exposed(data)
+        expected = {
+            'color': u'blue',
+            'pattern': u'src_port > 1024',
+            'sendmail': u'true'
+        }
+        assert exposed == expected
 
 
 def test_rulesedit_decode_actions():
-    assert False
+    data = {
+        'edits[active]': u'false',
+        'edits[exposed][color]': u'blue',
+        'edits[actions][alert_label]': u'label of alert',
+        'edits[exposed][pattern]': u'src_port > 1024',
+        'edits[actions][sms_message]': u'secret message',
+        'edits[exposed][sendmail]': u'true',
+    }
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesEdit()
+        exposed = r.decode_actions(data)
+        expected = {
+            'alert_label': u'label of alert',
+            'sms_message': u'secret message',
+        }
+        assert exposed == expected
 
 
 def test_rulesedit_post_decode():
-    assert False
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesEdit()
+
+        data = {}
+        with pytest.raises(errors.RequiredKey):
+            r.decode_post_request(data)
+
+        data = {'id': 'NAN'}
+        with pytest.raises(errors.MalformedRequest):
+            r.decode_post_request(data)
+
+        data = {'id': '13', 'method': 'bad-method'}
+        with pytest.raises(errors.MalformedRequest):
+            r.decode_post_request(data)
+
+        data = {'id': '13', 'method': 'delete'}
+        request = r.decode_post_request(data)
+        assert request == {
+            'id': 13,
+            'method': 'delete',
+            'active': None,
+            'name': None,
+            'desc': None,
+            'actions': None,
+            'exposed': None
+        }
+
+        data = {'id': '13', 'method': 'edit'}
+        request = r.decode_post_request(data)
+        assert request == {
+            'id': 13,
+            'method': 'edit',
+            'active': None,
+            'name': None,
+            'desc': None,
+            'actions': None,
+            'exposed': None
+        }
+
+        data = {
+            'id': '13',
+            'method': 'edit',
+            'edits[name]': u'new name',
+            'edits[desc]': u'new desc',
+            'edits[active]': u'false',
+            'edits[exposed][color]': u'blue',
+            'edits[actions][alert_label]': u'label of alert',
+            'edits[exposed][pattern]': u'src_port > 1024',
+            'edits[actions][sms_message]': u'secret message',
+            'edits[exposed][sendmail]': u'true',
+        }
+        request = r.decode_post_request(data)
+        assert request == {
+            'id': 13,
+            'method': 'edit',
+            'active': False,
+            'name': u'new name',
+            'desc': u'new desc',
+            'actions': {
+                'alert_label': u'label of alert',
+                'sms_message': u'secret message'
+            },
+            'exposed': {
+                'color': u'blue',
+                'pattern': u'src_port > 1024',
+                'sendmail': u'true',
+            }
+        }
 
 
 def test_rulesedit_post_perform():
-    assert False
+    rn = rules.Rules(db, sub_id)
+    params = {
+        'exposed': {
+            'source_ip': '44.33.22.11',
+            'dest_ip': '88.77.66.55',
+            'port': '8088'
+        }, 'actions': {
+            'alert_active': True,
+            'alert_severity': 'a',
+            'alert_label': 'b',
+            'email_active': True,
+            'email_address': 'c',
+            'email_subject': 'd',
+            'sms_active': True,
+            'sms_number': 'e',
+            'sms_message': 'f',
+        }
+    }
+    rn.clear()
+    rn.add_rule("suspicious.yml", 'sus rule', 'sus desc', params)
+
+    # confirm initial state
+    test_rule = rn.get_all_rules()[0]
+    id = test_rule.id
+    test_rule = rn.get_rule(rule_id=id) # get_all_rules above only retrieves a subset of info
+    assert test_rule.get_name() == 'sus rule'
+    action_params = test_rule.get_action_params()
+    assert action_params['alert_active'] == True
+    assert action_params['alert_severity'] == 'a'
+    assert action_params['alert_label'] == 'b'
+    assert action_params['email_active'] == True
+    assert action_params['email_address'] == 'c'
+    assert action_params['email_subject'] == 'd'
+    assert action_params['sms_active'] == True
+    assert action_params['sms_number'] == 'e'
+    assert action_params['sms_message'] == 'f'
+    exposed_params = test_rule.get_exposed_params()
+    assert exposed_params['source_ip']['value'] == '44.33.22.11'
+    assert exposed_params['dest_ip']['value'] == '88.77.66.55'
+    assert exposed_params['port']['value'] == '8088'
+
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesEdit()
+
+        # edit everything
+        request = {
+            'id': id,
+            'method': 'edit',
+            'active': False,
+            'name': u'new name',
+            'desc': u'new desc',
+            'actions': {
+                'alert_active': False,
+                'alert_severity': '1',
+                'alert_label': '2',
+                'email_active': False,
+                'email_address': '3',
+                'email_subject': '4',
+                'sms_active': True,
+                'sms_number': '5',
+                'sms_message': '6',
+            },
+            'exposed': {
+                'source_ip': '55.44.33.22',
+                'dest_ip': '99.88.77.66',
+                'port': '9099',
+            }
+        }
+        r.perform_post_command(request)
+
+        # check that rule has been updated
+        test_rule = rn.get_rule(rule_id=id)
+        assert test_rule.get_name() == 'new name'
+        assert test_rule.get_desc() == 'new desc'
+        assert test_rule.is_active() == False
+        action_params = test_rule.get_action_params()
+        assert action_params['alert_active'] == False
+        assert action_params['alert_severity'] == '1'
+        assert action_params['alert_label'] == '2'
+        assert action_params['email_active'] == False
+        assert action_params['email_address'] == '3'
+        assert action_params['email_subject'] == '4'
+        assert action_params['sms_active'] == True
+        assert action_params['sms_number'] == '5'
+        assert action_params['sms_message'] == '6'
+        exposed_params = test_rule.get_exposed_params()
+        assert exposed_params['source_ip']['value'] == '55.44.33.22'
+        assert exposed_params['dest_ip']['value'] == '99.88.77.66'
+        assert exposed_params['port']['value'] == '9099'
+
+        # delete the rule
+        request = {
+            'id': id,
+            'method': 'delete',
+            'active': None,
+            'name': None,
+            'desc': None,
+            'actions': None,
+            'exposed': None
+        }
+        assert rn.count() == 1
+        r.perform_post_command(request)
+        assert rn.count() == 0
 
 
 def test_rulesedit_post_encode():
-    assert False
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesEdit()
+        assert r.encode_post_response("success") == {'result': 'success'}
+        assert r.encode_post_response("failure") == {'result': 'failure'}
 
 
 # ================= RulesApply =================
 
 
-def test_rulesapply_get_encode():
-    assert False
+def test_rulesapply_get():
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesApply()
+        page = r.GET()
+        assert page is None
 
 
 def test_rulesapply_post_decode():
-    assert False
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesApply()
+
+        data = {}
+        with pytest.raises(errors.RequiredKey):
+            r.decode_post_request(data)
+
+        data = {'ds': 'NAN'}
+        with pytest.raises(errors.MalformedRequest):
+            r.decode_post_request(data)
+
+        data = {'ds': ds_full}
+        request = r.decode_post_request(data)
+        expected = {
+            'ds': ds_full,
+            'start': datetime.fromtimestamp(0),
+            'end': datetime.fromtimestamp(2**31 - 1)
+        }
+        assert request == expected
+
+        data = {'ds': ds_full, 'start': '11223344'}
+        request = r.decode_post_request(data)
+        expected = {
+            'ds': ds_full,
+            'start': datetime.fromtimestamp(11223344),
+            'end': datetime.fromtimestamp(2**31 - 1)
+        }
+        assert request == expected
+
+        data = {'ds': ds_full, 'end': '11223344'}
+        request = r.decode_post_request(data)
+        expected = {
+            'ds': ds_full,
+            'start': datetime.fromtimestamp(0),
+            'end': datetime.fromtimestamp(11223344)
+        }
+        assert request == expected
+
+        data = {'ds': ds_full, 'start': '11223344', 'end': '44332211'}
+        request = r.decode_post_request(data)
+        expected = {
+            'ds': ds_full,
+            'start': datetime.fromtimestamp(11223344),
+            'end': datetime.fromtimestamp(44332211)
+        }
+        assert request == expected
+
+        data = {'ds': ds_full, 'start': 'abc', 'end': 'def'}
+        request = r.decode_post_request(data)
+        expected = {
+            'ds': ds_full,
+            'start': datetime.fromtimestamp(0),
+            'end': datetime.fromtimestamp(2**31 - 1)
+        }
+        assert request == expected
 
 
 def test_rulesapply_post_perform():
-    assert False
+    reset_dummy_rules()
+    old_submit_job = ruling_process.submit_job
+    try:
+        ruling_process.submit_job = db_connection.Mocker()
+        ruling_process.submit_job._retval = 32768
+        with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+            r = RulesApply()
+            request = {
+                'ds': ds_full,
+                'start': datetime.fromtimestamp(0),
+                'end': datetime.fromtimestamp(2**31 - 1)
+            }
+            response, job_id = r.perform_post_command(request)
+            assert response == 'success'
+            calls = ruling_process.submit_job.calls
+            assert calls[0][0] == 'self'
+            args = calls[0][1]
+            rj = args[0]
+            assert isinstance(rj, ruling_process.RuleJob)
+            # assert rj.id == job_id  # this can't be tested here because I'm overriding the function that
+            # assigns the id with a generic mocker that won't
+            assert rj.ds_id == ds_full
+            assert rj.time_end == request['end']
+            assert rj.time_start == request['start']
+    finally:
+        ruling_process.submit_job = old_submit_job
 
 
 def test_rulesapply_post_encode():
-    assert False
+    with db_connection.env(mock_input=True, login_active=False, mock_session=True):
+        r = RulesApply()
+        response = ('success', 14)
+        encoded = r.encode_post_response(response)
+        expected = {'result': 'success', 'job_id': 14}
+        assert encoded == expected
+
+        response = ('unknown', )
+        encoded = r.encode_post_response(response)
+        expected = {'result': 'unknown'}
+        assert encoded == expected
+
+        response = 'failure'
+        encoded = r.encode_post_response(response)
+        expected = {'result': 'failure'}
+        assert encoded == expected

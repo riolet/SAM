@@ -22,6 +22,7 @@ class Mocker(object):
         self.constructor = (args, kwargs)
         self.kvs = {}
         self.calls = []
+        self._retval = None
 
     def __getitem__(self, k):
         self.kvs.__getitem__(k)
@@ -34,7 +35,13 @@ class Mocker(object):
 
         def receiver(*args, **kwargs):
             q.append((name, args, kwargs))
+            return self._retval
         return receiver
+
+    def __call__(self, *args, **kwargs):
+        q = self.calls
+        q.append(('self', args, kwargs))
+        return self._retval
 
     def clear(self):
         self.calls = []

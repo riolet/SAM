@@ -9,6 +9,7 @@ def test_get_all():
     all_templates.sort()
     expected = [
         'compromised.yml',
+        'custom: test_rule.yml',
         'dos.yml',
         'netscan.yml',
         'portscan.yml',
