@@ -15,15 +15,15 @@ class Rule(object):
         self.desc = description
         self.path = path
         self.definition = self.load_yml()
-        self.exposed_params = self.get_initial_exposed_params()
         # exposed_params is a dict of dicts where each value dict has type, format, value...
+        self.exposed_params = self.get_initial_exposed_params()
+        # action_params is a dict with the keys ACTION_KEYS defined above
         self.action_params = self.get_initial_action_params()
-        # action_params is a dict with the action keys above
 
-    def nice_path(self):
-        nice_name = self.path
+    def nice_path(self, path):
+        nice_name = path
         if nice_name[:7] == 'plugin:':
-            nice_name = nice_name[7:]
+            nice_name = nice_name[7:].lstrip()
         if nice_name[-4:].lower() == '.yml':
             nice_name = nice_name[:-4]
         return nice_name
@@ -50,6 +50,9 @@ class Rule(object):
         return self.desc
 
     def get_initial_exposed_params(self):
+        """
+        :rtype: dict
+        """
         # get all exposed parameters
         if self.definition:
             exposed = self.definition.get_exposed()
@@ -59,6 +62,14 @@ class Rule(object):
         return exposed
 
     def get_initial_action_params(self):
+        """
+        Builds a dictionary of actions for the rule to perform on a match.
+            - Fills in default values from config file.
+            - Overrides those defaults with any optional defaults found
+                in the rule definition file.
+        :return:
+        :rtype: dict [str, str]
+        """
         a_params = {
             'alert_active': constants.security['alert_active'],
             'alert_severity': constants.security['alert_severity'],
@@ -77,15 +88,18 @@ class Rule(object):
             for k, v in action_defaults.iteritems():
                 a_params[k] = v
 
+        a_params['alert_severity'] = str(a_params['alert_severity'])
+
         return a_params
 
-    def set_params(self, new_action_params, new_exposed_params):
+    def set_action_params(self, new_action_params):
         # import new action params:
         valid_keys = [key for key in new_action_params.keys() if key in self.action_params]
         for key in valid_keys:
             # TODO: validate new value
             self.action_params[key] = new_action_params[key]
 
+    def set_exposed_params(self, new_exposed_params):
         # import new exposed param values
         valid_keys = [key for key in new_exposed_params.keys() if key in self.exposed_params]
         for key in valid_keys:
@@ -193,26 +207,12 @@ class Rule(object):
 
         :return:
         """
-        p_values = {
-            'alert_active': constants.security['alert_active'],
-            'alert_severity': constants.security['alert_active'],
-            'alert_label': constants.security['alert_active'],
-            'email_active': constants.security['email_active'],
-            'email_address': constants.security['email_address'],
-            'email_subject': constants.security['email_subject'],
-            'sms_active': constants.security['sms_active'],
-            'sms_number': constants.security['sms_number'],
-            'sms_message': constants.security['sms_message']
-        }
-
-        # update action parameters to rule definitions as needed
-        action_defaults = self.definition.get_action_defaults()
-        for k, v in action_defaults.iteritems():
-            p_values[k] = v
+        p_values = dict(self.get_action_params())
 
         # get all exposed parameters
         exposed = self.get_exposed_params()
-        p_values.update(exposed)
+        for k, v in exposed.iteritems():
+            p_values[k] = v['value']
 
         return p_values
 
@@ -231,28 +231,8 @@ class Rule(object):
             3. Values stored in database.
         :return:
         """
-        # get default action parameters
-        tr_table = {
-            'alert_active': constants.security['alert_active'],
-            'alert_severity': constants.security['alert_active'],
-            'alert_label': constants.security['alert_active'],
-            'email_active': constants.security['email_active'],
-            'email_address': constants.security['email_address'],
-            'email_subject': constants.security['email_subject'],
-            'sms_active': constants.security['sms_active'],
-            'sms_number': constants.security['sms_number'],
-            'sms_message': constants.security['sms_message']
-        }
-
-        # update action parameters to rule definitions as needed
-        action_defaults = self.definition.get_action_defaults()
-        for k, v in action_defaults.iteritems():
-            tr_table[k] = v
-
-        # get all exposed parameters
-        exposed = self.get_exposed_params()
-        for k, v in exposed.iteritems():
-            tr_table[k] = v['value']
+        # get action parameters and exposed parameters
+        tr_table = self.get_param_values()
 
         # get all metadata parameters
         tr_table['rule_name'] = self.name
@@ -268,7 +248,10 @@ class Rule(object):
         return tr_table
 
     def get_conditions(self):
-        return self.definition.when
+        if self.definition is None:
+            return "Error."
+        else:
+            return self.definition.when
 
     def export_params(self):
         """
