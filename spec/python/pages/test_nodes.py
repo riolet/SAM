@@ -41,7 +41,7 @@ def test_perform_get():
         request = {'addresses': [], 'flat': False}
         response = p.perform_get_command(request)
         assert response.keys() == ['_']
-        assert len(response['_']) == 6
+        assert len(response['_']) == 8
 
         request = {'addresses': ['10'], 'flat': False}
         response = p.perform_get_command(request)

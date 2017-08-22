@@ -238,16 +238,16 @@ class Details:
         , (sum_bytes / links) AS 'avg_bytes'
         , sum_packets
         , (sum_packets / links) AS 'avg_packets'
-        , (_duration / links) AS 'avg_duration'
+        , avg_duration
     FROM(
         SELECT decodeIP(src) AS 'src'
             , decodeIP(dst) AS 'dst'
             , port AS 'port'
-            , sum(links) AS 'links'
+            , SUM(links) AS 'links'
             , GROUP_CONCAT(DISTINCT protocol) AS 'protocols'
             , SUM(bytes_sent + COALESCE(bytes_received, 0)) AS 'sum_bytes'
             , SUM(packets_sent + COALESCE(packets_received, 0)) AS 'sum_packets'
-            , SUM(duration*links) AS '_duration'
+            , SUM(duration*links) / SUM(links) AS 'avg_duration'
         FROM {table_links} AS `links`
         WHERE {filtered} BETWEEN $start AND $end
          {WHERE}

@@ -1,8 +1,12 @@
 import os
+import cPickle
+import logging
 from sam import constants
 import web
 from sam import common
 import sam.models.ports
+
+logger = logging.getLogger(__name__)
 
 
 class Subscriptions:
@@ -74,8 +78,7 @@ class Subscriptions:
         subs = self.get_all()
         numbers = {sub['subscription'] for sub in subs}
 
-        error_response = None
-        response = error_response
+        response = None
         sub_num = -1
         try:
             sub_num = int(key)
@@ -100,3 +103,35 @@ class Subscriptions:
                 response = sought_sub['subscription']
 
         return response
+
+    def get_plugin_data(self, sub_id, plugin_name):
+        qvars = {'sid': sub_id}
+        rows = self.db.select(self.table, what="plugins", where="subscription=$sid", vars=qvars)
+        row = rows.first()
+        if not row:
+            raise ValueError("invalid subscription id")
+        try:
+            plugins = cPickle.loads(str(row['plugins']))
+        except:
+            logger.warning("error decoding plugins: plugins was {}".format(repr(row['plugins'])))
+            plugins = {}
+        data = plugins.get(plugin_name, {})
+        return data
+
+    def set_plugin_data(self, sub_id, plugin_name, data):
+        qvars = {'sid': int(sub_id)}
+        rows = self.db.select(self.table, what="plugins", where="subscription=$sid", vars=qvars)
+        row = rows.first()
+        if not row:
+            raise ValueError("invalid subscription id")
+        try:
+            plugins = cPickle.loads(str(row['plugins']))
+        except:
+            plugins = {}
+
+        try:
+            plugins[plugin_name] = data
+            self.db.update(self.table, where="subscription=$sid", vars=qvars, plugins=cPickle.dumps(plugins))
+        except:
+            logger.error("cannot encode data")
+            raise

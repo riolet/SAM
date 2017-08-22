@@ -24,7 +24,7 @@ def correct_format(data):
 def test_get_table_info():
     m_table = Table(db, sub_id, ds_full)
     rows = m_table.get_table_info([], page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 68
+    assert len(rows) == 76
     assert correct_format(rows)
 
 
@@ -33,7 +33,7 @@ def test_get_table_pages():
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=0, order_dir='asc')
     assert len(rows) == 11
     rows = m_table.get_table_info([], page=1, page_size=50, order_by=0, order_dir='asc')
-    assert len(rows) == 18
+    assert len(rows) == 26
     rows = m_table.get_table_info([], page=1, page_size=30, order_by=0, order_dir='asc')
     assert len(rows) == 31
 
@@ -47,7 +47,7 @@ def test_get_table_pages():
         else:
             break
         safety += 1
-    assert len(rows) == 8
+    assert len(rows) == 16
 
 
 def test_get_table_order():
@@ -62,10 +62,10 @@ def test_get_table_order():
 
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=0, order_dir='desc')
     actual = [x['address'] for x in rows]
-    expected = [u'159.69.79.89/32', u'159.69.79.0/24', u'159.69.0.0/16',
-                u'159.0.0.0/8', u'150.64.76.87/32', u'150.64.76.86/32',
-                u'150.64.76.0/24', u'150.64.74.85/32', u'150.64.74.84/32',
-                u'150.64.74.0/24', u'150.64.0.0/16']
+    expected = [u'199.29.39.40/32', u'199.29.39.0/24', u'199.29.0.0/16',
+                u'199.0.0.0/8', u'159.69.79.89/32', u'159.69.79.0/24',
+                u'159.69.0.0/16', u'159.0.0.0/8', u'150.64.76.87/32',
+                u'150.64.76.86/32', u'150.64.76.0/24']
     assert actual == expected
 
     rows = m_table.get_table_info([], page=0, page_size=10, order_by=5, order_dir='desc')
@@ -84,7 +84,7 @@ def test_get_table_filter_subnet():
     filters = [sam.models.filters.SubnetFilter(True, '16')]
     rows = m_table.get_table_info(filters, page=0, page_size=10, order_by=0, order_dir='asc')
     addresses = [x['address'].endswith('/16') for x in rows]
-    assert len(addresses) == 10
+    assert len(addresses) == 11
     assert all(addresses)
 
 
@@ -140,7 +140,7 @@ def test_get_table_filter_conn():
     # fewer than 0.0002 inbound connections / second
     filters = [sam.models.filters.ConnectionsFilter(True, '<', 'i', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 68
+    assert len(rows) == 76
 
     # more than 0.0002 inbound connections / second
     filters = [sam.models.filters.ConnectionsFilter(True, '>', 'i', '0.0002')]
@@ -155,7 +155,7 @@ def test_get_table_filter_conn():
     # fewer than 0.0002 outbound connections / second
     filters = [sam.models.filters.ConnectionsFilter(True, '<', 'o', '0.0002')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
-    assert len(rows) == 68
+    assert len(rows) == 76
 
 
 def test_get_table_filter_target():
@@ -170,7 +170,7 @@ def test_get_table_filter_target():
     filters = [sam.models.filters.TargetFilter(True, '10.20.30', '1')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrB = [x['address'] for x in rows]
-    assert len(rows) == 40
+    assert len(rows) == 48
     assert len(set(addrA) & set(addrB)) == 0
 
     # nodes that receive connections from 10.20.30
@@ -182,7 +182,7 @@ def test_get_table_filter_target():
     filters = [sam.models.filters.TargetFilter(True, '10.20.30', '3')]
     rows = m_table.get_table_info(filters, page=0, page_size=100, order_by=0, order_dir='asc')
     addrB = [x['address'] for x in rows]
-    assert len(rows) == 34
+    assert len(rows) == 42
     assert len(set(addrA) & set(addrB)) == 0
 
 
@@ -323,13 +323,15 @@ def test_disabled_filters():
                 u'50.0.0.0/8', u'50.60.0.0/16', u'50.60.70.0/24', u'50.60.70.80/32', u'50.60.70.81/32',
                 u'50.60.72.0/24', u'50.60.72.82/32', u'50.60.72.83/32', u'50.64.0.0/16', u'50.64.74.0/24',
                 u'50.64.74.84/32', u'50.64.74.85/32', u'50.64.76.0/24', u'50.64.76.86/32', u'50.64.76.87/32',
-                u'59.0.0.0/8', u'59.69.0.0/16', u'59.69.79.0/24', u'59.69.79.89/32', u'110.0.0.0/8',
-                u'110.20.0.0/16', u'110.20.30.0/24', u'110.20.30.40/32', u'110.20.30.41/32', u'110.20.32.0/24',
-                u'110.20.32.42/32', u'110.20.32.43/32', u'110.24.0.0/16', u'110.24.34.0/24', u'110.24.34.44/32',
-                u'110.24.34.45/32', u'110.24.36.0/24', u'110.24.36.46/32', u'110.24.36.47/32', u'150.0.0.0/8',
-                u'150.60.0.0/16', u'150.60.70.0/24', u'150.60.70.80/32', u'150.60.70.81/32', u'150.60.72.0/24',
-                u'150.60.72.82/32', u'150.60.72.83/32', u'150.64.0.0/16', u'150.64.74.0/24', u'150.64.74.84/32',
-                u'150.64.74.85/32', u'150.64.76.0/24', u'150.64.76.86/32', u'150.64.76.87/32', u'159.0.0.0/8',
-                u'159.69.0.0/16', u'159.69.79.0/24', u'159.69.79.89/32']
+                u'59.0.0.0/8', u'59.69.0.0/16', u'59.69.79.0/24', u'59.69.79.89/32', u'101.0.0.0/8',
+                u'101.99.0.0/16', u'101.99.86.0/24', u'101.99.86.58/32', u'110.0.0.0/8', u'110.20.0.0/16',
+                u'110.20.30.0/24', u'110.20.30.40/32', u'110.20.30.41/32', u'110.20.32.0/24', u'110.20.32.42/32',
+                u'110.20.32.43/32', u'110.24.0.0/16', u'110.24.34.0/24', u'110.24.34.44/32', u'110.24.34.45/32',
+                u'110.24.36.0/24', u'110.24.36.46/32', u'110.24.36.47/32', u'150.0.0.0/8', u'150.60.0.0/16',
+                u'150.60.70.0/24', u'150.60.70.80/32', u'150.60.70.81/32', u'150.60.72.0/24', u'150.60.72.82/32',
+                u'150.60.72.83/32', u'150.64.0.0/16', u'150.64.74.0/24', u'150.64.74.84/32', u'150.64.74.85/32',
+                u'150.64.76.0/24', u'150.64.76.86/32', u'150.64.76.87/32', u'159.0.0.0/8', u'159.69.0.0/16',
+                u'159.69.79.0/24', u'159.69.79.89/32', u'199.0.0.0/8', u'199.29.0.0/16', u'199.29.39.0/24',
+                u'199.29.39.40/32']
     assert addresses == expected
 

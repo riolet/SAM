@@ -12,7 +12,8 @@ import web
 
 class Login_LDAP(base.headed):
     def __init__(self):
-        super(Login_LDAP, self).__init__('Login', False, True)
+        super(Login_LDAP, self).__init__(False, True)
+        self.set_title(self.page.strings.login_title)
         self.styles = ["/static/css/general.css"]
         self.errors = []
         self.server_address, self.namespace = self.decode_connection_string(constants.LDAP['connection_string'])
@@ -26,7 +27,7 @@ class Login_LDAP(base.headed):
             print("ERROR: ldap3 library not installed.")
             print("       install ldap3 with pip:")
             print("       `pip install ldap3`")
-            return self.render('login', constants.access_control['login_url'], ['LDAP module not installed. Cannot perform login.'])
+            return self.render('login', constants.access_control['login_url'], [self.page.strings.login_LDAP_missing])
 
         return self.render('login', constants.access_control['login_url'])
 
@@ -38,9 +39,9 @@ class Login_LDAP(base.headed):
         user = data.get('user', None)
         # validate they exist
         if password is None or len(password) == 0:
-            self.errors.append("Password may not be blank.")
+            self.errors.append(self.page.strings.login_blank_pass)
         if user is None or len(user) == 0:
-            self.errors.append("User may not be blank.")
+            self.errors.append(self.page.strings.login_blank_user)
 
         if self.errors:
             raise errors.MalformedRequest("Invalid Login information.")
@@ -57,7 +58,7 @@ class Login_LDAP(base.headed):
     def perform_post_command(self, request):
         # submit credentials to LDAP server.
         if not ldap_loaded:
-            self.errors.append('LDAP module not installed. Cannot perform login.')
+            self.errors.append(self.page.strings.login_LDAP_missing)
             raise errors.AuthenticationError('LDAP module not installed. Install by `pip install ldap3`.')
         user = "UID={user},{namespace}".format(user=request['user'], namespace=self.namespace)  # 'uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org'
         password = request['password']  # 'Secret123'
@@ -67,10 +68,10 @@ class Login_LDAP(base.headed):
             conn = ldap3.Connection(server, user, password, auto_bind=True)
             conn.unbind()
         except ldap3.core.exceptions.LDAPSocketOpenError as e:
-            self.errors.append("Could not connect to LDAP server: {}. Check configuration.".format(e.message))
+            self.errors.append(self.page.strings.login_LDAP_error.format(e.message))
             raise errors.AuthenticationError("Invalid Server information.")
         except ldap3.core.exceptions.LDAPBindError as e:
-            self.errors.append("Invalid Credentials")
+            self.errors.append(self.page.strings.login_invalid)
             raise errors.AuthenticationError("Invalid credentials.")
 
         # Assume authenticated at this point.
@@ -95,7 +96,7 @@ class Login_LDAP(base.headed):
         except Exception as e:
             print("Error logging in: {}".format(e.message))
             if not self.errors:
-                self.errors.append("Login failed.")
+                self.errors.append(self.page.strings.login_failed)
             return self.render('login', constants.access_control['login_url'], self.errors)
 
         raise web.seeother('./map')

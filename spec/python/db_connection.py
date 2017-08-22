@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import os
 import time
 import sam.constants
 import sam.common
@@ -15,11 +16,13 @@ TEST_DATABASE_MYSQL = 'samapper_test'
 TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
 
+
 class Mocker(object):
     def __init__(self, *args, **kwargs):
         self.constructor = (args, kwargs)
         self.kvs = {}
         self.calls = []
+        self._retval = None
 
     def __getitem__(self, k):
         self.kvs.__getitem__(k)
@@ -32,7 +35,13 @@ class Mocker(object):
 
         def receiver(*args, **kwargs):
             q.append((name, args, kwargs))
+            return self._retval
         return receiver
+
+    def __call__(self, *args, **kwargs):
+        q = self.calls
+        q.append(('self', args, kwargs))
+        return self._retval
 
     def clear(self):
         self.calls = []
@@ -50,12 +59,13 @@ class Session(dict):
 
 
 class env(object):
-    def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False):
+    def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False, lang='en'):
         self.input_real = web.input
         self.active_old = sam.constants.access_control['active']
         self.session = sam.common.session
         self.renderer = sam.common.renderer
 
+        self.lang = lang
         self.mock_input = mock_input
         self.mock_login = login_active
         self.mock_render = mock_render
@@ -70,6 +80,10 @@ class env(object):
             sam.constants.access_control['active'] = False
         if self.mock_session:
             sam.common.session = Session()
+            sam.common.session['lang'] = self.lang
+        else:
+            if isinstance(sam.common.session, dict):
+                sam.common.session['lang'] = self.lang
         if self.mock_render:
             sam.common.renderer = Mocker()
 
@@ -90,14 +104,32 @@ def make_timestamp(timestring):
     return int(ts)
 
 
+def unix_timestamp_to_datetime(stamp):
+    return datetime.fromtimestamp(stamp)
+
+
 def get_test_db_connection():
+    """
+     :rtype: web.DB
+    """
     params = sam.constants.dbconfig.copy()
     if params['dbn'] == 'sqlite':
         params['db'] = TEST_DATABASE_SQLITE
+        os.unlink(TEST_DATABASE_SQLITE)
     else:
         params['db'] = TEST_DATABASE_MYSQL
     tdb, tdbq = sam.common.get_db(params)
     print('Database acquired: {}, {}'.format(tdb.dbname, params['db']))
+    sam.integrity.check_and_fix_db_access(params.copy())
+    if params['dbn'] != 'sqlite':
+        q = "DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_MYSQL)
+        print("running: {}".format(q))
+        tdbq.query("DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_MYSQL))
+
+        q = "CREATE DATABASE IF NOT EXISTS {};".format(TEST_DATABASE_MYSQL)
+        print("running: {}".format(q))
+        tdbq.query("CREATE DATABASE IF NOT EXISTS {};".format(TEST_DATABASE_MYSQL))
+        tdbq.query("USE {}".format(TEST_DATABASE_MYSQL))
     sam.common.db = tdb
     sam.common.db_quiet = tdbq
     sam.integrity.check_and_fix_integrity(tdbq, params)
@@ -123,48 +155,34 @@ def template_sql(path, *args):
     return commands
 
 
-def clear_network(db, sub_id, ds_id):
-    l_model = sam.models.links.Links(db, sub_id, ds_id)
-    l_model.delete_connections()
-
-    n_model = sam.models.nodes.Nodes(db, sub_id)
-    n_model.delete_custom_tags()
-    n_model.delete_custom_envs()
-    n_model.delete_custom_hostnames()
-    db.query("DELETE FROM {table}".format(table=n_model.table_nodes))
-    db.query("DELETE FROM {table}".format(table="s{}_ds{}_StagingLinks".format(sub_id, ds_id)))
-    db.query("DELETE FROM {table}".format(table="s{}_ds{}_Syslog".format(sub_id, ds_id)))
-
-
 def setup_network(db, sub_id, ds_id):
-    clear_network(db, sub_id, ds_id)
     loader = sam.importers.import_base.BaseImporter()
     loader.set_subscription(sub_id)
     loader.set_datasource_id(ds_id)
-    processor = sam.preprocess.Preprocessor(db, sub_id, ds_id)
+    processor = sam.preprocess.Preprocessor(db, sub_id, ds_id, security_rules=False)
 
     # used to generate network data for testing
-    #def rand_time():
+    # def rand_time():
     #    d_start = datetime(2017, 3, 21, 6, 13, 05)
     #    d_end = datetime(2017, 3, 24, 13, 30, 54)
     #    delta = (d_end - d_start).total_seconds()
     #    offset = random.randint(0, delta)
     #    d_rand = d_start + timedelta(seconds=offset)
     #    return d_rand
-    #t = common.IPStringtoInt
-    #IPS = ['10.20.30.40','10.20.30.41','10.20.32.42','10.20.32.43','10.24.34.44','10.24.34.45',
+    # t = common.IPStringtoInt
+    # IPS = ['10.20.30.40','10.20.30.41','10.20.32.42','10.20.32.43','10.24.34.44','10.24.34.45',
     #       '10.24.36.46','10.24.36.47','50.60.70.80','50.60.70.81','50.60.72.82','50.60.72.83',
     #       '50.64.74.84','50.64.74.85','50.64.76.86','50.64.76.87','59.69.79.89']
-    #ports = [136, 511]
-    #protocols = ['UDP', 'TCP']
-    #bytes_outs = [200, 500, 1000]
-    #bytes_ins = [50, 100, 500]
-    #packets_outs = [1, 4]
-    #packets_ins = [1, 4]
-    #durations = [3, 60]
+    # ports = [136, 511]
+    # protocols = ['UDP', 'TCP']
+    # bytes_outs = [200, 500, 1000]
+    # bytes_ins = [50, 100, 500]
+    # packets_outs = [1, 4]
+    # packets_ins = [1, 4]
+    # durations = [3, 60]
     #
-    #log_lines = []
-    #for port in ports:
+    # log_lines = []
+    # for port in ports:
     #    for protocol in protocols:
     #        for b_o in bytes_outs:
     #            for b_i in bytes_ins:
@@ -183,6 +201,7 @@ def setup_network(db, sub_id, ds_id):
     t = sam.common.IPStringtoInt
 
     log_lines = [
+        [t('199.29.39.40'), 12345, t('101.99.86.58'), 80, when1, 'TCP', 100, 0, 1, 0, 5],  # for testing known compromised hosts.
         [t('110.20.30.40'), 12345, t('110.20.30.40'), 180, when1, 'TCP', 100, 0, 1, 0, 5],
         [t('110.20.30.40'), 12345, t('110.20.30.41'), 180, when2, 'TCP', 100, 0, 1, 0, 5],
         [t('110.20.30.40'), 12345, t('110.20.32.42'), 180, when3, 'TCP', 100, 0, 1, 0, 5],
@@ -503,7 +522,8 @@ def setup_node_extras(sub_id):
     for command in commands:
         print command
 
-
+# for testing custom security rules.
+sam.constants.security['rule_folder'] = os.path.join(os.path.dirname(__file__), 'rule_templates')
 # immediately run, to ensure the test db is present.
 print("GET TEST DB")
 db = get_test_db_connection()
@@ -522,5 +542,5 @@ for dk, dv in ds_model.datasources.iteritems():
         dsid_short = dk
     if dv['name'] == 'live':
         dsid_live = dk
-clear_network(db, default_sub, dsid_default)
 setup_network(db, default_sub, dsid_default)
+print("TEST DATABASE PREPARED")

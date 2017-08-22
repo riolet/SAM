@@ -41,13 +41,13 @@ var g_timer = null;
 // controller
 (function () {
   "use strict";
-  let self = {
+  let controller = {
     canvas: null,
     ctx: null,
     rect: {},
     datasources: [],
     datasource: {},
-    ds: 0,
+    dsid: 0,
     settings: {},
     autorefresh: false,
     autorefresh_period: 0,
@@ -55,27 +55,27 @@ var g_timer = null;
     settings_endpoint: "./settings"
   };
 
-  self.init = function() {
+  controller.init = function() {
     //get ctx/canvas reference
     //update screen rect reference
-    self.init_window();
+    controller.init_window();
 
     //initialize selection, sidebar, ports, demo plugins
     sel_init();
     map_settings.init();
-    //map_settings.add_object(null, null, self.init_timeslider());
+    //map_settings.add_object(null, null, controller.init_timeslider());
     ports.display_callback = function() {
       render_all();
       sel_update_display();
     };
-    self.init_demo();
+    controller.init_demo();
 
     // add ip_search to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("search", "Search", "search", "Find IP...", "Find an IP address. e.g. 192.168.0.12", onsearch));
+    map_settings.add_object(null, null, map_settings.create_input("search", strings.map_set_search, "search", strings.map_set_search_default, strings.map_set_search_hint, onsearch));
     // add port_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("filter", "Port Filter", "filter", "Filter by port...", "Filter by port number. Try: 80", onfilter));
+    map_settings.add_object(null, null, map_settings.create_input("filter", strings.map_set_port, "filter", strings.map_set_port_default, strings.map_set_port_hint, onfilter));
     // add protocol_filter to settings panel
-    map_settings.add_object(null, null, map_settings.create_input("proto_filter", "Protocol Filter", "exchange", "Filter by protocol...", "Filter by protocol. Try: UDP", onProtocolFilter));
+    map_settings.add_object(null, null, map_settings.create_input("proto_filter", strings.map_set_protocol, "exchange", strings.map_set_protocol_default, strings.map_set_protocol_hint, onProtocolFilter));
 
     // display intermediate menu.
     map_settings.rebuild();
@@ -86,21 +86,21 @@ var g_timer = null;
     //   get timerange for datasource (start/end time)
     //      create/update timerange slider
     //      trigger the get-node sequence
-    self.GET_settings(null, function (result) {
+    controller.GET_settings(null, function (result) {
       let btn_list = []
 
       // auto-refresh button
-      map_settings.add_object("Datasources", null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", "Autorefresh the node map", self.autorefresh, null), self.event_auto_refresh));
+      map_settings.add_object(strings.map_set_ds, null, map_settings.btn_toggleable(map_settings.create_iconbutton("autorefresh", "refresh", strings.map_set_ds_ar_hint, controller.autorefresh, null), controller.event_auto_refresh));
       // datasource buttons
-      self.datasources.forEach(function (ds) {
-        btn_list.push(map_settings.create_labeliconbutton("ds_"+ds.id, "database", ds.name, "Use the " + ds.name + " datasource", ds.id==self.ds, null));
+      controller.datasources.forEach(function (ds) {
+        btn_list.push(map_settings.create_labeliconbutton("ds_"+ds.id, "database", ds.name, strings.map_set_ds_hint1 + ds.name + strings.map_set_ds_hint2, ds.id==controller.dsid, null));
       });
-      map_settings.add_object("Datasources", null, map_settings.create_divider());
-      map_settings.add_object("Datasources", null, map_settings.create_buttongroup(btn_list, "vertical labeled icon", self.event_datasource));
+      map_settings.add_object(strings.map_set_ds, null, map_settings.create_divider());
+      map_settings.add_object(strings.map_set_ds, null, map_settings.create_buttongroup(btn_list, "vertical labeled icon", controller.event_datasource));
 
-      self.GET_timerange(self.ds, function (result) {
-        nodes.set_datasource(self.datasource);
-        self.init_buttons(nodes.layout_flat, nodes.layout_arrangement);
+      controller.GET_timerange(controller.dsid, function (result) {
+        nodes.set_datasource(controller.datasource);
+        controller.init_buttons(nodes.layout_flat, nodes.layout_arrangement);
 
         nodes.GET_request(null, function (response) {
           resetViewport(nodes.nodes);
@@ -112,37 +112,37 @@ var g_timer = null;
     });
   };
 
-  self.init_buttons = function (isFlat, layout) {
+  controller.init_buttons = function (isFlat, layout) {
     let btn_list;
     //(id, icon_name, tooltip, active, callback)
 
     btn_list = [
-      map_settings.create_labelbutton("lw_links", "Link Count", "Width based on number of occurrences", true, null),
-      map_settings.create_labelbutton("lw_bytes", "Byte Count", "Width based on number of Bytes transferred", false, null),
-      map_settings.create_labelbutton("lw_packets", "Packet Count", "Width based on number of packets transmitted", false, null)
+      map_settings.create_labelbutton("lw_links", strings.map_set_lw_lc, strings.map_set_lw_lc_hint, true, null),
+      map_settings.create_labelbutton("lw_bytes", strings.map_set_lw_bc, strings.map_set_lw_bc_hint, false, null),
+      map_settings.create_labelbutton("lw_packets", strings.map_set_lw_pc, strings.map_set_lw_pc_hint, false, null)
     ];
-    map_settings.add_object("Line Width", null, map_settings.create_buttongroup(btn_list, "vertical", self.event_line_width));
+    map_settings.add_object(strings.map_set_lw, null, map_settings.create_buttongroup(btn_list, "vertical", controller.event_line_width));
 
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", "Show Pure Clients", true, null), self.event_show_buttons));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", "Show Pure Servers", true, null), self.event_show_buttons));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_inputs", "sign in", "Show Inbound Connections", true, null), self.event_show_buttons));
-    map_settings.add_object("Show/Hide", null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_outputs", "sign out", "Show Outbound Connections", true, null), self.event_show_buttons));
-
-    btn_list = [
-      map_settings.create_iconbutton("lm_Heirarchy", "cube", "Use Heirarchy", !isFlat, null),
-      map_settings.create_iconbutton("lm_Flat", "cubes", "Flatten Heirarchy", isFlat, null)
-    ];
-    map_settings.add_object("Layout", "mode", map_settings.create_buttongroup(btn_list, "icon", self.event_layout_mode));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_clients", "desktop", strings.map_set_vis_c, true, null), controller.event_show_buttons));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_servers", "server", strings.map_set_vis_s, true, null), controller.event_show_buttons));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_inputs", "sign in", strings.map_set_vis_i, true, null), controller.event_show_buttons));
+    map_settings.add_object(strings.map_set_vis, null, map_settings.btn_toggleable(map_settings.create_iconbutton("show_outputs", "sign out", strings.map_set_vis_o, true, null), controller.event_show_buttons));
 
     btn_list = [
-      map_settings.create_iconbutton("la_Address", "qrcode", "Address", layout=="Address", null),
-      map_settings.create_iconbutton("la_Grid", "table", "Grid", layout=="Grid", null),
-      map_settings.create_iconbutton("la_Circle", "maximize", "Circle", layout=="Circle", null)
+      map_settings.create_iconbutton("lm_Heirarchy", "cube", strings.map_set_lay_m_use, !isFlat, null),
+      map_settings.create_iconbutton("lm_Flat", "cubes", strings.map_set_lay_m_flat, isFlat, null)
     ];
-    map_settings.add_object("Layout", "arrangement", map_settings.create_buttongroup(btn_list, "icon", self.event_layout_arrangement));
+    map_settings.add_object(strings.map_set_lay, strings.map_set_lay_m, map_settings.create_buttongroup(btn_list, "icon", controller.event_layout_mode));
+
+    btn_list = [
+      map_settings.create_iconbutton("la_Address", "qrcode", strings.map_set_lay_a_add, layout=="Address", null),
+      map_settings.create_iconbutton("la_Grid", "table", strings.map_set_lay_a_grid, layout=="Grid", null),
+      map_settings.create_iconbutton("la_Circle", "maximize", strings.map_set_lay_a_circle, layout=="Circle", null)
+    ];
+    map_settings.add_object(strings.map_set_lay, strings.map_set_lay_a, map_settings.create_buttongroup(btn_list, "icon", controller.event_layout_arrangement));
   };
 
-  self.init_demo = function () {
+  controller.init_demo = function () {
     if (window.location.pathname.substr(1,4) === "demo") {
       let msgbox = document.getElementById("demo_msg");
       $(msgbox).transition("fade");
@@ -155,19 +155,19 @@ var g_timer = null;
     });
   };
 
-  self.init_window = function () {
-    self.canvas = document.getElementById("canvas");
-    self.ctx = self.canvas.getContext("2d");
+  controller.init_window = function () {
+    controller.canvas = document.getElementById("canvas");
+    controller.ctx = controller.canvas.getContext("2d");
 
     let navBarHeight = $("#navbar").height();
     $("#output").css("top", navBarHeight);
-    self.canvas.width = window.innerWidth;
-    self.canvas.height = window.innerHeight - navBarHeight;
-    self.ctx.lineJoin = "bevel";
-    self.rect = self.canvas.getBoundingClientRect();
+    controller.canvas.width = window.innerWidth;
+    controller.canvas.height = window.innerHeight - navBarHeight;
+    controller.ctx.lineJoin = "bevel";
+    controller.rect = controller.canvas.getBoundingClientRect();
 
-    tx = self.rect.width / 2;
-    ty = self.rect.height / 2;
+    tx = controller.rect.width / 2;
+    ty = controller.rect.height / 2;
 
     //Event listeners for detecting clicks and zooms
     let pusher = document.getElementsByClassName("pusher")[0];
@@ -179,67 +179,63 @@ var g_timer = null;
     pusher.addEventListener("keydown", keydown, false);
   };
 
-  self.GET_settings = function (ds, successCallback) {
+  controller.GET_settings = function (ds, successCallback) {
     if (typeof(successCallback) !== "function") {
         return;
     }
     let request = $.ajax({
-      url: self.settings_endpoint,
+      url: controller.settings_endpoint,
       type: "GET",
       data: {"headless": 1},
       dataType: "json",
       error: generic_ajax_failure,
-      success: function (settings) {
-        self.settings = settings;
-        self.datasources = []
-        Object.keys(settings.datasources).forEach( function (key) {
-          self.datasources.push(settings.datasources[key]);
-        });
-        self.datasource = settings.datasources[settings.datasource];
-        self.ds = settings.datasource;
-
-        self.autorefresh = (self.datasource.ar_active === 1);
-        self.autorefresh_period = self.datasource.ar_interval;
-        setAutoUpdate();
-
-        if (typeof(successCallback) == "function") {
-          successCallback(settings);
-        }
-      }
+      success: response_builder(controller.import_settings, successCallback)
     });
 
     return request;
   };
 
-  self.GET_timerange = function (ds, successCallback) {
+  controller.import_settings = function (settings) {
+    controller.settings = settings;
+    controller.datasources = [];
+    Object.keys(settings.datasources).forEach( function (key) {
+      controller.datasources.push(settings.datasources[key]);
+    });
+    controller.datasource = settings.datasources[settings.datasource];
+    controller.dsid = settings.datasource;
+
+    controller.autorefresh = (controller.datasource.ar_active === 1);
+    controller.autorefresh_period = controller.datasource.ar_interval;
+    setAutoUpdate();
+  }
+
+  controller.GET_timerange = function (ds, successCallback) {
     let request = $.ajax({
-      url: self.stats_endpoint,
+      url: controller.stats_endpoint,
       type: "GET",
       data: {"q": "timerange", 'ds': ds},
       dataType: "json",
       error: generic_ajax_failure,
-      success: function (range) {
-        if (range.min == range.max) {
-          config.tmin = range.min - 300;
-          config.tmax = range.max;
-        } else {
-          config.tmin = range.min;
-          config.tmax = range.max;
-        }
-        config.tend = config.tmax;
-        config.tstart = config.tmax - 300;
-        slider_init();
-
-        if (typeof(successCallback) == "function") {
-          successCallback(range);
-        }
-      }
+      success: response_builder(controller.import_timerange, successCallback)
     });
 
     return request;
   };
 
-  self.event_to_tag = function (event, tagName) {
+  controller.import_timerange = function(range) {
+    if (range.min >= range.max) {
+      config.tmin = range.min - 300;
+      config.tmax = range.max;
+    } else {
+      config.tmin = range.min;
+      config.tmax = range.max;
+    }
+    config.tend = config.tmax;
+    config.tstart = config.tmax - 300;
+    slider_init();
+  }
+
+  controller.event_to_tag = function (event, tagName) {
     let element = event.target;
     while (element && element.tagName !== tagName) {
       element = element.parentElement;
@@ -247,51 +243,46 @@ var g_timer = null;
     return element;
   };
 
-  self.event_datasource = function (e_ds) {
+  controller.event_datasource = function (e_ds) {
     //determine which datasource (ds) buttons are clicked.
-    let element = self.event_to_tag(e_ds, "BUTTON");
-    let old_ds = self.ds;
+    let element = controller.event_to_tag(e_ds, "BUTTON");
+    let old_ds = controller.dsid;
     let new_ds = parseInt(element.id.substr(3));
     
     if (new_ds !== old_ds) {
-      self.ds = new_ds;
+      controller.dsid = new_ds;
       let i;
-      for(i=0; i < self.datasources.length; i += 1) {
-        if (self.datasources[i].id === new_ds) {
-          self.datasource = self.datasources[i];
+      for(i=0; i < controller.datasources.length; i += 1) {
+        if (controller.datasources[i].id === new_ds) {
+          controller.datasource = controller.datasources[i];
           break;
         }
       }
       link_remove_all(nodes.nodes);
       config.initial_zoom = false;
-      self.autorefresh = (self.datasource.ar_active === 1);
-      self.autorefresh_period = self.datasource.ar_interval;
+      controller.autorefresh = (controller.datasource.ar_active === 1);
+      controller.autorefresh_period = controller.datasource.ar_interval;
       let ar_btn = document.getElementById("autorefresh");
-      if (self.autorefresh) {
+      if (controller.autorefresh) {
         ar_btn.classList.add("active");
       } else {
         ar_btn.classList.remove("active");
       }
-      nodes.set_flat(self.datasources.flat === 1);
+      nodes.set_flat(controller.datasources.flat === 1);
       setAutoUpdate();
       updateCall();
     }
   }
 
-  self.event_auto_refresh = function (e_auto_refresh) {
-    let button = self.event_to_tag(e_auto_refresh, "BUTTON");
+  controller.event_auto_refresh = function (e_auto_refresh) {
+    let button = controller.event_to_tag(e_auto_refresh, "BUTTON");
     let active = button.classList.contains("active");
-    if (active) {
-      console.log("Enabling auto-refresh");
-    } else {
-      console.log("Disabling auto-refresh");
-    }
     controller.autorefresh = active;
     setAutoUpdate();
   }
 
-  self.event_line_width = function (e_lines_btn) {
-    let element = self.event_to_tag(e_lines_btn, "BUTTON");
+  controller.event_line_width = function (e_lines_btn) {
+    let element = controller.event_to_tag(e_lines_btn, "BUTTON");
     if (!element) { return; }
     var oldLW = renderConfig.linewidth;
     var newLW = element.id.substr(3);
@@ -303,8 +294,8 @@ var g_timer = null;
     }
   };
 
-  self.event_show_buttons = function (e_show_btn) {
-    let element = self.event_to_tag(e_show_btn, "BUTTON");
+  controller.event_show_buttons = function (e_show_btn) {
+    let element = controller.event_to_tag(e_show_btn, "BUTTON");
     if (!element) { return; }
     if (renderConfig.hasOwnProperty(element.id)) {
       renderConfig[element.id] = element.classList.contains("active");
@@ -313,9 +304,9 @@ var g_timer = null;
     render_all();
   };
 
-  self.event_layout_mode = function (e_lm_btn) {
+  controller.event_layout_mode = function (e_lm_btn) {
     // Event: layout mode (flat/heirarchical) button clicked.
-    let element = self.event_to_tag(e_lm_btn, "BUTTON");
+    let element = controller.event_to_tag(e_lm_btn, "BUTTON");
     if (!element) { return; }
     
     let new_flat = element.id.substr(3) === "Flat";
@@ -333,8 +324,8 @@ var g_timer = null;
     }
   };
 
-  self.event_layout_arrangement = function (e_la_btn) {
-    let element = self.event_to_tag(e_la_btn, "BUTTON");
+  controller.event_layout_arrangement = function (e_la_btn) {
+    let element = controller.event_to_tag(e_la_btn, "BUTTON");
     if (!element) { return; }
 
     let new_layout = element.id.substr(3);
@@ -347,24 +338,24 @@ var g_timer = null;
     }
   };
 
-  window.controller = self;
+  window.controller = controller;
 }());
 
 // map_settings
 (function () {
   "use strict";
-  let self = {};
-  self.structure = {objects: [], children: {}};
+  let map = {};
+  map.structure = {objects: [], children: {}};
 
-  self.reset = function () {
-    self.structure = {objects: [], children: {}};
+  map.reset = function () {
+    map.structure = {objects: [], children: {}};
   };
 
-  self.clear_html = function (accordion) {
+  map.clear_html = function (accordion) {
     accordion.innerHTML = "";
   };
 
-  self.make_html = function (parent, structure) {
+  map.make_html = function (parent, structure) {
     structure.objects.forEach( function (item) {
       parent.appendChild(item);
     });
@@ -381,63 +372,68 @@ var g_timer = null;
       let contentDiv = document.createElement("DIV");
       contentDiv.className = "content";
 
-      self.make_html(contentDiv, cat);
+      map.make_html(contentDiv, cat);
 
       parent.appendChild(titleDiv);
       parent.appendChild(contentDiv);
     });
   };
 
-  self.init_accordion = function (accordion) {
+  map.init_accordion = function (accordion) {
     $(accordion).accordion({
       exclusive: false,
       animateChildren: false
     });
   };
 
-  self.rebuild = function () {
+  map.rebuild = function () {
     let accordion = document.getElementById("mapconfig");
-    self.clear_html(accordion);
-    self.make_html(accordion, self.structure);
-    self.init_accordion(accordion);
+    map.clear_html(accordion);
+    map.make_html(accordion, map.structure);
+    map.init_accordion(accordion);
   };
 
-  self.add_category = function (cat) {
-    if (self.structure.children.hasOwnProperty(cat)) {
+  map.add_category = function (cat) {
+    if (map.structure.children.hasOwnProperty(cat)) {
       return;
     }
-    self.structure.children[cat] = {objects: [], children: {}};
+    map.structure.children[cat] = {objects: [], children: {}};
   };
 
-  self.add_subcategory = function (cat, subcat) {
-    if (!self.structure.children.hasOwnProperty(cat)) {
-      self.add_category(cat);
+  map.add_subcategory = function (cat, subcat) {
+    if (!map.structure.children.hasOwnProperty(cat)) {
+      map.add_category(cat);
     }
-    if (self.structure.children[cat].children.hasOwnProperty(subcat)) {
+    if (map.structure.children[cat].children.hasOwnProperty(subcat)) {
       return;
     }
-    self.structure.children[cat].children[subcat] = {objects: [], children: {}};
+    map.structure.children[cat].children[subcat] = {objects: [], children: {}};
   };
 
-  self.add_object = function (cat, subcat, obj) {
+  map.add_object = function (cat, subcat, obj) {
     if (cat) {
-      if (!self.structure.children.hasOwnProperty(cat)) {
-        self.add_category(cat);
+      if (!map.structure.children.hasOwnProperty(cat)) {
+        map.add_category(cat);
       }
       if (subcat) {
-        if (!self.structure.children[cat].children.hasOwnProperty(subcat)) {
-          self.add_subcategory(cat, subcat);
+        if (!map.structure.children[cat].children.hasOwnProperty(subcat)) {
+          map.add_subcategory(cat, subcat);
         }
-        self.structure.children[cat].children[subcat].objects.push(obj);
+        map.structure.children[cat].children[subcat].objects.push(obj);
       } else {
-        self.structure.children[cat].objects.push(obj);
+        map.structure.children[cat].objects.push(obj);
+      }
+    } else if (subcat) {
+      if (!map.structure.children.hasOwnProperty(subcat)) {
+        map.add_category(subcat);
+        map.structure.children[subcat].objects.push(obj);
       }
     } else {
-      self.structure.objects.push(obj);
+      map.structure.objects.push(obj);
     }
   };
 
-  self.create_labeliconbutton = function (id, icon_name, label, tooltip, active, callback) {
+  map.create_labeliconbutton = function (id, icon_name, label, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
     btn.className = "ui icon inverted blue button";
@@ -464,7 +460,7 @@ var g_timer = null;
     return btn;
   };
 
-  self.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
+  map.create_iconbutton = function (id, icon_name, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
     btn.className = "ui icon inverted blue button";
@@ -490,7 +486,7 @@ var g_timer = null;
     return btn;
   };
 
-  self.create_labelbutton = function (id, label, tooltip, active, callback) {
+  map.create_labelbutton = function (id, label, tooltip, active, callback) {
     //create button
     let btn = document.createElement("BUTTON");
     btn.className = "ui inverted blue button";
@@ -515,14 +511,14 @@ var g_timer = null;
     return btn;
   };
 
-  self.create_divider = function () {
+  map.create_divider = function () {
     //<div class="divider"></div>
     let div = document.createElement("DIV");
     div.className = "divider";
     return div;
   }
 
-  self.btn_toggleable = function (btn, callback) {
+  map.btn_toggleable = function (btn, callback) {
     btn.onclick = function (e_click) {
       btn.classList.toggle('active');
       if (typeof(callback) === "function") {
@@ -533,7 +529,7 @@ var g_timer = null;
     return btn;
   };
 
-  self.create_buttongroup = function (btnlist, css_classes, callback) {
+  map.create_buttongroup = function (btnlist, css_classes, callback) {
     let group = document.createElement("DIV");
     group.className = "ui buttons " + css_classes;
 
@@ -558,7 +554,7 @@ var g_timer = null;
     return group;
   };
 
-  self.create_input = function (id, label_text, icon_name, placeholder, tooltip, callback) {
+  map.create_input = function (id, label_text, icon_name, placeholder, tooltip, callback) {
     let outer_div = document.createElement("DIV");
     let div = document.createElement("DIV");
     let icon = document.createElement("I");
@@ -591,7 +587,7 @@ var g_timer = null;
     return outer_div;
   };
 
-  self.init = function () {
+  map.init = function () {
     //sidebar init
     $('.ui.sidebarholder .ui.sidebar')
       .sidebar({
@@ -605,7 +601,7 @@ var g_timer = null;
   };
 
   //install layout
-  window.map_settings = self;
+  window.map_settings = map;
 }());
 
 function init() {
@@ -631,6 +627,14 @@ function currentSubnet(scale) {
   }
   return 32;
   
+}
+
+function get_view_center(viewrect, x, y, scale) {
+  let center = {
+    x: ((viewrect.width / 2) - x) / (scale),
+    y: ((viewrect.height / 2) - y) / (scale)
+  };
+  return center;
 }
 
 function removeChildren(element) {
@@ -669,6 +673,7 @@ function generic_ajax_failure(xhr, textStatus, errorThrown) {
 }
 
 function generic_ajax_success(response) {
+    "use strict";
     if (response.hasOwnProperty("result")) {
         console.log("Result: " + response.result);
     }
@@ -676,4 +681,30 @@ function generic_ajax_success(response) {
 
 function ip_ntos(ip) {
   return Math.floor(ip / 16777216).toString() + "." + (Math.floor(ip / 65536) % 256).toString() + "." + (Math.floor(ip / 256) % 256).toString() + "." + (ip % 256).toString();
+}
+
+function checkLoD() {
+  "use strict";
+  let nodesToLoad = [];
+  renderCollection.forEach(function (node) {
+    if (node.subnet < currentSubnet(g_scale)) {
+      nodesToLoad.push(node);
+    }
+  });
+  if (nodesToLoad.length > 0) {
+    nodes.GET_request(nodesToLoad, function () {
+      updateRenderRoot();
+      render_all();
+    });
+  }
+}
+
+function response_builder(method, extra_callback) {
+  callback = function (response) {
+    method(response);
+    if (typeof(extra_callback) === "function") {
+      extra_callback(response);
+    }
+  }
+  return callback;
 }

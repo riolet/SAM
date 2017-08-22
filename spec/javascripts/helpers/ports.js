@@ -2,6 +2,7 @@ function get_mock_m_ports() {
     response = {
     "443": {
       "port": 443,
+      "protocols": "UDP,SCTP,TCP",
       "active": 1,
       "name": "https",
       "description": "http protocol over TLS/SSL",
@@ -10,6 +11,7 @@ function get_mock_m_ports() {
     },
     "3268": {
       "port": 3268,
+      "protocols": "UDP,TCP",
       "active": 1,
       "name": "msft-gc",
       "description": "Microsoft Global Catalog",
@@ -18,6 +20,7 @@ function get_mock_m_ports() {
     },
     "7680": {
       "port": 7680,
+      "protocols": "UDP,TCP",
       "active": 1,
       "name": "pando-pub",
       "description": "Pando Media Public Distribution",
@@ -26,6 +29,7 @@ function get_mock_m_ports() {
     },
     "8081": {
       "port": 8081,
+      "protocols": "TCP",
       "active": 0,
       "name": "sunproxyad",
       "description": "Sun Proxy Admin Service",

@@ -1,5 +1,7 @@
+# coding=utf-8
 from spec.python import db_connection
 import web
+from sam.local import en as strings
 import sam.pages.table
 import sam.models.filters
 import web
@@ -13,66 +15,66 @@ ds_other = db_connection.dsid_live
 
 
 def test_role_text():
-    assert sam.pages.table.role_text(0.0) == '0.00 (client)'
-    assert sam.pages.table.role_text(0.2) == '0.20 (mostly client)'
-    assert sam.pages.table.role_text(0.4) == '0.40 (mixed client/server)'
-    assert sam.pages.table.role_text(0.6) == '0.60 (mixed client/server)'
-    assert sam.pages.table.role_text(0.8) == '0.80 (mostly server)'
-    assert sam.pages.table.role_text(1.0) == '1.00 (server)'
+    assert sam.pages.table.role_text(strings, 0.0) == '0.00 (client)'
+    assert sam.pages.table.role_text(strings, 0.2) == '0.20 (mostly client)'
+    assert sam.pages.table.role_text(strings, 0.4) == '0.40 (mixed client/server)'
+    assert sam.pages.table.role_text(strings, 0.6) == '0.60 (mixed client/server)'
+    assert sam.pages.table.role_text(strings, 0.8) == '0.80 (mostly server)'
+    assert sam.pages.table.role_text(strings, 1.0) == '1.00 (server)'
 
 
 def test_bytes_text():
-    assert sam.pages.table.bytes_text(int(1e2)) == "100 B"
-    assert sam.pages.table.bytes_text(int(1e3)) == "1000 B"
-    assert sam.pages.table.bytes_text(int(1e4)) == "9 KB"
-    assert sam.pages.table.bytes_text(int(1e5)) == "97 KB"
-    assert sam.pages.table.bytes_text(int(1e6)) == "976 KB"
-    assert sam.pages.table.bytes_text(int(1e7)) == "9765 KB"
-    assert sam.pages.table.bytes_text(int(1e8)) == "95 MB"
-    assert sam.pages.table.bytes_text(int(1e9)) == "953 MB"
-    assert sam.pages.table.bytes_text(int(1e10)) == "9536 MB"
-    assert sam.pages.table.bytes_text(int(1e11)) == "93 GB"
-    assert sam.pages.table.bytes_text(int(1e12)) == "931 GB"
-    assert sam.pages.table.bytes_text(int(1e13)) == "9313 GB"
-    assert sam.pages.table.bytes_text(int(1e14)) == "90 TB"
+    assert sam.pages.table.bytes_text(strings, int(1e2)) == "100 B"
+    assert sam.pages.table.bytes_text(strings, int(1e3)) == "1000 B"
+    assert sam.pages.table.bytes_text(strings, int(1e4)) == "9 KB"
+    assert sam.pages.table.bytes_text(strings, int(1e5)) == "97 KB"
+    assert sam.pages.table.bytes_text(strings, int(1e6)) == "976 KB"
+    assert sam.pages.table.bytes_text(strings, int(1e7)) == "9765 KB"
+    assert sam.pages.table.bytes_text(strings, int(1e8)) == "95 MB"
+    assert sam.pages.table.bytes_text(strings, int(1e9)) == "953 MB"
+    assert sam.pages.table.bytes_text(strings, int(1e10)) == "9536 MB"
+    assert sam.pages.table.bytes_text(strings, int(1e11)) == "93 GB"
+    assert sam.pages.table.bytes_text(strings, int(1e12)) == "931 GB"
+    assert sam.pages.table.bytes_text(strings, int(1e13)) == "9313 GB"
+    assert sam.pages.table.bytes_text(strings, int(1e14)) == "90 TB"
 
 
 def test_rate_text():
-    assert sam.pages.table.byte_rate_text(int(1e2), 15) == "6 B/s"
-    assert sam.pages.table.byte_rate_text(int(1e4), 15) == "666 B/s"
-    assert sam.pages.table.byte_rate_text(int(1e6), 15) == "65 KB/s"
-    assert sam.pages.table.byte_rate_text(int(1e8), 15) == "6 MB/s"
-    assert sam.pages.table.byte_rate_text(int(1e10), 15) == "635 MB/s"
-    assert sam.pages.table.byte_rate_text(int(1e12), 15) == "62 GB/s"
-    assert sam.pages.table.byte_rate_text(int(1e14), 15) == "6 TB/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e2), 15) == "6 B/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e4), 15) == "666 B/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e6), 15) == "65 KB/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e8), 15) == "6 MB/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e10), 15) == "635 MB/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e12), 15) == "62 GB/s"
+    assert sam.pages.table.byte_rate_text(strings, int(1e14), 15) == "6 TB/s"
 
 
 def test_packet_rate_text():
-    assert sam.pages.table.packet_rate_text(int(1e2), 15) == "6 p/s"
-    assert sam.pages.table.packet_rate_text(int(1e4), 15) == "666 p/s"
-    assert sam.pages.table.packet_rate_text(int(1e6), 15) == "66 Kp/s"
-    assert sam.pages.table.packet_rate_text(int(1e8), 15) == "6666 Kp/s"
-    assert sam.pages.table.packet_rate_text(int(1e10), 15) == "666 Mp/s"
-    assert sam.pages.table.packet_rate_text(int(1e12), 15) == "66 Gp/s"
-    assert sam.pages.table.packet_rate_text(int(1e14), 15) == "6666 Gp/s"
-    assert sam.pages.table.packet_rate_text(int(1e15), 15) == "66 Tp/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e2), 15) == "6 p/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e4), 15) == "666 p/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e6), 15) == "66 Kp/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e8), 15) == "6666 Kp/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e10), 15) == "666 Mp/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e12), 15) == "66 Gp/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e14), 15) == "6666 Gp/s"
+    assert sam.pages.table.packet_rate_text(strings, int(1e15), 15) == "66 Tp/s"
 
 
 def test_nice_protocol():
-    res = sam.pages.table.nice_protocol(u'tcp', u'udp')
+    res = sam.pages.table.nice_protocol(strings, u'tcp', u'udp')
     assert res == u'tcp (in), udp (out)'
 
-    res = sam.pages.table.nice_protocol(u'tcp', u'')
+    res = sam.pages.table.nice_protocol(strings, u'tcp', u'')
     assert res == u'tcp (in)'
-    res = sam.pages.table.nice_protocol(u'tcp', None)
+    res = sam.pages.table.nice_protocol(strings, u'tcp', None)
     assert res == u'tcp (in)'
 
-    res = sam.pages.table.nice_protocol(u'', u'udp')
+    res = sam.pages.table.nice_protocol(strings, u'', u'udp')
     assert res == u'udp (out)'
-    res = sam.pages.table.nice_protocol(None, u'udp')
+    res = sam.pages.table.nice_protocol(strings, None, u'udp')
     assert res == u'udp (out)'
 
-    res = sam.pages.table.nice_protocol(u'abc,def', u'def,ghi,jkl')
+    res = sam.pages.table.nice_protocol(strings, u'abc,def', u'def,ghi,jkl')
     assert res == u'abc (in), def (i/o), jkl (out), ghi (out)'
 
 
@@ -133,31 +135,31 @@ def test_csv_encode():
 
 
 def test_columns_init():
-    c = sam.pages.table.Columns(address=1)
+    c = sam.pages.table.Columns(strings, address=1)
     active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'address'}
 
-    c = sam.pages.table.Columns(protocols=1)
+    c = sam.pages.table.Columns(strings, protocols=1)
     active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'protocols'}
 
-    c = sam.pages.table.Columns(address=1, alias=1, conn_in=1, conn_out=1, role=1,
+    c = sam.pages.table.Columns(strings, address=1, alias=1, conn_in=1, conn_out=1, role=1,
                             environment=1, tags=1, bytes=1, packets=1, protocols=1)
     active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'address', 'alias', 'conn_in', 'conn_out', 'role',
                       'environment', 'tags', 'bytes', 'packets', 'protocols'}
 
-    c = sam.pages.table.Columns(empty=1, fake=1, flicker=1, tags=1)
+    c = sam.pages.table.Columns(strings, empty=1, fake=1, flicker=1, tags=1)
     active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == {'tags'}
 
-    c = sam.pages.table.Columns()
+    c = sam.pages.table.Columns(strings)
     active = set([k for k, v in c.columns.iteritems() if v['active'] is True])
     assert active == set()
 
 
 def test_columns_translate():
-    c = sam.pages.table.Columns(address=1, alias=1, conn_in=1, conn_out=1, role=1,
+    c = sam.pages.table.Columns(strings, address=1, alias=1, conn_in=1, conn_out=1, role=1,
                             environment=1, tags=1, bytes=1, packets=1, protocols=1)
     data = {
         'address': u'12.34.56.78',
@@ -192,15 +194,15 @@ def test_columns_translate():
 
 
 def test_columns_headers():
-    c = sam.pages.table.Columns(address=1)
+    c = sam.pages.table.Columns(strings, address=1)
     expected = [('address', 'Address')]
     assert c.headers() == expected
 
-    c = sam.pages.table.Columns(protocols=1)
+    c = sam.pages.table.Columns(strings, protocols=1)
     expected = [('protocols', 'Protocols used')]
     assert c.headers() == expected
 
-    c = sam.pages.table.Columns(address=1, alias=1, conn_in=1, conn_out=1, role=1,
+    c = sam.pages.table.Columns(strings, address=1, alias=1, conn_in=1, conn_out=1, role=1,
                             environment=1, tags=1, bytes=1, packets=1, protocols=1)
     headers = c.headers()
     assert all(len(x) == 2 for x in headers)
@@ -208,10 +210,10 @@ def test_columns_headers():
     assert titles == {'address', 'alias', 'conn_in', 'conn_out', 'role',
                       'environment', 'tags', 'bytes', 'packets', 'protocols'}
 
-    c = sam.pages.table.Columns(empty=1, fake=1, flicker=1, tags=1)
+    c = sam.pages.table.Columns(strings, empty=1, fake=1, flicker=1, tags=1)
     assert c.headers() == [('tags', 'Tags')]
 
-    c = sam.pages.table.Columns()
+    c = sam.pages.table.Columns(strings)
     assert c.headers() == []
 
 
@@ -245,11 +247,11 @@ def test_prev_page():
 
 def test_spread():
     q = sam.pages.table.Table
-    assert q.spread(range(0), 0, 10) == 'No matching results.'
-    assert q.spread(range(2), 0, 10) == 'Results: 1 to 2'
-    assert q.spread(range(11), 0, 10) == 'Results: 1 to 10'
-    assert q.spread(range(11), 5, 10) == 'Results: 51 to 60'
-    assert q.spread(range(4), 6, 10) == 'Results: 61 to 64'
+    assert q.spread(strings, range(0), 0, 10) == 'No matching results.'
+    assert q.spread(strings, range(2), 0, 10) == 'Results: 1 to 2'
+    assert q.spread(strings, range(11), 0, 10) == 'Results: 1 to 10'
+    assert q.spread(strings, range(11), 5, 10) == 'Results: 51 to 60'
+    assert q.spread(strings, range(4), 6, 10) == 'Results: 61 to 64'
 
 
 def test_decode_order():
@@ -359,11 +361,12 @@ def test_render():
         p = sam.pages.table.Table()
         page_title = 'Table View'
         web.ctx.path = "/sam/testpage"
+        web.ctx.env = {'PATH_INFO': '/sam/testpage', 'QUERY_STRING': ''}
         dummy = p.GET()
         calls = common.renderer.calls
-        assert calls[0] == ('render', ('_head', page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
-        assert calls[1] == ('render', ('_header', constants.navbar, page_title, p.page.user, constants.debug, "/sam/testpage", constants.access_control), {})
-        assert calls[2][1][0] == 'table'
+        assert calls[0] == ('render', ('_head', page_title,), {'lang': 'en', 'stylesheets': p.styles, 'scripts': p.scripts})
+        assert calls[1] == ('render', ('en/_header', constants.get_navbar('en'), page_title, p.page.user, constants.debug, "/sam/testpage", constants.access_control, ('version française', '/fr/sam/testpage')), {})
+        assert calls[2][1][0] == 'en/table'
         assert len(calls[2][1]) == 11
         assert calls[2][2] == {}
         assert calls[3] == ('render', ('_tail', ), {})
@@ -392,8 +395,12 @@ def test_download():
                     u'50.0.0.0/8',
                     u'50.64.0.0/16',
                     u'50.64.76.0/24',
-                    u'50.64.76.86/32']
+                    u'50.64.76.86/32',
+                    u'101.0.0.0/8',
+                    u'101.99.0.0/16',
+                    u'101.99.86.0/24',
+                    u'101.99.86.58/32']
         assert addresses == expected
         assert headers == 'Address,Hostname,"Role (0 = client, 1 = server)",' \
-                          'Environment,Tags,Bytes Handled,Packets Handled'
+                          'Environment,Tags,Bytes handled,Packets handled'
 

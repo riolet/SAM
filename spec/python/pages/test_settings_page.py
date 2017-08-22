@@ -1,3 +1,4 @@
+# coding=utf-8
 from spec.python import db_connection
 import web
 import sam.pages.settings_page
@@ -20,11 +21,11 @@ def test_render():
         web.ctx.path = "/sam/testpage"
         dummy = p.GET()
         calls = common.renderer.calls
-        assert calls[0] == ('render', ('_head', page_title,), {'stylesheets': p.styles, 'scripts': p.scripts})
-        assert calls[1] == ('render', ('_header', constants.navbar, page_title, p.page.user, constants.debug, "/sam/testpage", constants.access_control), {})
-        assert calls[2][1][0] == 'settings'
+        assert calls[0] == ('render', ('_head', page_title,), {'lang': 'en', 'stylesheets': p.styles, 'scripts': p.scripts})
+        assert calls[1] == ('render', ('en/_header', constants.get_navbar('en'), page_title, p.page.user, constants.debug, "/sam/testpage", constants.access_control, ('version française', '/fr/sam/testpage')), {})
+        assert calls[2][1][0] == 'en/settings'
         assert len(calls[2][1]) == 9
         assert calls[2][2] == {}
-        assert calls[3] == ('render', ('_footer', ), {})
+        assert calls[3] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Française': '/fr/sam/testpage'}), {})
         assert calls[4] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNoneNone"

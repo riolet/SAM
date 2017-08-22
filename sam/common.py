@@ -1,8 +1,11 @@
 import os
 import sys
 import importlib
+import logging
 import web
+import smtplib
 from sam import constants
+logger = logging.getLogger(__name__)
 
 
 def load_plugins():
@@ -25,7 +28,7 @@ def load_plugins():
             mod.sam_installer.install()
             loaded.append(plugin)
         except:
-            print("Failed to load {}".format(plugin))
+            logger.error("Failed to load {}".format(plugin))
             raise
 
     constants.plugins['loaded'] = loaded
@@ -50,16 +53,16 @@ def init_globals():
     web.config.debug = constants.debug
     web.config._session = None  # erase any erroneous session creation.
     web.config.session_parameters['cookie_path'] = "/"
+    web.config.smtp_server = constants.smtp['server']
+    web.config.smtp_port = int(constants.smtp.get('port', '587'))
+    web.config.smtp_username = constants.smtp['username']
+    web.config.smtp_password = constants.smtp['password']
+    web.config.smtp_starttls = constants.smtp['starttls'].lower() == 'true'
 
     db, db_quiet = get_db(constants.dbconfig.copy())
 
     session_store = web.session.DBStore(db_quiet, 'sessions')
-
-    constants.urls = []
-    constants.urls.extend(constants.plugin_urls)
-    constants.urls.extend([constants.access_control['login_url'], constants.access_control['login_target']])
-    constants.urls.extend([constants.access_control['logout_url'], constants.access_control['logout_target']])
-    constants.urls.extend(constants.default_urls)
+    constants.init_urls()
 
 
 def parse_sql_string(script, replacements):
@@ -141,7 +144,10 @@ def IPStringtoInt(ip):
     for i in range(4):
         ip_int <<= 8
         if len(parts) > i:
-            ip_int += int(parts[i])
+            try:
+                ip_int += int(parts[i])
+            except:
+                pass
     return ip_int
 
 
@@ -192,6 +198,20 @@ def determine_range_string(ip=u"0/0"):
     return low, high
 
 
+def get_domain():
+    domain = web.ctx.home
+    prefix = domain.find("//")
+    if prefix != -1:
+        domain = domain[prefix + 2:]
+    prefix = domain.find('@')
+    if prefix != -1:
+        domain = domain[prefix + 1:]
+    suffix = domain.find(":")
+    if suffix != -1:
+        domain = domain[:suffix]
+    return domain
+
+
 def sqlite_udf(db):
     db._db_cursor().connection.create_function("decodeIP", 1,
                                                lambda ip: "{}.{}.{}.{}".format(ip >> 24,
@@ -200,6 +220,17 @@ def sqlite_udf(db):
                                                                                ip & 0xff))
     db._db_cursor().connection.create_function("encodeIP", 4,
                                                lambda a, b, c, d: a << 24 | b << 16 | c << 8 | d)
+
+
+def sendmail(to_address, subject, body, from_address=constants.smtp['from'], headers=None, **kw):
+    try:
+        web.sendmail(from_address, to_address, subject, body, headers=headers, **kw)
+    except OSError:
+        logger.exception("Could not send mail.")
+    except smtplib.SMTPServerDisconnected:
+        logger.exception("Server Disconnected.")
+    except:
+        logger.exception("Other email error:")
 
 
 class MultiRender(object):

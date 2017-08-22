@@ -12,21 +12,21 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
 }
 
 function deleteHosts() {
-  let deleteMessage = "Are you sure you want to permanently delete all hostnames? (Across all data sources)";
+  let deleteMessage = strings.set_del_host;
   getConfirmation(deleteMessage, function () {
     POST_del_aliases();
   });
 }
 
 function deleteTags() {
-  let deleteMessage = "Are you sure you want to permanently delete all host/subnet metadata tags? (Across all data sources)";
+  let deleteMessage = strings.set_del_tags;
   getConfirmation(deleteMessage, function () {
     POST_del_tags();
   });
 }
 
 function deleteEnvs() {
-  let deleteMessage = "Are you sure you want to permanently delete all host/subnet environment data? (Across all data sources)";
+  let deleteMessage = strings.set_del_envs;
   getConfirmation(deleteMessage, function () {
     POST_del_envs();
   });
@@ -35,7 +35,7 @@ function deleteEnvs() {
 function deleteConnectionsDS(e) {
   let targetDS = getSelectedDS();
   let targetName = getDSName(targetDS);
-  let deleteMessage = "Are you sure you want to permanently delete connection information for " + targetName + "?";
+  let deleteMessage = strings.set_del_conns + targetName + "?";
   getConfirmation(deleteMessage, function () {
     POST_del_connections(targetDS);
   })
@@ -150,9 +150,9 @@ function deleteDS(e) {
     if (targetDS == undefined) {
       targetDS = e.target.parentElement.dataset['tab'];
     }
-    getConfirmation(catDeleteMessage("datasource", targetDS), function () {
+    getConfirmation(strings.set_del_ds + "\"" + getDSName(targetDS) + "\"?", function () {
         console.log("Deleting " + targetDS + ".");
-        POST_ds_delete(targetDS)
+        POST_ds_delete(targetDS);
     });
 }
 
@@ -300,16 +300,16 @@ function addDSTab(ds) {
     table.className = "ui fixed definition table";
 
     tbody = document.createElement("TBODY");
-    tr = markupRow(document.createTextNode("Name:"), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
+    tr = markupRow(document.createTextNode(strings.set_ds_name), markupWriteInput("ds_name", ds.name, "-", ds.name, POST_ds_namechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh (map view):"), markupCheckboxInput("ds_live", ds.ar_active, " ", POST_ds_livechange));
+    tr = markupRow(document.createTextNode(strings.set_ds_ar), markupCheckboxInput("ds_live", ds.ar_active, " ", POST_ds_livechange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Auto-refresh interval (seconds):"), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
+    tr = markupRow(document.createTextNode(strings.set_ds_ari), markupWriteInput("ds_interval", ds.ar_interval, "-", ds.ar_interval, POST_ds_intervalchange));
     tbody.appendChild(tr);
 
-    tr = markupRow(document.createTextNode("Flat mode (map view):"), markupCheckboxInput("ds_flat", ds.ar_active, " ", POST_ds_flatchange));
+    tr = markupRow(document.createTextNode(strings.set_ds_flat), markupCheckboxInput("ds_flat", ds.ar_active, " ", POST_ds_flatchange));
     tbody.appendChild(tr);
 
     btn = document.createElement("BUTTON");
@@ -318,8 +318,8 @@ function addDSTab(ds) {
     icon = document.createElement("I");
     icon.className="red trash icon";
     btn.appendChild(icon);
-    btn.appendChild(document.createTextNode("Delete Connections"));
-    tr = markupRow(document.createTextNode("Delete all connection information:"), btn)
+    btn.appendChild(document.createTextNode(strings.set_ds_del));
+    tr = markupRow(document.createTextNode(strings.set_ds_del_hint), btn)
     tbody.appendChild(tr);
 
     btn = document.createElement("BUTTON");
@@ -328,8 +328,8 @@ function addDSTab(ds) {
     icon = document.createElement("I");
     icon.className="green upload icon";
     btn.appendChild(icon);
-    btn.appendChild(document.createTextNode("Upload Log"));
-    tr = markupRow(document.createTextNode("Upload a connection log:"), btn)
+    btn.appendChild(document.createTextNode(strings.set_ds_up));
+    tr = markupRow(document.createTextNode(strings.set_ds_up_hint), btn)
     tbody.appendChild(tr);
 
     table.appendChild(tbody);
@@ -385,7 +385,7 @@ function populateUploadDSList(options) {
     var div;
     options.forEach(function (option) {
         div = document.createElement("DIV");
-        div.className = "item"
+        div.className = "item";
         div.dataset['value'] = option[0];
         div.appendChild(document.createTextNode(option[1]));
         log_ds_list.appendChild(div);
@@ -461,12 +461,12 @@ function uploadLog() {
 
 function removeLiveKey(e) {
   "use strict";
-  let row = e.target.parentElement.parentElement;
-  console.log("row"); console.log(row);
+  let row = e.target;
+  while (row.tagName != "TR" && row.parentElement) {
+    row = row.parentElement;
+  }
   let key_collection = row.getElementsByClassName("secret key");
-  console.log("key collection"); console.log(key_collection);
   let key = key_collection[0].innerText;
-  console.log("key"); console.log(key);
   POST_del_live_key(key);
 }
 
@@ -518,7 +518,7 @@ function rebuildLiveKeys(livekeys) {
     tr.appendChild(td);
 
     td = document.createElement("TD");
-    td.appendChild(document.createTextNode("none"));
+    td.appendChild(document.createTextNode(strings.set_livekey_empty));
     td.colspan = "2";
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -566,11 +566,11 @@ function POST_upload_log(ds, format, file) {
     "file": file
   }, function (response) {
     if (response.result === "success") {
-      document.getElementById("upload_results").innerHTML = "Your log file was uploaded successfully.";
-      document.getElementById("upload_results_title").innerHTML = "Success";
+      document.getElementById("upload_results").innerHTML = strings.set_upload_success_d;
+      document.getElementById("upload_results_title").innerHTML = strings.set_upload_success;
     } else {
-      document.getElementById("upload_results").innerHTML = "There was an error uploading your log file.";
-      document.getElementById("upload_results_title").innerHTML = "Error";
+      document.getElementById("upload_results").innerHTML = strings.set_upload_fail_d;
+      document.getElementById("upload_results_title").innerHTML = strings.set_upload_fail;
     }
     $('.ui.response.modal').modal('show');
   });
@@ -582,7 +582,9 @@ function POST_ds_new(name) {
         if (response.result === 'success') {
             //successfully created new data source
             rebuild_tabs(response.settings, response.datasources);
-            populateLiveDestDSList(getDSs());
+            let dses = getDSs()
+            populateLiveDestDSList(dses);
+            populateUploadDSList(dses);
         }
     });
 }
@@ -593,7 +595,9 @@ function POST_ds_delete(id) {
         if (response.result === 'success') {
             //successfully deleted the data source
             rebuild_tabs(response.settings, response.datasources);
-            populateLiveDestDSList(getDSs());
+            let dses = getDSs()
+            populateLiveDestDSList(dses);
+            populateUploadDSList(dses);
             rebuildLiveKeys(response.livekeys)
         }
     });
@@ -641,6 +645,8 @@ function POST_ds_intervalchange(e) {
     if (newInterval !== parseInt(e.target.dataset['content'])) {
         //in case trim() changed the name
         e.target.value = newInterval;
+        console.log("updating dataset to {}", newInterval);
+        e.target.dataset['content'] = newInterval;
         var ds = getSelectedDS();
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
         POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});

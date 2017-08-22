@@ -31,3 +31,39 @@ CREATE TABLE IF NOT EXISTS s{acct}_PortAliases
 ,description       VARCHAR(255) NOT NULL DEFAULT ""
 ,CONSTRAINT PK{acct}PortAliases PRIMARY KEY (port)
 );
+
+-- Create the table for security rules (params)
+CREATE TABLE IF NOT EXISTS s{acct}_Rules
+(id                INTEGER NOT NULL PRIMARY KEY
+,rule_path         VARCHAR(256) NOT NULL
+,active            BOOL NOT NULL
+,name              VARCHAR(64) NOT NULL
+,description       TEXT NOT NULL
+,params            TEXT NOT NULL
+);
+
+-- Create the table for security alerts
+CREATE TABLE IF NOT EXISTS s{acct}_Alerts
+(id                INTEGER NOT NULL PRIMARY KEY
+,ipstart           INT UNSIGNED NOT NULL
+,ipend             INT UNSIGNED NOT NULL
+,log_time          INT UNSIGNED NOT NULL
+,report_time       INT UNSIGNED NOT NULL
+,severity          TINYINT(1) NOT NULL
+,viewed            TINYINT(1) NOT NULL DEFAULT 0
+,label             VARCHAR(32) NOT NULL
+,rule_id           INT UNSIGNED
+,rule_name         VARCHAR(64)
+,details           TEXT
+);
+
+-- Create the table for Anomaly Detection
+CREATE TABLE IF NOT EXISTS s{acct}_ADWarnings
+(id                INTEGER NOT NULL PRIMARY KEY
+,warning_id        INT UNSIGNED NOT NULL UNIQUE
+,host              INT UNSIGNED NOT NULL
+,log_time          INT UNSIGNED NOT NULL
+,reason            TEXT NOT NULL
+,status            VARCHAR(32) NOT NULL  -- should be one of "accepted", "rejected", "ignored", "uncategorized"
+,details           TEXT
+);

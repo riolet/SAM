@@ -1,0 +1,18 @@
+$def with (lang_links)
+<div id="footer" class="ui inverted vertical footer segment">
+  <div class="ui center aligned container">
+    <div class="ui stackable inverted divided grid">
+      <div class="eight wide column">
+        <p>SAM is an open source project licensed under the <a href="https://github.com/riolet/SAM/blob/master/LICENSE">GPL</a></p>
+        <p>Copyright &copy; 2017.</p>
+        <p>
+        $for lang, link in lang_links.iteritems():
+          <a class="langlink" href="$link">$lang</a>
+        </p>
+      </div>
+      <div class="eight wide column">
+        <img src="/static/img/logo_dark.png" class="ui centered image" width="80px" height="80px">
+      </div>
+    </div>
+  </div>
+</div>

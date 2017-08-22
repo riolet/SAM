@@ -49,19 +49,18 @@ function slider_init() {
 
   //if the slider doesn't exist, create it.
   if (dateSlider.noUiSlider === undefined) {
-    create_slider(newMin, newMax, newStart, newEnd);
+    slider_build(newMin, newMax, newStart, newEnd);
   }
 
   //Otherwise, update time range and selection.
   else {
-    //update_slider(newMin, newMax, newStart, newEnd);
-    recreate_slider(newMin, newMax, newStart, newEnd);
+    slider_rebuild(newMin, newMax, newStart, newEnd);
   }
 }
 
-function create_slider(tmin, tmax, tstart, tend) {
+function slider_create(dateSlider, tmin, tmax, tstart, tend) {
   "use strict";
-  var dateSlider = document.getElementById('slider-date');
+  //tmin <= tstart <= tend <= tmax
 
   noUiSlider.create(dateSlider, {
     // Create two timestamps to define a range.
@@ -92,11 +91,11 @@ function create_slider(tmin, tmax, tstart, tend) {
       format: {"to": function(v) { return ""; } } //no labels
     }
   });
+}
 
-  var inputA = document.getElementById('input-start');
-  var inputB = document.getElementById('input-end');
-  var converter = dateConverter();
-
+function slider_hookup(dateSlider, inputA, inputB) {
+  "use strict";
+  let converter = dateConverter();
   dateSlider.noUiSlider.on('update', function( values, handle ) {
     var value = values[handle];
     if ( handle ) {
@@ -107,14 +106,25 @@ function create_slider(tmin, tmax, tstart, tend) {
       config.tstart = Math.round(value);
     }
   });
-  dateSlider.noUiSlider.on('end', function(){
+  dateSlider.noUiSlider.on('set', function(){
     sel_remove_all(nodes.nodes);
     sel_set_selection(m_selection.selection)
     links_reset();
     updateRenderRoot();
     render_all();
   });
+}
 
+function slider_build(tmin, tmax, tstart, tend) {
+  "use strict";
+  let dateSlider = document.getElementById('slider-date');
+  slider_create(dateSlider, tmin, tmax, tstart, tend);
+
+  let inputA = document.getElementById('input-start');
+  let inputB = document.getElementById('input-end');
+  slider_hookup(dateSlider, inputA, inputB);
+
+  let converter = dateConverter();
   inputA.addEventListener('change', function(){
     dateSlider.noUiSlider.set([converter.from(this.value), null]);
   });
@@ -124,65 +134,18 @@ function create_slider(tmin, tmax, tstart, tend) {
   });
 }
 
-function recreate_slider(tmin, tmax, tstart, tend) {
+function slider_rebuild(tmin, tmax, tstart, tend) {
   "use strict";
   var dateSlider = document.getElementById('slider-date');
   dateSlider.noUiSlider.destroy();
-
-  noUiSlider.create(dateSlider, {
-    // Create two timestamps to define a range.
-    range: {
-      min: tmin,
-      max: tmax
-    },
-
-    // Steps of 5 minutes
-    step: 5 * 60,
-
-    // at least 5 minutes between handles
-    margin: 5 * 60,
-
-    // Two more timestamps indicate the default handle starting positions.
-    start: [ tstart, tend],
-
-    // Shade the selection
-    connect: true,
-    // Allow range draggin
-    behaviour: "drag",
-
-    pips: {
-      mode: 'count',
-      values: 5,
-      stepped: true,
-      density: 6,
-      format: {"to": function(v) { return ""; } } //no labels
-    }
-  });
+  slider_create(dateslider, tmin, tmax, tstart, tend);
 
   var inputA = document.getElementById('input-start');
   var inputB = document.getElementById('input-end');
-  var converter = dateConverter();
-
-  dateSlider.noUiSlider.on('update', function( values, handle ) {
-    var value = values[handle];
-    if ( handle ) {
-      inputB.value = converter.to(Math.round(value));
-      config.tend = Math.round(value);
-    } else {
-      inputA.value = converter.to(Math.round(value));
-      config.tstart = Math.round(value);
-    }
-  });
-  dateSlider.noUiSlider.on('end', function(){
-    sel_remove_all(nodes.nodes);
-    sel_set_selection(m_selection.selection)
-    links_reset();
-    updateRenderRoot();
-    render_all();
-  });
+  slider_hookup(dateSlider, inputA, inputB);
 }
 
-function update_slider(tmin, tmax, tstart, tend) {
+function slider_update(tmin, tmax, tstart, tend) {
   "use strict";
   var dateSlider = document.getElementById('slider-date');
 

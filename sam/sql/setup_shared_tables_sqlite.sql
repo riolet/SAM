@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS Subscriptions
 ,plan           TEXT NOT NULL
 ,groups         TEXT NOT NULL
 ,active         BOOL NOT NULL DEFAULT FALSE
+,plugins        TEXT
 );
 
 -- Listing of datasources to use

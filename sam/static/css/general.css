@@ -3,6 +3,14 @@ body {
     font-size: 100%;
 }
 
+.langlink {
+  padding: 0 0.9em 0 1em;
+  margin: 0;
+}
+.langlink + .langlink {
+  border-left: 1px solid white;
+}
+
 #navbar {
   border-radius: 0;
   background-color: #142230;
@@ -84,4 +92,15 @@ div.ui.inverted.footer.segment {
 .meta_del h4{
   margin-top: 2em;
   margin-bottom: 0.5em;
+}
+
+input {
+  background: #F2F4F5 !important;
+}
+
+div.group {
+  display: inline;
+  margin: 0;
+  border: 0;
+  padding: 0;
 }

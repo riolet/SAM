@@ -1,5 +1,5 @@
 from spec.python import db_connection
-
+from sam.local import en as strings
 import web
 import sam.pages.details
 from sam import constants
@@ -12,40 +12,40 @@ ds_full = db_connection.dsid_default
 
 
 def test_nice_protocol():
-    res = sam.pages.details.nice_protocol(u'tcp', u'udp')
+    res = sam.pages.details.nice_protocol(strings, u'tcp', u'udp')
     assert res == u'tcp (in), udp (out)'
 
-    res = sam.pages.details.nice_protocol(u'tcp', u'')
+    res = sam.pages.details.nice_protocol(strings, u'tcp', u'')
     assert res == u'tcp (in)'
-    res = sam.pages.details.nice_protocol(u'tcp', None)
+    res = sam.pages.details.nice_protocol(strings, u'tcp', None)
     assert res == u'tcp (in)'
 
-    res = sam.pages.details.nice_protocol(u'', u'udp')
+    res = sam.pages.details.nice_protocol(strings, u'', u'udp')
     assert res == u'udp (out)'
-    res = sam.pages.details.nice_protocol(None, u'udp')
+    res = sam.pages.details.nice_protocol(strings, None, u'udp')
     assert res == u'udp (out)'
 
-    res = sam.pages.details.nice_protocol(u'abc,def', u'def,ghi,jkl')
+    res = sam.pages.details.nice_protocol(strings, u'abc,def', u'def,ghi,jkl')
     assert res == u'abc (in), def (i/o), jkl (out), ghi (out)'
 
 
 def test_si_formatting():
-    s = sam.pages.details.si_formatting(123)
+    s = sam.pages.details.si_formatting(strings, 123)
     assert s == u'123.00'
 
-    s = sam.pages.details.si_formatting(123456)
+    s = sam.pages.details.si_formatting(strings, 123456)
     assert s == u'123.46K'
 
-    s = sam.pages.details.si_formatting(123456789)
+    s = sam.pages.details.si_formatting(strings, 123456789)
     assert s == u'123.46M'
 
-    s = sam.pages.details.si_formatting(12345678987)
+    s = sam.pages.details.si_formatting(strings, 12345678987)
     assert s == u'12.35G'
 
-    s = sam.pages.details.si_formatting(12345678987, places=0)
+    s = sam.pages.details.si_formatting(strings, 12345678987, places=0)
     assert s == u'12G'
 
-    s = sam.pages.details.si_formatting(12345678987, places=6)
+    s = sam.pages.details.si_formatting(strings, 12345678987, places=6)
     assert s == u'12.345679G'
 
 

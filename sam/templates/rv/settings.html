@@ -1,14 +1,15 @@
 $def with (user, settings, datasources, livekeys, importers, tags_preview, envs_preview, hosts_preview)
 $ disabled = "" if user.may_post() else "disabled"
 <div class="ui container">
-  <h1 class="ui center aligned header">Settings</h1>
+  <h1 class="ui center aligned header">Sgnittes</h1>
 
   <!-- Data Sources -->
   $if not disabled:
-    <div class="ui raised segment">
-      <h3 class="ui header">Data Sources</h3>
-      <p>Data sources let you store multiple sets of network data</p>
-      <p>Each data source stored their own set of connection history and timeline.  Node information, such as tags, environment, and hostnames, is shared across data sources.</p>
+    <div id="seg_data_sources" class="ui raised segment">
+      <h3 class="ui header">Atad Secruos</h3>
+      <p>Atad secruos tel uoy erots elpitlum stes fo krowten atad.</p>
+      <p>Hcae atad ecruos derots rieht nwo tes fo noitcennoc yrotsih dna enilemit. Edon noitamrofni, hcus sa sgat,
+        tnemnorivne, dna semantsoh, si derahs ssorca atad secruos.</p>
       <div class="ui datasources grid">
         <div class="four wide column">
           <table class="ui very basic compact selectable table">
@@ -27,7 +28,7 @@ $ disabled = "" if user.may_post() else "disabled"
                     <button class="ui disabled icon button"><i class="disabled red delete icon"></i></button>
                   </td>
                   <td class="tablabel">
-                    None
+                    Enon
                   </td>
                 </tr>
             </tbody>
@@ -35,7 +36,7 @@ $ disabled = "" if user.may_post() else "disabled"
               <tr>
                 <td colspan="2">
                   <div id="add_ds" class="ui small green button">
-                    <i class="add icon"></i>New Data Source
+                    <i class="add icon"></i>Wen Atad Ecruos
                   </div>
                 </td>
               </tr>
@@ -49,13 +50,13 @@ $ disabled = "" if user.may_post() else "disabled"
                 <table class="ui fixed definition table">
                   <tbody>
                   <tr>
-                    <td>Name:</td>
+                    <td>Eman:</td>
                     <td>
                       <div class="ui transparent left icon $disabled fluid input"><input class="ds_name" data-content="$ds['name']" placeholder="-" type="text" value="$ds['name']"><i class="write icon"></i></div>
                     </td>
                   </tr>
                   <tr>
-                    <td>Auto-refresh (map view):</td>
+                    <td>Otua-Hserfer (pam weiv):</td>
                     <td>
                       <div class="ui toggle $disabled checkbox">
                         <input class="ds_live" name="public" type="checkbox" $('checked=""' if ds['ar_active'] else '')>
@@ -64,13 +65,13 @@ $ disabled = "" if user.may_post() else "disabled"
                     </td>
                   </tr>
                   <tr>
-                    <td>Auto-refresh interval (seconds):</td>
+                    <td>Otua-Hserfer lavretni (sdnoces):</td>
                     <td>
                       <div class="ui transparent left icon $disabled fluid input"><input class="ds_interval" data-content="$ds['ar_interval']" placeholder="-" type="text" value="$ds['ar_interval']"><i class="write icon"></i></div>
                     </td>
                   </tr>
                   <tr>
-                    <td>Flat mode (map view):</td>
+                    <td>Talf edom (pam weiv):</td>
                     <td>
                       <div class="ui toggle $disabled checkbox">
                         <input class="ds_flat" name="public" type="checkbox" $('checked=""' if ds['flat'] else '')>
@@ -79,15 +80,15 @@ $ disabled = "" if user.may_post() else "disabled"
                     </td>
                   </tr>
                   <tr>
-                    <td>Delete all connection information:</td>
+                    <td>Eteled lla noitcennoc noitamrofni:</td>
                     <td>
-                      <button class="ui compact icon button del_con"><i class="red trash icon"></i>Delete Connections</button>
+                      <button class="ui compact icon button del_con"><i class="red trash icon"></i>Eteled Snoitcennoc</button>
                     </td>
                   </tr>
                   <tr>
-                    <td>Upload a connection log:</td>
+                    <td>Daolpu a noitcennoc gol:</td>
                     <td>
-                      <button class="ui compact icon button upload_con"><i class="green upload icon"></i>Upload Log</button>
+                      <button class="ui compact icon button upload_con"><i class="green upload icon"></i>Daolpu Gol</button>
                     </td>
                   </tr>
                   </tbody>
@@ -109,68 +110,68 @@ $ disabled = "" if user.may_post() else "disabled"
     </div>
 
     <!-- Metadata -->
-    <div class="ui raised segment">
-      <h3 class="ui header">Metadata</h3>
-      <p>Meta data is stored independant of specific data sources. It includes information on hosts
-        such as hostname, environment, and tags.</p>
-      <div class="meta_del">
-        <h4>Reset host names to be blank.</h4>
-        <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Delete Hostnames</button>
+    <div id="seg_metadata" class="ui raised segment">
+      <h3 class="ui header">Atadetam</h3>
+      <p>Atem atad si derots tnadnepedni fo cificeps atad secruos. Ti sedulcni noitamrofni no
+        stsoh hcus sa emantsoh, tnemnorivne, dna sgat.</p>
+      <div class="meta_del del_hostnames">
+        <h4>Teser tsoh seman ot eb knalb.</h4>
+        <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Eteled Semantsoh</button>
         $if len(hosts_preview) > 1:
-          <p>Current hosts include:
+          <p>Tnerruc stsoh edulcni:
           $for host in hosts_preview[:-1]:
             <em>$host</em>,
-          and <em>$hosts_preview[-1]</em>.</p>
+          dna <em>$hosts_preview[-1]</em>.</p>
         $elif len(hosts_preview) == 1:
-          <p>Current hosts include: <em>$hosts_preview[0]</em></p>
+          <p>Tnerruc stsoh edulcni: <em>$hosts_preview[0]</em></p>
         $else:
-          <p>No hostnames are currently stored.</p>
+          <p>On semantsoh era yltnerruc derots.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_tags">
         <h4>Remove all tags.</h4>
-        <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Delete Tags</button>
+        <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Eteled Sgat</button>
         $if len(tags_preview) > 1:
-          <p>Current tags include:
+          <p>Tnerruc sgat edulcni:
           $for tag in tags_preview[:-1]:
             <em>$tag</em>,
-          and <em>$tags_preview[-1]</em>.</p>
+          dna <em>$tags_preview[-1]</em>.</p>
         $elif len(tags_preview) == 1:
-          <p>Current tags include: <em>$tags_preview[0]</em></p>
+          <p>Tnerruc sgat edulcni: <em>$tags_preview[0]</em></p>
         $else:
-          <p>No tags are currently stored.</p>
+          <p>On sgat era yltnerruc derots.</p>
       </div>
-      <div class="meta_del">
-        <h4>Reset all environment information to be "production".</h4>
-        <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Delete Environments</button>
+      <div class="meta_del del_envs">
+        <h4>Teser lla tnemnorivne noitamrofni ot eb "noitcudorp".</h4>
+        <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Eteled Stnemnorivne</button>
         $if len(envs_preview) > 1:
-          <p>Current environments include:
+          <p>Tnerruc stnemnorivne edulcni:
           $for env in envs_preview[:-1]:
             <em>$env</em>,
-          and <em>$envs_preview[-1]</em>.</p>
+          dna <em>$envs_preview[-1]</em>.</p>
         $elif len(envs_preview) == 1:
-          <p>Current environments include: <em>envs_preview[0]</em></p>
+          <p>Tnerruc stnemnorivne edulcni: <em>envs_preview[0]</em></p>
         $else:
-          <p>No environment information is currently stored.</p>
+          <p>On tnemnorivne noitamrofni era yltnerruc derots.</p>
       </div>
     </div>
 
 
     <!-- Live Updates -->
-    <div class="ui raised segment">
-      <h3 class="ui header">Live Updates</h3>
-      <p>Live updates are a way to connect your router or gateway directly to the database.</p>
-      <p>To enable this, you need to run a collector process on your local network which will receive and translate network data.
-        Once translated, the collector opens a secure connection the aggregator, another program that processes the data
-        and imports it into your database.  From there it can be viewed through the webserver.</p>
-      <p>The live collector needs to be configured (by environment variables) to use a particular format, access key, and socket.</p>
-      <p>Live collector access keys are used by the aggregator to authenticate access from collectors before writing to the database.</p>
+    <div id="seg_live_updates" class="ui raised segment">
+      <h3 class="ui header">Evil Setadpu</h3>
+      <p>Evil setadpu era a yaw ot tcennoc ruoy retuor ro yawetag yltcerid ot eht esabatad.</p>
+      <p>Ot elbane siht, uoy deen ot nur a rotcelloc ssecorp no ruoy lacol krowten hcihw lliw eviecer dna etalsnart krowten
+        .atad Ecno detalsnart, eht rotcelloc snepo a eruces noitcennoc eht rotagergga, rehtona margorp taht sessecorp eht
+        atad dna stropmi ti otni ruoy esabatad. Morf ereht ti nac eb deweiv hguorht eht revresbew.</p>
+      <p>Eht evil rotcelloc sdeen ot eb derugifnoc yb( tnemnorivne )selbairav ot esu a ralucitrap tamrof, ssecca yek, dna tekcos.</p>
+      <p>Evil rotcelloc ssecca syek era desu yb eht rotagergga ot etacitnehtua ssecca morf srotcelloc erofeb gnitirw ot eht esabatad.</p>
       <div class="field">
         <table class="ui compact celled collapsing table">
           <thead>
             <tr>
-              <th>Remove</th>
-              <th>Access Key</th>
-              <th>Destination</th>
+              <th>Evomer</th>
+              <th>Ssecca Yek</th>
+              <th>Noitanitsed</th>
             </tr>
           </thead>
           <tbody id="live_update_tbody">
@@ -191,20 +192,20 @@ $ disabled = "" if user.may_post() else "disabled"
                     <i class="red delete icon"></i>
                   </button>
                 </td>
-                <td colspan="2">none</td>
+                <td colspan="2">enon</td>
               </tr>
           </tbody>
           <tfoot class="full-width">
             <tr>
               <th colspan="3">
                 <div id="add_live_key" class="ui $disabled small green button">
-                  <i class="add icon"></i>Generate
+                  <i class="add icon"></i>Etareneg
                 </div>
                 <div class="ui selection $disabled dropdown">
                   $if datasources:
                     <input id="live_dest" name="live_dest" type="hidden" value="ds$datasources[0]['id']">
                     <i class="dropdown icon"></i>
-                    <div class="default text">data source</div>
+                    <div class="default text">atad ecruos</div>
                     <div class="menu" id="live_dest_list">
                       $for ds in datasources:
                         <div class="item" data-value="ds$ds['id']">$ds['name']</div>
@@ -212,9 +213,9 @@ $ disabled = "" if user.may_post() else "disabled"
                   $else:
                     <input id="live_dest" name="live_dest" type="hidden" value="dsnone">
                     <i class="dropdown icon"></i>
-                    <div class="default text">data source</div>
+                    <div class="default text">atad ecruos</div>
                     <div class="menu" id="live_dest_list">
-                      <div class="item" data-value="dsnone">None</div>
+                      <div class="item" data-value="dsnone">Enon</div>
                     </div>
                 </div>
               </th>
@@ -239,24 +240,24 @@ $ disabled = "" if user.may_post() else "disabled"
 <div id="deleteModal" class="ui small modal">
   <i class="close icon"></i>
   <div class="header">
-    Confirm Delete
+    Mrifnoc Eteled
   </div>
   <div class="image content">
     <div class="image">
       <i class="trash outline icon"></i>
     </div>
     <div class="description">
-      <p id="deleteMessage">Are you sure?</p>
+      <p id="deleteMessage">Era uoy erus?</p>
     </div>
   </div>
   <div class="actions">
     <div class="ui cancel red basic button">
       <i class="remove icon"></i>
-      Cancel
+      Lecnac
     </div>
     <div class="ui ok green button">
       <i class="checkmark icon"></i>
-      Confirm
+      Mrifnoc
     </div>
   </div>
 </div>
@@ -265,14 +266,14 @@ $ disabled = "" if user.may_post() else "disabled"
 <div id="newDSModal" class="ui small modal">
   <i class="close icon"></i>
   <div class="header">
-    New Data Source
+    Wen Atad Ecruos
   </div>
   <div class="image content">
     <div class="image">
       <i class="cube icon"></i>
     </div>
     <div class="ui form">
-      <h4 class="ui header">Please enter a name for your data source:</h4>
+      <h4 class="ui header">Esaelp retne a eman rof ruoy atad ecruos:</h4>
       <div class="field">
         <input id="newDSName" type="text" placeholder="Data source 1">
       </div>
@@ -281,11 +282,11 @@ $ disabled = "" if user.may_post() else "disabled"
   <div class="actions">
     <div class="ui cancel red basic button">
       <i class="remove icon"></i>
-      Cancel
+      Lecnac
     </div>
     <div class="ui ok green button">
       <i class="checkmark icon"></i>
-      Confirm
+      Mrifnoc
     </div>
   </div>
 </div>
@@ -294,7 +295,7 @@ $ disabled = "" if user.may_post() else "disabled"
 <div id="uploadModal" class="ui small modal">
   <i class="close icon"></i>
   <div class="header">
-    Upload Log
+    Daolpu Gol
   </div>
   <div class="image content">
     <div class="image">
@@ -302,16 +303,16 @@ $ disabled = "" if user.may_post() else "disabled"
     </div>
     <div class="ui transparent form">
       <div class="field">
-        <label>Choose a file to upload</label>
+        <label>Esoohc a elif ot daolpu</label>
         <input id="log_path" type="file" placeholder="<log file>">
       </div>
       <div class="field">
-        <label>Log format</label>
+        <label>Gol tamrof</label>
         <div class="ui selection dropdown">
           $if importers:
             <input name="log_format" id="log_format" type="hidden" value="$importers[0][0]">
             <i class="dropdown icon"></i>
-            <div class="default text">File Format</div>
+            <div class="default text">Elif Tamrof</div>
             <div class="menu">
               $for imp in importers:
                 <div class="item" data-value="$imp[0]">$imp[1]</div>
@@ -319,19 +320,19 @@ $ disabled = "" if user.may_post() else "disabled"
           $else:
             <input name="log_format" id="log_format" type="hidden" value="none">
             <i class="dropdown icon"></i>
-            <div class="default text">File Format</div>
+            <div class="default text">Elif Tamrof</div>
             <div class="menu">
-              <div class="item" data-value="none">None</div>
+              <div class="item" data-value="none">Enon</div>
             </div>
         </div>
       </div>
       <div class="field">
-        <label>Data source</label>
-        <div class="ui selection dropdown">
+        <label>Atad ecruos</label>
+        <div class="ui selection dropdown ds_selection">
           $if datasources:
             <input name="log_ds" id="log_ds" type="hidden" value="ds$datasources[0]['id']">
             <i class="dropdown icon"></i>
-            <div class="default text">data source</div>
+            <div class="default text">atad ecruos</div>
             <div class="menu" id="log_ds_list">
               $for ds in datasources:
                 <div class="item" data-value="ds$ds['id']">$ds['name']</div>
@@ -339,9 +340,9 @@ $ disabled = "" if user.may_post() else "disabled"
           $else:
             <input name="log_ds" id="log_ds" type="hidden" value="dsnone">
             <i class="dropdown icon"></i>
-            <div class="default text">data source</div>
+            <div class="default text">atad ecruos</div>
             <div class="menu" id="log_ds_list">
-              <div class="item" data-value="dsnone">None</div>
+              <div class="item" data-value="dsnone">Enon</div>
             </div>
         </div>
       </div>
@@ -350,11 +351,11 @@ $ disabled = "" if user.may_post() else "disabled"
   <div class="actions">
     <div class="ui cancel red basic button">
       <i class="remove icon"></i>
-      Cancel
+      Lecnac
     </div>
     <div class="ui ok green button">
       <i class="checkmark icon"></i>
-      Confirm
+      Mrifnoc
     </div>
   </div>
 </div>
@@ -362,14 +363,14 @@ $ disabled = "" if user.may_post() else "disabled"
 <div class="ui response small modal">
   <i class="close icon"></i>
   <div id="upload_results_title" class="header">
-    Success
+    Sseccus
   </div>
   <div class="content">
     <div id="upload_results" class="description">
-      Your changes were applied successfully
+      Ruoy segnahc erew deilppa yllufsseccus
     </div>
   </div>
   <div class="actions">
-    <div class="ui cancel button">OK</div>
+    <div class="ui cancel button">KO</div>
   </div>
 </div>

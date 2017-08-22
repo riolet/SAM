@@ -5,6 +5,7 @@ var g_typing_timer = null;
 var g_running_requests = [];
 var g_state = null;
 var g_data = {"quick": null, "inputs": null, "outputs": null, "ports": null, "children": null};
+var g_ds;
 
 /********************
    Helper functions
@@ -14,7 +15,6 @@ function normalizeIP(ipString) {
     var add_sub = ipString.split("/");
 
     var address = add_sub[0];
-    var subnet = add_sub[1];
 
     var segments = address.split(".");
     var num;
@@ -27,6 +27,13 @@ function normalizeIP(ipString) {
         return list;
     }, []);
 
+    let subnet;
+    if (add_sub.length == 2) {
+      subnet = Number(add_sub[1]);
+    } else {
+      subnet = segments.length * 8;
+    }
+    segments = segments.slice(0, subnet / 8);
     final_ip = segments.join(".");
 
     var zeroes_to_add = 4 - segments.length;
@@ -64,18 +71,13 @@ function minimizeIP(ip) {
     if (isNaN(subnet)) {
         subnet = Math.min(4, segs.length);
     }
-    var i;
-    var minimized_ip = segs[0];
-    for (i = 1; i < subnet; i += 1) {
-        minimized_ip += "." + segs[i];
-    }
+    let minimized_ip = segs.slice(0, subnet).join(".");
     return minimized_ip;
 }
 
 function dsCallback(value) {
-  "user strict";
+  "use strict";
   g_ds = value;
-
   writeHash();
 }
 
@@ -84,7 +86,7 @@ function writeHash() {
   // grab the ip
   let searchbar = document.getElementById("hostSearch");
   let ip_input = searchbar.getElementsByTagName("input")[0];
-  let ip = ip_input.value
+  let ip = ip_input.value;
 
   // grab the ds
   let ds = $(".dropdown.button").dropdown('get value');
@@ -118,7 +120,6 @@ function readHash() {
       ip_input.value = part.slice(3);
     }
   });
-
   // reload data
   dispatcher({
     type: "input",
@@ -134,21 +135,21 @@ function buildKeyValueRow(key, value) {
     "use strict";
     var tr = document.createElement("TR");
     var td = document.createElement("TD");
-    td.appendChild(document.createTextNode(key));
+    td.innerText = key;
     tr.appendChild(td);
     if (typeof(value) === "undefined") {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode("undefined"));
+        td.innerText = "undefined";
         tr.appendChild(td);
     } else if (value === null) {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode("null"));
+        td.innerText = "null";
         tr.appendChild(td);
     } else if (typeof(value) === "object") {
         tr.appendChild(value);
     } else {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(value));
+        td.innerText = value;
         tr.appendChild(td);
     }
     return tr;
@@ -159,13 +160,13 @@ function buildKeyMultiValueRows(key, values) {
     var rows = [];
     var tr = document.createElement("TR");
     var td = document.createElement("TD");
-    td.appendChild(document.createTextNode(key));
+    td.innerText = key;
     tr.appendChild(td);
     td.rowSpan = values.length;
 
     values.forEach(function (e) {
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(e));
+        td.innerText = e;
         tr.appendChild(td);
         rows.push(tr);
         tr = document.createElement("TR");
@@ -182,7 +183,7 @@ function build_link(address, subnet) {
 
     var a = document.createElement("A");
     a.appendChild(icon);
-    a.appendChild(document.createTextNode(text));
+    a.innerText = text;
     a.href = link;
     return a;
 }
@@ -191,18 +192,35 @@ function build_role_text(ratio) {
     "use strict";
     var role_text = parseFloat(ratio).toFixed(2) + " (";
     if (ratio <= 0) {
-        role_text += "client";
+        role_text += strings.meta_role_cc;
     } else if (ratio < 0.35) {
-        role_text += "mostly client";
+        role_text += strings.meta_role_c;
     } else if (ratio < 0.65) {
-        role_text += "mixed client/server";
+        role_text += strings.meta_role_cs;
     } else if (ratio < 1) {
-        role_text += "mostly server";
+        role_text += strings.meta_role_s;
     } else {
-        role_text += "server";
+        role_text += strings.meta_role_ss;
     }
     role_text += ")";
     return role_text;
+}
+
+function build_label_packetrate(packets) {
+  "use strict";
+  if (packets < 1000) {
+    return packets.toFixed(2) + " " + strings.meta_pps;
+  }
+  packets /= 1000;
+  if (packets < 1000) {
+    return packets.toFixed(2) + " " + strings.meta_kpps;
+  }
+  packets /= 1000;
+  if (packets < 1000) {
+    return packets.toFixed(2) + " " + strings.meta_mpps;
+  }
+  packets /= 1000;
+  return packets.toFixed(2) + " " + strings.meta_gpps;
 }
 
 function build_table_children(dataset) {
@@ -217,13 +235,13 @@ function build_table_children(dataset) {
         td.appendChild(build_link(row.address, row.subnet));
         tr.appendChild(td);
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(row.hostname));
+        td.innerText = row.hostname;
         tr.appendChild(td);
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(row.endpoints));
+        td.innerText = row.endpoints;
         tr.appendChild(td);
         td = document.createElement("TD");
-        td.appendChild(document.createTextNode(build_role_text(row.ratio)));
+        td.innerText = build_role_text(row.ratio);
         tr.appendChild(td);
         tbody.appendChild(tr);
     });
@@ -246,7 +264,7 @@ function build_pagination(page, page_size, component, total) {
 
     // PREV button
     button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode("prev"));
+    button.innerText = strings.paginate_prev;
     if (has_prev) {
         button.className = "ui button";
         button.onclick = function () {
@@ -261,15 +279,15 @@ function build_pagination(page, page_size, component, total) {
     // descriptive text
     span = document.createElement("SPAN");
     if (total > 0) {
-        span.appendChild(document.createTextNode("Showing " + page_first + "-" + page_last + " of " + total));
+        span.innerText = strings.meta_window1 + page_first + "-" + page_last + strings.meta_window2 + total;
     } else {
-        span.appendChild(document.createTextNode("No records to show"));
+        span.innerText = strings.meta_window_empty;
     }
     div.appendChild(span);
 
     // NEXT button
     button = document.createElement("BUTTON");
-    button.appendChild(document.createTextNode("next"));
+    button.innerText = strings.paginate_next;
     if (has_next) {
         button.className = "ui button";
         button.onclick = function () {
@@ -290,25 +308,8 @@ function build_label(text, color, disabled) {
     if (disabled) {
         label.classList.add("disabled");
     }
-    label.appendChild(document.createTextNode(text));
+    label.innerText = text;
     return label;
-}
-
-function build_label_packetrate(packets) {
-  "use strict";
-  if (packets < 1000) {
-    return packets.toFixed(2) + " p/s";
-  }
-  packets /= 1000;
-  if (packets < 1000) {
-    return packets.toFixed(2) + " Kp/s";
-  }
-  packets /= 1000;
-  if (packets < 1000) {
-    return packets.toFixed(2) + " Mp/s";
-  }
-  packets /= 1000;
-  return packets.toFixed(2) + " Gp/s";
 }
 
 function present_quick_info(info) {
@@ -323,7 +324,7 @@ function present_quick_info(info) {
     var tag_div;
     clear_quick_info();
     if (info.hasOwnProperty("address")) {
-        target.appendChild(buildKeyValueRow("IPv4 address / subnet:", info.address));
+        target.appendChild(buildKeyValueRow(strings.meta_address, info.address));
     }
     if (info.hasOwnProperty("error")) {
         target.appendChild(buildKeyValueRow(info.error, "..."));
@@ -338,6 +339,7 @@ function present_quick_info(info) {
             input.dataset.content = info.name;
             input.onblur = hostname_edit_callback;
             input.onkeyup = hostname_edit_callback;
+            input.id = "edit_name"
             i = document.createElement("I");
             i.className = "write icon";
             div = document.createElement("DIV");
@@ -369,6 +371,7 @@ function present_quick_info(info) {
             div.className = "ui multiple search selection dropdown";
             input = document.createElement("INPUT");
             input.name = "tags";
+            input.id = "edit_tags";
             input.value = info.tags.tags.join(",");
             input.type = "hidden";
             div.appendChild(input);
@@ -377,7 +380,7 @@ function present_quick_info(info) {
             div.appendChild(i);
             key = document.createElement("DIV");
             key.className = "default text";
-            key.appendChild(document.createTextNode("tags"));
+            key.innerText = "tags";
             div.appendChild(key);
             values = document.createElement("DIV");
             values.className = "menu";
@@ -385,7 +388,7 @@ function present_quick_info(info) {
                 key = document.createElement("DIV");
                 key.className = "item";
                 key.dataset.value = tag;
-                key.appendChild(document.createTextNode(tag));
+                key.innerText = tag;
                 values.appendChild(key);
             });
             div.appendChild(values);
@@ -393,10 +396,12 @@ function present_quick_info(info) {
 
             //display a span of inherited tags inline
             info.tags.p_tags.forEach(function (tag) {
-                tag_div.appendChild(build_label(tag, "teal", true));
+                let parent_tag = build_label(tag, "teal", true)
+                parent_tag.classList.add("parenttag")
+                tag_div.appendChild(parent_tag);
             });
             //attach the row to the table
-            target.appendChild(buildKeyValueRow("Tags:", tag_div));
+            target.appendChild(buildKeyValueRow(strings.meta_tags, tag_div));
 
             //Activate the selector
             $(div).dropdown({
@@ -411,6 +416,7 @@ function present_quick_info(info) {
             div.className = "ui search selection dropdown";
             input = document.createElement("INPUT");
             input.name = "env";
+            input.id = "edit_env";
             input.value = info.envs.env;
             input.type = "hidden";
             div.appendChild(input);
@@ -419,25 +425,25 @@ function present_quick_info(info) {
             div.appendChild(i);
             key = document.createElement("DIV");
             key.className = "default text";
-            key.appendChild(document.createTextNode("environment"));
+            key.innerText = "environment";
             div.appendChild(key);
             values = document.createElement("DIV");
             values.className = "menu";
-            g_known_envs.forEach(function (tag) {
+            g_known_envs.forEach(function (env) {
                 key = document.createElement("DIV");
                 key.className = "item";
-                key.dataset.value = tag;
-                if (tag === "inherit") {
-                    key.appendChild(document.createTextNode(tag + " (" + info.envs.p_env + ")"));
+                key.dataset.value = env;
+                if (env === "inherit") {
+                    key.innerText = env + " (" + info.envs.p_env + ")";
                 } else {
-                    key.appendChild(document.createTextNode(tag));
+                    key.innerText = env;
                 }
                 values.appendChild(key);
             });
             div.appendChild(values);
             tag_div.appendChild(div);
 
-            target.appendChild(buildKeyValueRow("Environment:", tag_div));
+            target.appendChild(buildKeyValueRow(strings.meta_env, tag_div));
 
             //Activate the selector
             $(div).dropdown({
@@ -446,20 +452,20 @@ function present_quick_info(info) {
             });
         }
         if (info.hasOwnProperty("role")) {
-            target.appendChild(buildKeyValueRow("Role (0 = client, 1 = server):", build_role_text(info.role)));
+            target.appendChild(buildKeyValueRow(strings.meta_role, build_role_text(info.role)));
         }
         if (info.hasOwnProperty("protocols")) {
-            target.appendChild(buildKeyValueRow("Protocols used:", info.protocols));
+            target.appendChild(buildKeyValueRow(strings.meta_protocols, info.protocols));
         }
         if (info.hasOwnProperty("ports")) {
-            target.appendChild(buildKeyValueRow("Local ports accessed:", info.ports));
+            target.appendChild(buildKeyValueRow(strings.meta_ports, info.ports));
         }
         if (info.hasOwnProperty("endpoints")) {
             var possible = Math.pow(2, 32 - getIP_Subnet().subnet);
-            target.appendChild(buildKeyValueRow("Endpoints represented:", info.endpoints + " (of " + possible + " possible)"));
+            target.appendChild(buildKeyValueRow(strings.meta_endpoints, info.endpoints + " (of " + possible + " possible)"));
         }
         if (info.hasOwnProperty("bps")) {
-            target.appendChild(buildKeyValueRow("Average Total bps (approx):", build_label_datarate(info.bps)));
+            target.appendChild(buildKeyValueRow(strings.meta_bps, build_label_datarate(info.bps)));
         }
 
         // in/out data is placed seperately
@@ -474,22 +480,22 @@ function present_quick_info(info) {
             //Add Header
             td = document.createElement("H3");
             td.className = "ui centered header";
-            td.appendChild(document.createTextNode("Inbound Connections"));
+            td.innerText = strings.meta_inbound;
             segment.appendChild(td);
             //Add datapoints
             table = document.createElement("TABLE");
             table.className = "ui celled striped structured definition table";
-            table.appendChild(buildKeyValueRow("Unique source IPs:", info.in.u_ip));
-            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port):", info.in.u_conn));
-            table.appendChild(buildKeyValueRow("Total Connections recorded:", info.in.total + " over " + build_label_duration(info.in.seconds)));
-            table.appendChild(buildKeyValueRow("Connections per second:", parseFloat(info.in.total / info.in.seconds).toFixed(3)));
-            table.appendChild(buildKeyValueRow("Bytes Sent:", build_label_bytes(info.in.bytes_sent)));
-            table.appendChild(buildKeyValueRow("Bytes Received:", build_label_bytes(info.in.bytes_received)));
-            table.appendChild(buildKeyValueRow("Avg Connection bps:", build_label_datarate(info.in.avg_bps)));
-            table.appendChild(buildKeyValueRow("Max Connection bps:", build_label_datarate(info.in.max_bps)));
-            table.appendChild(buildKeyValueRow("Packets Send Rate:", build_label_packetrate(info.in.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow("Packets Receive Rate:", build_label_packetrate(info.in.packets_received / avg_denom)));
-            table.appendChild(buildKeyValueRow("Avg Connection Duration:", build_label_duration(info.in.duration)));
+            table.appendChild(buildKeyValueRow(strings.meta_sips, info.in.u_ip));
+            table.appendChild(buildKeyValueRow(strings.meta_uconns, info.in.u_conn));
+            table.appendChild(buildKeyValueRow(strings.meta_conns, info.in.total + strings.meta_conns2 + build_label_duration(info.in.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_connps, parseFloat(info.in.total / info.in.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.in.bytes_sent)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.in.bytes_received)));
+            table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.in.avg_bps)));
+            table.appendChild(buildKeyValueRow(strings.meta_max_bps, build_label_datarate(info.in.max_bps)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_snt, build_label_packetrate(info.in.packets_sent / avg_denom)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_rcv, build_label_packetrate(info.in.packets_received / avg_denom)));
+            table.appendChild(buildKeyValueRow(strings.meta_avg_duration, build_label_duration(info.in.duration)));
             segment.appendChild(table);
         }
         if (info.hasOwnProperty("out")) {
@@ -500,22 +506,22 @@ function present_quick_info(info) {
             //Add Header
             td = document.createElement("H3");
             td.className = "ui centered header";
-            td.appendChild(document.createTextNode("Outbound Connections"));
+            td.innerText = strings.meta_outbound;
             segment.appendChild(td);
             //Add datapoints
             table = document.createElement("TABLE");
             table.className = "ui celled striped structured definition table";
-            table.appendChild(buildKeyValueRow("Unique destination IPs:", info.out.u_ip));
-            table.appendChild(buildKeyValueRow("Unique connections (src, dest, port):", info.out.u_conn));
-            table.appendChild(buildKeyValueRow("Total Connections recorded:", info.out.total + " over " + build_label_duration(info.out.seconds)));
-            table.appendChild(buildKeyValueRow("Connections per second:", parseFloat(info.out.total / info.out.seconds).toFixed(3)));
-            table.appendChild(buildKeyValueRow("Bytes Sent:", build_label_bytes(info.out.bytes_sent)));
-            table.appendChild(buildKeyValueRow("Bytes Received:", build_label_bytes(info.out.bytes_received)));
-            table.appendChild(buildKeyValueRow("Avg Connection Bps:", build_label_datarate(info.out.avg_bps)));
-            table.appendChild(buildKeyValueRow("Max Connection Bps:", build_label_datarate(info.out.max_bps)));
-            table.appendChild(buildKeyValueRow("Packet Send Rate:", build_label_packetrate(info.out.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow("Packet Receive Rate:", build_label_packetrate(info.out.packets_received / avg_denom)))
-            table.appendChild(buildKeyValueRow("Avg Connection Duration:", build_label_duration(info.out.duration)));
+            table.appendChild(buildKeyValueRow(strings.meta_dips, info.out.u_ip));
+            table.appendChild(buildKeyValueRow(strings.meta_uconns, info.out.u_conn));
+            table.appendChild(buildKeyValueRow(strings.meta_conns, info.out.total + strings.meta_conns2 + build_label_duration(info.out.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_connps, parseFloat(info.out.total / info.out.seconds).toFixed(3)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.out.bytes_sent)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.out.bytes_received)));
+            table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.out.avg_bps)));
+            table.appendChild(buildKeyValueRow(strings.meta_max_bps, build_label_datarate(info.out.max_bps)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_snt, build_label_packetrate(info.out.packets_sent / avg_denom)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_rcv, build_label_packetrate(info.out.packets_received / avg_denom)))
+            table.appendChild(buildKeyValueRow(strings.meta_avg_duration, build_label_duration(info.out.duration)));
             segment.appendChild(table);
         }
     }
@@ -661,7 +667,7 @@ function clear_quick_info() {
     segment.innerHTML = "";
     h3 = document.createElement("H3");
     h3.className = "ui centered header";
-    h3.appendChild(document.createTextNode("Inbound Connections"));
+    h3.innerText = strings.meta_inbound;
     segment.appendChild(h3);
 
     //clear outputs
@@ -669,7 +675,7 @@ function clear_quick_info() {
     segment.innerHTML = "";
     h3 = document.createElement("H3");
     h3.className = "ui centered header";
-    h3.appendChild(document.createTextNode("Outbound Connections"));
+    h3.innerText = strings.meta_outbound;
     segment.appendChild(h3);
 }
 
@@ -735,6 +741,7 @@ function hostname_edit_callback(event) {
 }
 
 function tag_change_callback(new_tags) {
+    "use strict";
     var ip = getIP_Subnet().normal;
     var request = {"node": ip, "tags": new_tags};
     $.ajax({
@@ -751,6 +758,7 @@ function tag_change_callback(new_tags) {
 }
 
 function env_change_callback(new_env) {
+    "use strict";
     var ip = getIP_Subnet().normal;
     if (new_env === "") {
         new_env = "inherit";
@@ -850,15 +858,20 @@ function StateChangeEvent(newState) {
 }
 
 function dispatcher(event) {
-    "use strict";
-    if (event.type === "stateChange") {
-        g_state = event.newState;
-    }
-    if (g_state === null) {
-        console.error("g_state is null");
-    } else {
-        g_state(event);
-    }
+  "use strict";
+  let success = false;
+  //change the state if needed
+  if (event.type === "stateChange") {
+    g_state = event.newState;
+  }
+  //then fire this event to the current state (if possible)
+  if (typeof(g_state) === "function") {
+    g_state(event);
+    success = true;
+  } else {
+    console.error("g_state is invalid");
+  }
+  return success;
 }
 
 function restartTypingTimer(event) {
@@ -877,7 +890,7 @@ function restartTypingTimer(event) {
             console.log("Proceeding to Request Quick Info");
 
             //Show that loading new info
-            present_quick_info({"message": "Loading"});
+            present_quick_info({"message": strings.loading});
             clear_detailed_info()
             dispatcher(new StateChangeEvent(requestQuickInfo));
         }, 700);
@@ -970,7 +983,7 @@ function requestQuickInfo(event) {
         var input = searchbar.getElementsByTagName("input")[0];
         console.log("Requesting Quick Info");
         searchbar.classList.add("loading");
-        present_quick_info({"message": "Loading"});
+        present_quick_info({"message": strings.loading});
         var normalizedIP = normalizeIP(input.value);
 
         GET_data(normalizedIP, "quick_info", "", function (response) {
@@ -980,7 +993,7 @@ function requestQuickInfo(event) {
             if (!response.quick_info) {
               console.error("Error requesting quick info:");
               console.log(response);
-              present_quick_info({"message": "Waiting"});
+              present_quick_info({"message": strings.meta_waiting});
               return;
             }
             // Render into browser
@@ -1002,7 +1015,7 @@ function requestQuickInfo(event) {
         abortRequests(g_running_requests);
         searchbar.classList.remove("loading");
         //Clear quickinfo
-        present_quick_info({"message": "Waiting"});
+        present_quick_info({"message": strings.meta_waiting});
         //Continue to typing timer
         dispatcher(new StateChangeEvent(restartTypingTimer));
         dispatcher(event);

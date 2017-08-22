@@ -31,7 +31,7 @@ It extracts IP addresses and ports and discards other data. Only TCP traffic dat
 Optionally, include the name of the datasource to import in to. Default uses currently selected data source.
 
 Usage:
-    python {0} <input-file> <data source>
+    python {0} <input-file> <data-source>
 
 """.format(sys.argv[0])
         self.dsModel = None
@@ -70,6 +70,8 @@ Usage:
             print(self.instructions)
             return
 
+        self.set_subscription(1)
+
         if self.validate_file(argv[1]):
             self.import_file(argv[1])
         else:
@@ -77,7 +79,7 @@ Usage:
             return
 
     def determine_datasource(self, argv):
-        if len(argv) >= 3 and len(argv[2]) > 1:
+        if len(argv) >= 3 and len(argv[2]) >= 1:
             requested_ds = argv[2]
         else:
             raise ValueError("Cannot determine datasource. Argv is {0}".format(repr(argv)))
@@ -188,8 +190,8 @@ Usage:
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
         return lines_inserted
 
-    def set_subscription(self, sub):
-        self.subscription = sub
+    def set_subscription(self, sub_id):
+        self.subscription = sub_id
 
     def set_datasource_id(self, ds_id):
         """
@@ -250,8 +252,9 @@ Usage:
         try:
             self.dsModel = Datasources(common.db_quiet, {}, self.subscription)
             datasources = self.dsModel.datasources.values()
-        except:
-            traceback.print_exc()
+        except Exception as e:
+            # traceback.print_exc()
+            print(e)
             import sam.integrity
             sam.integrity.check_and_fix_integrity()
 
@@ -284,7 +287,7 @@ Usage:
             self.failed_attempts += 1
             print("Error inserting into database:")
             print("\t{0}".format(e))
-            import integrity
+            from sam import integrity
             if self.failed_attempts < 2:
                 if integrity.check_and_fix_integrity() == 0:
                     print("Resuming...")
