@@ -85,7 +85,7 @@ def xtest_ruling_process():
 def test_evaluate_immediate_rule():
     rule1 = rule.Rule(1, True, 'test_rule1', 'test_rule1_desc', 'compromised.yml')
     rule2 = rule.Rule(2, True, 'test_rule2', 'test_rule2_desc', 'suspicious.yml')
-    rule2.set_params({}, {
+    rule2.set_exposed_params({
         'source_ip': '10.24.36.47',
         'dest_ip': '50.64.76.87',
         'port': 96
@@ -108,11 +108,11 @@ def test_evaluate_immediate_rule():
 
 def test_evaluate_periodic_rule():
     rule1 = rule.Rule(1, True, 'test_rule1', 'test_rule1_desc', 'dos.yml')
-    rule1.set_params({}, {'threshold': '1'})
+    rule1.set_exposed_params({'threshold': '1'})
     rule2 = rule.Rule(2, True, 'test_rule2', 'test_rule2_desc', 'netscan.yml')
-    rule2.set_params({}, {'threshold': '4'})
+    rule2.set_exposed_params({'threshold': '4'})
     rule3 = rule.Rule(3, True, 'test_rule3', 'test_rule3_desc', 'portscan.yml')
-    rule3.set_params({}, {'threshold': '1'})
+    rule3.set_exposed_params({'threshold': '1'})
 
     job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule1, rule2, rule3])
     processor = rp.RulesProcessor(db)

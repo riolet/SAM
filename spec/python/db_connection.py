@@ -16,6 +16,7 @@ TEST_DATABASE_MYSQL = 'samapper_test'
 TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
 
+
 class Mocker(object):
     def __init__(self, *args, **kwargs):
         self.constructor = (args, kwargs)
@@ -514,7 +515,8 @@ def setup_node_extras(sub_id):
     for command in commands:
         print command
 
-
+# for testing custom security rules.
+sam.constants.security['rule_folder'] = os.path.join(os.path.dirname(__file__), 'rule_templates')
 # immediately run, to ensure the test db is present.
 print("GET TEST DB")
 db = get_test_db_connection()

@@ -19,6 +19,13 @@ class Rules():
         self.table = Rules.TABLE_FORMAT.format(self.sub)
         self.rules = []
 
+    def clear(self):
+        return self.db.delete(self.table, where="1")
+
+    def count(self):
+        rows = self.db.select(self.table, what="COUNT(0) AS 'count'")
+        return rows.first()['count']
+
     def decode_row(self, row):
         if 'active' in row:
             row['active'] = row['active'] == 1
@@ -27,11 +34,12 @@ class Rules():
         return row
 
     def row_to_rule(self, row):
-        rule_obj = rule.Rule(row.id, row.active, row.name, row.description, row.rule_path)
+        rule_obj = rule.Rule(row['id'], row['active'], row['name'], row['description'], row['rule_path'])
         params = row.get('params', {})
-        exposed_params = params.get('exposed', {})
         action_params = params.get('actions', {})
-        rule_obj.set_params(action_params, exposed_params)
+        exposed_params = params.get('exposed', {})
+        rule_obj.set_action_params(action_params)
+        rule_obj.set_exposed_params(exposed_params)
         return rule_obj
 
     def add_rule(self, path, name, description, params):
@@ -39,13 +47,13 @@ class Rules():
         if valid_path is None:
             print("Rule definition path cannot be verified. Saving anyway.")
 
-        name = name.strip()
         if not isinstance(name, (str, unicode)) or len(name) == 0:
             raise ValueError("Name cannot be empty.")
+        name = name.strip()
 
-        description = description.strip()
         if not isinstance(description, (str, unicode)):
             raise ValueError("Description must be a string.")
+        description = description.strip()
 
         self.db.insert(self.table, active=True, rule_path=path,
                        name=name, description=description,
@@ -98,7 +106,9 @@ class Rules():
             actions = edits.pop('actions', {})
             exposed = edits.pop('exposed', {})
             old_rule = self.get_rule(rule_id)
-            old_rule.set_params(actions, exposed)
+            old_rule.set_action_params(actions)
+            old_rule.set_exposed_params(exposed)
             params = old_rule.export_params()
             edits['params'] = cPickle.dumps(params)
+        q = self.db.update(self.table, where='id=$rid', vars=qvars, _test=True, **edits)
         self.db.update(self.table, where='id=$rid', vars=qvars, **edits)

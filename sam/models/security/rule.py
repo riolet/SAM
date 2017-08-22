@@ -9,6 +9,21 @@ class Rule(object):
                    'sms_active', 'sms_number', 'sms_message']
 
     def __init__(self, rule_id, active, name, description, path):
+        """
+
+        :param rule_id: ID to match this rule to a database entry
+        :param active: True or False. Is this rule in effect?
+        :param name: Short Name of this rule
+        :param description: Long Description of this rule
+        :param path: Path to the rule template file.
+            Path may have a prefix of "custom: " or "plugin: "
+            Path is either in default rule folder:
+                "compromised.yml", "dos.yml"
+            Or in custom rule folder:  (defined in constants.security['rule_folder']
+                "custom: test_rule.yml"
+            Or in a plugin-defined folder:  (list of folders is constants.plugin_rules)
+                "plugin: my-plugin-rule.yml"
+        """
         self.id = rule_id
         self.active = active
         self.name = name
@@ -23,6 +38,8 @@ class Rule(object):
     def nice_path(self, path):
         nice_name = path
         if nice_name[:7] == 'plugin:':
+            nice_name = nice_name[7:].lstrip()
+        if nice_name[:7] == 'custom:':
             nice_name = nice_name[7:].lstrip()
         if nice_name[-4:].lower() == '.yml':
             nice_name = nice_name[:-4]

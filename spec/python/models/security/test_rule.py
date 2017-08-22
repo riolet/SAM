@@ -84,6 +84,7 @@ def test_nice_path():
     assert r.nice_path('compromised.yml') == 'compromised'
     assert r.nice_path('compromised.yml.yml') == 'compromised.yml'
     assert r.nice_path('plugin: slatch.yml') == 'slatch'
+    assert r.nice_path('custom: yodello') == 'yodello'
 
 
 def test_get_type():
