@@ -308,3 +308,12 @@ class Rule(object):
 
     def __repr__(self):
         return str(self)
+
+    def __eq__(self, other):
+        if isinstance(other, Rule):
+            return self.id == other.id
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

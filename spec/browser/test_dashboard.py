@@ -31,7 +31,12 @@ Pagination
     buttons will be disabled unless appropriate.
 
 [Anomaly Detection]
+    show section greyed out
+    present link to more information
+
 [Rules]
+    default rules exist
+
 
 """
 import time

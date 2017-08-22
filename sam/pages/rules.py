@@ -114,6 +114,8 @@ class RulesEdit(base.HeadlessPost):
     def perform_get_command(self, request):
         r_model = rules.Rules(common.db, self.page.user.viewing)
         rule_data = r_model.get_rule(request['id'])
+        if rule_data is None:
+            raise errors.MalformedRequest("Invalid rule id")
         return rule_data
 
     def encode_get_response(self, response):
