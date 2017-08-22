@@ -16,11 +16,13 @@ TEST_DATABASE_MYSQL = 'samapper_test'
 TEST_DATABASE_SQLITE = '/tmp/sam_test.db'
 
 
+
 class Mocker(object):
     def __init__(self, *args, **kwargs):
         self.constructor = (args, kwargs)
         self.kvs = {}
         self.calls = []
+        self._retval = None
 
     def __getitem__(self, k):
         self.kvs.__getitem__(k)
@@ -33,7 +35,13 @@ class Mocker(object):
 
         def receiver(*args, **kwargs):
             q.append((name, args, kwargs))
+            return self._retval
         return receiver
+
+    def __call__(self, *args, **kwargs):
+        q = self.calls
+        q.append(('self', args, kwargs))
+        return self._retval
 
     def clear(self):
         self.calls = []
@@ -51,12 +59,13 @@ class Session(dict):
 
 
 class env(object):
-    def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False):
+    def __init__(self, mock_input=False, login_active=None, mock_session=False, mock_render=False, lang='en'):
         self.input_real = web.input
         self.active_old = sam.constants.access_control['active']
         self.session = sam.common.session
         self.renderer = sam.common.renderer
 
+        self.lang = lang
         self.mock_input = mock_input
         self.mock_login = login_active
         self.mock_render = mock_render
@@ -71,6 +80,10 @@ class env(object):
             sam.constants.access_control['active'] = False
         if self.mock_session:
             sam.common.session = Session()
+            sam.common.session['lang'] = self.lang
+        else:
+            if isinstance(sam.common.session, dict):
+                sam.common.session['lang'] = self.lang
         if self.mock_render:
             sam.common.renderer = Mocker()
 
@@ -149,27 +162,27 @@ def setup_network(db, sub_id, ds_id):
     processor = sam.preprocess.Preprocessor(db, sub_id, ds_id, security_rules=False)
 
     # used to generate network data for testing
-    #def rand_time():
+    # def rand_time():
     #    d_start = datetime(2017, 3, 21, 6, 13, 05)
     #    d_end = datetime(2017, 3, 24, 13, 30, 54)
     #    delta = (d_end - d_start).total_seconds()
     #    offset = random.randint(0, delta)
     #    d_rand = d_start + timedelta(seconds=offset)
     #    return d_rand
-    #t = common.IPStringtoInt
-    #IPS = ['10.20.30.40','10.20.30.41','10.20.32.42','10.20.32.43','10.24.34.44','10.24.34.45',
+    # t = common.IPStringtoInt
+    # IPS = ['10.20.30.40','10.20.30.41','10.20.32.42','10.20.32.43','10.24.34.44','10.24.34.45',
     #       '10.24.36.46','10.24.36.47','50.60.70.80','50.60.70.81','50.60.72.82','50.60.72.83',
     #       '50.64.74.84','50.64.74.85','50.64.76.86','50.64.76.87','59.69.79.89']
-    #ports = [136, 511]
-    #protocols = ['UDP', 'TCP']
-    #bytes_outs = [200, 500, 1000]
-    #bytes_ins = [50, 100, 500]
-    #packets_outs = [1, 4]
-    #packets_ins = [1, 4]
-    #durations = [3, 60]
+    # ports = [136, 511]
+    # protocols = ['UDP', 'TCP']
+    # bytes_outs = [200, 500, 1000]
+    # bytes_ins = [50, 100, 500]
+    # packets_outs = [1, 4]
+    # packets_ins = [1, 4]
+    # durations = [3, 60]
     #
-    #log_lines = []
-    #for port in ports:
+    # log_lines = []
+    # for port in ports:
     #    for protocol in protocols:
     #        for b_o in bytes_outs:
     #            for b_i in bytes_ins:
@@ -509,7 +522,8 @@ def setup_node_extras(sub_id):
     for command in commands:
         print command
 
-
+# for testing custom security rules.
+sam.constants.security['rule_folder'] = os.path.join(os.path.dirname(__file__), 'rule_templates')
 # immediately run, to ensure the test db is present.
 print("GET TEST DB")
 db = get_test_db_connection()

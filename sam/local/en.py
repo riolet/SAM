@@ -73,12 +73,12 @@ meta_child_ip = "Address"
 meta_child_name = "Name"
 meta_child_count = "Active Endpoints"
 meta_child_ratio = "Role (0=client, 1=server)"
-
-
-
-
-
-
+login_LDAP_missing = "LDAP module not installed. Cannot perform login."
+login_LDAP_error = "Could not connect to LDAP server: {}. Check configuration."
+login_blank_pass = "Password may not be blank."
+login_blank_user = "User may not be blank."
+login_invalid = "Invalid credentials."
+login_failed = "Login failed."
 
 
 

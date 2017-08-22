@@ -1,3 +1,4 @@
+# coding=utf-8
 from spec.python import db_connection
 import sam.pages.base
 import web
@@ -23,56 +24,42 @@ def test_page():
             assert p.require_all_groups({'read', 'write', 'arithemetic'})
 
 
-def test_decode_http_csv():
-    s = "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
-    expected = {'fr-CH': 1.0, 'fr': 0.9, 'en': 0.8, 'de': 0.7, '*': 0.5}
-    assert sam.pages.base.Page.decode_http_csv(s) == expected
-
-    s = "en-US, en;q=0.5"
-    expected = {'en-US': 1.0, 'en': 0.5}
-    assert sam.pages.base.Page.decode_http_csv(s) == expected
-
-    s = "es"
-    expected = {'es': 1.0}
-    assert sam.pages.base.Page.decode_http_csv(s) == expected
-
-    s = ""
-    expected = dict()
-    assert sam.pages.base.Page.decode_http_csv(s) == expected
-
-
-
 def test_headed():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True, mock_render=True):
-        p = sam.pages.base.Headed('TestTitle', True, True)
+        p = sam.pages.base.Headed(True, True)
+        p.set_title('TestTitle')
         p.styles = ['1', '2']
         p.scripts = ['3', '4']
         web.ctx.path = "/sam/testpage"
+        web.ctx.env = {'PATH_INFO': '/sam/testpage', 'QUERY_STRING': ''}
         p.render('testPage', 'arg1', 'arg2', start=12, end=15)
         calls = common.renderer.calls
-        assert calls[0] == ('render', ('_head', 'TestTitle'), {'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
-        assert calls[1] == ('render', ('_header', constants.navbar, 'TestTitle', p.page.user, constants.debug, "/sam/testpage", constants.access_control), {})
-        assert calls[2] == ('render', ('testPage', 'arg1', 'arg2'), {'start': 12, 'end': 15})
-        assert calls[3] == ('render', ('_footer', ), {})
+        assert calls[0] == ('render', ('_head', 'TestTitle'), {'lang': 'en', 'stylesheets': ['1', '2'], 'scripts': ['3', '4']})
+        assert calls[1] == ('render', ('en/_header', constants.get_navbar('en'), 'TestTitle', p.page.user, constants.debug, "/sam/testpage", constants.access_control, ('version française', '/fr/sam/testpage')), {})
+        assert calls[2] == ('render', ('en/testPage', 'arg1', 'arg2'), {'start': 12, 'end': 15})
+        assert calls[3] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Française': '/fr/sam/testpage'}), {})
         assert calls[4] == ('render', ('_tail', ), {})
 
         common.renderer.clear()
-        p = sam.pages.base.Headed('TestTitle', True, False)
+        p = sam.pages.base.Headed(True, False)
+        p.set_title('TestTitle')
         p.render('testPage')
         calls = [x[1][0] for x in common.renderer.calls]
-        assert calls == ['_head', '_header', 'testPage', '_tail']
+        assert calls == ['_head', 'en/_header', 'en/testPage', '_tail']
 
         common.renderer.clear()
-        p = sam.pages.base.Headed('TestTitle', False, False)
+        p = sam.pages.base.Headed(False, False)
+        p.set_title('TestTitle')
         p.render('testPage')
         calls = [x[1][0] for x in common.renderer.calls]
-        assert calls == ['_head', 'testPage', '_tail']
+        assert calls == ['_head', 'en/testPage', '_tail']
 
         common.renderer.clear()
-        p = sam.pages.base.Headed('TestTitle', False, True)
+        p = sam.pages.base.Headed(False, True)
+        p.set_title('TestTitle')
         p.render('testPage')
         calls = [x[1][0] for x in common.renderer.calls]
-        assert calls == ['_head', 'testPage', '_footer', '_tail']
+        assert calls == ['_head', 'en/testPage', 'en/_footer', '_tail']
 
 
 def test_headless():

@@ -26,7 +26,7 @@ def role_text(strings, ratio):
 
 def bytes_text(strings, bytes):
     if bytes < 10000:
-        return u"{} {}".format(int(bytes), strings.units_tbytes)
+        return u"{} {}".format(int(bytes), strings.units_bytes)
     bytes /= 1024
     if bytes < 10000:
         return u"{} {}".format(int(bytes), strings.units_kbytes)

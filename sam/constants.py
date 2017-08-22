@@ -6,7 +6,7 @@ from sam.ConfigEnvy import ConfigEnvy
 logger = logging.getLogger(__name__)
 
 supported_languages = ['en', 'fr', 'rv']
-default_lang = ['en']
+default_lang = 'en'
 
 shared_tables = ['Settings', 'Ports', 'Datasources', 'LiveKeys', 'Subscriptions']
 subscription_tables = ['Nodes', 'Tags', 'PortAliases', 'Alerts', 'Rules', 'ADWarnings']
@@ -117,6 +117,15 @@ default_urls = [
     '/ad_plugin', 'sam.pages.anomaly_plugin.ADPlugin',
 ]
 urls = []
+
+
+def init_urls():
+    global urls
+    urls = []
+    urls.extend(plugin_urls)
+    urls.extend([access_control['login_url'], access_control['login_target']])
+    urls.extend([access_control['logout_url'], access_control['logout_target']])
+    urls.extend(default_urls)
 
 
 def find_url(target):

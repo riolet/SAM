@@ -44,7 +44,7 @@ def add_test_data(model):
     model.add_alert(low, high, 3, None, "P2P Sharing / UDP Port Scanning", 'udp scan', {'count': 99321, 'oh': [1, 2, 3]}, d1)
 
     low, high = common.determine_range_string("110.24.34.44")
-    model.add_alert(low, high, 4, None, "DoS", 'dos', ['packet rate 1,000,000', 42], d1)
+    model.add_alert(low, high, 4, 4, "DoS", 'dos', ['packet rate 1,000,000', 42], d1)
 
     low, high = common.determine_range_string("110.20.32.43")
     model.add_alert(low, high, 5, None, "Unexpected Traffic", 'unexpected', None, d1)
@@ -59,7 +59,7 @@ def add_test_data(model):
     model.add_alert(low, high, 8, None, "Custom Rule", 'custom', 5j + 2l, d1)
 
 
-def test_add():
+def test_add_clear_alert():
     a_model = Alerts(db, sub_id)
 
     try:
@@ -69,7 +69,7 @@ def test_add():
         filters = AlertFilter(sort='severity')
         stored = a_model.get(filters)
 
-        assert len(stored) == 8
+        assert a_model.count() == 8
         groups = [(row['ipstart'], row['rule_name']) for row in stored]
         t = common.IPStringtoInt
         assert groups[0] == (t('110.20.30.40'), 'Custom Rule')
@@ -84,8 +84,29 @@ def test_add():
         # put it back the way we found it...
     finally:
         a_model.clear()
-    stored = a_model.get(filters)
-    assert len(stored) == 0
+    assert a_model.count() == 0
+
+
+def test_alert_already_exists():
+    a = Alerts(db, sub_id)
+    ipstart, ipend = common.determine_range_string("110.24.34.44")
+    rule_id = 4
+    timestamp = datetime(2017, 6, 5, 4, 3, 2)
+    timestamp2 = datetime(2017, 6, 5, 4, 3, 1)
+    ipstart2, ipend2 = common.determine_range_string("110.20.32.43")
+    rule_id2 = None
+    try:
+        add_test_data(a)
+        #finds exact matches
+        assert a.alert_already_exists(ipstart, ipend, rule_id, timestamp)
+        assert a.alert_already_exists(ipstart2, ipend2, rule_id2, timestamp)
+        # doesn't find near matches
+        assert a.alert_already_exists(ipstart+1, ipend, rule_id, timestamp) is None
+        assert a.alert_already_exists(ipstart, ipend+1, rule_id, timestamp) is None
+        assert a.alert_already_exists(ipstart, ipend, rule_id+1, timestamp) is None
+        assert a.alert_already_exists(ipstart, ipend, rule_id, timestamp2) is None
+    finally:
+        a.clear()
 
 
 def test_filters():

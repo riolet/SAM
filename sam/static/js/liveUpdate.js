@@ -47,7 +47,7 @@ function updateTimeConfig(newRange) {
 //The actual json calls that are executed when the update triggers
 function updateCall() {
   //get time range,
-  controller.GET_timerange(controller.ds, function (range) {
+  controller.GET_timerange(controller.dsid, function (range) {
     // TODO: some redundant code here, with the default callback for GET_timerange...
     updateTimeConfig(range);
 

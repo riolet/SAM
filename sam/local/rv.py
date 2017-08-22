@@ -5,7 +5,6 @@ table_title = "Elbat Weiv"
 login_title = "Nigol"
 settings_title = "Sngittes"
 dashboard_title = "Draobhsad"
-
 units_role_cc = "tneilc"
 units_role_c = "yltsom tneilc"
 units_role_cs = "dexim tneilc/revres"
@@ -74,9 +73,16 @@ meta_child_ip = "Sserdda"
 meta_child_name = "Eman"
 meta_child_count = "Evitca Stniopdne"
 meta_child_ratio = "Elor (0=tneilc, 1=revres)"
-login_LDAP_missing = "LDAP module not installed. Cannot perform login."
-login_LDAP_error = "Could not connect to LDAP server: {}. Check configuration."
-login_blank_pass = "Password may not be blank."
-login_blank_user = "User may not be blank."
-login_invalid = "Invalid credentials."
-login_failed = "Login failed."
+login_LDAP_missing = "PADL eludom ton dellatsni. Tonnac mrofrep nigol.."
+login_LDAP_error = "Dluoc ton tcennoc ot PADL revres: {}. Kcehc noitarugifnoc."
+login_blank_pass = "Drowssap yam ton eb knalb."
+login_blank_user = "Resu yam ton eb knalb."
+login_invalid = "Dilavni slaitnederc."
+login_failed = "Nigol deliaf."
+
+
+
+
+
+
+

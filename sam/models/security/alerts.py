@@ -105,18 +105,35 @@ class Alerts:
             new_id = self.db.insert(self.table, **columns)
         return new_id
 
+    def clear(self):
+        return self.db.delete(self.table, where="1")
+
     def count(self):
         rows = self.db.select(self.table, what="COUNT(0) AS 'count'")
         return rows.first()['count']
 
     def alert_already_exists(self, ipstart, ipend, rule_id, timestamp):
+        """
+            Given a host (start/end ip) a rule_id, and a log time,
+            check if there already exists an identical alert. Return that alert id or -1
+
+        :param ipstart: The ip-range-start to search for in the alert DB
+        :param ipend: The ip-range-end to search for in the alert DB
+        :param rule_id: The rule to search for in the alert DB. Can be None
+        :param timestamp: The log_time (as a datetime object, not number) to search for in the alert DB
+        :return: The ID of the alert that matches the above criteria. Returns None if not found.
+        """
         qvars = {
             'ips': ipstart,
             'ipe': ipend,
             'log': int(time.mktime(timestamp.timetuple())),
             'rid': rule_id,
         }
-        where = "ipstart=$ips AND ipend=$ipe AND log_time=$log AND rule_id=$rid"
+        if rule_id:
+            where = "ipstart=$ips AND ipend=$ipe AND log_time=$log AND rule_id=$rid"
+        else:
+            where = "ipstart=$ips AND ipend=$ipe AND log_time=$log AND rule_id IS NULL"
+
         rows = self.db.select(self.table, what='id', where=where, vars=qvars)
         row = rows.first()
         if row:
@@ -181,6 +198,3 @@ class Alerts:
 
     def delete(self, alert_id):
         return self.db.delete(self.table, where="id=$aid", vars={'aid': alert_id})
-
-    def clear(self):
-        return self.db.delete(self.table, where="1")

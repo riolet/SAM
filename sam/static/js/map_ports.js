@@ -100,13 +100,14 @@
         var link = document.createElement('a');
         link.onclick = ports.private.click;
         if (ports.loaded(port)) {
-            link.appendChild(document.createTextNode(ports.get_name(port)));
-            link.setAttribute("data-content", ports.get_description(port));
-            link.classList.add("popup");
+            link.innerText = ports.get_name(port);
+            if (ports.ports[port].active) {
+              link.dataset['tooltip'] = ports.get_description(port);
+            }
             //This works as an alternative, but it's ugly.
             //link.title = get_port_description(port.port)
         } else {
-            link.appendChild(document.createTextNode(port.toString()));
+            link.innerText = port.toString();
         }
         return link;
     };
@@ -158,7 +159,7 @@
         // if it had already been loaded, and there are changes, push those changes back to the db.
         if (Object.keys(delta).length > 0) {
             delta.port = port;
-            POST_portinfo(delta);
+            ports.POST_portinfo(delta);
             ports.private.update_displays();
         }
 
@@ -181,7 +182,7 @@
 
         ports.private.requests = [];
         if (request.length > 0) {
-            GET_portinfo(request, callback);
+            ports.GET_portinfo(request, callback);
         }
     };
     ports.show_edit_window = function (port) {
@@ -212,9 +213,35 @@
     // ==================================
     // Private functions
     // ==================================
-    ports.private.click = function (event) {
-        var port = parseInt(event.target.innerHTML);
-        ports.show_edit_window(port);
+    ports.POST_portinfo = function (request) {
+        $.ajax({
+            url: "./portinfo",
+            type: "POST",
+            data: request,
+            error: generic_ajax_failure,
+            success: generic_ajax_success
+        });
+    };
+    ports.GET_portinfo = function (port_list, callback) {
+        //port_list is an array of Numbers
+        if (port_list.length == 0) {
+          return;
+        }
+        let requestData = {"port": port_list.join(",")};
+        $.ajax({
+            url: "./portinfo",
+            type: "GET",
+            data: requestData,
+            dataType: "json",
+            error: generic_ajax_failure,
+            success: function (response) {
+                ports.private.GET_response(response);
+
+                if (typeof callback === "function") {
+                    callback();
+                }
+            }
+        });
     };
     ports.private.GET_response = function (response) {
         Object.keys(response).forEach(function (key) {
@@ -231,8 +258,11 @@
         });
         ports.private.update_displays();
     };
+    ports.private.click = function (event) {
+        var port = parseInt(event.target.innerHTML);
+        ports.show_edit_window(port);
+    };
     ports.private.save = function () {
-        console.log("saving");
         var info = {};
         if (document.getElementById("port_active").checked) {
             info.active = 1;

@@ -88,7 +88,7 @@ def main(argv=None):
 
 def launch_webserver(parsed):
     import sam.server_webserver
-    if parsed['wsgi']:
+    if parsed.get('wsgi', False):
         logger.info('launching wsgi webserver')
         global application
         application = sam.server_webserver.start_wsgi()
@@ -98,7 +98,7 @@ def launch_webserver(parsed):
             CherryPyWSGIServer.ssl_certificate = constants.access_control['local_tls_cert']
             CherryPyWSGIServer.ssl_private_key = constants.access_control['local_tls_key']
 
-        port = parsed['port']
+        port = parsed.get('port', None)
         if port is None:
             port = constants.webserver['listen_port']
         logger.info('launching dev webserver on {}'.format(port))
@@ -111,9 +111,9 @@ def launch_collector(parsed):
     port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
-    logger.info('launching collector on {}'.format(parsed['port']))
+    logger.info('launching collector on {}'.format(port))
     collector = server_collector.Collector()
-    collector.run(port=parsed['port'], format=parsed['format'])
+    collector.run(port=port, format=parsed['format'])
     logger.info('collector shut down.')
 
 
@@ -274,6 +274,14 @@ def launch_localmode(parsed):
             whois_thread.join()
         logger.debug('whois joined')
     logger.info("SAM can be safely shut down.")
+
+
+def testing_entrypoint(environment, argv):
+    os.environ.update(environment)
+    # Reloading constants rereads the environment variables again. Otherwise stale values would be used.
+    reload(constants)
+
+    main(argv=argv)
 
 
 if __name__ == '__main__':

@@ -64,6 +64,6 @@ CREATE TABLE IF NOT EXISTS s{acct}_ADWarnings
 ,host              INT UNSIGNED NOT NULL
 ,log_time          INT UNSIGNED NOT NULL
 ,reason            TEXT NOT NULL
-,status            VARCHAR(32) NOT NULL
+,status            VARCHAR(32) NOT NULL  -- should be one of "accepted", "rejected", "ignored", "uncategorized"
 ,details           TEXT
 );

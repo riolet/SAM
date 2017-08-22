@@ -52,6 +52,7 @@ def abs_rule_path(path):
             p_path = os.path.join(constants.plugins['root'], plugin, constants.templates_folder)
             if f_name in os.listdir(p_path):
                 abspath = os.path.join(p_path, f_name)
+                break
         if not abspath or not os.path.exists(abspath):
             print('WARNING: absolute rule path not found.')
             print('  (Checked "{}"->"{}")'.format(path, abspath))

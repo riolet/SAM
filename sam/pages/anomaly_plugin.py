@@ -5,7 +5,7 @@ from sam.models.security import anomaly_plugin
 
 
 class ADPlugin(base.headless_post):
-    POST_METHODS = ['accept', 'reject', 'ignore', 'disable', 'enable', 'reset', 'reset_all', 'submit_traffic']
+    POST_METHODS = ['accept', 'reject', 'ignore', 'disable', 'enable', 'reset', 'reset_all']
 
     def __init__(self):
         super(ADPlugin, self).__init__()
@@ -16,7 +16,8 @@ class ADPlugin(base.headless_post):
     def decode_get_request(self, data):
         # GET requests are for:
         # GET status()  # is STEVE accessible, alive, busy?
-        # GET warnings(last_id)  # get all warnings where id >= last_id
+        # GET warnings()  # get uncategorized warnings (or all if "all" is sent as true)
+        # GET warning()  # get more detailed info on a particular warning
         method = data.get('method', 'status')
         if method not in ('status', 'warnings', 'warning'):
             raise errors.MalformedRequest('Invalid method.')
@@ -100,14 +101,6 @@ class ADPlugin(base.headless_post):
             except:
                 raise errors.MalformedRequest('Error parsing {} parameters'.format(method))
 
-        elif method == 'submit_traffic':
-            try:
-                request['_known'] = data['_known'].lower() == 'true'
-                request['_good'] = data['_good'].lower() == 'true'
-                request['traffic'] = data['traffic']
-            except:
-                raise errors.MalformedRequest('Error parsing {} parameters'.format(method))
-
         elif method in ('accept', 'reject', 'ignore'):
             try:
                 request['warning_id'] = int(data['warning_id'])
@@ -130,9 +123,11 @@ class ADPlugin(base.headless_post):
             self.AD.disable()
         elif m == 'reset':
             host = request['host']
-            self.AD.reset_profile(host)
+            # self.AD.reset_profile(host)
+            raise errors.MalformedRequest('Method not implemented')
         elif m == 'reset_all':
-            self.AD.reset_all_profiles()
+            # self.AD.reset_all_profiles()
+            raise errors.MalformedRequest('Method not implemented')
         else:
             raise errors.MalformedRequest('Method could not be handled')
 

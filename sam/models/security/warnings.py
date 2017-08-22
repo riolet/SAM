@@ -1,13 +1,23 @@
 import os
 import cPickle
 import web
-from sam import integrity, common
+from sam import constants, integrity, common
 from sam.models import base
 base_path = os.path.dirname(__file__)
+
+# warning status should be one of "accepted", "rejected", "ignored", "uncategorized"
 
 
 class Warnings(base.DBPlugin):
     TABLE_FORMAT = 's{acct}_ADWarnings'
+    VALID_STATUSES = ("accepted", "rejected", "ignored", "uncategorized")
+
+    checkIntegrity = base.DBPlugin.simple_sub_table_check(TABLE_FORMAT)
+
+    fixIntegrity = base.DBPlugin.simple_sub_table_fix(
+        sqlite=os.path.join(constants.base_path, 'sql/create_warnings_sqlite.sql'),
+        mysql=os.path.join(constants.base_path, 'sql/create_warnings_mysql.sql'),
+    )
 
     def __init__(self, db, sub_id):
         """
@@ -33,11 +43,11 @@ class Warnings(base.DBPlugin):
             return row['latest']
 
     def get_warnings(self, show_all=False):
-        what = "id, host, log_time, reason, status"
+        what = "id, warning_id, host, log_time, reason, status"
         if show_all:
             warnings = self.db.select(self.table, what=what, order="id DESC", limit=50)
         else:
-            warnings = self.db.select(self.table, what=what, where="status not in ('Accepted', 'Rejected', 'Ignored')", order="id DESC", limit=50)
+            warnings = self.db.select(self.table, what=what, where="status='uncategorized'", order="id DESC", limit=50)
         return list(warnings)
 
     def get_warning(self, warning_id):
@@ -51,13 +61,13 @@ class Warnings(base.DBPlugin):
 
     def _warning_status(self, status):
         if status.lower() == 'rejected':
-            return 'Rejected'
+            return 'rejected'
         elif status.lower() == 'accepted':
-            return "Accepted"
+            return "accepted"
         elif status.lower() == 'ignored':
-            return "Ignored"
+            return "ignored"
         else:
-            return "Undetermined"
+            return "uncategorized"
 
     def insert_warnings(self, wlist):
         transformed = []
@@ -67,7 +77,7 @@ class Warnings(base.DBPlugin):
                 'host': warning['host'],
                 'log_time': warning['log_time'],
                 'reason': warning['reason'],
-                'status': self._warning_status(warning.get('status', 'unknown')),
+                'status': self._warning_status(warning.get('status', 'uncategorized')),
                 'details': cPickle.dumps(warning['details'])
             })
         # insert in chunks of at most 1000
@@ -78,41 +88,11 @@ class Warnings(base.DBPlugin):
             n += 1000
 
     def update_status(self, warning_id, status):
-        qvars = {
-            'wid': warning_id,
-        }
-        if status.lower() == 'accepted':
-            num_rows_updated = self.db.update(self.table, where="id=$wid", vars=qvars, status='Accepted')
-        elif status.lower() == 'rejected':
-            num_rows_updated = self.db.update(self.table, where="id=$wid", vars=qvars, status='Rejected')
-        elif status.lower() == 'ignored':
-            num_rows_updated = self.db.update(self.table, where="id=$wid", vars=qvars, status='Ignored')
+        qvars = {'wid': warning_id}
+        if status.lower() in Warnings.VALID_STATUSES:
+            num_rows_updated = self.db.update(self.table, where="id=$wid", vars=qvars, status=status.lower())
         else:
             raise ValueError("invalid status")
+        if num_rows_updated == 0:
+            raise ValueError("Warning # doesn't match any warning.")
         return num_rows_updated
-
-    @staticmethod
-    def checkIntegrity(db):
-        all_tables = set(integrity.get_table_names(db))
-        subs = integrity.get_all_subs(db)
-        missing = []
-        for sub_id in subs:
-            if Warnings.TABLE_FORMAT.format(acct=sub_id) not in all_tables:
-                missing.append(sub_id)
-        if not missing:
-            return {}
-        return {'missing': missing}
-
-    @staticmethod
-    def fixIntegrity(db, errors):
-        missing_table_subs = errors['missing']
-        for sub_id in missing_table_subs:
-            replacements = {
-                'acct': sub_id
-            }
-            with db.transaction():
-                if db.dbname == 'sqlite':
-                    common.exec_sql(db, os.path.join(base_path, '../sql/create_warnings_sqlite.sql'), replacements)
-                else:
-                    common.exec_sql(db, os.path.join(base_path, '../sql/create_warnings_mysql.sql'), replacements)
-        return True

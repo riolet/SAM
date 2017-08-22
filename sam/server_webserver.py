@@ -64,6 +64,7 @@ def start_server(port):
     # TODO: make the above excuse removable
     # common.load_plugins()
     web.httpserver.StaticApp = httpserver.StaticApp
+    # constants.init_urls()
     app = web.application(constants.urls, globals())
     #check_database()
     #create_session(app)
@@ -75,6 +76,7 @@ def start_server(port):
 
 def start_wsgi():
     common.load_plugins()
+    constants.init_urls()
     app = web.application(constants.urls, globals())
     check_database()
     create_session(app)

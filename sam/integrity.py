@@ -116,10 +116,10 @@ def check_and_fix_db_access_MySQL(params):
                 logger.critical("\tError creating database: ")
                 logger.critical("\t\tError {0}: {1}".format(e[0], e[1]))
         elif e[0] == 1045:  # Access Denied for '%s'@'%s' (using password: (YES|NO))
-            logger.critical("\tUnable to continue: invalid username or password")
+            logger.critical("\tUnable to access database: invalid username or password")
             logger.critical("\t  Check your config file or environment variables.")
         else:
-            logger.critical("\tUnable to continue: ")
+            logger.critical("\tUnable to access database: ")
             logger.critical("\t\t{0}: {1}".format(e[0], e[1]))
     return error_code
 

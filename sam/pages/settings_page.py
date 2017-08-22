@@ -31,21 +31,27 @@ class SettingsPage(base.headed):
     @staticmethod
     def get_available_importers():
         files = os.listdir(os.path.join(constants.base_path, "importers"))
-        files = filter(lambda x: x.endswith(".py") and x.startswith("import_") and x != "import_base.py", files)
+        files = filter(lambda x: x.startswith("import_") and x.endswith(".py") and x != "import_base.py", files)
         # remove .py extension
         files = [(f[:-3], nice_name(f[7:-3])) for f in files]
         return files
 
     def get_tags_preview(self):
-        return self.nodes_model.get_tag_list()
+        tags = self.nodes_model.get_tag_list()
+        tags.sort()
+        return tags[:10]
 
     def get_envs_preview(self):
         envs = self.nodes_model.get_env_list()
         envs.discard("inherit")
-        return list(envs)
+        l_envs = list(envs)
+        l_envs.sort()
+        return l_envs[:10]
 
     def get_hosts_preview(self):
-        return self.nodes_model.get_hostnames_preview()
+        hosts = self.nodes_model.get_hostnames_preview()
+        hosts.sort()
+        return hosts
 
     # handle HTTP GET requests here.  Name gets value from routing rules above.
     def GET(self):

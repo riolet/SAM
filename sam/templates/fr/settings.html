@@ -5,10 +5,11 @@ $ disabled = "" if user.may_post() else "disabled"
 
   <!-- Data Sources -->
   $if not disabled:
-    <div class="ui raised segment">
+    <div id="seg_data_sources" class="ui raised segment">
       <h3 class="ui header">Data Sources</h3>
-      <p>Data sources let you store multiple sets of network data</p>
-      <p>Each data source stored their own set of connection history and timeline.  Node information, such as tags, environment, and hostnames, is shared across data sources.</p>
+      <p>Data sources let you store multiple sets of network data.</p>
+      <p>Each data source stores its own log of connections over time.  Node information, such as tags,
+        environment, and hostnames, is shared across data sources.</p>
       <div class="ui datasources grid">
         <div class="four wide column">
           <table class="ui very basic compact selectable table">
@@ -109,11 +110,11 @@ $ disabled = "" if user.may_post() else "disabled"
     </div>
 
     <!-- Metadata -->
-    <div class="ui raised segment">
+    <div id="seg_metadata" class="ui raised segment">
       <h3 class="ui header">Metadata</h3>
-      <p>Meta data is stored independant of specific data sources. It includes information on hosts
+      <p>Metadata is stored independantly of specific data sources. It includes information on hosts
         such as hostname, environment, and tags.</p>
-      <div class="meta_del">
+      <div class="meta_del del_hostnames">
         <h4>Reset host names to be blank.</h4>
         <button id="del_host" class="ui compact icon button"><i class="red trash icon"></i>Delete Hostnames</button>
         $if len(hosts_preview) > 1:
@@ -126,7 +127,7 @@ $ disabled = "" if user.may_post() else "disabled"
         $else:
           <p>No hostnames are currently stored.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_tags">
         <h4>Remove all tags.</h4>
         <button id="del_tag" class="ui compact icon button"><i class="red trash icon"></i>Delete Tags</button>
         $if len(tags_preview) > 1:
@@ -139,7 +140,7 @@ $ disabled = "" if user.may_post() else "disabled"
         $else:
           <p>No tags are currently stored.</p>
       </div>
-      <div class="meta_del">
+      <div class="meta_del del_envs">
         <h4>Reset all environment information to be "production".</h4>
         <button id="del_env" class="ui compact icon button"><i class="red trash icon"></i>Delete Environments</button>
         $if len(envs_preview) > 1:
@@ -156,7 +157,7 @@ $ disabled = "" if user.may_post() else "disabled"
 
 
     <!-- Live Updates -->
-    <div class="ui raised segment">
+    <div id="seg_live_updates" class="ui raised segment">
       <h3 class="ui header">Live Updates</h3>
       <p>Live updates are a way to connect your router or gateway directly to the database.</p>
       <p>To enable this, you need to run a collector process on your local network which will receive and translate network data.
@@ -327,7 +328,7 @@ $ disabled = "" if user.may_post() else "disabled"
       </div>
       <div class="field">
         <label>Data source</label>
-        <div class="ui selection dropdown">
+        <div class="ui selection dropdown ds_selection">
           $if datasources:
             <input name="log_ds" id="log_ds" type="hidden" value="ds$datasources[0]['id']">
             <i class="dropdown icon"></i>

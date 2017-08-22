@@ -461,12 +461,12 @@ function uploadLog() {
 
 function removeLiveKey(e) {
   "use strict";
-  let row = e.target.parentElement.parentElement;
-  console.log("row"); console.log(row);
+  let row = e.target;
+  while (row.tagName != "TR" && row.parentElement) {
+    row = row.parentElement;
+  }
   let key_collection = row.getElementsByClassName("secret key");
-  console.log("key collection"); console.log(key_collection);
   let key = key_collection[0].innerText;
-  console.log("key"); console.log(key);
   POST_del_live_key(key);
 }
 
@@ -582,7 +582,9 @@ function POST_ds_new(name) {
         if (response.result === 'success') {
             //successfully created new data source
             rebuild_tabs(response.settings, response.datasources);
-            populateLiveDestDSList(getDSs());
+            let dses = getDSs()
+            populateLiveDestDSList(dses);
+            populateUploadDSList(dses);
         }
     });
 }
@@ -593,7 +595,9 @@ function POST_ds_delete(id) {
         if (response.result === 'success') {
             //successfully deleted the data source
             rebuild_tabs(response.settings, response.datasources);
-            populateLiveDestDSList(getDSs());
+            let dses = getDSs()
+            populateLiveDestDSList(dses);
+            populateUploadDSList(dses);
             rebuildLiveKeys(response.livekeys)
         }
     });
@@ -641,6 +645,8 @@ function POST_ds_intervalchange(e) {
     if (newInterval !== parseInt(e.target.dataset['content'])) {
         //in case trim() changed the name
         e.target.value = newInterval;
+        console.log("updating dataset to {}", newInterval);
+        e.target.dataset['content'] = newInterval;
         var ds = getSelectedDS();
         console.log("Changing the refresh interval of " + ds + " to " + newInterval);
         POST_AJAX({"command":"ds_interval", "ds":ds, "interval":newInterval});

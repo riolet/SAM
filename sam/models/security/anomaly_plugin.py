@@ -51,6 +51,14 @@ class ADPlugin(object):
         logger.info("Setting processor OFF")
 
     def _retrieve_warnings(self, w_model):
+        """
+        Get new warnings from the plugin and add them into SAM.  No effect if plugin is not installed.
+        :param w_model: warning model to insert into
+        :type w_model: Warnings
+        :return: None
+        """
+        if not self.adele:
+            return
         latest = w_model.get_latest_warning_id()
         new_warnings = self.adele.get_warnings(self.sub_id, latest)
         if new_warnings:
@@ -76,9 +84,6 @@ class ADPlugin(object):
             return None
 
     def accept_warning(self, warning_id):
-        if self.status != 'online':
-            return
-
         w_model = Warnings(self.db, self.sub_id)
         warning = w_model.get_warning(warning_id)
         if not warning:
@@ -86,7 +91,7 @@ class ADPlugin(object):
 
         # create alert
         alert_model = Alerts(self.db, self.sub_id)
-        alert_model.add_alert(
+        a_id = alert_model.add_alert(
             ipstart=warning['host'],
             ipend=warning['host'],
             severity=5,
@@ -98,14 +103,13 @@ class ADPlugin(object):
         # update local table
         w_model.update_status(warning_id, 'accepted')
 
-        # push feedback to ADELE
-        self.adele.update_warning(self.sub_id, warning_id, 'accepted')
+        # push feedback to ADELE if applicable
+        if self.adele:
+            self.adele.update_warning(self.sub_id, warning_id, 'accepted')
         logger.info("Updating warning {} to be {}".format(warning_id, 'Accepted'))
+        return a_id
 
     def reject_warning(self, warning_id):
-        if self.status != 'online':
-            return
-
         w_model = Warnings(self.db, self.sub_id)
         warning = w_model.get_warning(warning_id)
         if not warning:
@@ -113,13 +117,11 @@ class ADPlugin(object):
         w_model.update_status(warning_id, 'rejected')
 
         # push feedback to ADELE
-        self.adele.update_warning(self.sub_id, warning_id, 'rejected')
+        if self.adele:
+            self.adele.update_warning(self.sub_id, warning_id, 'rejected')
         logger.info("Updating warning {} to be {}".format(warning_id, 'Rejected'))
 
     def ignore_warning(self, warning_id):
-        if self.status != 'online':
-            return
-
         w_model = Warnings(self.db, self.sub_id)
         warning = w_model.get_warning(warning_id)
         if not warning:
@@ -127,36 +129,6 @@ class ADPlugin(object):
         w_model.update_status(warning_id, 'ignored')
 
         # push feedback to ADELE
-        self.adele.update_warning(self.sub_id, warning_id, 'ignored')
+        if self.adele:
+            self.adele.update_warning(self.sub_id, warning_id, 'ignored')
         logger.info("Updating warning {} to be {}".format(warning_id, 'Ignored'))
-
-    def reset_all_profiles(self):
-        if self.status != 'online':
-            return
-
-        self.adele.reset_all_profiles()
-        logger.info("Cleared all profile data")
-
-    def reset_profile(self, host_ip):
-        if self.status != 'online':
-            return
-
-        self.adele.reset_profile(host_ip)
-        logger.info("Cleared profile of {}".format(host_ip))
-
-    def submit_traffic(self, traffic, _category="unknown"):
-        if self.status != 'online':
-            return
-
-        if _category == 'ignored':
-            logger.debug('Adding ignored traffic: {}...'.format(repr(traffic)[:50]))
-            logger.warning('Adding pre-ignored traffic will do nothing.')
-        elif _category == 'good':
-            logger.debug('Adding healthy traffic: {}...'.format(repr(traffic)[:50]))
-            self.adele.submit_traffic(self.sub_id, traffic, _category=_category)
-        elif _category == 'bad':
-            logger.debug("Adding known bad traffic: {}...".format(repr(traffic)[:50]))
-            self.adele.submit_traffic(self.sub_id, traffic, _category=_category)
-        else:
-            logger.debug('Adding undetermined traffic: {}...'.format(repr(traffic)[:50]))
-            self.adele.submit_traffic(self.sub_id, traffic, _category=_category)

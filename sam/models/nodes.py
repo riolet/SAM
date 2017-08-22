@@ -120,7 +120,7 @@ class Nodes(object):
         return {"env": env, "p_env": parent_env}
     
     def get_env_list(self):
-        envs = set(row.env for row in self.db.select(self.table_nodes, what="DISTINCT env") if row.env)
+        envs = set(row.env for row in self.db.select(self.table_nodes, what="DISTINCT env", where="env IS NOT NULL") if row.env)
         envs |= self.default_environments
         return envs
 
@@ -134,7 +134,7 @@ class Nodes(object):
         common.db.update(self.table_nodes, "1", alias=common.web.sqlliteral("NULL"))
 
     def get_hostnames_preview(self):
-        return [row.alias for row in self.db.select(self.table_nodes, what="DISTINCT alias", limit=10) if row.alias]
+        return [row.alias for row in self.db.select(self.table_nodes, what="DISTINCT alias", where="alias IS NOT NULL", limit=10) if row.alias]
 
     def get_root_nodes(self):
         return list(self.db.select(self.table_nodes, where="subnet=8"))
