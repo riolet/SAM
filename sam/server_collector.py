@@ -5,10 +5,10 @@ import signal
 import threading
 import time
 import traceback
-import web
+# import web
 from sam import constants
 import sam.importers.import_base as base_importer
-web.config.debug = constants.debug
+# web.config.debug = constants.debug
 import requests
 import cPickle
 import select
