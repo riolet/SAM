@@ -5,10 +5,10 @@ import signal
 import threading
 import time
 import traceback
-import web
+# import web
 from sam import constants
 import sam.importers.import_base as base_importer
-web.config.debug = constants.debug
+# web.config.debug = constants.debug
 import requests
 import cPickle
 import select
@@ -85,7 +85,7 @@ class FileListener(threading.Thread):
 class Collector(object):
     def __init__(self):
         self.listen_address = (constants.collector['listen_host'], int(constants.collector['listen_port']))
-        self.target_address = 'http://{}:{}'.format(constants.collector['target_host'], constants.collector['target_port'])
+        self.target_address = constants.collector['target_address']
         self.access_key = constants.collector['upload_key']
         self.default_format = constants.collector['format']
         self.transmit_buffer = []
