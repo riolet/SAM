@@ -85,7 +85,7 @@ class FileListener(threading.Thread):
 class Collector(object):
     def __init__(self):
         self.listen_address = (constants.collector['listen_host'], int(constants.collector['listen_port']))
-        self.target_address = 'http://{}:{}'.format(constants.collector['target_host'], constants.collector['target_port'])
+        self.target_address = constants.collector['target_address']
         self.access_key = constants.collector['upload_key']
         self.default_format = constants.collector['format']
         self.transmit_buffer = []
