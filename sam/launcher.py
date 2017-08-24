@@ -46,7 +46,7 @@ def main(argv=None):
         'dest': 'default',
         'sub': None
     }
-    valid_targets = ['aggregator', 'collector', 'webserver', 'import']
+    valid_targets = ['aggregator', 'collector', 'collector_stream', 'webserver', 'import']
 
     parsed_args = defaults.copy()
     for key, val in kwargs:
@@ -78,6 +78,8 @@ def main(argv=None):
         launch_webserver(parsed_args)
     elif parsed_args['target'] == 'collector':
         launch_collector(parsed_args)
+    elif parsed_args['target'] == 'collector_stream':
+        launch_collector_stream(parsed_args)
     elif parsed_args['target'] == 'aggregator':
         launch_aggregator(parsed_args)
     elif parsed_args['target'] == 'import':
@@ -114,6 +116,18 @@ def launch_collector(parsed):
     logger.info('launching collector on {}'.format(port))
     collector = server_collector.Collector()
     collector.run(port=port, format=parsed['format'])
+    logger.info('collector shut down.')
+
+
+def launch_collector_stream(parsed):
+    import server_collector
+    port = parsed.get('port', None)
+    if port is None:
+        port = constants.collector['listen_port']
+    logger.info('launching collector on {}'.format(port))
+    collector = server_collector.Collector()
+
+    collector.run_streamreader(sys.stdin, format=parsed['format'])
     logger.info('collector shut down.')
 
 
