@@ -121,6 +121,7 @@ class Collector(object):
         while not connected and attempts < 10:
             time.sleep(1)
             connected = self.test_connection()
+            attempts += 1
         if not connected:
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
@@ -163,6 +164,7 @@ class Collector(object):
         while not connected and attempts < 10:
             time.sleep(1)
             connected = self.test_connection()
+            attempts += 1
         if not connected:
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
