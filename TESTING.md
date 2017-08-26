@@ -42,3 +42,15 @@ or for more details on a particular test:
 ```bash
 pytest -xv spec/browser/test_table.py
 ```
+
+# Python Code Coverage
+This runs the browser and unit tests for python files 
+and describes how many statements exist and how many statements were run during the tests. 
+
+Javascript, SQL, and other files are not indicated here.
+
+Disclaimer: Code coverage here is about as useful an indicator of testing as BMI is for fitness
+```bash
+pip install pytest-cov
+pytest --cov=sam spec
+```

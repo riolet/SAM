@@ -3,7 +3,7 @@ import os
 import getopt
 import multiprocessing
 import logging
-sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))  # this could be executed from any directory
 from sam import constants
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=constants.log_level)
@@ -121,12 +121,8 @@ def launch_collector(parsed):
 
 def launch_collector_stream(parsed):
     import server_collector
-    port = parsed.get('port', None)
-    if port is None:
-        port = constants.collector['listen_port']
-    logger.info('launching collector on {}'.format(port))
+    logger.info('launching stdin collector')
     collector = server_collector.Collector()
-
     collector.run_streamreader(sys.stdin, format=parsed['format'])
     logger.info('collector shut down.')
 

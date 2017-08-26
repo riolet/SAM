@@ -264,10 +264,10 @@ SAM
         for i, rule_ in enumerate(job.rules):
             job.status = 'Running rule {} of {}'.format(i+1, len(job.rules))
             if not rule_.is_active():
-                print('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
+                print('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
                 continue
 
-            print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path()))
+            print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
 
             rule_type = rule_.get_type()
             if rule_type == 'immediate':
@@ -275,7 +275,8 @@ SAM
             elif rule_type == 'periodic':
                 matches = self.evaluate_periodic_rule(job, rule_)
             else:
-                print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'.format(job.status, rule_.get_name(), rule_type))
+                print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'
+                      .format(job.status, rule_.get_name(), rule_type))
                 continue
             print('    {} alerts discovered,'.format(len(matches)))
             # for match in matches:
@@ -289,5 +290,5 @@ SAM
             self.trigger_actions(job, rule_, matches)
 
         job.status = "Complete"
-        print('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
-                                                                   job.time_end))
+        print('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id,
+                                                                   job.time_start, job.time_end))
