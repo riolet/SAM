@@ -11,8 +11,7 @@ class Metadata(base.headed):
         self.set_title(self.page.strings.meta_title)
         self.scripts = ["/static/js/metadata.js",
                         "/static/js/map_ports.js",
-                        "/static/js/map_selection.js",
-                        "/static/js/map_data.js"]
+                        "/static/js/map_selection.js"]
         self.styles = ["/static/css/general.css"]
         self.datasources = None
 
