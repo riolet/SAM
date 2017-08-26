@@ -138,7 +138,7 @@ function slider_rebuild(tmin, tmax, tstart, tend) {
   "use strict";
   var dateSlider = document.getElementById('slider-date');
   dateSlider.noUiSlider.destroy();
-  slider_create(dateslider, tmin, tmax, tstart, tend);
+  slider_create(dateSlider, tmin, tmax, tstart, tend);
 
   var inputA = document.getElementById('input-start');
   var inputB = document.getElementById('input-end');
