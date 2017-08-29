@@ -1,5 +1,3 @@
-import pytest
-import numbers
 import sys
 from sam import constants, launcher, preprocess
 from sam import server_webserver, server_collector, server_aggregator
