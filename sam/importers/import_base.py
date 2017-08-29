@@ -102,11 +102,7 @@ Usage:
         Returns:
             True or False
         """
-        if os.path.isfile(path):
-            return True
-        else:
-            print("File not found: {0}".format(path))
-            return False
+        return os.path.isfile(path)
 
     def translate(self, line, line_num, dictionary):
         """
