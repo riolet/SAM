@@ -1,14 +1,4 @@
-import sys
-import pytest
-from datetime import datetime
-from sam import constants
-# from spec.python import db_connection
 from sam.importers import import_base, import_paloalto
-
-# db = db_connection.db
-# sub_id = db_connection.default_sub
-# ds_id = db_connection.dsid_default
-
 
 sample_log = [
     "",
