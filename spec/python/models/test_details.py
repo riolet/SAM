@@ -211,7 +211,7 @@ def test_get_details_summary():
 
 
 def test_get_details_summary_timerange():
-    time_wide = (0, 2 ** 31 - 1)
+    time_wide = (1, 2 ** 31 - 1)
     time_full = (int(time.mktime(datetime(2017, 3, 21, 6, 13, 05).timetuple())),
                  int(time.mktime(datetime(2017, 3, 24, 13, 30, 54).timetuple())))
     time_narrow = (int(time.mktime(datetime(2017, 3, 23, 6, 13, 05).timetuple())),

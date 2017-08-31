@@ -1,13 +1,16 @@
 import sys
 import subprocess
 import shlex
+import datetime
+import time
 from sam.importers.import_base import BaseImporter
 try:
     import dateutil.parser
+    DATEUTIL = True
 except ImportError as e:
+    DATEUTIL = False
     sys.stderr.write("Please install the dateutil package to use this importer.\n\t`pip install py-dateutil`\n")
     sys.stderr.write(e.message + '\n')
-    sys.exit(-1)
 
 
 class TSharkImporter(BaseImporter):
@@ -105,7 +108,10 @@ Usage:
             srcPort = split_data[TSharkImporter.SRCPORT] or split_data[TSharkImporter.SRCPORT + 1]
             dstIP = split_data[TSharkImporter.DST].split(".")
             dstPort = split_data[TSharkImporter.DSTPORT] or split_data[TSharkImporter.DSTPORT + 1]
-            timestamp = dateutil.parser.parse(split_data[TSharkImporter.TIMESTAMP])
+            if DATEUTIL:
+                timestamp = dateutil.parser.parse(split_data[TSharkImporter.TIMESTAMP])
+            else:
+                timestamp = datetime.datetime.fromtimestamp(time.time())
         except Exception as e:
             print line, e.message
             return 1
