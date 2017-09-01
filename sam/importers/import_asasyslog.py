@@ -1,7 +1,9 @@
 import sys
 import re
 from sam.importers.import_base import BaseImporter
+import datetime
 import time
+import traceback
 
 """
 Message types and explanations.
@@ -38,10 +40,11 @@ class ASASyslogImporter(BaseImporter):
     }
     ACCEPTED_CODES = {302014, 302016, 302018, 302021}
 
-    message_regex = re.compile(r"^[<>:%\w\-]+-(\d+):\s(.+)$")
+    message_regex = re.compile(r"^[<>:%\w\-]+-(\d+):\s+(.+)$")
     tcp_regex = re.compile(r"^Teardown TCP connection (?P<connection>\d+) for (?P<dst_interface>\w+)\s*:(?P<dst>[\d\.]+)\s*\/(?P<dstport>\d+) (?:\(\w+\)\s)?to (?P<src_interface>\w+)\s*:(?P<src>[\d\.]+)\s*\/(?P<srcport>\d+) (?:\(\w+\)\s)?duration (?P<duration>[\d:\s]+) bytes (?P<bytes>\d+).*$")
     udp_regex = re.compile(r"^Teardown UDP connection (?P<connection>\d+) for (?P<dst_interface>\w+)\s*:(?P<dst>[\d\.]+)\s*\/(?P<dstport>\d+) (?:\(\w+\)\s)?to (?P<src_interface>\w+)\s*:(?P<src>[\d\.]+)\s*\/(?P<srcport>\d+) (?:\(\w+\)\s)?duration (?P<duration>[\d:\s]+) bytes (?P<bytes>\d+).*$")
     icmp_regex = re.compile(r"^Teardown ICMP connection for faddr (?P<faddr>[\d.]+)\s*\/(?P<faddrport>\d+) (?P<idw_user1>\(\w+\)\s)?gaddr (?P<gaddr>[\d.]+)\s*\/(?P<gaddrport>\d+) laddr (?P<laddr>[\d.]+)\s*\/(?P<laddrport>\d+)(?P<idw_user2>\s?\(\w+\)\s)?.*$")
+    gre_regex = re.compile(r"^Teardown GRE connection (?P<connection>\d+) from (?P<src_iface>\w+):(?P<src>[\d.]+)\s*\/(?P<srcport>\d+) \([\d./]*\) (?P<idw_user1>\(\w+\)\s)?to (?P<dst_iface>\w+):(?P<dst>[\d.]+)\s*\/(?P<dstport>\d+) \([\d./]*\) (?P<idw_user2>\(\w+\)\s)?duration (?P<duration>[\d:\s]+) bytes (?P<bytes>\d+).*$")
 
     def get_message_id(self, line):
         """
@@ -112,10 +115,25 @@ class ASASyslogImporter(BaseImporter):
         return decoded
 
     def decode_gre(self, msg):
-        # TODO: solution is not verified
+        # TODO: developed from specification not observation. May not be exact.
         # Teardown GRE connection id from interface :real_address (translated_address ) [(idfw_user )] to interface :real_address /real_cid (translated_address /translated_cid ) [(idfw_user )] duration hh :mm :ss bytes bytes [(user )]
         # Teardown GRE connection 7951 from outside:158.69.125.231/123 (158.69.125.231/123) [(idfw_user )] to inside:192.168.1.1/55443 (192.168.10.176/23456) duration 0:02:31 bytes 66429
-        return {}
+        match = ASASyslogImporter.gre_regex.match(msg)
+        if not match:
+            return None
+        regexed = match.groupdict()
+
+        decoded = {
+            'dst': regexed['dst'],
+            'dstport': regexed['dstport'],
+            'src': regexed['src'],
+            'srcport': regexed['srcport'],
+            'bytes_received': regexed['bytes'],
+            'duration': self.timestring_to_seconds(regexed['duration']),
+            'protocol': 'GRE',
+        }
+
+        return decoded
 
     def decode_icmp(self, msg):
         # Teardown ICMP connection for faddr {faddr | icmp_seq_num } [(idfw_user )] gaddr {gaddr | cmp_type } laddr laddr [(idfw_user )] (981) type {type } code {code }
@@ -150,6 +168,7 @@ class ASASyslogImporter(BaseImporter):
             1 => The message_id isn't useful.
             2 => message_id not handled
             3 => could not decode message
+            4 => other error putting keys in dictionary
         """
         # determine message_id:
         message_id, message = self.get_message_id(line)
@@ -173,41 +192,24 @@ class ASASyslogImporter(BaseImporter):
         if decoded is None:
             return 3
 
-        regexp = r"^.* Built (?P<asa_in_out>in|out)bound (?P<asa_protocol>.*) connection (?P<asa_conn_id>\d+) for (?P<asa_src_zone>.*):(?P<asa_src_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(?P<asa_src_port>\d+) \(.*/\d+\) to (?P<asa_dst_zone>.*):(?P<asa_dst_ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(?P<asa_dst_port>\d+) .*"
-        m = re.match(regexp, line)
-
-        if m:
-            # srcIP, srcPort, dstIP, dstPort
-            # The order of the source and destination depends on the direction, i.e., inbound or outbound
-            if m.group('asa_in_out') == 'in':
-                dictionary['src'] = self.ip_to_int(*(m.group('asa_src_ip').split(".")))
-                dictionary['srcport'] = m.group('asa_src_port')
-                dictionary['dst'] = self.ip_to_int(*(m.group('asa_dst_ip').split(".")))
-                dictionary['dstport'] = m.group('asa_dst_port')
-            else:
-                dictionary['dst'] = self.ip_to_int(*(m.group('asa_src_ip').split(".")))
-                dictionary['dstport'] = m.group('asa_src_port')
-                dictionary['src'] = self.ip_to_int(*(m.group('asa_dst_ip').split(".")))
-                dictionary['srcport'] = m.group('asa_dst_port')
-
-            protocol = m.group('asa_protocol').upper()
-            dictionary['protocol'] = protocol
-
-            # TODO: the following is placeholder.
-            #       Needed: test data or spec to read
-            dictionary['duration'] = '1'
-            dictionary['bytes_received'] = '1'
-            dictionary['bytes_sent'] = '1'
-            dictionary['packets_received'] = '1'
-            dictionary['packets_sent'] = '1'
-
-            # ASA logs don't always have a timestamp. If your logs do, you may want to edit the line below to parse it.
-
-            dictionary['timestamp'] = time.strftime(self.mysql_time_format, time.localtime())
-            return 0
-        else:
-            print("error parsing line {0}: {1}".format(line_num, line))
-            return 2
+        try:
+            # decoded has keys: src, srcport, dst, dstport, duration, bytes_received, protocol
+            dictionary['src'] = self.ip_to_int(*(decoded['src'].split(".")))
+            dictionary['srcport'] = int(decoded['srcport'])
+            dictionary['dst'] = self.ip_to_int(*(decoded['dst'].split(".")))
+            dictionary['dstport'] = int(decoded['dstport'])
+            dictionary['protocol'] = decoded['protocol']
+            dictionary['duration'] = int(decoded['duration'])
+            dictionary['bytes_received'] = int(decoded['bytes_received'])
+            # missing keys: bytes_sent, packets_sent/received, timestamp
+            dictionary['bytes_sent'] = 0
+            dictionary['packets_received'] = 1
+            dictionary['packets_sent'] = 0
+            dictionary['timestamp'] = datetime.datetime.fromtimestamp(time.time())
+        except:
+            traceback.print_exc()
+            return 4
+        return 0
 
 
 class_ = ASASyslogImporter
