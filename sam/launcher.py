@@ -310,6 +310,7 @@ def testing_entrypoint(environment, argv):
     # Reloading constants rereads the environment variables again.
     # Otherwise stale values would be used.
     reload(constants)
+    constants.init_urls()
 
     main(argv=argv)
 
