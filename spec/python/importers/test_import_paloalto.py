@@ -1,3 +1,4 @@
+from spec.python import db_connection
 from sam.importers import import_base, import_paloalto
 
 sample_log = [

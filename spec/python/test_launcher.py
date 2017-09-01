@@ -1,11 +1,11 @@
 import sys
+from spec.python import db_connection
 from sam import constants, launcher, preprocess
 from sam import server_webserver, server_collector, server_aggregator
 from sam.importers import import_base
 from sam.models.livekeys import LiveKeys
 from sam.models.datasources import Datasources
 from sam.models import nodes
-from spec.python import db_connection
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -29,7 +29,7 @@ def test_parse_args():
     argv = 'launcher.py'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'webserver',
         'whois': False,
@@ -42,7 +42,7 @@ def test_parse_args():
     argv = 'launcher.py --target=collector'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'collector',
         'whois': False,
@@ -55,7 +55,7 @@ def test_parse_args():
     argv = 'launcher.py --target=webserver --wsgi'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'webserver',
         'whois': False,
@@ -68,7 +68,7 @@ def test_parse_args():
     argv = 'launcher.py --target=aggregator wsgi'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'aggregator',
         'whois': False,
@@ -78,10 +78,10 @@ def test_parse_args():
     }
     assert args == ['wsgi']
 
-    argv = 'launcher.py --target=local --whois --format=asa'.split()
+    argv = 'launcher.py --target=local --whois --format=asasyslog'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'asa',
+        'format': 'asasyslog',
         'port': None,
         'target': 'local',
         'whois': True,
@@ -94,7 +94,7 @@ def test_parse_args():
     argv = 'launcher.py --local --port=8421'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': '8421',
         'target': 'local',
         'whois': False,
@@ -107,7 +107,7 @@ def test_parse_args():
     argv = 'launcher.py --target=import --dest=newds --sub=4'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'import',
         'whois': False,
@@ -120,7 +120,7 @@ def test_parse_args():
     argv = 'launcher.py --target=collector_stream'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'collector_stream',
         'whois': False,
@@ -133,7 +133,7 @@ def test_parse_args():
     argv = 'launcher.py --target=import ../data/syslog'.split()
     parsed, args = launcher.parse_args(argv)
     assert parsed == {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'import',
         'whois': False,

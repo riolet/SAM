@@ -1,4 +1,4 @@
-
+from spec.python import db_connection
 import datetime
 from sam.importers import import_base, import_asasyslog
 

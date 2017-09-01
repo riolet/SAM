@@ -1,3 +1,4 @@
+from spec.python import db_connection
 from datetime import datetime
 from sam.importers import import_base, import_tcpdump
 

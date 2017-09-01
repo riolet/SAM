@@ -47,7 +47,7 @@ def test_get_importer():
     assert isinstance(imp, import_paloalto.PaloAltoImporter)
 
     # different formats
-    imp = import_base.get_importer('asa', sub_id, ds_id)
+    imp = import_base.get_importer('asasyslog', sub_id, ds_id)
     assert isinstance(imp, import_asasyslog.ASASyslogImporter)
     imp = import_base.get_importer('aws', sub_id, ds_id)
     assert isinstance(imp, import_aws.AWSImporter)
