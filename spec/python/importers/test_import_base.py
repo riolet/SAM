@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from sam import constants
 from spec.python import db_connection
-from sam.importers import import_asa, import_aws, import_base, import_nfdump, import_paloalto, import_tcpdump, import_tshark
+from sam.importers import import_asasyslog, import_aws, import_base, import_nfdump, import_paloalto, import_tcpdump, import_tshark
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -11,12 +11,12 @@ ds_id = db_connection.dsid_default
 
 
 def test_ip_to_int():
-    assert import_base.BaseImporter.ip_to_int(0,0,0,0) == 0
-    assert import_base.BaseImporter.ip_to_int(0,0,0,255) == 255
-    assert import_base.BaseImporter.ip_to_int(0,0,255,0) == 255 * 2**8
-    assert import_base.BaseImporter.ip_to_int(0,255,0,0) == 255 * 2**16
-    assert import_base.BaseImporter.ip_to_int(255,0,0,0) == 255 * 2**24
-    assert import_base.BaseImporter.ip_to_int(255,255,255,255) == 2**32-1
+    assert import_base.BaseImporter.ip_to_int('0', '0', '0', '0') == 0
+    assert import_base.BaseImporter.ip_to_int('0', '0', '0', '255') == 255
+    assert import_base.BaseImporter.ip_to_int('0', '0', '255', '0') == 255 * 2**8
+    assert import_base.BaseImporter.ip_to_int('0', '255', '0', '0') == 255 * 2**16
+    assert import_base.BaseImporter.ip_to_int('255', '0', '0', '0') == 255 * 2**24
+    assert import_base.BaseImporter.ip_to_int('255', '255', '255', '255') == 2**32-1
 
 
 def test_get_importer():
@@ -48,7 +48,7 @@ def test_get_importer():
 
     # different formats
     imp = import_base.get_importer('asa', sub_id, ds_id)
-    assert isinstance(imp, import_asa.ASAImporter)
+    assert isinstance(imp, import_asasyslog.ASASyslogImporter)
     imp = import_base.get_importer('aws', sub_id, ds_id)
     assert isinstance(imp, import_aws.AWSImporter)
     imp = import_base.get_importer('nfdump', sub_id, ds_id)
