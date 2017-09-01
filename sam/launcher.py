@@ -68,7 +68,7 @@ def parse_args(argv):
     kwargs, args = getopt.getopt(argv[1:], '', VALID_ARGS)
 
     parsed_args = {
-        'format': 'tcpdump',
+        'format': None,
         'port': None,
         'target': 'webserver',
         'whois': False,
@@ -124,6 +124,8 @@ def launch_collector(parsed, args):
         port = constants.collector['listen_port']
     logger.info('launching collector on {}'.format(port))
     collector = server_collector.Collector()
+    if parsed['format'] is None:
+        parsed['format'] = constants.collector['format']
     collector.run(port=port, format=parsed['format'])
     logger.info('collector shut down.')
     return collector
@@ -133,6 +135,8 @@ def launch_collector_stream(parsed, args):
     import server_collector
     logger.info('launching stdin collector')
     collector = server_collector.Collector()
+    if parsed['format'] is None:
+        parsed['format'] = constants.collector['format']
     collector.run_streamreader(sys.stdin, format=parsed['format'])
     logger.info('collector shut down.')
     return collector
@@ -259,6 +263,8 @@ def launch_localmode(parsed, args):
     #    pipe stdin into the collector
     def spawn_coll(stdin):
         collector = server_collector.Collector()
+        if parsed['format'] is None:
+            parsed['format'] = constants.collector['format']
         collector.run_streamreader(stdin, format=parsed['format'], access_key=access_key)
 
     new_stdin = os.fdopen(os.dup(sys.stdin.fileno()))

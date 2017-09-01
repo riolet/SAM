@@ -317,6 +317,8 @@ def get_importer(import_format, sub_id, ds_id):
     :return: importer instance or None
      :rtype: BaseImporter or None
     """
+    if import_format is None:
+        raise ImportError("Unable to get find importer given format.")
     module_ = None
     importer = None
 
