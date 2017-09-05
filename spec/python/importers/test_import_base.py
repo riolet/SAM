@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from sam import constants
 from spec.python import db_connection
-from sam.importers import import_asasyslog, import_aws, import_base, import_nfdump, import_paloalto, import_tcpdump, import_tshark
+from sam.importers import import_asasyslog, import_aws, import_base, import_netflow, import_paloalto, import_tcpdump, import_tshark
 
 db = db_connection.db
 sub_id = db_connection.default_sub
@@ -52,7 +52,7 @@ def test_get_importer():
     imp = import_base.get_importer('aws', sub_id, ds_id)
     assert isinstance(imp, import_aws.AWSImporter)
     imp = import_base.get_importer('nfdump', sub_id, ds_id)
-    assert isinstance(imp, import_nfdump.NFDumpImporter)
+    assert isinstance(imp, import_netflow.NFDumpImporter)
     imp = import_base.get_importer('paloalto', sub_id, ds_id)
     assert isinstance(imp, import_paloalto.PaloAltoImporter)
     imp = import_base.get_importer('tcpdump', sub_id, ds_id)

@@ -54,7 +54,7 @@ def localization_hook():
     if not lang:
         lang = default_lang
 
-    web.setcookie("lang", lang, 31536000, common.get_domain(), False, False, '/')
+    web.setcookie("lang", lang, 31536000, common.get_domain(web.ctx.home), False, False, '/')
     common.session['lang'] = lang
 
 

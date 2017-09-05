@@ -1,0 +1,1 @@
+CREATE TABLE s{acct}_test_table (id INTEGER NOT NULL);
