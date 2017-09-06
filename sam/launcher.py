@@ -234,8 +234,8 @@ def check_database():
 
 
 def launch_whois_service(db, sub):
-    import models.nodes
-    whois = models.nodes.WhoisService(db, sub)
+    import models.whois
+    whois = models.whois.WhoisService(db, sub)
     whois.start()
     return whois
 

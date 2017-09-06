@@ -23,14 +23,15 @@ class TSharkImporter(BaseImporter):
         'ip.dst',
         'tcp.dstport',
         'udp.dstport',
-        'frame.len'
-        #  _ws.col.Protocol for protocol
+        '_ws.col.Protocol' # for protocol
     ]
+    # TODO: add tcp.analysis.bytes_in_flight, udp.length
     SRC = 2
     SRCPORT = 3  # or 4
     DST = 5
     DSTPORT = 6  # or 7
     TIMESTAMP = 1
+    PROTOCOL = 8
 
     def __init__(self):
         BaseImporter.__init__(self)
@@ -58,6 +59,7 @@ Usage:
         # prepare buffer
         rows = [dict.fromkeys(self.keys, '') for _ in range(1000)]
 
+        # TODO: read everything, and combine the conversation streams (aggregate/group by ip:port->ip:port)
         # skip the titles line at the start of the file
         proc.stdout.readline()
 
@@ -97,40 +99,55 @@ Usage:
         # remove trailing newline
         line = line.rstrip("\n")
         split_data = line.split("@")
-        if len(split_data) != 9:
+        if len(split_data) < 5:
             return 1
         split_data = [i.strip(' ') for i in split_data]
-        #print split_data
         # srcIP, srcPort, dstIP, dstPort
 
         try:
-            srcIP = split_data[TSharkImporter.SRC].split(".")
+            srcIP = split_data[TSharkImporter.SRC].split(",")[0].split(".")
             srcPort = split_data[TSharkImporter.SRCPORT] or split_data[TSharkImporter.SRCPORT + 1]
-            dstIP = split_data[TSharkImporter.DST].split(".")
+            dstIP = split_data[TSharkImporter.DST].split(",")[0].split(".")
             dstPort = split_data[TSharkImporter.DSTPORT] or split_data[TSharkImporter.DSTPORT + 1]
+            if split_data[TSharkImporter.PROTOCOL] in ('UDP', 'DNS'):
+                protocol = 'UDP'
+            elif split_data[TSharkImporter.PROTOCOL] == 'ICMP':
+                protocol = 'ICMP'
+            else:
+                protocol = 'TCP'
             if DATEUTIL:
                 timestamp = dateutil.parser.parse(split_data[TSharkImporter.TIMESTAMP])
             else:
-                timestamp = datetime.datetime.fromtimestamp(time.time())
+                ds = split_data[TSharkImporter.TIMESTAMP]
+                timestamp = datetime.datetime.strptime(ds[:ds.rfind(".")], "%b %d, %Y %H:%M:%S")
         except Exception as e:
             print line, e.message
-            return 1
+            return 2
 
-        dictionary['src'] = self.ip_to_int(*(srcIP))
-        dictionary['srcport'] = int(srcPort)
-        dictionary['dst'] = self.ip_to_int(*(dstIP))
-        dictionary['dstport'] = int(dstPort)
-        dictionary['timestamp'] = timestamp.strftime(BaseImporter.mysql_time_format)
+        try:
+            dictionary['src'] = self.ip_to_int(*srcIP)
+            dictionary['srcport'] = int(srcPort)
+            dictionary['dst'] = self.ip_to_int(*dstIP)
+            dictionary['dstport'] = int(dstPort)
+            dictionary['timestamp'] = timestamp
+            dictionary['protocol'] = protocol
 
-        # TODO: the following is placeholder.
-        #       Needed: test data or spec to read
-        dictionary['protocol'] = 'TCP'.upper()
-        dictionary['duration'] = '1'
-        dictionary['bytes_received'] = '1'
-        dictionary['bytes_sent'] = '1'
-        dictionary['packets_received'] = '1'
-        dictionary['packets_sent'] = '1'
+            # TODO: the following is placeholder.
+            #       Needed: test data or spec to read
+            dictionary['duration'] = 1
+            dictionary['bytes_received'] = 0
+            dictionary['bytes_sent'] = 100
+            dictionary['packets_received'] = 0
+            dictionary['packets_sent'] = 1
+        except:
+            print("srcIP: {}".format(srcIP))
+            print("srcport: {}".format(srcPort))
+            print("dstIP: {}".format(dstIP))
+            print("dstport: {}".format(dstPort))
+            return 3
 
+        if dictionary['srcport'] < dictionary['dstport']:
+            BaseImporter.reverse_connection(dictionary)
         return 0
 
 

@@ -1,5 +1,8 @@
 import numbers
 import requests
+import time
+import threading
+from sam.models.nodes import Nodes
 
 
 def ip_itos(ip_number):
@@ -19,6 +22,7 @@ def ip_itos(ip_number):
         (ip_number & 0xFF00) >> 8,
         ip_number & 0xFF)
 
+
 def ip_stoi(ip):
     """
     Converts a number from a dotted decimal string into a single unsigned int.
@@ -28,12 +32,13 @@ def ip_stoi(ip):
     Returns: The IP address as a simple 32-bit unsigned integer
 
     """
-    address_mask = ip.split("/")
+    address_mask = ip.partition("/")
     parts = address_mask[0].split(".")
     ip_int = 0
+    mask = int(address_mask[2] or len(parts) * 8) // 8
     for i in range(4):
         ip_int <<= 8
-        if len(parts) > i:
+        if i < len(parts) and i < mask:
             ip_int += int(parts[i])
     return ip_int
 
@@ -127,7 +132,6 @@ class Whois(object):
     def decode_RIPE(self):
         inetnum = None
         organisation = None
-        name = ''
         for i in self.info:
             if i['type'] == 'inetnum':
                 inetnum = i
@@ -204,7 +208,7 @@ class Whois(object):
         self.downloaded = True
 
     def get_name(self):
-        if self.downloaded == False:
+        if not self.downloaded:
             self.retrieve_info()
 
         if self.name == 'Internet Assigned Numbers Authority':
@@ -215,3 +219,50 @@ class Whois(object):
         if self.downloaded == False:
             self.retrieve_info()
         return self.netname, self.netstart, self.netend, self.netlength
+
+
+class WhoisService(threading.Thread):
+    def __init__(self, db, sub, *args, **kwargs):
+        super(WhoisService, self).__init__(*args, **kwargs)
+        self.db = db
+        self.sub = sub
+        self.missing = []
+        self.table = 's{acct}_Nodes'.format(acct=self.sub)
+        self.n_model = Nodes(self.db, self.sub)
+        self.alive = True
+
+    def get_missing(self):
+        where = 'subnet=32 AND alias IS NULL'
+        rows = self.db.select(self.table, what='ipstart', where=where)
+        missing = [ip_itos(row['ipstart']) for row in rows]
+        return missing
+
+    def run(self):
+        # while there are missing hosts
+        # run the lookup command
+        # save the hostname
+        print("starting whois run")
+        while self.alive:
+            self.missing = self.get_missing()
+            while len(self.missing) > 0:
+                address = self.missing.pop()
+                if address:
+                    try:
+                        whois = Whois(address)
+                        name = whois.get_name()
+                        print('WHOIS: "{}" -> {}'.format(whois.query, name))
+                        self.n_model.set_alias(address, name)
+                        netname, ipstart, ipend, subnet = whois.get_network()
+                        # print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
+                        # subnet = subnet / 8 * 8
+                        if subnet in (8, 16, 24):
+                            self.n_model.set_alias('{}/{}'.format(ip_itos(ipstart), subnet), netname)
+                    except:
+                        continue
+                if not self.alive:
+                    break
+            time.sleep(5)
+        return
+
+    def shutdown(self):
+        self.alive = False
