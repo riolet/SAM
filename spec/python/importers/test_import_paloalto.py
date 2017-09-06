@@ -1,3 +1,4 @@
+from datetime import datetime
 from spec.python import db_connection
 from sam.importers import import_base, import_paloalto
 
@@ -40,7 +41,7 @@ def test_translate():
         "srcport": '64533',
         "dst": 121815120,
         "dstport": '443',
-        "timestamp": '2011-06-21 18:06:21',
+        "timestamp": datetime(2011,6,21,18,6,21),
         "protocol": 'TCP',
         "bytes_sent": '20009',
         "bytes_received": '0',
@@ -53,7 +54,7 @@ def test_translate():
         "srcport": '161',
         "dst": 102973553,
         "dstport": '59491',
-        "timestamp": '2011-06-21 18:06:25',
+        "timestamp": datetime(2011,6,21,18,6,25),
         "protocol": 'UDP',
         "bytes_sent": '183',
         "bytes_received": '0',

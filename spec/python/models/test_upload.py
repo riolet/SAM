@@ -9,7 +9,7 @@ db = db_connection.db
 sub_id = db_connection.default_sub
 ds_empty = db_connection.dsid_short
 
-importer_names = ['paloalto', 'nfdump', 'aws', 'asasyslog', 'tcpdump']
+importer_names = ['paloalto', 'netflow', 'aws', 'asasyslog', 'tcpdump']
 
 try:
     import dateutil.parser

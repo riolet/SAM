@@ -7,7 +7,28 @@ from sam import common, constants, integrity
 THIS_DIR = os.path.dirname(__file__)
 
 
+def get_globals():
+    urls = constants.urls
+    store = common.session_store
+    renderer = common.renderer
+    db = common.db
+    dbq = common.db_quiet
+    wconfig = web.config.copy()
+    return locals()
+
+
+def set_globals(gs):
+    constants.urls = gs['urls']
+    common.session_store = gs['store']
+    common.renderer = gs['renderer']
+    common.db = gs['db']
+    common.db_quiet = gs['dbq']
+    web.config.update(gs['wconfig'])
+
+
 def test_load_plugins():
+    gs = get_globals()
+    plugins = constants.plugins.copy()
     try:
         assert 'root' in constants.plugins
         constants.plugins['root'] = 'bad/directory'
@@ -32,30 +53,36 @@ def test_load_plugins():
         constants.plugin_navbar_edits = []
         constants.plugin_hooks_traffic_import = []
         constants.plugin_hooks_server_start = []
+        constants.plugins = plugins
+        set_globals(gs)
 
 
 def test_init_globals():
-    common.init_globals()
-    assert isinstance(common.renderer, common.MultiRender)
+    gs = get_globals()
+    try:
+        common.init_globals()
+        assert isinstance(common.renderer, common.MultiRender)
 
-    assert len(common.renderer.bare_paths) == 0
-    test_path = os.path.join(THIS_DIR, 'plugins', 'test_plugin2')
-    constants.plugin_templates = [test_path]
-    common.init_globals()
-    assert len(common.renderer.bare_paths) == 1
+        assert len(common.renderer.bare_paths) == 0
+        test_path = os.path.join(THIS_DIR, 'plugins', 'test_plugin2')
+        constants.plugin_templates = [test_path]
+        common.init_globals()
+        assert len(common.renderer.bare_paths) == 1
 
-    constants.plugin_templates = []
-    constants.plugin_urls = [
-        '/test_url', 'test_plugin2.pages.test_url.TestUrl'
-    ]
-    old_len = len(constants.urls)
-    common.init_globals()
-    assert len(common.renderer.bare_paths) == 0
-    assert len(constants.urls) == old_len + 2
+        constants.plugin_templates = []
+        constants.plugin_urls = [
+            '/test_url', 'test_plugin2.pages.test_url.TestUrl'
+        ]
+        old_len = len(constants.urls)
+        common.init_globals()
+        assert len(common.renderer.bare_paths) == 0
+        assert len(constants.urls) == old_len + 2
 
-    constants.plugin_urls = []
-    common.init_globals()
-    assert len(constants.urls) == old_len
+        constants.plugin_urls = []
+        common.init_globals()
+        assert len(constants.urls) == old_len
+    finally:
+        set_globals(gs)
 
 
 def test_parse_sql_file():
@@ -179,12 +206,12 @@ def test_db_concat():
 
     with pytest.raises(ValueError):
         assert common.db_concat(mysql) == 'CONCAT()'
-    assert common.db_concat(mysql, "hi") == "CONCAT('hi')"
-    assert common.db_concat(mysql, "'hi'", "'lo'") == """CONCAT("'hi'","'lo'")"""
+    assert common.db_concat(mysql, "hi") == "CONCAT(hi)"
+    assert common.db_concat(mysql, "'hi'", "'lo'") == """CONCAT('hi','lo')"""
     assert common.db_concat(mysql, 1, 2, 3) == "CONCAT(1,2,3)"
 
     with pytest.raises(ValueError):
         assert common.db_concat(sqlite) == ''
-    assert common.db_concat(sqlite, "hi") == "'hi'"
-    assert common.db_concat(sqlite, "'hi'", "'lo'") == "\"'hi'\"||\"'lo'\""
+    assert common.db_concat(sqlite, "hi") == 'hi'
+    assert common.db_concat(sqlite, "'hi'", "'lo'") == "'hi'||'lo'"
     assert common.db_concat(sqlite, 1, 2, 3) == '1||2||3'

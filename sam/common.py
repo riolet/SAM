@@ -293,9 +293,9 @@ def db_concat(db, *args):
     if not args:
         raise ValueError("Must supply arguments to concatenate")
     if db.dbname == 'mysql':
-        return 'CONCAT({})'.format(','.join(map(repr,args)))
+        return 'CONCAT({})'.format(','.join(map(str,args)))
     elif db.dbname == 'sqlite':
-        return '||'.join(map(repr,args))
+        return '||'.join(map(str,args))
 
 
 # tell renderer where to look for templates
