@@ -1,5 +1,6 @@
 import sys
 import subprocess
+from datetime import datetime
 import shlex
 from sam.importers.import_base import BaseImporter
 
@@ -10,7 +11,7 @@ def safe_translate(value):
     except ValueError:
         prefix = value[-1]
         try:
-            value = float(value[:-2])
+            value = float(value[:-1])
         except ValueError:
             raise ValueError("Untranslatable number: {0}".format(value))
         if prefix == 'M':
@@ -22,8 +23,8 @@ def safe_translate(value):
         raise ValueError("Unknown prefix: {0} {1}".format(value, prefix))
 
 
-class NFDumpImporter(BaseImporter):
-    FORMAT = "fmt:%pr,%sa,%sp,%da,%dp,%ts,%ibyt,%obyt,%ipkt,%opkt,%td"
+class NetFlowImporter(BaseImporter):
+    FORMAT = "fmt:%pr,%sa,%sp,%da,%dp,%te,%ibyt,%obyt,%ipkt,%opkt,%td"
     PROTOCOL = 0
     SRC = 1
     SRCPORT = 2
@@ -48,8 +49,12 @@ Usage:
 """.format(sys.argv[0])
 
     def import_file(self, path_in):
+        #  verify file exists
+        if not self.validate_file(path_in):
+            raise ValueError("File not found: {}".format(path_in))
+
         # Assume a binary file as input
-        args = shlex.split('nfdump -r {0} -o {1}'.format(path_in, NFDumpImporter.FORMAT))
+        args = shlex.split('nfdump -r {0} -b -o {1}'.format(path_in, NetFlowImporter.FORMAT))
         try:
             proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
         except OSError as e:
@@ -92,6 +97,7 @@ Usage:
         proc.wait()
 
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+        return lines_inserted
 
     def import_string(self, s):
         """
@@ -102,7 +108,7 @@ Usage:
         Returns:
             None
         """
-        args = shlex.split('nfdump -o {0}'.format(NFDumpImporter.FORMAT))
+        args = shlex.split('nfdump -b -o {0}'.format(NetFlowImporter.FORMAT))
         proc = subprocess.Popen(args, bufsize=-1, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         stdout, stderr = proc.communicate(s)
         all_lines = stdout.splitlines()
@@ -128,6 +134,7 @@ Usage:
             self.insert_data(rows, counter)
             lines_inserted += counter
         print("Done. {0} lines processed, {1} rows inserted".format(line_num, lines_inserted))
+        return lines_inserted
 
     def translate(self, line, linenum, dictionary):
         # remove trailing newline
@@ -137,12 +144,7 @@ Usage:
             return 1
         split_data = [i.strip(' ') for i in split_data]
 
-        #if split_data[0] != 'TCP':
-        #    # printing this is very noisy and slow
-        #    # print("Line {0}: Ignoring non-TCP entry (was {1})".format(lineNum, split_data[29]))
-        #    return 2
-
-        #self.keys = [
+        #self.keys == [
         #        "src",
         #        "srcport",
         #        "dst",
@@ -155,21 +157,30 @@ Usage:
         #        "packets_received",
         #        "duration",
         #    ]
-        dictionary['src'] = self.ip_to_int(*(split_data[NFDumpImporter.SRC].split(".")))
-        dictionary['srcport'] = split_data[NFDumpImporter.SRCPORT]
-        dictionary['dst'] = self.ip_to_int(*(split_data[NFDumpImporter.DST].split(".")))
-        dictionary['dstport'] = split_data[NFDumpImporter.DSTPORT]
-        dictionary['timestamp'] = split_data[NFDumpImporter.TIMESTAMP]
-        dictionary['protocol'] = split_data[NFDumpImporter.PROTOCOL].upper()
-        dictionary['bytes_sent'] = safe_translate(split_data[NFDumpImporter.B_SENT])
-        dictionary['bytes_received'] = safe_translate(split_data[NFDumpImporter.B_RECEIVED])
-        dictionary['packets_sent'] = safe_translate(split_data[NFDumpImporter.P_SENT])
-        dictionary['packets_received'] = safe_translate(split_data[NFDumpImporter.P_RECEIVED])
-        dictionary['duration'] = safe_translate(split_data[NFDumpImporter.DURATION])
+        try:
+            dictionary['src'] = self.ip_to_int(*(split_data[NetFlowImporter.SRC].split(".")))
+            dictionary['srcport'] = int(float(split_data[NetFlowImporter.SRCPORT]))
+            dictionary['dst'] = self.ip_to_int(*(split_data[NetFlowImporter.DST].split(".")))
+            # The float cast is because sometimes nfdump reports port as 0.0 for ICMP connections
+            dictionary['dstport'] = int(float(split_data[NetFlowImporter.DSTPORT]))
+            dictionary['timestamp'] = datetime.strptime(split_data[NetFlowImporter.TIMESTAMP], "%Y-%m-%d %H:%M:%S.%f")
+            dictionary['protocol'] = split_data[NetFlowImporter.PROTOCOL].upper()
+            dictionary['bytes_sent'] = safe_translate(split_data[NetFlowImporter.B_SENT])
+            dictionary['bytes_received'] = safe_translate(split_data[NetFlowImporter.B_RECEIVED])
+            dictionary['packets_sent'] = safe_translate(split_data[NetFlowImporter.P_SENT])
+            dictionary['packets_received'] = safe_translate(split_data[NetFlowImporter.P_RECEIVED])
+            dictionary['duration'] = max(safe_translate(split_data[NetFlowImporter.DURATION]), 1)
+
+            #report is probably reversed to what it should be.
+            if dictionary['srcport'] < dictionary['dstport']:
+                BaseImporter.reverse_connection(dictionary)
+        except:
+            return 2
+
         return 0
 
 
-class_ = NFDumpImporter
+class_ = NetFlowImporter
 
 # If running as a script, begin by executing main.
 if __name__ == "__main__":

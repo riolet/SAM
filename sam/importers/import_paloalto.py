@@ -60,7 +60,7 @@ class PaloAltoImporter(BaseImporter):
             dictionary['dst'] = self.ip_to_int(*(split_data[PaloAltoImporter.DestIP].split(".")))
             dictionary['dstport'] = split_data[PaloAltoImporter.DestPort]
             dictionary['timestamp'] = datetime.strptime(
-                split_data[PaloAltoImporter.Timestamp], "%Y/%m/%d %H:%M:%S").strftime(self.mysql_time_format)
+                split_data[PaloAltoImporter.Timestamp], "%Y/%m/%d %H:%M:%S")
             dictionary['protocol'] = split_data[PaloAltoImporter.Protocol].upper()
             if split_data[PaloAltoImporter.BytesSent] and split_data[PaloAltoImporter.BytesReceived] and int(
                     split_data[PaloAltoImporter.BytesSent]) + int(split_data[PaloAltoImporter.BytesReceived]) == int(
