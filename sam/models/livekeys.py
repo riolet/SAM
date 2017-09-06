@@ -1,11 +1,13 @@
 import os
 import math
 import base64
-from sam import common
 import web
 
 
 class LiveKeys:
+    table_livekeys = "LiveKeys"
+    table_ds = "Datasources"
+    
     def __init__(self, db, subscription):
         """
         :type db: web.DB
@@ -15,8 +17,6 @@ class LiveKeys:
         """
         self.db = db
         self.sub = subscription
-        self.table_livekeys = "LiveKeys"
-        self.table_ds = "Datasources"
 
     @staticmethod
     def b64_url_encode(bytes_string):
@@ -37,7 +37,7 @@ class LiveKeys:
 
     def create(self, ds_id):
         key = LiveKeys.generate_salt(24)
-        self.db.insert(self.table_livekeys, subscription=self.sub, datasource=ds_id, access_key=key)
+        self.db.insert(LiveKeys.table_livekeys, subscription=self.sub, datasource=ds_id, access_key=key)
     
     def read(self):
         qvars = {
@@ -48,7 +48,7 @@ class LiveKeys:
         JOIN {table_datasources} AS `D`
             ON L.subscription = D.subscription AND L.datasource = D.id
         WHERE L.subscription=$sub
-        ORDER BY created ASC""".format(table_livekeys=self.table_livekeys, table_datasources=self.table_ds)
+        ORDER BY created ASC""".format(table_livekeys=LiveKeys.table_livekeys, table_datasources=LiveKeys.table_ds)
         rows = self.db.query(query, vars=qvars)
         return list(map(dict, rows))
 
@@ -56,7 +56,7 @@ class LiveKeys:
         qvars = {
             'key': key
         }
-        rows = self.db.select(self.table_livekeys, where="access_key = $key", vars=qvars)
+        rows = self.db.select(LiveKeys.table_livekeys, where="access_key = $key", vars=qvars)
         return rows.first()
 
     def delete(self, key):
@@ -64,19 +64,19 @@ class LiveKeys:
             'sub': self.sub,
             'key': key
         }
-        num_deleted = self.db.delete(self.table_livekeys, where='subscription=$sub AND access_key=$key', vars=qvars)
+        num_deleted = self.db.delete(LiveKeys.table_livekeys, where='subscription=$sub AND access_key=$key', vars=qvars)
         return num_deleted
 
     def delete_ds(self, ds_id):
         qvars = {
             'id': ds_id
         }
-        num_deleted = self.db.delete(self.table_livekeys, where='datasource = $id', vars = qvars)
+        num_deleted = self.db.delete(LiveKeys.table_livekeys, where='datasource = $id', vars=qvars)
         return num_deleted
 
     def delete_all(self):
         qvars = {
             'sub': self.sub
         }
-        num_deleted = self.db.delete(self.table_livekeys, where='subscription=$sub', vars=qvars)
+        num_deleted = self.db.delete(LiveKeys.table_livekeys, where='subscription=$sub', vars=qvars)
         return num_deleted

@@ -45,6 +45,7 @@ Tests:
     new row should have chosen destination (from dropdown list)
   X button should remove access key from UI table and from DB
 """
+import os
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -496,8 +497,7 @@ def test_ds_upload_delete(browser, tmpdir):
     # offer a file
     # TODO: tests fail in firefox because fileinput will not accept send_keys.
     # selenium.common.exceptions.WebDriverException: Message: File not found:
-    input_file.send_keys("/home/joe/test.log")
-    # input_file.send_keys(os.path.abspath(str(f)))
+    input_file.send_keys(os.path.abspath(str(f)))
 
     # click confirm
     um_confirm.click()

@@ -3,11 +3,16 @@ import os
 import getopt
 import multiprocessing
 import logging
-sys.path.append(os.path.dirname(__file__))  # this could be executed from any directory
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))  # this could be executed from any directory
 from sam import constants
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=constants.log_level)
 application = None
+
+VALID_ARGS = ['format=', 'port=', 'target=', 'dest=', 'sub=', 'local', 'whois', 'wsgi']
+VALID_TARGETS = ['local', 'aggregator', 'collector', 'collector_stream',
+                 'webserver', 'import', 'test_dummy']
 
 # targets:
 #   webserver
@@ -21,37 +26,60 @@ application = None
 #   collector
 #     --target=collector
 #   localmode combo
-#     --local --scanner=tcpdump
+#     --local --format=tcpdump
 #   import
 #     --target=import  --format=palo_alto
-
 
 # suggested demo invocation:
 # sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
 
 
 def main(argv=None):
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
-    kwargs, args = getopt.getopt(argv[1:], '', ['format=', 'port=', 'target=', 'dest=', 'sub=', 'local', 'whois', 'wsgi'])
+    try:
+        parsed_args, args = parse_args(argv)
+    except getopt.GetoptError as e:
+        logger.critical("Invalid option specified.")
+        logger.critical(e)
+        return 1
 
-    defaults = {
-        'format': 'tcpdump',
+    constants.use_whois = parsed_args['whois']
+    target = parsed_args['target']
+
+    if target not in VALID_TARGETS:
+        logger.critical("Invalid target")
+        return 2
+    try:
+        {'local': launch_localmode,
+         'webserver': launch_webserver,
+         'collector': launch_collector,
+         'collector_stream': launch_collector_stream,
+         'aggregator': launch_aggregator,
+         'import': launch_importer
+         }[target](parsed_args, args)
+    except:
+        return 3
+    return 0
+
+
+def parse_args(argv):
+    kwargs, args = getopt.getopt(argv[1:], '', VALID_ARGS)
+
+    parsed_args = {
+        'format': None,
         'port': None,
         'target': 'webserver',
-        'local': False,
         'whois': False,
         'wsgi': False,
         'dest': 'default',
         'sub': None
     }
-    valid_targets = ['aggregator', 'collector', 'collector_stream', 'webserver', 'import']
 
-    parsed_args = defaults.copy()
     for key, val in kwargs:
         if key == '--local':
-            parsed_args['local'] = True
+            parsed_args['target'] = 'local'
         if key == '--wsgi':
             parsed_args['wsgi'] = True
         if key == '--whois':
@@ -66,29 +94,10 @@ def main(argv=None):
             parsed_args['dest'] = val
         if key == '--sub':
             parsed_args['sub'] = val
-
-    if parsed_args['target'] not in valid_targets:
-        logger.critical("Invalid target")
-        sys.exit(1)
-    if parsed_args['whois']:
-        constants.use_whois = True
-    if parsed_args['local']:
-        launch_localmode(parsed_args)
-    elif parsed_args['target'] == 'webserver':
-        launch_webserver(parsed_args)
-    elif parsed_args['target'] == 'collector':
-        launch_collector(parsed_args)
-    elif parsed_args['target'] == 'collector_stream':
-        launch_collector_stream(parsed_args)
-    elif parsed_args['target'] == 'aggregator':
-        launch_aggregator(parsed_args)
-    elif parsed_args['target'] == 'import':
-        launch_importer(parsed_args, args)
-    else:
-        logger.critical("Error determining what to launch.")
+    return parsed_args, args
 
 
-def launch_webserver(parsed):
+def launch_webserver(parsed, args):
     import sam.server_webserver
     if parsed.get('wsgi', False):
         logger.info('launching wsgi webserver')
@@ -108,30 +117,32 @@ def launch_webserver(parsed):
         logger.info('webserver shut down.')
 
 
-def launch_collector(parsed):
+def launch_collector(parsed, args):
     import server_collector
     port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
     logger.info('launching collector on {}'.format(port))
     collector = server_collector.Collector()
+    if parsed['format'] is None:
+        parsed['format'] = constants.collector['format']
     collector.run(port=port, format=parsed['format'])
     logger.info('collector shut down.')
+    return collector
 
 
-def launch_collector_stream(parsed):
+def launch_collector_stream(parsed, args):
     import server_collector
-    port = parsed.get('port', None)
-    if port is None:
-        port = constants.collector['listen_port']
-    logger.info('launching collector on {}'.format(port))
+    logger.info('launching stdin collector')
     collector = server_collector.Collector()
-
+    if parsed['format'] is None:
+        parsed['format'] = constants.collector['format']
     collector.run_streamreader(sys.stdin, format=parsed['format'])
     logger.info('collector shut down.')
+    return collector
 
 
-def launch_aggregator(parsed):
+def launch_aggregator(parsed, args):
     import server_aggregator
     global application
     if parsed['wsgi']:
@@ -155,11 +166,11 @@ def launch_importer(parsed, args):
 
     sub_model = sam.models.subscriptions.Subscriptions(common.db_quiet)
     subscription_id = sub_model.decode_sub(parsed['sub'])
-    format = parsed['format']
+    log_format = parsed['format']
 
     if len(args) != 1:
         logger.error("Please specify one source file. Exiting.")
-        return
+        return 4
 
     try:
         ds_id = int(datasource)
@@ -170,23 +181,24 @@ def launch_importer(parsed, args):
             ds_id = d_model.name_to_id(datasource)
         except:
             logger.error('Please specify a datasource. "--dest=???". Exiting.')
-            return
+            return 5
     if not ds_id:
         logger.error('Please specify a datasource. "--dest=???". Exiting.')
-        return
-    importer = sam.importers.import_base.get_importer(format, subscription_id, ds_id)
+        return 6
+    importer = sam.importers.import_base.get_importer(log_format, subscription_id, ds_id)
     if not importer:
-        logger.error("Could not find importer for given format. ({})".format(format))
-        return
+        logger.error("Could not find importer for given format. ({})".format(log_format))
+        return 7
     if importer.validate_file(args[0]):
         importer.import_file(args[0])
     else:
         logger.error("Could not open source file. Exiting.")
-        return
+        return 8
 
     from sam.preprocess import Preprocessor
     processor = Preprocessor(common.db_quiet, subscription_id, ds_id)
     processor.run_all()
+    return processor
 
 
 def create_local_settings(db, sub):
@@ -222,13 +234,13 @@ def check_database():
 
 
 def launch_whois_service(db, sub):
-    import models.nodes
-    whois = models.nodes.WhoisService(db, sub)
+    import models.whois
+    whois = models.whois.WhoisService(db, sub)
     whois.start()
     return whois
 
 
-def launch_localmode(parsed):
+def launch_localmode(parsed, args):
     import server_collector
 
     # enable local mode
@@ -242,22 +254,25 @@ def launch_localmode(parsed):
     access_key = create_local_settings(db, sub_id)
 
     # launch aggregator process
-    aggArgs = parsed.copy()
-    aggArgs.pop('port')
-    p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(aggArgs,))
+    agg_args = parsed.copy()
+    agg_args.pop('port', None)
+    p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(agg_args, []))
     p_aggregator.start()
 
     # launch collector process
     #    pipe stdin into the collector
     def spawn_coll(stdin):
         collector = server_collector.Collector()
+        if parsed['format'] is None:
+            parsed['format'] = constants.collector['format']
         collector.run_streamreader(stdin, format=parsed['format'], access_key=access_key)
-    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
+
+    new_stdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
-        p_collector = multiprocessing.Process(target=spawn_coll, args=(newstdin,))
+        p_collector = multiprocessing.Process(target=spawn_coll, args=(new_stdin,))
         p_collector.start()
     finally:
-        newstdin.close()  # close in the parent
+        new_stdin.close()  # close in the parent (still open in child proc)
 
     # launch whois service (if requested)
     if parsed['whois']:
@@ -269,7 +284,7 @@ def launch_localmode(parsed):
         whois_thread = None
 
     # launch webserver locally.
-    launch_webserver(parsed)
+    launch_webserver(parsed, args)
 
     # pressing ctrl-C sends SIGINT to all child processes. The shutdown order is not guaranteed.
     logger.debug("joining collector")
@@ -292,11 +307,13 @@ def launch_localmode(parsed):
 
 def testing_entrypoint(environment, argv):
     os.environ.update(environment)
-    # Reloading constants rereads the environment variables again. Otherwise stale values would be used.
+    # Reloading constants rereads the environment variables again.
+    # Otherwise stale values would be used.
     reload(constants)
+    constants.init_urls()
 
     main(argv=argv)
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(main(sys.argv))

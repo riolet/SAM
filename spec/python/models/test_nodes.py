@@ -55,7 +55,6 @@ def test_merge_groups():
     assert result == expected
     
 
-
 def test_get_all_endpoints():
     m_nodes = nodes.Nodes(db, sub_id)
     actual = m_nodes.get_all_endpoints()

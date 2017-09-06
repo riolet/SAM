@@ -25,7 +25,7 @@ const strings = {
   ,map_set_lw_pc_hint: "Width based on number of packets transferred"
   ,map_set_vis: "Show/Hide"
   ,map_set_vis_c: "Show pure clients"
-  ,map_set_vis_d: "Show pure servers"
+  ,map_set_vis_s: "Show pure servers"
   ,map_set_vis_i: "Show inbound connections"
   ,map_set_vis_o: "Show outbound connections"
   ,map_set_lay: "Layout"

@@ -90,7 +90,7 @@ def test_evaluate_immediate_rule():
         'dest_ip': '50.64.76.87',
         'port': 96
     })
-    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule1, rule2])
+    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**31-1), [rule1, rule2])
 
     processor = rp.RulesProcessor(db)
     r1_alerts = processor.evaluate_immediate_rule(job1, rule1)
@@ -114,7 +114,7 @@ def test_evaluate_periodic_rule():
     rule3 = rule.Rule(3, True, 'test_rule3', 'test_rule3_desc', 'portscan.yml')
     rule3.set_exposed_params({'threshold': '1'})
 
-    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**32-1), [rule1, rule2, rule3])
+    job1 = rp.RuleJob(sub_id, ds_full, datetime.fromtimestamp(1), datetime.fromtimestamp(2**31-1), [rule1, rule2, rule3])
     processor = rp.RulesProcessor(db)
 
     r1_alerts = processor.evaluate_immediate_rule(job1, rule1)

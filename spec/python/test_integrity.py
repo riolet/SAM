@@ -147,3 +147,33 @@ def test_sqlite_session():
     except:
         traceback.print_exc()
         assert False
+
+
+def test_check_and_fix_integrity_mysql():
+    mysqlconfig = {
+        'dbn': "mysql",
+        'db': 'sam_integrity_test',
+        'host': "localhost",
+        'user': "root",
+        'pw': constants.dbconfig['pw'],
+        'port': 3306
+    }
+    db, dbq = common.get_db(mysqlconfig)
+    try:
+        integrity.check_and_fix_integrity(db, mysqlconfig)
+    finally:
+        db.query("drop database sam_integrity_test")
+
+
+def test_check_and_fix_integrity_sqlite():
+    sqliteconfig = {
+        'dbn': "sqlite",
+        'db': '',
+        'host': "localhost",
+        'user': "root",
+        'pw': constants.dbconfig['pw'],
+        'port': 3306
+    }
+    db, dbq = common.get_db(sqliteconfig)
+    integrity.check_and_fix_integrity(db, sqliteconfig)
+

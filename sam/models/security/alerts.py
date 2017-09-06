@@ -108,8 +108,17 @@ class Alerts:
     def clear(self):
         return self.db.delete(self.table, where="1")
 
-    def count(self):
-        rows = self.db.select(self.table, what="COUNT(0) AS 'count'")
+    def count(self, filters=None, ipstart=0, ipend=2**32-1):
+        qvars = {
+            'ips': ipstart,
+            'ipe': ipend
+        }
+        what = "COUNT(0) AS 'count'"
+        if filters:
+            where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
+        else:
+            where = 'ipstart>=$ips AND ipend<=$ipe'
+        rows = self.db.select(self.table, what=what, where=where, vars=qvars)
         return rows.first()['count']
 
     def alert_already_exists(self, ipstart, ipend, rule_id, timestamp):

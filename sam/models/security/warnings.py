@@ -89,6 +89,7 @@ class Warnings(base.DBPlugin):
 
     def update_status(self, warning_id, status):
         qvars = {'wid': warning_id}
+        # TODO: allow locking of warning status as in plugin
         if status.lower() in Warnings.VALID_STATUSES:
             num_rows_updated = self.db.update(self.table, where="id=$wid", vars=qvars, status=status.lower())
         else:

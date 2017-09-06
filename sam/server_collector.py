@@ -287,14 +287,17 @@ class Collector(object):
             response = requests.request('POST', self.target_address, data=cPickle.dumps(package))
             reply = response.content
         except Exception as e:
-            logger.exception("Collector: Testing connection...Failed")
+            logger.error("Collector: Testing connection...Failed")
             return False
         if reply == 'handshake':
-            logger.exception("Collector: Testing connection...Succeeded")
+            logger.info("Collector: Testing connection...Succeeded")
             return True
         else:
-            logger.error("Bad reply. Aborting")
-            logger.debug('  "{}"'.format(reply))
+            reply.replace('\r', '').replace('\n', '')
+            if len(reply) > 50:
+                logger.error("Error: {}...".format(reply[:50]))
+            else:
+                logger.error("Error: {}".format(reply))
             return False
 
     def shutdown(self):
