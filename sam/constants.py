@@ -94,6 +94,7 @@ plugin_navbar_edits = []  # format to append is (link, dict) and each is applied
 
 plugin_hooks_traffic_import = []
 plugin_hooks_server_start = []
+plugin_hooks_server_stop = []
 
 default_urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)

@@ -72,6 +72,8 @@ def start_server(port):
     #    hook()
     app.add_processor(web.loadhook(localization_hook))
     httpserver.runwsgi(app.wsgifunc(httpserver.PluginStaticMiddleware), port)
+    for hook in constants.plugin_hooks_server_stop:
+        hook()
 
 
 def start_wsgi():
