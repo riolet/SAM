@@ -65,6 +65,11 @@ class TCPDumpImporter(BaseImporter):
 
         except:
             return 1
+
+        if dictionary['timestamp'].year < 2000:
+            print("BAD YEAR: {}".format(dictionary['timestamp']))
+            print("\t{}".format(line))
+
         return 0
 
 

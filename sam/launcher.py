@@ -201,29 +201,38 @@ def launch_importer(parsed, args):
     return processor
 
 
-def create_local_settings(db, sub):
+def create_local_settings(db, sub, ds_key):
     # create 1 key if none exist
     from sam.models.settings import Settings
     from sam.models.datasources import Datasources
     from sam.models.livekeys import LiveKeys
 
-    m_set = Settings(db, {}, sub)
-    ds_id = m_set['datasource']
-    m_livekeys = LiveKeys(db, sub)
-
     # set useful settings for local viewing.
+    m_set = Settings(db, {}, sub)
     m_ds = Datasources(db, {}, sub)
+    m_livekeys = LiveKeys(db, sub)
+    try:
+        ds_id = int(ds_key)
+        if ds_id not in m_ds.ds_ids:
+            ds_id = m_set['datasource']
+    except:
+        ds_id = m_ds.name_to_id(ds_key)
+        if not ds_id:
+            ds_id = m_set['datasource']
     m_ds.set(ds_id, flat='1', ar_active='1', ar_interval=30)
 
     # create key for uploading securely
     keys = m_livekeys.read()
-    if len(keys) == 0:
-        m_livekeys.create(ds_id)
+    upload_key = None
+    for key in keys:
+        if key['ds_id'] == ds_id:
+            upload_key = keys[0]['access_key']
 
-    keys = m_livekeys.read()
-    key = keys[0]['access_key']
-    constants.collector['upload_key'] = key
-    return key
+    if upload_key is None:
+        upload_key = m_livekeys.create(ds_id)
+
+    constants.collector['upload_key'] = upload_key
+    return upload_key
 
 
 def check_database():
@@ -251,7 +260,7 @@ def launch_localmode(parsed, args):
     check_database()
     sub_model = sam.models.subscriptions.Subscriptions(db)
     sub_id = sub_model.decode_sub(parsed['sub'])
-    access_key = create_local_settings(db, sub_id)
+    access_key = create_local_settings(db, sub_id, parsed['dest'])
 
     # launch aggregator process
     agg_args = parsed.copy()
@@ -277,8 +286,8 @@ def launch_localmode(parsed, args):
     # launch whois service (if requested)
     if parsed['whois']:
         logger.info("Starting whois service")
-        import models.nodes
-        whois_thread = models.nodes.WhoisService(db, sub_id)
+        import models.whois
+        whois_thread = models.whois.WhoisService(db, sub_id)
         whois_thread.start()
     else:
         whois_thread = None

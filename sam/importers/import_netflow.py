@@ -1,3 +1,8 @@
+"""
+This importer uses a few tools in the netflow nfdump tools package
+Specifically, it launches processes nfcapd and nfdump to capture netflow packets and translate them into usable text.
+
+"""
 import sys
 import subprocess
 from datetime import datetime
@@ -36,7 +41,6 @@ class NetFlowImporter(BaseImporter):
     P_RECEIVED = 8
     P_SENT = 9
     DURATION = 10
-
 
     def __init__(self):
         BaseImporter.__init__(self)

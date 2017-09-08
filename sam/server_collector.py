@@ -32,11 +32,11 @@ class SocketBuffer(object):
         self.buffer = []
         self.buffer_lock = threading.Lock()
 
-    def store_data(self, lines):
+    def store_data(self, packet):
         # acquire lock
         with self.buffer_lock:
-            # append line
-            self.buffer.append(lines)
+            # append packet
+            self.buffer.append(packet)
             # release lock
 
     def __len__(self):
@@ -44,9 +44,9 @@ class SocketBuffer(object):
 
     def pop_all(self):
         with self.buffer_lock:
-            lines = self.buffer
+            packets = self.buffer
             self.buffer = []
-        return lines
+        return packets
 
 # used to send data between threads.
 SOCKET_BUFFER = SocketBuffer()
@@ -55,7 +55,7 @@ SOCKET_BUFFER = SocketBuffer()
 class SocketListener(SocketServer.BaseRequestHandler):
     def handle(self):
         global SOCKET_BUFFER
-        data = self.request[0].strip()
+        data = self.request[0]
         SOCKET_BUFFER.store_data(data)
 
 
@@ -207,43 +207,42 @@ class Collector(object):
                 alive = False
 
             deltatime = time.time() - last_processing
+            # Buffer full. Processing.
             if self.transmit_buffer_size > self.transmit_buffer_threshold:
                 logger.debug("COLLECTOR: process server running batch (due to buffer cap reached)")
                 self.transmit_lines()
                 last_processing = time.time()
+            # Time's up. Processing.
             elif deltatime > self.time_between_transmits and self.transmit_buffer_size > 0:
                 logger.debug("COLLECTOR: process server running batch (due to time)")
                 self.transmit_lines()
                 last_processing = time.time()
+            # Stuff is in there, but the buffer's not full and time isn't up. Not processing.
             elif self.transmit_buffer_size > 0:
                 logger.debug("COLLECTOR: waiting for time limit or a full buffer. "
                       "Time at {0:.1f}, Size at {1}".format(deltatime, self.transmit_buffer_size))
+            # buffer is empty. Waiting...
             else:
                 # Don't let time accumulate while the buffer is empty
                 last_processing = time.time()
 
             # import lines in memory buffer:
             if len(SOCKET_BUFFER) > 0:
-                self.import_lines()
+                self.import_packets()
 
         logger.info("COLLECTOR: process server shutting down")
 
-    def import_lines(self):
+    def import_packets(self):
         global SOCKET_BUFFER
         # clear socket buffer
-        lines = SOCKET_BUFFER.pop_all()
+        packets = SOCKET_BUFFER.pop_all()
 
         # translate lines
-        translated = []
-        for line in lines:
-            translated_line = {}
-            success = self.importer.translate(line, 1, translated_line)
-            if success == 0:
-                translated.append(translated_line)
+        translations = self.importer.import_packets(packets)
 
         # insert translations into TRANSMIT_BUFFER
         headers = base_importer.BaseImporter.keys
-        for line in translated:
+        for line in translations:
             list_line = [line[header] for header in headers]
             self.transmit_buffer.append(list_line)
 
