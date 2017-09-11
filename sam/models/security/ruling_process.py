@@ -1,12 +1,14 @@
 import re
 import time
-from datetime import datetime
+import logging
 import multiprocessing
 import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
+from datetime import datetime
 from sam import common, constants
 from sam.models.security import rule, rule_parser, alerts
 
+logger = logging.getLogger(__name__)
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
 _JOBS = {}
@@ -107,10 +109,17 @@ def ruling_process(queue, stayalive=_PROCESSOR_STAYALIVE):
     # print("_JOBS: {}".format(_JOBS))
     engine = RulesProcessor(_DB_QUIET)
     while not queue.empty():
-        job_id = queue.get()
-        engine.process(_JOBS[job_id])
-        if queue.empty():
-            time.sleep(stayalive)
+        try:
+            job_id = queue.get()
+            try:
+                engine.process(_JOBS[job_id])
+            except:
+                logger.warn("error processing job {}.".format(job_id))
+                logger.warn("JOBS: {}".format(_JOBS))
+            if queue.empty():
+                time.sleep(stayalive)
+        except KeyboardInterrupt:
+            break
     reset_globals()
     return engine
 
@@ -246,7 +255,7 @@ SAM
             elif action['type'] == 'sms':
                 self.trigger_sms(job, rule_, action, matches, tr_table)
             else:
-                print('WARNING: action "{}" not supported'.format(action['type']))
+                logger.warning('action "{}" not supported'.format(action['type']))
                 continue
 
     def process(self, job):
@@ -258,16 +267,16 @@ SAM
         # regularly update job status and completion
         # process the rules sequentially
         job.status = 'In Progress'
-        print('{}: Starting job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
+        logger.info('{}: Starting job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
                                                                    job.time_end))
 
         for i, rule_ in enumerate(job.rules):
             job.status = 'Running rule {} of {}'.format(i+1, len(job.rules))
             if not rule_.is_active():
-                print('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
+                logger.info('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
                 continue
 
-            print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
+            logger.info('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
 
             rule_type = rule_.get_type()
             if rule_type == 'immediate':
@@ -275,10 +284,10 @@ SAM
             elif rule_type == 'periodic':
                 matches = self.evaluate_periodic_rule(job, rule_)
             else:
-                print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'
+                logger.info('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'
                       .format(job.status, rule_.get_name(), rule_type))
                 continue
-            print('    {} alerts discovered,'.format(len(matches)))
+            logger.info('    {} alerts discovered,'.format(len(matches)))
             # for match in matches:
             #     print('      {}: {} -> {}:{} x{} using {}'.format(
             #         datetime.fromtimestamp(int(time.mktime(match.timestamp.timetuple()))),
@@ -290,5 +299,5 @@ SAM
             self.trigger_actions(job, rule_, matches)
 
         job.status = "Complete"
-        print('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id,
+        logger.info('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id,
                                                                    job.time_start, job.time_end))

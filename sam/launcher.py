@@ -85,7 +85,7 @@ def parse_args(argv):
         if key == '--whois':
             parsed_args['whois'] = True
         if key == '--format':
-            parsed_args['format'] = val
+            parsed_args['format'] = val.lower()
         if key == '--target':
             parsed_args['target'] = val
         if key == '--port':
@@ -118,12 +118,19 @@ def launch_webserver(parsed, args):
 
 
 def launch_collector(parsed, args):
-    import server_collector
     port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
     logger.info('launching collector on {}'.format(port))
-    collector = server_collector.Collector()
+
+    # workaround for netflow processing with nfcapd:
+    if parsed['format'].lower() == "netflow":
+        from sam.importers import netflow_collector
+        collector = netflow_collector.Collector()
+    else:
+        import server_collector
+        collector = server_collector.Collector()
+
     if parsed['format'] is None:
         parsed['format'] = constants.collector['format']
     collector.run(port=port, format=parsed['format'])
