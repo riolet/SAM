@@ -173,20 +173,21 @@ class RuleTemplate(object):
             exposed[key] = exposed_param
         return exposed
 
-    @staticmethod
-    def load_inclusions(yml):
+    def load_inclusions(self, yml):
         inclusions = {}
         if not yml.get('include', None):
             return inclusions
         for ref in yml['include'].keys():
-            path = os.path.join(constants.rule_templates_path, yml['include'][ref])
+            path = os.path.join(self.cwd, yml['include'][ref])
+            if not os.path.exists(path):
+                path = os.path.join(constants.rule_templates_path, yml['include'][ref])
             try:
                 with open(path, 'r') as f:
                     data = f.read()
                 inclusions[ref] = data.splitlines()
                 # print("loaded inclusion: {}".format(inclusions[ref]))
             except Exception as e:
-                print("Failed to load inclusion {}: {}".format(ref, str(e)))
+                raise ValueError("Bad rule: inclusion {} not loaded. ({})".format(ref, str(e)))
         return inclusions
 
     @staticmethod
