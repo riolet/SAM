@@ -239,6 +239,10 @@ def sendmail(to_address, subject, body, from_address=constants.smtp['from'], hea
         logger.exception("Other email error:")
 
 
+def sendsms(number, msg):
+    raise NotImplementedError
+
+
 class MultiRender(object):
     def __init__(self, default):
         default_path = os.path.join(constants.base_path, default)
