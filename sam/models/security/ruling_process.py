@@ -208,7 +208,7 @@ class RulesProcessor(object):
         subject = rule_.definition.subject
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
 
-        parser = rule_parser.RuleParser(translations, subject, conditions)
+        parser = rule_parser.RuleParser(translations, subject, conditions, (job.time_start, job.time_end))
         query = parser.sql.get_query(table)
         alerts_discovered = list(self.db.query(query))
 

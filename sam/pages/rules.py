@@ -278,7 +278,7 @@ class RulesApply(base.HeadlessPost):
         try:
             start = datetime.fromtimestamp(int(data['start']))
         except:
-            start = datetime.fromtimestamp(0)
+            start = datetime.fromtimestamp(1)
 
         request = {
             'ds': ds,
