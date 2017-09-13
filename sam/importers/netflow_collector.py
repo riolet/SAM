@@ -31,6 +31,7 @@ class Collector(object):
         self.target_address = constants.collector['target_address']
         self.access_key = constants.collector['upload_key']
         self.default_format = constants.collector['format']
+        self.port = int(constants.collector['listen_port'])
         self.transmit_buffer = []
         self.transmit_buffer_size = 0
         self.transmit_buffer_threshold = 500  # push the transmit buffer to the database server if it reaches this many entries.
@@ -38,11 +39,19 @@ class Collector(object):
         self.time_between_transmits = 10  # seconds. Period for transmitting to the database server.
         self.nfcapd_process = None
         self.shutdown_event = threading.Event()
-        self.importer = None
+        self.importer = import_netflow.NetFlowImporter()
         self.nfcapd_folder = '/tmp/sam_netflow'
-        self.port = None
 
-    def run(self, port=None, format=None, access_key=None):
+    def form_connection(self, sleep=1.0, max_tries=10):
+        attempts = 1
+        connected = self.test_connection()
+        while not connected and attempts < max_tries:
+            time.sleep(sleep)
+            connected = self.test_connection()
+            attempts += 1
+        return connected
+
+    def run(self, port=None, access_key=None):
         """
         Entry point for collector process
         :param port:
@@ -57,25 +66,11 @@ class Collector(object):
             except (ValueError, TypeError) as e:
                 logger.critical('Collector: Invalid port: {}'.format(e))
                 return
-        else:
-            self.port = int(constants.collector['listen_port'])
-        if format is None:
-            format = self.default_format
-        self.importer = base_importer.get_importer(format, 0, 0)
-        if not self.importer:
-            logger.critical("Collector: Failed to load importer; aborting")
-            return
         if access_key is not None:
             self.access_key = access_key
 
         # test the connection
-        attempts = 1
-        connected = self.test_connection()
-        while not connected and attempts < 10:
-            time.sleep(1)
-            connected = self.test_connection()
-            attempts += 1
-        if not connected:
+        if not self.form_connection():
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
@@ -86,7 +81,6 @@ class Collector(object):
         signal.signal(signal.SIGINT, sig_handler)
 
         self.launch_nfcapd(self.port)
-
         logger.info("Live Collector listening on port {0}.".format(self.port))
 
         try:
@@ -145,7 +139,6 @@ class Collector(object):
                 last_processing = time.time()
 
             # import lines in memory buffer:
-            # TODO: scan folder for files to import
             if self.new_capture_exists():
                 self.decode_captures()
 
@@ -227,10 +220,12 @@ class Collector(object):
             reply = response.content
             logger.debug("COLLECTOR: Received reply: {0}".format(reply))
         except Exception as e:
+            reply = 'error'
             logger.error("COLLECTOR: Error sending package: {0}".format(e))
             # keep the unsent lines around
             self.transmit_buffer.extend(lines)
             self.transmit_buffer_size = len(self.transmit_buffer)
+        return reply
 
     def test_connection(self):
         package = {
@@ -258,11 +253,11 @@ class Collector(object):
             return False
 
     def shutdown(self):
-        logger.info("Collector: Shutting down handler.")
+        logger.info("Collector: Shutting down nfcapd.")
         if (self.nfcapd_process is not None):
             self.nfcapd_process.send_signal(signal.SIGINT)
             self.nfcapd_process.wait()
-        logger.info("Collector: Shutting down batch processor.")
+        logger.info("Collector: Shutting down nfdump.")
         self.shutdown_event.set()
 
 

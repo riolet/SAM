@@ -49,7 +49,6 @@ class SocketBuffer(object):
 # used to send data between threads.
 SOCKET_BUFFER = SocketBuffer()
 
-
 class SocketListener(SocketServer.BaseRequestHandler):
     def handle(self):
         global SOCKET_BUFFER
@@ -89,8 +88,8 @@ class Collector(object):
         self.transmit_buffer = []
         self.transmit_buffer_size = 0
         self.transmit_buffer_threshold = 500  # push the transmit buffer to the database server if it reaches this many entries.
-        self.time_between_imports = 1  # seconds. Period for translating lines from SOCKET to TRANSMIT buffers
-        self.time_between_transmits = 10  # seconds. Period for transmitting to the database server.
+        self.time_between_imports = 1  # float, seconds. Period for translating lines from SOCKET to TRANSMIT buffers
+        self.time_between_transmits = 10  # float, seconds. Period for transmitting to the database server.
         self.listener = None
         self.listener_thread = None
         self.shutdown_event = threading.Event()
@@ -99,14 +98,17 @@ class Collector(object):
     def get_importer(self, format):
         if format is None:
             format = self.default_format
-        importer = base_importer.get_importer(format, 0, 0)
+        try:
+            importer = base_importer.get_importer(format, 0, 0)
+        except:
+            importer = None
         return importer
 
-    def form_connection(self):
+    def form_connection(self, sleep=1.0, max_tries=10):
         attempts = 1
         connected = self.test_connection()
-        while not connected and attempts < 10:
-            time.sleep(1)
+        while not connected and attempts < max_tries:
+            time.sleep(sleep)
             connected = self.test_connection()
             attempts += 1
         return connected
@@ -142,6 +144,7 @@ class Collector(object):
 
         # Start the daemon listening on the port in an infinite loop that exits when the program is killed
         self.listener_thread = threading.Thread(target=self.listener.serve_forever)
+        self.listener_thread.daemon = True
         self.listener_thread.start()
         logger.info("Live Collector listening on {0}:{1}.".format(*self.listen_address))
 
@@ -301,12 +304,13 @@ class Collector(object):
             return False
 
     def shutdown(self):
-        logger.info("Collector: Shutting down handler.")
-        self.listener.shutdown()
-        if self.listener_thread:
-            self.listener_thread.join()
-            logger.info("Collector: Handler stopped.")
-        logger.info("Collector: Shutting down batch processor.")
+        if self.listener is not None:
+            logger.info("COLLECTOR: Shutting down handler.")
+            self.listener.shutdown()
+            if self.listener_thread:
+                self.listener_thread.join()
+            logger.info("COLLECTOR: Handler stopped.")
+        logger.info("COLLECTOR: Shutting down batch processor.")
         self.shutdown_event.set()
 
 

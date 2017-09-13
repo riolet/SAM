@@ -273,6 +273,7 @@ def launch_localmode(parsed, args):
     agg_args = parsed.copy()
     agg_args.pop('port', None)
     p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(agg_args, []))
+    p_aggregator.daemon = True
     p_aggregator.start()
 
     # launch collector process
@@ -286,6 +287,7 @@ def launch_localmode(parsed, args):
     new_stdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
         p_collector = multiprocessing.Process(target=spawn_coll, args=(new_stdin,))
+        p_collector.daemon = True
         p_collector.start()
     finally:
         new_stdin.close()  # close in the parent (still open in child proc)
@@ -295,6 +297,7 @@ def launch_localmode(parsed, args):
         logger.info("Starting whois service")
         import models.whois
         whois_thread = models.whois.WhoisService(db, sub_id)
+        whois_thread.daemon = True
         whois_thread.start()
     else:
         whois_thread = None
@@ -311,13 +314,12 @@ def launch_localmode(parsed, args):
     p_aggregator.join()
     logger.debug("aggregator joined")
 
-    if parsed['whois']:
+    if whois_thread:
         logger.debug('joining whois')
-        if whois_thread:
-            if whois_thread.is_alive():
-                whois_thread.shutdown()
-            whois_thread.join()
-        logger.debug('whois joined')
+        if whois_thread.is_alive():
+            whois_thread.shutdown()
+        whois_thread.join()
+    logger.debug('whois joined')
     logger.info("SAM can be safely shut down.")
 
 
