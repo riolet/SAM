@@ -470,7 +470,7 @@ def test_rulesapply_post_decode():
         request = r.decode_post_request(data)
         expected = {
             'ds': ds_full,
-            'start': datetime.fromtimestamp(0),
+            'start': datetime.fromtimestamp(1),
             'end': datetime.fromtimestamp(2**31 - 1)
         }
         assert request == expected
@@ -488,7 +488,7 @@ def test_rulesapply_post_decode():
         request = r.decode_post_request(data)
         expected = {
             'ds': ds_full,
-            'start': datetime.fromtimestamp(0),
+            'start': datetime.fromtimestamp(1),
             'end': datetime.fromtimestamp(11223344)
         }
         assert request == expected
@@ -506,7 +506,7 @@ def test_rulesapply_post_decode():
         request = r.decode_post_request(data)
         expected = {
             'ds': ds_full,
-            'start': datetime.fromtimestamp(0),
+            'start': datetime.fromtimestamp(1),
             'end': datetime.fromtimestamp(2**31 - 1)
         }
         assert request == expected

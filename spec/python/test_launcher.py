@@ -315,7 +315,7 @@ def test_create_local_settings():
     assert settings.ar_interval != 30
 
     try:
-        k = launcher.create_local_settings(db, sub_id)
+        k = launcher.create_local_settings(db, sub_id, dsid)
         livekeys = db.query("SELECT * FROM {} WHERE datasource={} AND subscription={} ".format(LiveKeys.table_livekeys, dsid, sub_id))
         livekeys = list(livekeys)
         assert len(livekeys) == 1
