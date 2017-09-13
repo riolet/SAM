@@ -45,6 +45,7 @@ class SocketBuffer(object):
             self.buffer = []
         return packets
 
+
 # used to send data between threads.
 SOCKET_BUFFER = SocketBuffer()
 
@@ -95,31 +96,39 @@ class Collector(object):
         self.shutdown_event = threading.Event()
         self.importer = None
 
-    def run(self, port=None, format=None, access_key=None):
-        # set up the importer
-        if port is not None:
-            try:
-                self.listen_address = (self.listen_address[0], int(port))
-            except (ValueError, TypeError) as e:
-                logger.critical('Collector: Invalid port: {}'.format(e))
-                return
+    def get_importer(self, format):
         if format is None:
             format = self.default_format
-        self.importer = base_importer.get_importer(format, 0, 0)
-        if not self.importer:
-            logger.critical("Collector: Failed to load importer; aborting")
-            return
-        if access_key is not None:
-            self.access_key = access_key
+        importer = base_importer.get_importer(format, 0, 0)
+        return importer
 
-        # test the connection
+    def form_connection(self):
         attempts = 1
         connected = self.test_connection()
         while not connected and attempts < 10:
             time.sleep(1)
             connected = self.test_connection()
             attempts += 1
-        if not connected:
+        return connected
+
+    def run(self, port=None, format=None, access_key=None):
+        # set up the importer
+        self.importer = self.get_importer(format)
+        if not self.importer:
+            logger.critical("Collector: Failed to load importer; aborting")
+            return
+
+        if port is not None:
+            try:
+                self.listen_address = (self.listen_address[0], int(port))
+            except (ValueError, TypeError) as e:
+                logger.critical('Collector: Invalid port: {}'.format(e))
+                return
+        if access_key is not None:
+            self.access_key = access_key
+
+        # test the connection
+        if not self.form_connection():
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
@@ -146,23 +155,16 @@ class Collector(object):
 
     def run_streamreader(self, stream, format=None, access_key=None):
         # set up the importer
-        if format is None:
-            format = self.default_format
-        self.importer = base_importer.get_importer(format, 0, 0)
+        self.importer = self.get_importer(format)
         if not self.importer:
             logger.critical("Collector: Failed to load importer; aborting")
             return
+
         if access_key is not None:
             self.access_key = access_key
 
         # test the connection
-        attempts = 1
-        connected = self.test_connection()
-        while not connected and attempts < 10:
-            time.sleep(1)
-            connected = self.test_connection()
-            attempts += 1
-        if not connected:
+        if not self.form_connection():
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
@@ -266,10 +268,12 @@ class Collector(object):
             reply = response.content
             logger.debug("COLLECTOR: Received reply: {0}".format(reply))
         except Exception as e:
+            reply = 'error'
             logger.error("COLLECTOR: Error sending package: {0}".format(e))
             # keep the unsent lines around
             self.transmit_buffer.extend(lines)
             self.transmit_buffer_size = len(self.transmit_buffer)
+        return reply
 
     def test_connection(self):
         package = {
