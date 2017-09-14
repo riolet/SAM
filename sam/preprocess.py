@@ -602,7 +602,6 @@ class Preprocessor:
     def run_all(self):
         logger.info("PREPROCESSOR: beginning preprocessing...")
         db_transaction = self.db.transaction()
-        t_range = (1, 1)
         try:
             logger.debug("PREPROCESSOR: importing nodes...")
             self.syslog_to_nodes()  # import all nodes into the shared Nodes table
@@ -613,12 +612,12 @@ class Preprocessor:
             logger.debug("PREPROCESSOR: precomputing aggregates...")
             self.links_to_links_in_out()  # merge new data into the existing aggregates
 
+            t_range = self.get_staging_timerange() # must do this before deleting staging data
             if self.use_sec_rules:
                 self.run_security_rules(t_range[0], t_range[1])
             self.run_import_hooks()
 
             logger.debug("PREPROCESSOR: deleting from staging...")
-            t_range = self.get_staging_timerange() # must do this before deleting staging data
             self.staging_to_null()  # delete all data from staging tables
         except:
             db_transaction.rollback()

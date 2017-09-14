@@ -666,9 +666,6 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       input.parentElement.classList.remove("loading");
     },
     populate_edit_modal: function (rule_data) {
-      console.log("filling modal with data:");
-      console.log(rule_data);
-
       // populate meta data
       let active = document.getElementById("er_active");
       let name = document.getElementById("er_name");
@@ -699,8 +696,6 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       active = document.getElementById("er_email");
       let address = document.getElementById("er_email_address");
       let subject = document.getElementById("er_email_subject");
-      console.log("rule_data.actions is", rule_data.actions);
-      console.log("rule_data.actions.email_active is", rule_data.actions.email_active);
       if (rule_data.actions.email_active.toLocaleLowerCase() === "true") {
         $(active.parentElement).checkbox("set checked");
       } else {

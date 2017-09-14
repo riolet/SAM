@@ -1,15 +1,19 @@
 import re
 import time
-from datetime import datetime
+import logging
+import traceback
 import multiprocessing
 import multiprocessing.queues  # for IDE (pycharm type helper)
 import web
-from sam import common, constants
+from datetime import datetime
+from sam import common, constants, errors
 from sam.models.security import rule, rule_parser, alerts
 
+logger = logging.getLogger(__name__)
 _RULES_PROCESS = None
 _QUEUE = multiprocessing.Queue()
-_JOBS = {}
+_MANAGER = multiprocessing.Manager()
+_JOBS = _MANAGER.dict()
 _NEXT_ID = 1
 # get own connection to DB
 _DB, _DB_QUIET = common.get_db(constants.dbconfig.copy())
@@ -23,7 +27,7 @@ def __testing_only_reset_state():
         _RULES_PROCESS.terminate()
     _RULES_PROCESS = None
     _QUEUE = multiprocessing.Queue()
-    _JOBS = {}
+    _JOBS = _MANAGER.dict()
     _NEXT_ID = 1
 
 
@@ -51,6 +55,38 @@ class RuleJob(object):
         self.status = "Created."  # Created, Queued, Running rule_n / num_rules, Complete
         self.completion = 0  # number from 0 to 1 representing the completion of this job.
 
+    @staticmethod
+    def rebuild(parameters):
+        assert len(parameters) == 8
+        sub_id = parameters[0]
+        ds_id = parameters[1]
+        start = parameters[2]
+        end = parameters[3]
+        rules = parameters[4]
+        id_ = parameters[5]
+        status = parameters[6]
+        completion = parameters[7]
+        self = RuleJob(sub_id, ds_id, start, end, rules)
+        self.id = id_
+        self.status = status
+        self.completion = completion
+        return self
+
+    def export(self):
+        return self.sub_id, self.ds_id, self.time_start, self.time_end, self.rules, self.id, self.status, self.completion
+
+    def __eq__(self, other):
+        if not isinstance(other, RuleJob):
+            return False
+        match = (self.id == other.id
+                 and self.sub_id == other.sub_id
+                 and self.ds_id == other.ds_id
+                 and self.time_end == other.time_end
+                 and self.time_start == other.time_start
+                 and self.rules == other.rules
+                 )
+        return match
+
 
 def submit_job(job):
     """
@@ -63,7 +99,7 @@ def submit_job(job):
     job.id = _NEXT_ID
     _NEXT_ID += 1
     # add the job to the job list
-    _JOBS[job.id] = job
+    _JOBS[job.id] = job.export()
     # insert the job_id into the queue
     _QUEUE.put(job.id)
     # if the RulesProcessor process isn't running, start it.
@@ -75,13 +111,19 @@ def submit_job(job):
 def spawn_if_not_alive():
     global _RULES_PROCESS
     if _RULES_PROCESS is None or not _RULES_PROCESS.is_alive():
-        _RULES_PROCESS = multiprocessing.Process(target=ruling_process, args=(_QUEUE,))
+        _RULES_PROCESS = multiprocessing.Process(target=ruling_process, args=(_QUEUE,_DB_QUIET))
+        _RULES_PROCESS.daemon = True
         _RULES_PROCESS.start()
 
 
 def check_job(sub_id, job_id):
     # include sub_id for security purposes
-    job = _JOBS.get(job_id, None)
+    job_params = _JOBS.get(job_id, None)
+    try:
+        job = RuleJob.rebuild(job_params)
+    except:
+        job = None
+
     if job is None or job.sub_id != sub_id:
         return "Missing", None
     return job.status, job.completion
@@ -89,28 +131,40 @@ def check_job(sub_id, job_id):
 
 def reset_globals():
     global _JOBS, _QUEUE
-    _JOBS = {}
+    _JOBS = _MANAGER.dict()
     _QUEUE = multiprocessing.Queue()
 
 
-def ruling_process(queue, stayalive=_PROCESSOR_STAYALIVE):
+def ruling_process(queue, db, stayalive=_PROCESSOR_STAYALIVE):
     """
     :param queue: job queue. contains ids that reference the _JOBS global.
      :type queue: multiprocessing.queues.Queue
     :param stayalive: How long to keep the process running if it runs out of jobs before shutdown.
-     :type stayalive: int
+     :type stayalive: float
     :return: 
     """
     global _JOBS, _PROCESSOR_STAYALIVE
     # print("Queue: {}".format(queue))
     # print("Stayalive: {}".format(stayalive))
     # print("_JOBS: {}".format(_JOBS))
-    engine = RulesProcessor(_DB_QUIET)
+    engine = RulesProcessor(db)
     while not queue.empty():
-        job_id = queue.get()
-        engine.process(_JOBS[job_id])
-        if queue.empty():
-            time.sleep(stayalive)
+        try:
+            job_id = queue.get()
+            try:
+                job_params = _JOBS[job_id]
+                job = RuleJob.rebuild(job_params)
+                engine.process(job)
+            except:
+                traceback.print_exc()
+                logger.warn("error processing job {}.".format(job_id))
+                logger.warn("JOBS: {}".format(_JOBS))
+            if queue.empty():
+                time.sleep(stayalive)
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            traceback.print_exc()
     reset_globals()
     return engine
 
@@ -155,7 +209,7 @@ class RulesProcessor(object):
         subject = rule_.definition.subject
         table = RulesProcessor.TABLE_FORMAT.format(sub_id=job.sub_id, ds_id=job.ds_id)
 
-        parser = rule_parser.RuleParser(translations, subject, conditions)
+        parser = rule_parser.RuleParser(translations, subject, conditions, (job.time_start, job.time_end))
         query = parser.sql.get_query(table)
         alerts_discovered = list(self.db.query(query))
 
@@ -164,20 +218,22 @@ class RulesProcessor(object):
     @staticmethod
     def send_email_alert(email, subject, rule_, matches):
 
-        matches_string = "\n".join(["{}: {}".format(m['timestamp'], m[rule_.definition.subject]) for m in matches])
+        matches_string = "\n".join(["{}: {}".format(m['timestamp'], common.IPtoString(m[rule_.definition.subject])) for m in matches])
 
         body = """
-Hello,
-
 This is an email alert from System Architecture Mapper to let you know that one of your security rules ({rule_name}) has been triggered.
-The complete list of traffic that triggered the rule is:
+The complete list of hosts that triggered the rule is:
 
 {match_traffic}
 
 Thanks,
 SAM
 """.format(rule_name=rule_.get_name(), match_traffic=matches_string)
-        common.sendmail(email, subject, body)
+
+        try:
+            common.sendmail(email, subject, body)
+        except Exception as e:
+            raise errors.AuthenticationError(str(e))
 
     def trigger_alert(self, job, rule_, action, match, tr_table):
         """
@@ -215,9 +271,12 @@ SAM
         number = action['number']
         message_fstring = action['message']
         message = translate_symbols(message_fstring, tr_table)
-        # print("  Triggering sms to {} ({}/160 chars):".format(number, len(message)))
-        # print("    {}".format(message[:160]))
-        # print('    WARNING: sms alerts are not implemented yet.')
+
+        try:
+            common.sendsms(number, message)
+        except Exception as e:
+            logger.error("SMS Alerts are not available yet.")
+            raise errors.AuthenticationError(str(e))
 
     def trigger_actions(self, job, rule_, matches):
         """
@@ -242,11 +301,17 @@ SAM
                 for match in matches:
                     self.trigger_alert(job, rule_, action, match, tr_table)
             elif action['type'] == 'email':
-                self.trigger_email(job, rule_, action, matches, tr_table)
+                try:
+                    self.trigger_email(job, rule_, action, matches, tr_table)
+                except errors.AuthenticationError:
+                    logger.exception("Could not send email")
             elif action['type'] == 'sms':
-                self.trigger_sms(job, rule_, action, matches, tr_table)
+                try:
+                    self.trigger_sms(job, rule_, action, matches, tr_table)
+                except errors.AuthenticationError:
+                    logger.exception("Could not send sms")
             else:
-                print('WARNING: action "{}" not supported'.format(action['type']))
+                logger.warning('action "{}" not supported'.format(action['type']))
                 continue
 
     def process(self, job):
@@ -258,16 +323,16 @@ SAM
         # regularly update job status and completion
         # process the rules sequentially
         job.status = 'In Progress'
-        print('{}: Starting job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
+        logger.info('{}: Starting job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id, job.time_start,
                                                                    job.time_end))
 
         for i, rule_ in enumerate(job.rules):
             job.status = 'Running rule {} of {}'.format(i+1, len(job.rules))
             if not rule_.is_active():
-                print('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
+                logger.info('  {}: Skipping rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
                 continue
 
-            print('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
+            logger.info('  {}: Working on rule {} ({})'.format(job.status, rule_.get_name(), rule_.nice_path(rule_.path)))
 
             rule_type = rule_.get_type()
             if rule_type == 'immediate':
@@ -275,10 +340,10 @@ SAM
             elif rule_type == 'periodic':
                 matches = self.evaluate_periodic_rule(job, rule_)
             else:
-                print('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'
+                logger.info('  {}: Skipping rule {}. Type {} is not "immediate" nor "periodic"'
                       .format(job.status, rule_.get_name(), rule_type))
                 continue
-            print('    {} alerts discovered,'.format(len(matches)))
+            logger.info('    {} alerts discovered,'.format(len(matches)))
             # for match in matches:
             #     print('      {}: {} -> {}:{} x{} using {}'.format(
             #         datetime.fromtimestamp(int(time.mktime(match.timestamp.timetuple()))),
@@ -290,5 +355,5 @@ SAM
             self.trigger_actions(job, rule_, matches)
 
         job.status = "Complete"
-        print('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id,
+        logger.info('{}: Finished job on s{}_ds{}, from {} to {}'.format(job.status, job.sub_id, job.ds_id,
                                                                    job.time_start, job.time_end))

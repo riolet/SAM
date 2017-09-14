@@ -11,55 +11,9 @@ ds_full = db_connection.dsid_default
 
 
 def get_dummy_rule():
-    dummy_yml = """---
-name: Test Yaml
-type: immediate
-include:
-  bad_hosts: ./test_hosts.txt
-expose:
-  source_ip:
-    format: text
-    label: temp label
-    default: "1.2.3.4"
-    regex: "^([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])(\\\\.([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])){3}$"
-  dest_ip:
-    format: text
-    label: temp label 2
-    default: "5.6.7.8"
-    regex: "^([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])(\\\\.([0-9]|[01]?[0-9][0-9]|2[0-4][0-9]|25[0-5])){3}$"
-  port:
-    format: text
-    label: temp label 3
-    default: "(80,443)"
-    regex: "("  # intentially malformed regex
-  bidirectional:
-    format: checkbox
-    label: Check both ways
-    default: false
-  color:
-    format: dropdown
-    label: Favorite Color
-    default: blue
-    options:
-      - red
-      - blue
-      - green
-actions:
-  alert_severity: 8
-  alert_label: Special Label
-  email_address: abc@zyx.com
-  email_subject: "[SAM] Special Email Subject"
-  sms_number: 1 123 456 7890
-  sms_message: "[SAM] Special SMS Message"
-subject: src
-when: src host $source_ip and dst host $dest_ip and dst port $port
-"""
-    data = yaml.load(dummy_yml)
-    base_path = os.path.dirname(rule_template.__file__)
-    rule_path = os.path.join(base_path, os.path.pardir, constants.templates_folder)
-    template = rule_template.RuleTemplate(rule_path, data)
+    base_path = os.path.dirname(__file__)
+    rule_path = os.path.join(base_path, os.path.pardir, os.path.pardir, constants.templates_folder, "test_rule.yml")
     r = rule.Rule(123, True, "My Test Rule", "Description of My Test Rule", rule_path)
-    r.definition = template
     r.active = True
     r.exposed_params = r.get_initial_exposed_params()
     r.action_params = r.get_initial_action_params()

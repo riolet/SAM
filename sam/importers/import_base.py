@@ -104,6 +104,25 @@ Usage:
         """
         return os.path.isfile(path)
 
+    def import_packets(self, packets):
+        """
+        Take in packets received via collector and return translated lines.
+
+        :param packets: a string received by the collector. May be ascii or binary. This base function presumes ascii.
+        :type packets: string
+        :return: a list translated log lines
+        :rtype: List [ Dict [ str, any ]
+        """
+        stripped = [line.strip() for line in packets]
+        translated = []
+        for line in stripped:
+            translated_line = {}
+            success = self.translate(line, 1, translated_line)
+            if success == 0:
+                translated.append(translated_line)
+        return translated
+
+
     def translate(self, line, line_num, dictionary):
         """
         Converts a given syslog line into a dictionary of (ip, port, ip, port, timestamp)
@@ -130,7 +149,6 @@ Usage:
         line_num = 0
         lines_inserted = 0
         counter = 0
-        print("all_lines: {}".format(all_lines))
         rows = [dict.fromkeys(self.keys, '') for _ in range(1000)]
         for line in all_lines:
             line_num += 1

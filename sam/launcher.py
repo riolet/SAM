@@ -85,7 +85,7 @@ def parse_args(argv):
         if key == '--whois':
             parsed_args['whois'] = True
         if key == '--format':
-            parsed_args['format'] = val
+            parsed_args['format'] = val.lower()
         if key == '--target':
             parsed_args['target'] = val
         if key == '--port':
@@ -118,12 +118,19 @@ def launch_webserver(parsed, args):
 
 
 def launch_collector(parsed, args):
-    import server_collector
     port = parsed.get('port', None)
     if port is None:
         port = constants.collector['listen_port']
     logger.info('launching collector on {}'.format(port))
-    collector = server_collector.Collector()
+
+    # workaround for netflow processing with nfcapd:
+    if parsed['format'].lower() == "netflow":
+        from sam.importers import netflow_collector
+        collector = netflow_collector.Collector()
+    else:
+        import server_collector
+        collector = server_collector.Collector()
+
     if parsed['format'] is None:
         parsed['format'] = constants.collector['format']
     collector.run(port=port, format=parsed['format'])
@@ -201,29 +208,38 @@ def launch_importer(parsed, args):
     return processor
 
 
-def create_local_settings(db, sub):
+def create_local_settings(db, sub, ds_key):
     # create 1 key if none exist
     from sam.models.settings import Settings
     from sam.models.datasources import Datasources
     from sam.models.livekeys import LiveKeys
 
-    m_set = Settings(db, {}, sub)
-    ds_id = m_set['datasource']
-    m_livekeys = LiveKeys(db, sub)
-
     # set useful settings for local viewing.
+    m_set = Settings(db, {}, sub)
     m_ds = Datasources(db, {}, sub)
+    m_livekeys = LiveKeys(db, sub)
+    try:
+        ds_id = int(ds_key)
+        if ds_id not in m_ds.ds_ids:
+            ds_id = m_set['datasource']
+    except:
+        ds_id = m_ds.name_to_id(ds_key)
+        if not ds_id:
+            ds_id = m_set['datasource']
     m_ds.set(ds_id, flat='1', ar_active='1', ar_interval=30)
 
     # create key for uploading securely
     keys = m_livekeys.read()
-    if len(keys) == 0:
-        m_livekeys.create(ds_id)
+    upload_key = None
+    for key in keys:
+        if key['ds_id'] == ds_id:
+            upload_key = keys[0]['access_key']
 
-    keys = m_livekeys.read()
-    key = keys[0]['access_key']
-    constants.collector['upload_key'] = key
-    return key
+    if upload_key is None:
+        upload_key = m_livekeys.create(ds_id)
+
+    constants.collector['upload_key'] = upload_key
+    return upload_key
 
 
 def check_database():
@@ -251,12 +267,13 @@ def launch_localmode(parsed, args):
     check_database()
     sub_model = sam.models.subscriptions.Subscriptions(db)
     sub_id = sub_model.decode_sub(parsed['sub'])
-    access_key = create_local_settings(db, sub_id)
+    access_key = create_local_settings(db, sub_id, parsed['dest'])
 
     # launch aggregator process
     agg_args = parsed.copy()
     agg_args.pop('port', None)
     p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(agg_args, []))
+    p_aggregator.daemon = True
     p_aggregator.start()
 
     # launch collector process
@@ -270,6 +287,7 @@ def launch_localmode(parsed, args):
     new_stdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
         p_collector = multiprocessing.Process(target=spawn_coll, args=(new_stdin,))
+        p_collector.daemon = True
         p_collector.start()
     finally:
         new_stdin.close()  # close in the parent (still open in child proc)
@@ -277,8 +295,9 @@ def launch_localmode(parsed, args):
     # launch whois service (if requested)
     if parsed['whois']:
         logger.info("Starting whois service")
-        import models.nodes
-        whois_thread = models.nodes.WhoisService(db, sub_id)
+        import models.whois
+        whois_thread = models.whois.WhoisService(db, sub_id)
+        whois_thread.daemon = True
         whois_thread.start()
     else:
         whois_thread = None
@@ -295,13 +314,12 @@ def launch_localmode(parsed, args):
     p_aggregator.join()
     logger.debug("aggregator joined")
 
-    if parsed['whois']:
+    if whois_thread:
         logger.debug('joining whois')
-        if whois_thread:
-            if whois_thread.is_alive():
-                whois_thread.shutdown()
-            whois_thread.join()
-        logger.debug('whois joined')
+        if whois_thread.is_alive():
+            whois_thread.shutdown()
+        whois_thread.join()
+    logger.debug('whois joined')
     logger.info("SAM can be safely shut down.")
 
 

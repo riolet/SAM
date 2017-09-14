@@ -1,5 +1,6 @@
 import os
 import yaml
+import pytest
 from sam import constants
 from sam.models.security import rule_template
 
@@ -286,8 +287,9 @@ def test_load_inclusions():
     bad_include = {'include': {
         'inc_1': './uncompromising_hosts.txt'
     }}
-    inclusions = rt.load_inclusions(bad_include)
-    assert len(inclusions) == 0
+    with pytest.raises(ValueError):
+        inclusions = rt.load_inclusions(bad_include)
+        assert len(inclusions) == 0
 
 
 def test_load_actions_alert():

@@ -38,6 +38,7 @@ class LiveKeys:
     def create(self, ds_id):
         key = LiveKeys.generate_salt(24)
         self.db.insert(LiveKeys.table_livekeys, subscription=self.sub, datasource=ds_id, access_key=key)
+        return key
     
     def read(self):
         qvars = {
@@ -53,6 +54,9 @@ class LiveKeys:
         return list(map(dict, rows))
 
     def validate(self, key):
+        """
+        :rtype: dict or None
+        """
         qvars = {
             'key': key
         }

@@ -6,7 +6,7 @@ type: periodic
 include:
 expose:
   threshold:
-    label: Trigger Threshold (connections / minute)
+    label: Trigger Threshold (connections / 5 minutes)
     format: text
     default: 600
     regex: "^\\d+$"

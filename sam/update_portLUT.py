@@ -1,14 +1,15 @@
 import csv
-from sam import common
 import os
 import urllib2
+from sam import constants, common
 from sam import integrity
 
+ORIGIN = "http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"
+OUT_FILE = os.path.join(constants.base_path, 'sql', 'default_port_data.json')
 
 def get_raw_data():
-    resource = "http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"
-    print("requesting data from iana.org...")
-    response = urllib2.urlopen(resource)
+    print("requesting data from origin...")
+    response = urllib2.urlopen(ORIGIN)
     print("reading response...")
     html = response.read()
     reader = csv.reader(html.split("\n"))
@@ -29,6 +30,7 @@ def expand(group):
             result.extend(range(int(values[0]), int(values[1]) + 1))
     as_ints = [int(i) for i in result]
     unique_only = list(set(as_ints))
+    unique_only.sort()
     return unique_only
 
 
@@ -96,41 +98,37 @@ def combine_duplicates(rows):
     return ports
 
 
-def write_default_port_data(ports):
+def build_output_string(ports):
     key_name = 0
     key_portnumber = 1
     key_protocol = 2
     key_description = 3
-    with open(os.path.join(common.base_path, 'sql/default_port_data.json'), 'wb') as f:
-        f.write("""{
-  "ports": {
-""")
-        for port in ports[:-1]:
-            text = \
-                """    \"{port}\": {{
-    \"port\": {port},
-    \"protocols\": \"{protocol}\",
-    \"name\": \"{name}\",
-    \"description\": \"{desc}\"
-  }},
-""".format(port=port[key_portnumber],
-            protocol=",".join(port[key_protocol]).upper().strip(','),
-            name=port[key_name],
-            desc=port[key_description])
-            f.write(text)
-        text = """    \"{port}\": {{
+
+    out_intro = """{"ports": {
+ """
+    out_outro = """
+}}"""
+    port_text = []
+
+    for port in ports:
+        port_text.append(""" \"{port}\": {{
     \"port\": {port},
     \"protocols\": \"{protocols}\",
     \"name\": \"{name}\",
     \"description\": \"{desc}\"
-  }}
-""".format(port=ports[-1][key_portnumber],
+  }}""".format(port=port[key_portnumber],
            protocols=",".join(ports[-1][key_protocol]).upper().strip(','),
-           name=ports[-1][key_name],
-           desc=ports[-1][key_description])
-        f.write(text)
-        f.write("""  }
-}""")
+           name=port[key_name],
+           desc=port[key_description]))
+
+    out_string = out_intro + ",".join(port_text) + out_outro
+    return out_string
+
+
+def write_default_port_data(out_string):
+    with open(OUT_FILE, 'wb') as f:
+        # write the intro
+        f.write(out_string)
     print("default port data written out")
 
 
@@ -139,10 +137,11 @@ def rebuild_lut():
     rows = get_raw_data()
     filtered_rows = filter_lines(rows)
     ports = combine_duplicates(filtered_rows)
-    write_default_port_data(ports)
+    out_string = build_output_string(ports)
+    write_default_port_data(out_string)
 
     # 2.  rebuild database with new port information
-    integrity.fill_port_table()
+    integrity.fill_port_table(common.db_quiet)
 
 
 if __name__ == '__main__':

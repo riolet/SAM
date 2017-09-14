@@ -1,14 +1,16 @@
-import SocketServer
+import os
+import sys
 import logging
 import signal
 import threading
 import time
-# import web
-from sam import constants
-import sam.importers.import_base as base_importer
+import subprocess
+import shlex
 import requests
 import cPickle
-import select
+from sam import constants
+import sam.importers.import_base as base_importer
+from sam.importers import import_netflow
 logger = logging.getLogger(__name__)
 
 """
@@ -24,85 +26,21 @@ Live Collector
 """
 
 
-class SocketBuffer(object):
-    def __init__(self):
-        self.buffer = []
-        self.buffer_lock = threading.Lock()
-
-    def store_data(self, packet):
-        # acquire lock
-        with self.buffer_lock:
-            # append packet
-            self.buffer.append(packet)
-            # release lock
-
-    def __len__(self):
-        return len(self.buffer)
-
-    def pop_all(self):
-        with self.buffer_lock:
-            packets = self.buffer
-            self.buffer = []
-        return packets
-
-
-# used to send data between threads.
-SOCKET_BUFFER = SocketBuffer()
-
-class SocketListener(SocketServer.BaseRequestHandler):
-    def handle(self):
-        global SOCKET_BUFFER
-        data = self.request[0]
-        SOCKET_BUFFER.store_data(data)
-
-
-class FileListener(threading.Thread):
-    def set_file(self, f):
-        self.file = f
-
-    def run(self):
-        global SOCKET_BUFFER
-        self.alive = True
-        while self.alive:
-            # block waiting for input from the stream, but unblock every 0.5 seconds.
-            # This works on linux but doesn't work on windows.
-            # see the [note] in https://docs.python.org/2/library/select.html#select.select
-            if self.file in select.select([self.file], [], [], 0.5)[0]:
-                line = self.file.readline()
-                if line == '':
-                    self.alive = False
-                else:
-                    line = line.rstrip()
-                    SOCKET_BUFFER.store_data(line)
-
-    def shutdown(self):
-        self.alive = False
-
-
 class Collector(object):
     def __init__(self):
-        self.listen_address = (constants.collector['listen_host'], int(constants.collector['listen_port']))
         self.target_address = constants.collector['target_address']
         self.access_key = constants.collector['upload_key']
         self.default_format = constants.collector['format']
+        self.port = int(constants.collector['listen_port'])
         self.transmit_buffer = []
         self.transmit_buffer_size = 0
         self.transmit_buffer_threshold = 500  # push the transmit buffer to the database server if it reaches this many entries.
-        self.time_between_imports = 1  # float, seconds. Period for translating lines from SOCKET to TRANSMIT buffers
-        self.time_between_transmits = 10  # float, seconds. Period for transmitting to the database server.
-        self.listener = None
-        self.listener_thread = None
+        self.time_between_imports = 1  # seconds. Period for translating lines from SOCKET to TRANSMIT buffers
+        self.time_between_transmits = 10  # seconds. Period for transmitting to the database server.
+        self.nfcapd_process = None
         self.shutdown_event = threading.Event()
-        self.importer = None
-
-    def get_importer(self, format):
-        if format is None:
-            format = self.default_format
-        try:
-            importer = base_importer.get_importer(format, 0, 0)
-        except:
-            importer = None
-        return importer
+        self.importer = import_netflow.NetFlowImporter()
+        self.nfcapd_folder = '/tmp/sam_netflow'
 
     def form_connection(self, sleep=1.0, max_tries=10):
         attempts = 1
@@ -113,16 +51,18 @@ class Collector(object):
             attempts += 1
         return connected
 
-    def run(self, port=None, format=None, access_key=None):
+    def run(self, port=None, access_key=None):
+        """
+        Entry point for collector process
+        :param port:
+        :param format:
+        :param access_key:
+        :return:
+        """
         # set up the importer
-        self.importer = self.get_importer(format)
-        if not self.importer:
-            logger.critical("Collector: Failed to load importer; aborting")
-            return
-
         if port is not None:
             try:
-                self.listen_address = (self.listen_address[0], int(port))
+                self.port = int(port)
             except (ValueError, TypeError) as e:
                 logger.critical('Collector: Invalid port: {}'.format(e))
                 return
@@ -134,19 +74,14 @@ class Collector(object):
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
-            # register signals for safe shut down
+        # register signals for safe shut down
         def sig_handler(num, frame):
             logger.debug('\nInterrupt received.')
             self.shutdown()
-
         signal.signal(signal.SIGINT, sig_handler)
-        self.listener = SocketServer.UDPServer(self.listen_address, SocketListener)
 
-        # Start the daemon listening on the port in an infinite loop that exits when the program is killed
-        self.listener_thread = threading.Thread(target=self.listener.serve_forever)
-        self.listener_thread.daemon = True
-        self.listener_thread.start()
-        logger.info("Live Collector listening on {0}:{1}.".format(*self.listen_address))
+        self.launch_nfcapd(self.port)
+        logger.info("Live Collector listening on port {0}.".format(self.port))
 
         try:
             self.thread_batch_processor()
@@ -156,43 +91,18 @@ class Collector(object):
 
         logger.info("Live_collector server shut down successfully.")
 
-    def run_streamreader(self, stream, format=None, access_key=None):
-        # set up the importer
-        self.importer = self.get_importer(format)
-        if not self.importer:
-            logger.critical("Collector: Failed to load importer; aborting")
-            return
+    def launch_nfcapd(self, port):
+        # a temp directory to write out netflow files to
+        if not os.path.exists(self.nfcapd_folder):
+            os.makedirs(self.nfcapd_folder)
 
-        if access_key is not None:
-            self.access_key = access_key
-
-        # test the connection
-        if not self.form_connection():
-            logger.critical('Collector: Failed to connect to aggregator; aborting')
-            return
-
-            # register signals for safe shut down
-        def sig_handler(num, frame):
-            logger.debug('\nInterrupt received.')
-            self.shutdown()
-
-        signal.signal(signal.SIGINT, sig_handler)
-        self.listener = FileListener()
-        self.listener.set_file(stream)
-
-        # Start the daemon listening on the port in an infinite loop that exits when the program is killed
-        self.listener_thread = self.listener
-        self.listener_thread.daemon = True
-        self.listener_thread.start()
-        logger.info('Collector: listening to {}.'.format(stream.name if hasattr(stream, 'name') else 'stream'))
-
+        # start the nfcapd subprocess to listen to port and write out to a temp directory.
+        args = shlex.split('nfcapd -T all -l {0} -p {1}'.format(self.nfcapd_folder, port))
         try:
-            self.thread_batch_processor()
-        except:
-            logger.exception("Collector: server has encountered a critical error.")
-            self.shutdown()
-
-        logger.info("Collector: server shut down successfully.")
+            self.nfcapd_process = subprocess.Popen(args, bufsize=-1)
+        except OSError as e:
+            sys.stderr.write("To use this importer, please install nfdump.\n\t`apt-get install nfdump`\n")
+            raise e
 
     def thread_batch_processor(self):
         global SOCKET_BUFFER
@@ -229,27 +139,66 @@ class Collector(object):
                 last_processing = time.time()
 
             # import lines in memory buffer:
-            if len(SOCKET_BUFFER) > 0:
-                self.import_packets()
+            if self.new_capture_exists():
+                self.decode_captures()
 
         logger.info("COLLECTOR: process server shutting down")
 
-    def import_packets(self):
-        global SOCKET_BUFFER
-        # clear socket buffer
-        packets = SOCKET_BUFFER.pop_all()
+    def new_capture_exists(self):
+        files = os.listdir(self.nfcapd_folder)
+        return any(["current" not in f for f in files if f.startswith("nfcapd")])
 
-        # translate lines
-        translations = self.importer.import_packets(packets)
+    def decode_captures(self):
+        files = os.listdir(self.nfcapd_folder)
+        files_to_import = [os.path.join(self.nfcapd_folder, f) for f in files if f.startswith("nfcapd") and "current" not in f]
 
-        # insert translations into TRANSMIT_BUFFER
-        headers = base_importer.BaseImporter.keys
-        for line in translations:
-            list_line = [line[header] for header in headers]
-            self.transmit_buffer.append(list_line)
+        for file_path in files_to_import:
+            try:
+                translated = []
+                lines = self.decode_netflow_file(file_path)
+                for line in lines:
+                    translated_line = {}
+                    success = self.importer.translate(line.strip(), 1, translated_line)
+                    if success == 0:
+                        translated.append(translated_line)
 
-        # update TRANSMIT_BUFFER size
-        self.transmit_buffer_size = len(self.transmit_buffer)
+                # insert translations into TRANSMIT_BUFFER
+                headers = base_importer.BaseImporter.keys
+                for line in translated:
+                    list_line = [line[header] for header in headers]
+                    self.transmit_buffer.append(list_line)
+
+                # update TRANSMIT_BUFFER size
+                self.transmit_buffer_size = len(self.transmit_buffer)
+
+                # delete the completed file
+                os.remove(file_path)
+            except Exception as e:
+                logger.warn("Failed to import file {} -- ({})".format(file_path, e))
+
+    def decode_netflow_file(self, path):
+        if not os.path.exists(path):
+            raise ValueError("File not found: {}".format(path))
+
+        nf_format = import_netflow.NetFlowImporter.FORMAT
+        args = shlex.split('nfdump -r {0} -b -o {1}'.format(path, nf_format))
+        try:
+            proc = subprocess.Popen(args, bufsize=-1, stdout=subprocess.PIPE)
+        except OSError as e:
+            sys.stderr.write("To use this importer, please install nfdump.\n\t`apt-get install nfdump`\n")
+            raise e
+
+        all_data = proc.stdout.readlines(1000)
+
+        # pass through anything else and close the process
+        proc.poll()
+        while proc.returncode is None:
+            extra = proc.stdout.readline()
+            if extra:
+                logger.warn("Data was dropped during nfdump")
+            proc.poll()
+        proc.wait()
+        return all_data
 
     def transmit_lines(self):
         access_key = self.access_key
@@ -304,13 +253,11 @@ class Collector(object):
             return False
 
     def shutdown(self):
-        if self.listener is not None:
-            logger.info("COLLECTOR: Shutting down handler.")
-            self.listener.shutdown()
-            if self.listener_thread:
-                self.listener_thread.join()
-            logger.info("COLLECTOR: Handler stopped.")
-        logger.info("COLLECTOR: Shutting down batch processor.")
+        logger.info("Collector: Shutting down nfcapd.")
+        if (self.nfcapd_process is not None):
+            self.nfcapd_process.send_signal(signal.SIGINT)
+            self.nfcapd_process.wait()
+        logger.info("Collector: Shutting down nfdump.")
         self.shutdown_event.set()
 
 
