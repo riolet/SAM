@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='samapper',
-    version='0.3.0',
+    version='0.3.1',
     classifiers=[
             'Development Status :: 3 - Alpha',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

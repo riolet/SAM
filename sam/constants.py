@@ -178,10 +178,13 @@ def get_navbar(lang):
     ]
     for edit in plugin_navbar_edits:
         try:
-            for link in navbar:
-                if link['link'] == edit[0]:
-                    link.update(edit[1])
-                    break
+            if len(edit) == 2:
+                for link in navbar:
+                    if link['link'] == edit[0]:
+                        link.update(edit[1])
+                        break
+            elif edit.keys() == navbar[0].keys():
+                navbar.append(edit)
         except:
             logger.warning("Unable to update navbar: {}".format(edit))
 

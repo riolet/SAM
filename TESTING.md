@@ -52,5 +52,6 @@ Javascript, SQL, and other files are not indicated here.
 Disclaimer: Code coverage here is about as useful an indicator of testing as BMI is for fitness
 ```bash
 pip install pytest-cov
-pytest --cov=sam spec
+# from the root project folder (that contains folders 'sam' and 'spec'):
+pytest --cov sam spec
 ```
