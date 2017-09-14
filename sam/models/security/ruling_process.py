@@ -112,6 +112,7 @@ def spawn_if_not_alive():
     global _RULES_PROCESS
     if _RULES_PROCESS is None or not _RULES_PROCESS.is_alive():
         _RULES_PROCESS = multiprocessing.Process(target=ruling_process, args=(_QUEUE,_DB_QUIET))
+        _RULES_PROCESS.daemon = True
         _RULES_PROCESS.start()
 
 

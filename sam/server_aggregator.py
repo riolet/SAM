@@ -21,6 +21,7 @@ Live Server
 
 * runs server-side.
 * listens for uploaded log lines
+* authenticates traffic
 * inserts those lines into a database buffer
 * periodically processes the buffer into viewable data
 
@@ -52,6 +53,9 @@ class Buffer:
     def flag_unexpired(self):
         self.expiring = False
 
+    def __len__(self):
+        return len(self.messages)
+
     def __str__(self):
         return "{0}-{1}-{2}".format(self.sub, self.ds, len(self.messages))
 
@@ -82,22 +86,25 @@ class MemoryBuffers:
     def remove(self, sub, ds):
         # type: (int, int) -> None
         sub_buffer = self.buffers.get(sub)
-        if sub_buffer:
+        if sub_buffer is not None:
             if ds in sub_buffer:
                 del sub_buffer[ds]
-            if not sub_buffer:
+            if len(sub_buffer) == 0:
                 del self.buffers[sub]
 
     def get_all(self):
         # type: () -> [Buffer]
-        buffers = [v for sub in self.buffers.keys() for v in self.buffers[sub].values()]
+        buffers = [self.buffers[subid][dsid] for subid in sorted(self.buffers.keys()) for dsid in sorted(self.buffers[subid].keys())]
         return buffers
 
     def yank(self, sub, ds):
-        buff = self.buffers.get(sub, {})[ds]
-        with buff.lock:
-            lines = buff.pop_all()
-        return lines
+        buff = self.buffers.get(sub, {}).get(ds)
+        if buff:
+            with buff.lock:
+                lines = buff.pop_all()
+            return lines
+        else:
+            return []
 
 
 class DatabaseInserter(threading.Thread):
@@ -106,15 +113,16 @@ class DatabaseInserter(threading.Thread):
     CYCLE_SLEEP = 1  # seconds. sleep period between buffer-checking cycles
 
     def __init__(self, buffers):
+        """
+        :type buffers: MemoryBuffers
+        """
         threading.Thread.__init__(self)
-        # type: (MemoryBuffers) -> None
         self.buffers = buffers
         self.alive = True
         self.e_shutdown = threading.Event()
 
     def run(self):
         while self.alive:
-
             # sleep, but watch for shutdown requests
             triggered = self.e_shutdown.wait(self.CYCLE_SLEEP)
             if triggered:
@@ -122,35 +130,41 @@ class DatabaseInserter(threading.Thread):
 
             buffers = self.buffers.get_all()
             for buff in buffers:
-                # import any lines into Syslog
                 self.buffer_to_syslog(buff)
+                self.process_buffer(buff)
 
-                processor = sam.preprocess.Preprocessor(sam.common.db_quiet, buff.sub, buff.ds)
-                rows = processor.count_syslog()
+    def process_buffer(self, buff):
+        sub_id = buff.sub
+        ds_id = buff.ds
+        processor = sam.preprocess.Preprocessor(sam.common.db_quiet, sub_id, ds_id)
+        rows = processor.count_syslog()
+        time_expired = time.time() > buff.last_proc_time + self.TIME_QUOTA
+        rcode = 0
 
-                if rows >= self.SIZE_QUOTA:
-                    # process the buffer
-                    logger.debug("PREPROCESSOR: exceeded size quota")
-                    self.syslog_to_tables(buff)
-                    buff.flag_unexpired()
-                elif time.time() > buff.last_proc_time + self.TIME_QUOTA:
-                    logger.debug("PREPROCESSOR: exceeded time quota")
-                    if rows > 0:
-                        # process the buffer
-                        self.syslog_to_tables(buff)
-                        buff.flag_unexpired()
-                    else:
-                        if buff.expiring:
-                            # remove the buffer from the buffer list
-                            logger.debug("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
-                            self.buffers.remove(buff.sub, buff.ds)
-                        else:
-                            # flag the buffer as inactive for future removal
-                            logger.debug("PREPROCESSOR: flagging for removal {0}: {1}".format(buff.sub, buff.ds))
-                            buff.flag_expired()
-                else:
-                    # rows are under quota, and time is not up. Move on
-                    pass
+        if rows >= self.SIZE_QUOTA:
+            # buffer full: process the buffer
+            logger.debug("PREPROCESSOR: exceeded size quota")
+            self.syslog_to_tables(buff)
+            rcode = 1
+        elif time_expired and rows > 0:
+            # time's up: process the buffer
+            logger.debug("PREPROCESSOR: exceeded time quota")
+            self.syslog_to_tables(buff)
+            rcode = 2
+        elif time_expired and buff.expiring:
+            # buffer has been flagged for removal. Remove it.
+            logger.debug("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
+            self.buffers.remove(buff.sub, buff.ds)
+            rcode = 3
+        elif time_expired:
+            # buffer is empty and time has expired. Flag it for removal next time.
+            logger.debug("PREPROCESSOR: flagging for removal {0}: {1}".format(buff.sub, buff.ds))
+            buff.flag_expired()
+            rcode = 4
+        else:
+            # time not expired and rows are under quota
+            rcode = 5
+        return rcode
 
     def shutdown(self):
         self.e_shutdown.set()
@@ -177,15 +191,26 @@ class DatabaseInserter(threading.Thread):
         processor.run_all()
 
     def buffer_to_syslog(self, buff):
+        """
+        Immediately ingest the contents of this buffer into the syslog table.
+
+        :type buff: Buffer
+        """
         sub_id = buff.sub
         ds_id = buff.ds
-        lines = self.buffers.yank(sub_id, ds_id)
+        lines = buff.pop_all()
         DatabaseInserter.run_importer(sub_id, ds_id, lines)
 
     def syslog_to_tables(self, buff):
+        """
+        Immediately process the contents of this buffer's syslog table into the links table.
+
+        :type buff: Buffer
+        """
         sub = buff.sub
         ds = buff.ds
         buff.last_proc_time = time.time()
+        buff.flag_unexpired()
         DatabaseInserter.run_preprocessor(sub, ds)
 
 

@@ -54,6 +54,9 @@ class LiveKeys:
         return list(map(dict, rows))
 
     def validate(self, key):
+        """
+        :rtype: dict or None
+        """
         qvars = {
             'key': key
         }
