@@ -273,7 +273,6 @@ def launch_localmode(parsed, args):
     agg_args = parsed.copy()
     agg_args.pop('port', None)
     p_aggregator = multiprocessing.Process(target=launch_aggregator, args=(agg_args, []))
-    p_aggregator.daemon = True
     p_aggregator.start()
 
     # launch collector process
@@ -287,7 +286,6 @@ def launch_localmode(parsed, args):
     new_stdin = os.fdopen(os.dup(sys.stdin.fileno()))
     try:
         p_collector = multiprocessing.Process(target=spawn_coll, args=(new_stdin,))
-        p_collector.daemon = True
         p_collector.start()
     finally:
         new_stdin.close()  # close in the parent (still open in child proc)
