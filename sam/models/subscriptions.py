@@ -66,7 +66,8 @@ class Subscriptions:
         name = constants.subscription['default_name']
         plan = 'admin'
         active = True
-        self.db.insert(self.table, email=email, name=name, plan=plan, groups='read write admin', active=active)
+        sub_id = self.db.insert(self.table, email=email, name=name, plan=plan, groups='read write admin', active=active)
+        return sub_id
 
     def decode_sub(self, key):
         """

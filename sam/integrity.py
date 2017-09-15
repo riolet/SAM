@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+import traceback
 from sam import constants
 from sam import common
 import web
@@ -9,6 +10,7 @@ from MySQLdb import OperationalError
 from sam.models.subscriptions import Subscriptions
 from sam.models.datasources import Datasources
 from sam.models.settings import Settings
+from sam.models.security.rules import Rules
 logger = logging.getLogger(__name__)
 template_subscription_tables = map(lambda x: 's{acct}_' + x, constants.subscription_tables)
 template_tables_per_ds = map(lambda x: 's{acct}_ds{id}_' + x, constants.datasource_tables)
@@ -338,6 +340,15 @@ def fix_subscriptions(db, errors):
         logger.info("\tSubscriptions fixed")
 
 
+def fix_default_rules(db):
+    # TODO: move this into Subscriptions:new()
+    sub_model = Subscriptions(db)
+    sub = sub_model.get_by_email(constants.subscription['default_email'])
+    sub_id = sub['subscription']
+    r_model = Rules(db, sub_id)
+    r_model.add_rule('compromised.yml', 'Compromised', 'Flag traffic to known compromised hosts', {})
+
+
 def check_settings(db):
     """
     Ensure that each subscription has a settings row to go along with it and at least 1 default data source
@@ -584,17 +595,23 @@ def check_and_fix_integrity(db=None, params=None):
     else:
         raise ValueError("Unknown database chosen: {}".format(db.dbname))
 
-    errors = check_default_subscription(db)
-    if errors:
-        fix_default_subscription(db, errors)
+    try:
+        errors = check_default_subscription(db)
+        if errors:
+            fix_default_subscription(db, errors)
+        new_sub = bool(errors)
+        errors = check_subscriptions(db)
+        if errors:
+            fix_subscriptions(db, errors)
+        if new_sub:
+            fix_default_rules(db)
 
-    errors = check_subscriptions(db)
-    if errors:
-        fix_subscriptions(db, errors)
-
-    errors = check_settings(db)
-    if errors:
-        fix_settings(db, errors)
+        errors = check_settings(db)
+        if errors:
+            fix_settings(db, errors)
+    except:
+        traceback.print_exc()
+        raise
 
     errors = check_data_sources(db)
     if errors:

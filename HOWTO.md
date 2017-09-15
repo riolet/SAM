@@ -49,6 +49,15 @@ configure your environment as follows:
 
 `python sam/launcher.py --target=webserver`
 
+## Run on a server
+SAM exposes the WSGI interface. Server software such as apache and nginx can support wsgi applications.
+
+sam/server_webserver.py works as a WSGI endpoint
+sam/server_aggregator.py works as a WSGI endpoint
+
+Complete server setup instructions are beyond the scope of this document, but the 
+webpy [cookbook pages](http://webpy.org/cookbook/) and 
+[deployment page](http://webpy.org/deployment) provides several examples. 
 
 #Collectors and Aggregators
 SAM is designed for receiving continuous input. The external devices send packets of traffic data to SAM's collectors, SAM's collectors send uniform traffic data to aggregators, and aggregators insert that data into the database.
@@ -73,7 +82,7 @@ SAM is designed for receiving continuous input. The external devices send packet
 1. Start up the collector
    1. `export SAM__COLLECTOR__LISTEN_HOST=`  (leave blank)
    1. `export SAM__COLLECTOR__LISTEN_PORT=514`  (use the port you expect to receive traffic logs on. Note: binding to system ports (<1024) will require privileged execution)
-   1. `export SAM__COLLECTOR__TARGET_ADDRESS=http://localhost:8081`
+   1. `export SAM__COLLECTOR__TARGET_ADDRESS=http://localhost:8081`  (the address of the aggregator)
    1. `export SAM__COLLECTOR__UPLOAD_KEY=abc123def456`  (the access key you generated earlier)
    1. `export SAM__COLLECTOR__FORMAT=asasyslog`  (the format you expect to receive)
    1. `python sam/launcher.py --target=collector`
@@ -214,4 +223,5 @@ The following instructions largely duplicate the descriptions given [here (cisco
 
 Note: NetFlow traffic packets cannot be interpreted by the receiver until the source has sent the appropriate templates. This means that netflow data may not appear to work over short durations. The default template transmission repeat time for a Cisco ASA 5505 is every 30 minutes.
 
+# Security Rules
 

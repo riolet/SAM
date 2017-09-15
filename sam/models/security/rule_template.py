@@ -4,17 +4,6 @@ import re
 import yaml
 from sam import constants
 
-# will have compromisedhosts.yml, suspicioustraffic.yml, dos.yml, ...
-# they will expose some controls, such as for dos:
-# expose "tolerance"
-#   valid: "\d+"
-#   title: "Minimum connections per second to flag"
-# YML files include sections:
-#   include: (for files, databases)
-#   exposed: (for values that should be configurable within the app)
-#   action: email, create alert,
-#   when: define the trigger conditions
-
 
 def get_all():
     built_ins = filter(lambda f: f.endswith(".yml"), os.listdir(constants.rule_templates_path))
