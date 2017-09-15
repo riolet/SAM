@@ -112,7 +112,10 @@ class Subscriptions:
         if not row:
             raise ValueError("invalid subscription id")
         try:
-            plugins = cPickle.loads(str(row['plugins']))
+            if row['plugins'] is not None:
+                plugins = cPickle.loads(str(row['plugins']))
+            else:
+                plugins = {}
         except:
             logger.warning("error decoding plugins: plugins was {}".format(repr(row['plugins'])))
             plugins = {}

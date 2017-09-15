@@ -645,14 +645,16 @@ function getConfirmation(msg, confirmCallback, denyCallback) {
       rules.templates.forEach(function (defn) {
           div = document.createElement("DIV");
           div.className = "item";
-          div.dataset['value'] = defn
-          let nicename = defn;
+          div.dataset['value'] = defn[0]
+          let nicename = defn[1];
+          /*
           if (nicename.substr(0,7) === "plugin:") {
             nicename = substr(7);
           }
           if (nicename.substr(-4).toLocaleLowerCase() === ".yml"){
             nicename = nicename.slice(0, -4);
           }
+          */
           div.appendChild(document.createTextNode(nicename));
           dropdown_items.appendChild(div);
       });

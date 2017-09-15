@@ -595,23 +595,19 @@ def check_and_fix_integrity(db=None, params=None):
     else:
         raise ValueError("Unknown database chosen: {}".format(db.dbname))
 
-    try:
-        errors = check_default_subscription(db)
-        if errors:
-            fix_default_subscription(db, errors)
-        new_sub = bool(errors)
-        errors = check_subscriptions(db)
-        if errors:
-            fix_subscriptions(db, errors)
-        if new_sub:
-            fix_default_rules(db)
+    errors = check_default_subscription(db)
+    if errors:
+        fix_default_subscription(db, errors)
+    new_sub = bool(errors)
+    errors = check_subscriptions(db)
+    if errors:
+        fix_subscriptions(db, errors)
+    if new_sub:
+        fix_default_rules(db)
 
-        errors = check_settings(db)
-        if errors:
-            fix_settings(db, errors)
-    except:
-        traceback.print_exc()
-        raise
+    errors = check_settings(db)
+    if errors:
+        fix_settings(db, errors)
 
     errors = check_data_sources(db)
     if errors:

@@ -225,3 +225,16 @@ Note: NetFlow traffic packets cannot be interpreted by the receiver until the so
 
 # Security Rules
 
+One default rule is provided to identify traffic to compromised hosts. Additional rules can be created or customized.
+
+## Adding a rule
+
+## Editing a rule
+
+## Advanced Custom rules
+
+TODO: can we create a template that lets you put in your pattern to match?
+
+## Creating a rule template
+
+## Reapplying existing rules
