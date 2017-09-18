@@ -19,3 +19,5 @@ class RequiredKey(MalformedRequest):
 
 
 class AuthenticationError(Exception): pass
+
+class IntegrityError(Exception): pass

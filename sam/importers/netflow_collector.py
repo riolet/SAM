@@ -55,7 +55,6 @@ class Collector(object):
         """
         Entry point for collector process
         :param port:
-        :param format:
         :param access_key:
         :return:
         """

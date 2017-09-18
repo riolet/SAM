@@ -2,6 +2,7 @@ import sys
 import os
 import getopt
 import multiprocessing
+import errors
 import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))  # this could be executed from any directory
 from sam import constants
@@ -127,13 +128,14 @@ def launch_collector(parsed, args):
     if parsed['format'].lower() == "netflow":
         from sam.importers import netflow_collector
         collector = netflow_collector.Collector()
+        collector.run(port=port)
     else:
         import server_collector
         collector = server_collector.Collector()
+        if parsed['format'] is None:
+            parsed['format'] = constants.collector['format']
+        collector.run(port=port, format=parsed['format'])
 
-    if parsed['format'] is None:
-        parsed['format'] = constants.collector['format']
-    collector.run(port=port, format=parsed['format'])
     logger.info('collector shut down.')
     return collector
 
@@ -246,7 +248,7 @@ def check_database():
     import integrity
     # Validate the database format
     if not integrity.check_and_fix_integrity():
-        exit(1)
+        raise errors.IntegrityError("Database integrity errors detected.")
 
 
 def launch_whois_service(db, sub):
