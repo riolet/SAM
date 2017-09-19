@@ -65,7 +65,7 @@ class Rules():
             raise ValueError("Description must be a string.")
         description = description.strip()
 
-        self.db.insert(self.table, active=True, rule_path=path,
+        self.db.insert(self.table, active=False, rule_path=path,
                        name=name, description=description,
                        params=cPickle.dumps(params))
 

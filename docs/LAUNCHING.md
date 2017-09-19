@@ -222,19 +222,3 @@ The following instructions largely duplicate the descriptions given [here (cisco
    1. `python sam/launcher.py --target=collector --format=netflow --port=8787`
 
 Note: NetFlow traffic packets cannot be interpreted by the receiver until the source has sent the appropriate templates. This means that netflow data may not appear to work over short durations. The default template transmission repeat time for a Cisco ASA 5505 is every 30 minutes.
-
-# Security Rules
-
-One default rule is provided to identify traffic to compromised hosts. Additional rules can be created or customized.
-
-## Adding a rule
-
-## Editing a rule
-
-## Advanced Custom rules
-
-TODO: can we create a template that lets you put in your pattern to match?
-
-## Creating a rule template
-
-## Reapplying existing rules
