@@ -65,9 +65,10 @@ class Rules():
             raise ValueError("Description must be a string.")
         description = description.strip()
 
-        self.db.insert(self.table, active=False, rule_path=path,
+        r_id = self.db.insert(self.table, active=False, rule_path=path,
                        name=name, description=description,
                        params=cPickle.dumps(params))
+        return r_id
 
 
     def get_all_rules(self):

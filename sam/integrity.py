@@ -346,7 +346,8 @@ def fix_default_rules(db):
     sub = sub_model.get_by_email(constants.subscription['default_email'])
     sub_id = sub['subscription']
     r_model = Rules(db, sub_id)
-    r_model.add_rule('compromised.yml', 'Compromised', 'Flag traffic to known compromised hosts', {})
+    r_id = r_model.add_rule('compromised.yml', 'Compromised', 'Flag traffic to known compromised hosts', {})
+    r_model.edit_rule(r_id, {'active': True})
 
 
 def check_settings(db):
