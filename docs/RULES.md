@@ -211,6 +211,37 @@ When executed, the condition is expanded into `WHERE protocol IN ('UDP', 'TCP')`
 A rule template can be tested with the launcher using the "template" target.  This should provide enough information to make sure a template is ready for use.
 
 ```bash
-python sam/launcher.py --target=template sam/rule_templates/netscan.yml
+python sam/launcher.py --target=template sam/rule_templates/dos.yml
 ```
 
+The positive successful output might look something like this:
+
+```
+
+======================================================================
+Rule name: High Traffic
+Rule type: periodic
+Rule subject: dst
+Rule inclusions: None
+Exposed parameters:
+	(passed) threshold:
+		default: 600
+		regex (valid): ^\d+$
+		label: This rule will trigger on a host if it receives more than this number of inbound connections over a period of 5 minutes.
+		format: text
+Action defaults: None
+Trigger condition:
+	having conn[links] > $threshold
+Translated condition:
+	having ('conn', 'links') > 600
+
+Rule SQL: 
+SELECT timestamp, dst, COUNT(DISTINCT dst) AS 'src[hosts]', COUNT(DISTINCT port) AS 'conn[ports]', COUNT(DISTINCT protocol) AS 'conn[protocol]', SUM(links) AS 'conn[links]'
+FROM s1_ds1_Links
+GROUP BY timestamp, dst
+HAVING `conn[links]` > '600'
+
+Test SQL execution: Success
+
+==========================  Rule is valid  ===========================
+```
