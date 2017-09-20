@@ -30,10 +30,11 @@ VALID_TARGETS = ['local', 'aggregator', 'collector', 'collector_stream',
 #   localmode combo
 #     --local --format=tcpdump
 #   import
-#     --target=import  --format=palo_alto
-
+#     --target=import  --format=palo_alto /path/to/logfile
+#   template
+#     --target=template /path/to/template.yml
 # suggested demo invocation:
-# sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
+# sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python sam/launcher.py --local --whois --format=tcpdump
 
 
 def main(argv=None):

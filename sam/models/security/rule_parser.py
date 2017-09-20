@@ -57,7 +57,10 @@ class RuleSQL(object):
                         clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
                     parts.append(clause_sql)
                 elif clause['type'] == 'protocol':
-                    val = web.sqlquote(clause['value'].upper())
+                    if type(clause['value']) == list:
+                        val = web.sqlquote([v.upper() for v in clause['value']])
+                    else:
+                        val = web.sqlquote(clause['value'].upper())
                     clause_sql = 'protocol {} {}'.format(clause['comp'], val)
                     parts.append(clause_sql)
                 elif clause['type'] == 'aggregate':
