@@ -158,5 +158,41 @@ when: src host 192.168.1.1 and dst host 192.168.1.2 and dst port 3306
 
 ```
 
+Exposed parameters are applied by using replacement strings in the 'actions' and the 'when'.
+In the following example, exposed parameters are used in the alert and condition.
+
+```yaml
+name: Network Scanning
+type: periodic
+include:
+expose:
+  threshold:
+    label: This rule will trigger on a host if that host is connecting to more than this number of distinct other hosts over 5 minutes.
+    format: text
+    default: 600
+    regex: "^\\d+$"
+actions:
+    email_active: true
+    email_subject: "[SAM] Rule $rule_name triggered."
+subject: src
+when: having dst[hosts] > $threshold
+```
+
+The condition "having dst\[hosts\] > $threshold" is expanded into "having dst\[hosts\] > 600
+
+If the rule were triggered, an email would be sent with the given subject "\[SAM\] Rule $rule_name triggered" expanded into something like "\[SAM\] Rule MyRule triggered".
+
+variables available include:
+  - all exposed parameters
+  - all included data
+  - "rule_name" The name of the rule (not the name of the rule template)
+  - "rule_desc" The description of the rule
+
+
 ## Test a rule template
-A rule template can be tested with the launcher using the "template" target.
+A rule template can be tested with the launcher using the "template" target.  This should provide enough information to make sure a template is ready for use.
+
+```bash
+python sam/launcher.py --target=template sam/rule_templates/netscan.yml
+```
+

@@ -26,6 +26,11 @@ def test_validate_rule():
     rule_path = os.path.join(base_path, os.path.pardir, os.path.pardir, constants.templates_folder, "test_rule.yml")
     assert rule.validate_rule(rule_path, db, sub_id, ds_full, None) == True
 
+    paths = [os.path.join(constants.rule_templates_path, p) for p in os.listdir(constants.rule_templates_path) if p.endswith("yml")]
+    for p in paths:
+        print("testing {}".format(p))
+        assert rule.validate_rule(p, db, sub_id, ds_full, None) == True
+
 
 def test_init():
     r = rule.Rule(123, True, "my rule", "description of my rule", 'compromised.yml')

@@ -50,7 +50,7 @@ def validate_rule(path, db, sub_id, ds_id, args):
     # included files
     incs = template.get_inclusions()
     yml_incs = template._yml.get("include")
-    if len(yml_incs) == 0:
+    if not yml_incs or len(yml_incs) == 0:
         print("Rule inclusions: None")
     else:
         print("Rule inclusions:")
@@ -62,7 +62,7 @@ def validate_rule(path, db, sub_id, ds_id, args):
     # exposed parameters
     exps = template.get_exposed()
     yml_exps = template._yml.get("expose")
-    if len(yml_exps) == 0:
+    if not yml_exps or len(yml_exps) == 0:
         print("Exposed parameters: None")
     else:
         print("Exposed parameters:")
@@ -84,7 +84,7 @@ def validate_rule(path, db, sub_id, ds_id, args):
     # default actions
     acts = template.get_action_defaults()
     yml_acts = template._yml.get('actions')
-    if len(yml_acts) == 0:
+    if not yml_acts or len(yml_acts) == 0:
         print("Action defaults: None")
     else:
         print("Action defaults:")
