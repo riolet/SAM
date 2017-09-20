@@ -63,6 +63,9 @@ def abs_rule_path(path):
 
 
 def get_definition(path, cache={}):
+    """
+    :rtype: RuleTemplate or None
+    """
     if path in cache:
         return cache[path]
     if not path:
@@ -100,7 +103,11 @@ class RuleTemplate(object):
     def import_yml(self, data):
         self.name = data.get('name', None)
         self.type = data.get('type', None)
+        if self.type not in ('immediate', 'periodic'):
+            self.type = 'immediate'
         self.subject = data.get('subject', None)
+        if self.subject not in ('src', 'dst'):
+            self.subject = 'src'
         self.when = data.get('when', None)
 
         if not self.name:
@@ -176,7 +183,7 @@ class RuleTemplate(object):
                 inclusions[ref] = data.splitlines()
                 # print("loaded inclusion: {}".format(inclusions[ref]))
             except Exception as e:
-                raise ValueError("Bad rule: inclusion {} not loaded. ({})".format(ref, str(e)))
+                print("Failed to load inclusion {}: {}".format(ref, str(e)))
         return inclusions
 
     @staticmethod

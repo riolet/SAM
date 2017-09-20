@@ -123,7 +123,7 @@ def test_get_flat_nodes():
     m_nodes = nodes.Nodes(db, sub_id)
     roots = m_nodes.get_flat_nodes(ds_full)
     ips = ["{}/{}".format(n['ipstart'], n['subnet']) for n in roots]
-    assert len(ips) == 36
+    assert len(ips) in (36, 37)
 
 
 def test_tags():
@@ -189,6 +189,7 @@ def test_env():
 
 def test_alias():
     m_nodes = nodes.Nodes(db, sub_id)
+    m_nodes.delete_custom_hostnames()
     m_nodes.set_alias('110', 'hero')
     m_nodes.set_alias('110.20', 'side-kick')
     m_nodes.set_alias('110.20.30', 'henchman')

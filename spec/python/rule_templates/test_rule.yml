@@ -2,7 +2,7 @@
 name: Test Yaml
 type: immediate
 include:
-  bad_hosts: ./test_hosts.txt
+  bad_hosts: test_hosts.txt
 expose:
   source_ip:
     format: text

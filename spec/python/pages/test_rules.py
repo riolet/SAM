@@ -21,8 +21,10 @@ def reset_dummy_rules():
     r.add_rule("suspicious.yml", 'suspicious traffic', 'desc4', {})
     all_rules = r.get_all_rules()
     ids = [rule.id for rule in all_rules]
-    # disable portscan.yml rule
-    r.edit_rule(ids[2], {'active': False})
+    # enable all but portscan.yml
+    r.edit_rule(ids[0], {'active': True})
+    r.edit_rule(ids[1], {'active': True})
+    r.edit_rule(ids[3], {'active': True})
 
 
 def test_rules_decode():
@@ -52,9 +54,9 @@ def test_rules_encode():
         encoded = r.encode_get_response(all_rules)
         expected = {'all': [
             {'id': ids[0], 'name': 'comp hosts', 'desc': 'desc1', 'template': 'Compromised Traffic', 'type': 'immediate', 'active': True},
-            {'id': ids[1], 'name': 'DDoS', 'desc': 'desc2', 'template': 'Traffic Threshold', 'type': 'periodic', 'active': True},
+            {'id': ids[1], 'name': 'DDoS', 'desc': 'desc2', 'template': 'High Traffic', 'type': 'periodic', 'active': True},
             {'id': ids[2], 'name': 'port scans', 'desc': 'desc3', 'template': 'Port Scanning', 'type': 'periodic', 'active': False},
-            {'id': ids[3], 'name': 'suspicious traffic', 'desc': 'desc4', 'template': 'TCPDUMP Rule', 'type': 'immediate', 'active': True},
+            {'id': ids[3], 'name': 'suspicious traffic', 'desc': 'desc4', 'template': 'IP -> IP/Port', 'type': 'immediate', 'active': True},
         ]}
         assert encoded == expected
 
@@ -71,11 +73,18 @@ def test_rulesnew_get_decode():
 
 
 def test_rulesnew_get_perform():
-    all_templates = rule_template.get_all()
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         r = RulesNew()
         response = r.perform_get_command(None)
-        assert response == all_templates
+        expected = [
+            ('portscan.yml', 'Port Scanning'),
+            ('netscan.yml', 'Network Scanning'),
+            ('suspicious.yml', 'IP -> IP/Port'),
+            ('compromised.yml', 'Compromised Traffic'),
+            ('dos.yml', 'High Traffic'),
+            ('custom: test_rule.yml', 'Test Yaml')
+        ]
+        assert response == expected
 
 
 def test_rulesnew_get_encode():

@@ -139,9 +139,11 @@ subject: src
 # For periodic rules, you can specify any, all, or none of the above
 # and an additional `having` clause.  In the having clause you can
 # specify:
-#     conn[links]  number of connections formed
-#     conn[ports]
-#     dst[hosts]
+#     conn[links]  (total number of connections formed)
+#     conn[ports]  (number of destination ports used)
+#     conn[protocol]  (number of protocols used)
+#     dst[hosts] (if subject=src only; number of distinct hosts contacted)
+#     src[hosts] (if subject=dst only; number of distinct hosts contacted)
 #
 # ex1. having conn[links] > 1000
 #      trigger when the number of connections involving the

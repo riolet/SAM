@@ -1,6 +1,130 @@
+import os
 import re
-from sam.models.security import rule_template
+import yaml
+import operator
+import web
+from sam.models.security import rule_template, rule_parser
 from sam import constants
+
+
+def validate_rule(path, db, sub_id, ds_id, args):
+    """
+
+    :param path: rule template path. relative or absolute.
+    :param db: database connection
+    :type db: web.DB
+    :param sub_id: subscription id
+    :param ds_id: datasource id
+    :param args: any extra args in the invocation.
+    :return:
+    """
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        print("Rule not found: {}".format(path))
+        return False
+    try:
+        with open(path, 'r') as f:
+            data = yaml.load(f)
+        template = rule_template.RuleTemplate(os.path.dirname(path), data)
+    except Exception as e:
+        print("Error parsing template: {}".format(str(e)))
+        return False
+    placeholder = rule_template.get_all()[0]
+    rule = Rule(1, False, "test", "test desc", placeholder)
+    rule.definition = template
+    rule.exposed_params = rule.get_initial_exposed_params()
+    rule.action_params = rule.get_initial_action_params()
+
+    # basic rule data
+    print("="*70)
+    print("Rule name: {}".format(template.name))
+    if template.type == template._yml.get('type'):
+        print("Rule type: {}".format(template.type))
+    else:
+        print("* Rule type: {} (failed; reverted to {})".format(template._yml.get('type'), template.type))
+    if template.subject == template._yml.get('subject'):
+        print("Rule subject: {}".format(template.subject))
+    else:
+        print("* Rule subject: {} (failed; reverted to {})".format(template._yml.get('subject'), template.subject))
+
+    # included files
+    incs = template.get_inclusions()
+    yml_incs = template._yml.get("include")
+    if len(yml_incs) == 0:
+        print("Rule inclusions: None")
+    else:
+        print("Rule inclusions:")
+        for key, val in yml_incs.iteritems():
+            print("\t({}) {}: {}".format("passed" if key in incs else "failed; not found", key, val))
+    if yml_incs and len(yml_incs) != len(incs):
+        return False
+
+    # exposed parameters
+    exps = template.get_exposed()
+    yml_exps = template._yml.get("expose")
+    if len(yml_exps) == 0:
+        print("Exposed parameters: None")
+    else:
+        print("Exposed parameters:")
+        for key, val in yml_exps.iteritems():
+            print("\t({}) {}:".format("passed" if key in exps else "failed", key, val))
+            for k, v in val.iteritems():
+                if k in ['label', 'format', 'default', 'options']:
+                    print("\t\t{}: {}".format(k, v))
+                elif k == 'regex':
+                    if key in exps and 'regex_compiled' in exps[key]:
+                        print("\t\tregex (valid): {}".format(yml_exps[key]['regex']))
+                    else:
+                        print("\t   *\tregex (invalid): {}".format(yml_exps[key]['regex']))
+                else:
+                    print("\t   *\t{} (invalid): {}".format(k, v))
+    if yml_exps and len(yml_exps) != len(exps):
+        return False
+
+    # default actions
+    acts = template.get_action_defaults()
+    yml_acts = template._yml.get('actions')
+    if len(yml_acts) == 0:
+        print("Action defaults: None")
+    else:
+        print("Action defaults:")
+        for key, val in yml_acts.iteritems():
+            print("{} {}: {}".format('\t(passed)' if key in acts else '   *\t(failed)', key, val))
+
+    # when / trigger conditions
+    translations = rule.get_translation_table()
+    conditions = rule.get_conditions()
+    subject = rule.definition.subject
+    try:
+        rp = rule_parser.RuleParser(translations, subject, conditions, None)
+    except Exception as e:
+        print("Trigger condition: Failed")
+        print("\t{}".format(e))
+        return False
+    print("Trigger condition:\n\t{}".format(conditions))
+    tokens = rule_parser.RuleParser.tokenize(conditions)
+    rule_parser.RuleParser.decode_tokens(translations, tokens)
+    translated = ' '.join(map(str, map(operator.itemgetter(1), tokens)))
+    print("Translated condition:\n\t{}".format(translated))
+    sql = rp.sql.get_query('s{}_ds{}_Links'.format(sub_id, ds_id))
+
+    # SQL tests
+    print("\nRule SQL: ")
+    print(sql)
+    t = db.transaction()
+    try:
+        db.query(sql)
+    except Exception as e:
+        print("\nTest SQL execution: Failed")
+        print(e)
+        return False
+    else:
+        print("\nTest SQL execution: Success")
+    finally:
+        t.rollback()
+
+    print("")
+    return True
 
 
 class Rule(object):
