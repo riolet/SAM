@@ -2,7 +2,9 @@ import sys
 import os
 import getopt
 import multiprocessing
+import errors
 import logging
+import traceback
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))  # this could be executed from any directory
 from sam import constants
 
@@ -12,7 +14,7 @@ application = None
 
 VALID_ARGS = ['format=', 'port=', 'target=', 'dest=', 'sub=', 'local', 'whois', 'wsgi']
 VALID_TARGETS = ['local', 'aggregator', 'collector', 'collector_stream',
-                 'webserver', 'import', 'test_dummy']
+                 'webserver', 'import', 'test_dummy', 'template']
 
 # targets:
 #   webserver
@@ -28,10 +30,11 @@ VALID_TARGETS = ['local', 'aggregator', 'collector', 'collector_stream',
 #   localmode combo
 #     --local --format=tcpdump
 #   import
-#     --target=import  --format=palo_alto
-
+#     --target=import  --format=palo_alto /path/to/logfile
+#   template
+#     --target=template /path/to/template.yml
 # suggested demo invocation:
-# sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python launcher.py --local --whois --format=tcpdump
+# sudo tcpdump -i any -f --immediate-mode -l -n -Q inout -tt | python sam/launcher.py --local --whois --format=tcpdump
 
 
 def main(argv=None):
@@ -57,9 +60,11 @@ def main(argv=None):
          'collector': launch_collector,
          'collector_stream': launch_collector_stream,
          'aggregator': launch_aggregator,
-         'import': launch_importer
+         'import': launch_importer,
+         'template': launch_template_tester
          }[target](parsed_args, args)
     except:
+        logger.exception("Exception when launching target")
         return 3
     return 0
 
@@ -127,13 +132,14 @@ def launch_collector(parsed, args):
     if parsed['format'].lower() == "netflow":
         from sam.importers import netflow_collector
         collector = netflow_collector.Collector()
+        collector.run(port=port)
     else:
         import server_collector
         collector = server_collector.Collector()
+        if parsed['format'] is None:
+            parsed['format'] = constants.collector['format']
+        collector.run(port=port, format=parsed['format'])
 
-    if parsed['format'] is None:
-        parsed['format'] = constants.collector['format']
-    collector.run(port=port, format=parsed['format'])
     logger.info('collector shut down.')
     return collector
 
@@ -208,6 +214,39 @@ def launch_importer(parsed, args):
     return processor
 
 
+def launch_template_tester(parsed, args):
+    import common
+    import sam.models.subscriptions
+    import sam.models.security.rule
+    sub_model = sam.models.subscriptions.Subscriptions(common.db_quiet)
+    subscription_id = sub_model.decode_sub(parsed['sub'])
+
+    datasource = parsed['dest']
+    try:
+        ds_id = int(datasource)
+    except (TypeError, ValueError):
+        try:
+            from sam.models.datasources import Datasources
+            d_model = Datasources(common.db_quiet, {}, subscription_id)
+            ds_id = d_model.name_to_id(datasource)
+        except:
+            logger.error('Please specify a datasource. "--dest=???". Exiting.')
+            return 5
+    if not ds_id:
+        logger.error('Please specify a datasource. "--dest=???". Exiting.')
+        return 6
+
+    if len(args) != 1:
+        logger.error("Please specify one source file. Exiting.")
+        return 4
+
+    r = sam.models.security.rule.validate_rule(args[0], common.db, subscription_id, ds_id, args[1:])
+    if r:
+        print("  Rule is valid  ".center(70, '='))
+    else:
+        print("  Rule is not valid  ".center(70, '='))
+
+
 def create_local_settings(db, sub, ds_key):
     # create 1 key if none exist
     from sam.models.settings import Settings
@@ -246,7 +285,7 @@ def check_database():
     import integrity
     # Validate the database format
     if not integrity.check_and_fix_integrity():
-        exit(1)
+        raise errors.IntegrityError("Database integrity errors detected.")
 
 
 def launch_whois_service(db, sub):

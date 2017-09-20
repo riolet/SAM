@@ -5,6 +5,7 @@ import logging
 import time
 import cPickle
 import threading
+import traceback
 from sam import constants
 import web
 import sam.common
@@ -75,16 +76,25 @@ class MemoryBuffers:
         self.buffers[sub] = sub_buffers
 
     def add(self, sub, ds, message):
-        # type: (int, int, [str]) -> None
+        """
+        :type sub: int
+        :type ds: int
+        :type message: any
+        :rtype: None
+        """
         buff = self.buffers.get(sub, {}).get(ds)
-        if not buff:
+        if buff is None:
             self.create(sub, ds)
             buff = self.buffers.get(sub, {}).get(ds)
         with buff.lock:
             buff.add(message)
 
     def remove(self, sub, ds):
-        # type: (int, int) -> None
+        """
+        :type sub: int
+        :type ds: int
+        :rtype: None
+        """
         sub_buffer = self.buffers.get(sub)
         if sub_buffer is not None:
             if ds in sub_buffer:
@@ -93,11 +103,18 @@ class MemoryBuffers:
                 del self.buffers[sub]
 
     def get_all(self):
-        # type: () -> [Buffer]
+        """
+        :rtype: list [ Buffer ]
+        """
         buffers = [self.buffers[subid][dsid] for subid in sorted(self.buffers.keys()) for dsid in sorted(self.buffers[subid].keys())]
         return buffers
 
     def yank(self, sub, ds):
+        """
+        :type sub: int
+        :type ds: int
+        :rtype: list
+        """
         buff = self.buffers.get(sub, {}).get(ds)
         if buff:
             with buff.lock:
@@ -134,6 +151,10 @@ class DatabaseInserter(threading.Thread):
                 self.process_buffer(buff)
 
     def process_buffer(self, buff):
+        """
+        :type buff: Buffer
+        :rtype: int
+        """
         sub_id = buff.sub
         ds_id = buff.ds
         processor = sam.preprocess.Preprocessor(sam.common.db_quiet, sub_id, ds_id)
@@ -156,7 +177,7 @@ class DatabaseInserter(threading.Thread):
             logger.debug("PREPROCESSOR: removing {0}: {1}".format(buff.sub, buff.ds))
             self.buffers.remove(buff.sub, buff.ds)
             rcode = 3
-        elif time_expired:
+        elif rows == 0 and time_expired:
             # buffer is empty and time has expired. Flag it for removal next time.
             logger.debug("PREPROCESSOR: flagging for removal {0}: {1}".format(buff.sub, buff.ds))
             buff.flag_expired()

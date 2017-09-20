@@ -88,9 +88,14 @@ def test_tokenize_simple():
     assert parser.where_clauses == [('CLAUSE', {'comp': 'in', 'dir': 'dst', 'type': 'port', 'value': ['80', '443']})]
     assert parser.having_clauses == []
 
-    s12 = 'protocol tcp'
-    parser = rule_parser.RuleParser({}, 'src', s12, default_timerange)
+    s11 = 'protocol tcp'
+    parser = rule_parser.RuleParser({}, 'src', s11, default_timerange)
     assert parser.where_clauses == [('CLAUSE', {'comp': '=', 'dir': 'either', 'type': 'protocol', 'value': 'tcp'})]
+    assert parser.having_clauses == []
+
+    s12 = 'protocol (tcp, udp)'
+    parser = rule_parser.RuleParser({}, 'src', s12, default_timerange)
+    assert parser.where_clauses == [('CLAUSE', {'comp': 'in', 'dir': 'either', 'type': 'protocol', 'value': ['tcp', 'udp']})]
     assert parser.having_clauses == []
 
 
@@ -726,6 +731,7 @@ def test_rate_nets():
     #remove temp data
     l_model.delete_connections()
     assert len(l_model.get_all_endpoints()) == 0
+
 
 def test_rate_ddos():
     l_model = Links(db, sub_id, ds_temp)

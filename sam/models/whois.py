@@ -230,6 +230,7 @@ class WhoisService(threading.Thread):
         self.table = 's{acct}_Nodes'.format(acct=self.sub)
         self.n_model = Nodes(self.db, self.sub)
         self.alive = True
+        self.killswitch = threading.Event()
 
     def get_missing(self):
         where = 'subnet=32 AND alias IS NULL'
@@ -244,7 +245,7 @@ class WhoisService(threading.Thread):
         print("starting whois run")
         while self.alive:
             self.missing = self.get_missing()
-            while len(self.missing) > 0:
+            while len(self.missing) > 0 and self.alive:
                 address = self.missing.pop()
                 if address:
                     try:
@@ -261,8 +262,9 @@ class WhoisService(threading.Thread):
                         continue
                 if not self.alive:
                     break
-            time.sleep(5)
+            self.killswitch.wait(5)
         return
 
     def shutdown(self):
         self.alive = False
+        self.killswitch.set()

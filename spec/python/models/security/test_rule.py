@@ -20,6 +20,18 @@ def get_dummy_rule():
     return r
 
 
+def test_validate_rule():
+    # validate_rule(path, db, sub_id, ds_id, args)
+    base_path = os.path.dirname(__file__)
+    rule_path = os.path.join(base_path, os.path.pardir, os.path.pardir, constants.templates_folder, "test_rule.yml")
+    assert rule.validate_rule(rule_path, db, sub_id, ds_full, None) == True
+
+    paths = [os.path.join(constants.rule_templates_path, p) for p in os.listdir(constants.rule_templates_path) if p.endswith("yml")]
+    for p in paths:
+        print("testing {}".format(p))
+        assert rule.validate_rule(p, db, sub_id, ds_full, None) == True
+
+
 def test_init():
     r = rule.Rule(123, True, "my rule", "description of my rule", 'compromised.yml')
     assert r.id == 123
@@ -54,7 +66,7 @@ def test_get_def_name():
     r = rule.Rule(123, True, "my rule", "description of my rule", 'compromised.yml')
     assert r.get_def_name() == "Compromised Traffic"
     r = rule.Rule(123, True, "my rule", "description of my rule", 'dos.yml')
-    assert r.get_def_name() == "Traffic Threshold"
+    assert r.get_def_name() == "High Traffic"
     r = rule.Rule(123, True, "my rule", "description of my rule", 'plugin: missing_plugin.yml')
     assert r.get_def_name() == "Error."
 

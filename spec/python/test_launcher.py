@@ -1,4 +1,8 @@
+import os
 import sys
+import signal
+import multiprocessing
+import time
 from spec.python import db_connection
 from sam import constants, launcher, preprocess
 from sam import server_webserver
@@ -191,6 +195,29 @@ def test_launch_collector():
     finally:
         server_collector.Collector = old_collector
 
+    def thread_func(parsed, args):
+        launcher.launch_collector(parsed, args)
+
+    parsed = {'port': '8040', 'format': 'tcpdump'}
+    p_collector = multiprocessing.Process(target=thread_func, args=(parsed, None))
+    p_collector.daemon = True
+    p_collector.start()
+    time.sleep(0.2)
+    assert p_collector.is_alive()
+    os.kill(p_collector.pid, signal.SIGINT)
+    p_collector.join()
+    assert p_collector.is_alive() is False
+
+    parsed = {'port': '8040', 'format': 'netflow'}
+    p_collector = multiprocessing.Process(target=thread_func, args=(parsed, None))
+    p_collector.daemon = True
+    p_collector.start()
+    time.sleep(0.2)
+    assert p_collector.is_alive()
+    os.kill(p_collector.pid, signal.SIGINT)
+    p_collector.join()
+    assert p_collector.is_alive() is False
+
 
 def test_launch_collector_stream():
     old_collector = server_collector.Collector
@@ -337,7 +364,12 @@ def test_check_database():
 
 
 def test_launch_whois_service():
-    pass
+    whois = launcher.launch_whois_service(db, sub_id)
+    time.sleep(0.1)
+    assert whois.is_alive()
+    whois.shutdown()
+    whois.join()
+    assert whois.is_alive() is False
 
 
 def xtest_launch_localmode():

@@ -6,7 +6,7 @@ type: periodic
 include:
 expose:
   threshold:
-    label: Trigger Threshold (hosts / 5 minutes)
+    label: This rule will trigger on a host if that host is connecting to more than this number of distinct other hosts over 5 minutes.
     format: text
     default: 600
     regex: "^\\d+$"

@@ -94,8 +94,8 @@ def test_get_ruleset():
 
     all_rules = r.get_all_rules()
     ids = [rule.id for rule in all_rules]
-    for id in ids[::2]:
-        r.edit_rule(id, {'active': False})
+    for id in ids[1::2]:
+        r.edit_rule(id, {'active': True})
 
     ruleset = r.get_ruleset()
     assert len(ruleset) == 2
@@ -129,6 +129,8 @@ def test_delete_rule():
 
     all_rules = r.get_all_rules()
     ids = [rule.id for rule in all_rules]
+    for id in ids:
+        r.edit_rule(id, {'active': True})
     for id in ids[::2]:
         r.delete_rule(id)
 
@@ -145,18 +147,18 @@ def test_edit_rule():
     path = "custom: test_rule.yml"
     r.add_rule(path, 'n1', 'd1', {})
     rule = r.get_all_rules()[0]
-    assert rule.active == True
+    assert rule.active == False
     assert rule.get_action_params()['alert_label'] == 'Special Label'
     assert rule.get_exposed_params()['color']['value'] == 'blue'
 
     #perform edits:
     r.edit_rule(rule.id, {
-        'active': False,
+        'active': True,
         'actions': {'alert_label': 'secret-sauce'},
         'exposed': {'color': 'green'}
     })
 
     updated = r.get_rule(rule.id)
-    assert updated.active == False
+    assert updated.active == True
     assert updated.get_exposed_params()['color']['value'] == 'green'
     assert updated.get_action_params()['alert_label'] == 'secret-sauce'

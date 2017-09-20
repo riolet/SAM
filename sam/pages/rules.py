@@ -41,8 +41,17 @@ class RulesNew(base.HeadlessPost):
         # no options for this request
         return None
 
+    def get_proper_name(self, path):
+        try:
+            rule = rule_template.get_definition(path)
+            name = rule.name
+        except:
+            name = path[:path.find(".")].title()
+        return name
+
     def perform_get_command(self, request):
-        response = rule_template.get_all()
+        paths = rule_template.get_all()
+        response = zip(paths, map(self.get_proper_name, map(rule_template.abs_rule_path, paths)))
         return response
 
     def encode_get_response(self, response):

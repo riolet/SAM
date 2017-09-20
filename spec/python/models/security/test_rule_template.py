@@ -287,9 +287,8 @@ def test_load_inclusions():
     bad_include = {'include': {
         'inc_1': './uncompromising_hosts.txt'
     }}
-    with pytest.raises(ValueError):
-        inclusions = rt.load_inclusions(bad_include)
-        assert len(inclusions) == 0
+    inclusions = rt.load_inclusions(bad_include)
+    assert len(inclusions) == 0
 
 
 def test_load_actions_alert():
