@@ -1,5 +1,6 @@
 MySQL-python>=1.2.5
 web.py>=0.38
-jasmine>=2.8
 requests>=2.18
+PyYAML>=3.10
 pytest>=3.2
+jasmine>=2.8
