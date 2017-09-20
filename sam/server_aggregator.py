@@ -76,7 +76,12 @@ class MemoryBuffers:
         self.buffers[sub] = sub_buffers
 
     def add(self, sub, ds, message):
-        # type: (int, int, [str]) -> None
+        """
+        :type sub: int
+        :type ds: int
+        :type message: any
+        :rtype: None
+        """
         buff = self.buffers.get(sub, {}).get(ds)
         if buff is None:
             self.create(sub, ds)
@@ -85,7 +90,11 @@ class MemoryBuffers:
             buff.add(message)
 
     def remove(self, sub, ds):
-        # type: (int, int) -> None
+        """
+        :type sub: int
+        :type ds: int
+        :rtype: None
+        """
         sub_buffer = self.buffers.get(sub)
         if sub_buffer is not None:
             if ds in sub_buffer:
@@ -94,11 +103,18 @@ class MemoryBuffers:
                 del self.buffers[sub]
 
     def get_all(self):
-        # type: () -> [Buffer]
+        """
+        :rtype: list [ Buffer ]
+        """
         buffers = [self.buffers[subid][dsid] for subid in sorted(self.buffers.keys()) for dsid in sorted(self.buffers[subid].keys())]
         return buffers
 
     def yank(self, sub, ds):
+        """
+        :type sub: int
+        :type ds: int
+        :rtype: list
+        """
         buff = self.buffers.get(sub, {}).get(ds)
         if buff:
             with buff.lock:

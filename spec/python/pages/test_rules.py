@@ -1,6 +1,6 @@
 # coding=utf-8
 from spec.python import db_connection
-import web
+import operator
 import pytest
 from datetime import datetime
 from sam.pages.rules import Rules, RulesApply, RulesEdit, RulesNew
@@ -76,14 +76,16 @@ def test_rulesnew_get_perform():
     with db_connection.env(mock_input=True, login_active=False, mock_session=True):
         r = RulesNew()
         response = r.perform_get_command(None)
+
         expected = [
-            ('portscan.yml', 'Port Scanning'),
-            ('netscan.yml', 'Network Scanning'),
-            ('suspicious.yml', 'IP -> IP/Port'),
             ('compromised.yml', 'Compromised Traffic'),
+            ('custom: test_rule.yml', 'Test Yaml'),
             ('dos.yml', 'High Traffic'),
-            ('custom: test_rule.yml', 'Test Yaml')
+            ('netscan.yml', 'Network Scanning'),
+            ('portscan.yml', 'Port Scanning'),
+            ('suspicious.yml', 'IP -> IP/Port'),
         ]
+        response.sort(key=operator.itemgetter(0))
         assert response == expected
 
 
