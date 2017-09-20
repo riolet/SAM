@@ -178,16 +178,34 @@ subject: src
 when: having dst[hosts] > $threshold
 ```
 
-The condition "having dst\[hosts\] > $threshold" is expanded into "having dst\[hosts\] > 600
+The condition `having dst[hosts] > $threshold` is expanded into `having dst[hosts] > 600`
 
-If the rule were triggered, an email would be sent with the given subject "\[SAM\] Rule $rule_name triggered" expanded into something like "\[SAM\] Rule MyRule triggered".
+If the rule were triggered, an email would be sent with the given subject `[SAM] Rule $rule_name triggered` expanded into something like `[SAM] Rule MyRule triggered`.
 
-variables available include:
+The available variables are:
   - all exposed parameters
   - all included data
   - "rule_name" The name of the rule (not the name of the rule template)
   - "rule_desc" The description of the rule
 
+Another sample, using a dropdown to specify protocol:
+```yaml
+name: Demo Rule
+type: immediate
+expose:
+  proto:
+    label: protocol to test
+    format: dropdown
+    default: udp, tcp
+    options:
+      - tcp
+      - udp
+      - udp, tcp
+subject: src
+when: protocol $proto
+```
+
+When executed, the condition is expanded into `WHERE protocol IN ('UDP', 'TCP')`
 
 ## Test a rule template
 A rule template can be tested with the launcher using the "template" target.  This should provide enough information to make sure a template is ready for use.
