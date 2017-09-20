@@ -10,7 +10,6 @@ class Map(base.headed):
         self.scripts = ['/static/js/map.js',
                         '/static/js/map_node.js',
                         '/static/js/map_links.js',
-                        '/static/js/map_data.js',
                         '/static/js/map_selection.js',
                         '/static/js/map_ports.js',
                         '/static/js/map_render.js',

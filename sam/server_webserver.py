@@ -54,7 +54,7 @@ def localization_hook():
     if not lang:
         lang = default_lang
 
-    web.setcookie("lang", lang, 31536000, common.get_domain(), False, False, '/')
+    web.setcookie("lang", lang, 31536000, common.get_domain(web.ctx.home), False, False, '/')
     common.session['lang'] = lang
 
 
@@ -72,6 +72,8 @@ def start_server(port):
     #    hook()
     app.add_processor(web.loadhook(localization_hook))
     httpserver.runwsgi(app.wsgifunc(httpserver.PluginStaticMiddleware), port)
+    for hook in constants.plugin_hooks_server_stop:
+        hook()
 
 
 def start_wsgi():

@@ -85,8 +85,8 @@ Usage:
             raise ValueError("Cannot determine datasource. Argv is {0}".format(repr(argv)))
 
         try:
-            ds_id = int(requested_ds)
-            self.set_datasource_id(ds_id)
+            requested_ds = int(requested_ds)
+            self.set_datasource_id(requested_ds)
         except:
             self.set_datasource_name(requested_ds)
 
@@ -102,11 +102,26 @@ Usage:
         Returns:
             True or False
         """
-        if os.path.isfile(path):
-            return True
-        else:
-            print("File not found: {0}".format(path))
-            return False
+        return os.path.isfile(path)
+
+    def import_packets(self, packets):
+        """
+        Take in packets received via collector and return translated lines.
+
+        :param packets: a string received by the collector. May be ascii or binary. This base function presumes ascii.
+        :type packets: string
+        :return: a list translated log lines
+        :rtype: List [ Dict [ str, any ]
+        """
+        stripped = [line.strip() for line in packets]
+        translated = []
+        for line in stripped:
+            translated_line = {}
+            success = self.translate(line, 1, translated_line)
+            if success == 0:
+                translated.append(translated_line)
+        return translated
+
 
     def translate(self, line, line_num, dictionary):
         """
@@ -119,7 +134,7 @@ Usage:
         Returns:
             0 on success and non-zero on error.
         """
-        return 1
+        raise NotImplementedError("importers must implement this function")
 
     def import_string(self, s):
         """
@@ -142,6 +157,7 @@ Usage:
                 if self.translate(line, line_num, rows[counter]) != 0:
                     continue
             except:
+                traceback.print_exc()
                 continue
 
             counter += 1
@@ -203,7 +219,7 @@ Usage:
 
     def set_datasource_name(self, ds_name):
         """
-        :param ds: integer datasource id
+        :param ds: string datasource id
          :type ds: basestring
         :return: None 
         """
@@ -241,6 +257,10 @@ Usage:
         """
         global common
         global Datasources
+
+        if self.subscription is None:
+            raise ValueError("No account (subscription) specified.)")
+
         try:
             import sam.common
             common = sam.common
@@ -271,11 +291,11 @@ Usage:
 
         try:
             truncated_rows = rows[:count]
-            if count > 0 and len(rows[0].keys()) != len(self.keys):
-                print("Database key length doesn't match. Check that your importer's translate function "
+            if set(rows[0].keys()) != set(self.keys):
+                print("Database keys don't match. Check that your importer's translate function "
                       "fills all the dictionary keys in import_base.keys exactly.")
-                print("Expected keys: {0}".format(repr(self.keys)))
-                print("Received keys: {0}".format(repr(rows[0].keys())))
+                print("Expected keys: {0}".format(repr(sorted(self.keys))))
+                print("Received keys: {0}".format(repr(sorted(rows[0].keys()))))
                 raise AssertionError("Insertion keys do not match expected keys.")
 
             # multiple_insert example:
@@ -315,6 +335,8 @@ def get_importer(import_format, sub_id, ds_id):
     :return: importer instance or None
      :rtype: BaseImporter or None
     """
+    if import_format is None:
+        raise ImportError("Unable to get find importer given format.")
     module_ = None
     importer = None
 

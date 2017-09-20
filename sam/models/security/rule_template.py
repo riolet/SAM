@@ -4,17 +4,6 @@ import re
 import yaml
 from sam import constants
 
-# will have compromisedhosts.yml, suspicioustraffic.yml, dos.yml, ...
-# they will expose some controls, such as for dos:
-# expose "tolerance"
-#   valid: "\d+"
-#   title: "Minimum connections per second to flag"
-# YML files include sections:
-#   include: (for files, databases)
-#   exposed: (for values that should be configurable within the app)
-#   action: email, create alert,
-#   when: define the trigger conditions
-
 
 def get_all():
     built_ins = filter(lambda f: f.endswith(".yml"), os.listdir(constants.rule_templates_path))
@@ -74,6 +63,9 @@ def abs_rule_path(path):
 
 
 def get_definition(path, cache={}):
+    """
+    :rtype: RuleTemplate or None
+    """
     if path in cache:
         return cache[path]
     if not path:
@@ -111,7 +103,11 @@ class RuleTemplate(object):
     def import_yml(self, data):
         self.name = data.get('name', None)
         self.type = data.get('type', None)
+        if self.type not in ('immediate', 'periodic'):
+            self.type = 'immediate'
         self.subject = data.get('subject', None)
+        if self.subject not in ('src', 'dst'):
+            self.subject = 'src'
         self.when = data.get('when', None)
 
         if not self.name:
@@ -173,13 +169,14 @@ class RuleTemplate(object):
             exposed[key] = exposed_param
         return exposed
 
-    @staticmethod
-    def load_inclusions(yml):
+    def load_inclusions(self, yml):
         inclusions = {}
         if not yml.get('include', None):
             return inclusions
         for ref in yml['include'].keys():
-            path = os.path.join(constants.rule_templates_path, yml['include'][ref])
+            path = os.path.join(self.cwd, yml['include'][ref])
+            if not os.path.exists(path):
+                path = os.path.join(constants.rule_templates_path, yml['include'][ref])
             try:
                 with open(path, 'r') as f:
                     data = f.read()

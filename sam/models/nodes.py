@@ -1,8 +1,5 @@
-import time
 import web
 from sam import common
-import threading
-import sam.models.whois
 from sam.models.links import Links
 
 
@@ -290,50 +287,3 @@ def merge_groups(main, groups):
         keepers[node['ipstart']] = node
     nodes.extend(keepers.values())
     return nodes
-
-
-class WhoisService(threading.Thread):
-    def __init__(self, db, sub, *args, **kwargs):
-        super(WhoisService, self).__init__(*args, **kwargs)
-        self.db = db
-        self.sub = sub
-        self.missing = []
-        self.table = 's{acct}_Nodes'.format(acct=self.sub)
-        self.n_model = Nodes(self.db, self.sub)
-        self.alive = True
-
-    def get_missing(self):
-        where = 'subnet=32 AND alias IS NULL'
-        rows = self.db.select(self.table, what='ipstart', where=where)
-        missing = [common.IPtoString(row['ipstart']) for row in rows]
-        return missing
-
-    def run(self):
-        # while there are missing hosts
-        # run the lookup command
-        # save the hostname
-        print("starting whois run")
-        while self.alive:
-            self.missing = self.get_missing()
-            while len(self.missing) > 0:
-                address = self.missing.pop()
-                if address:
-                    try:
-                        whois = sam.models.whois.Whois(address)
-                        name = whois.get_name()
-                        print('WHOIS: "{}" -> {}'.format(whois.query, name))
-                        self.n_model.set_alias(address, name)
-                        netname, ipstart, ipend, subnet = whois.get_network()
-                        #print('WHOIS:     part of {} - {}/{}'.format(netname, common.IPtoString(ipstart), subnet))
-                        #subnet = subnet / 8 * 8
-                        if subnet in (8, 16, 24):
-                            self.n_model.set_alias('{}/{}'.format(common.IPtoString(ipstart), subnet), netname)
-                    except:
-                        continue
-                if not self.alive:
-                    break
-            time.sleep(5)
-        return
-
-    def shutdown(self):
-        self.alive = False

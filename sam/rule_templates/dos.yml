@@ -1,12 +1,12 @@
 # DoS Attack -- unusually high traffic levels connecting to a host.
 # trigger an alert on {dst} if {dst} gets more than $threshold (tcp?) conn/minute
 ---
-name: Traffic Threshold
+name: High Traffic
 type: periodic
 include:
 expose:
   threshold:
-    label: Trigger Threshold (connections / minute)
+    label: This rule will trigger on a host if it receives more than this number of inbound connections over a period of 5 minutes.
     format: text
     default: 600
     regex: "^\\d+$"

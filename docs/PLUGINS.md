@@ -1,6 +1,6 @@
 # Plugins
+Plugins all exist in a single folder, defined in environment variable `SAM__PLUGINS__ROOT`.
 
-* Define folder for plugins by setting environment variable: `SAM__PLUGINS__ROOT`.
 * Each plugin is a folder in the root plugin folder.
 * Plugin names must not be equivalent to existing urls. (such as "map" or "links")
 * Each plugin must have a file `<plugin>/__init__.py` that contains at least the line `import sam_installer`.
@@ -10,9 +10,18 @@
 ## Installing a plugin
 
 * Plugins are installed based on the environment variable `SAM__PLUGINS__ENABLED` which defaults to `ALL`.
-  * Use a comma-separated list to be explicit about which plugins to install. e.g. `plug1, plug2`. Plugin names mustn't start nor end with whitespace. 
-  * `ALL` (the default) is a special keyword meaning to scan the plugin folder for subfolders and attempt to install each as a plugin.
+  * Use a comma-separated list to be explicit about which plugins to install. e.g. `plug1,plug2`. 
+    Plugin names mustn't start nor end with whitespace. 
+  * `ALL` (the default) is a special keyword meaning to scan the plugin folder for subfolders and 
+  attempt to install each as a plugin.
   * If blank, no plugins are installed.
+
+sample environment:
+```bash
+export SAM__PLUGINS__ROOT=/opt/samapper/plugins
+export SAM__PLUGINS__ENABLED=myplugin,myplugin2
+```
+
 
 ## Importers
 
@@ -57,19 +66,40 @@ class Composite(sam.pages.base.Headed):
     * And an endpoint should server HTML or JSON but not both. 
 
 #### Navbar
-* To add a page to the navbar, include the following in your install script.
+To edit the navbar, include the following in your install script.
 ```python
-sam.constants.navbar.append({
-    "name": "Composite View",
-    "icon": "pie chart",
-    "link": "/composite",
-    "group": "any"
-})
+sam.constants.plugin_navbar_edits.append(
+    ('./<link_to_update>', {'<property>': '<value>', ...})
+)
+# for example, to make the settings page accessible only to subscribed users:
+sam.constants.plugin_navbar_edits.append(
+    ('./settings_page', {'group': 'subscribed'})
+)
 ```
-* where `name` is the name shown on the nav bar
-* and `icon` is the icon accompanying (selected from [this list](https://semantic-ui.com/elements/icon.html))
-* and `link` is the url to your page.
-* Note: `group` is reserved for future use.
+* where `link_to_update` is the name of the navbar item to update.
+* and `property` is the field to change.
+* and `value` is the new value to use.
+
+To add a new page, include the following in your install script.
+```python
+sam.constants.plugin_navbar_edits.append(
+    {"name": "<link text>",
+     "icon": "<link icon>",
+     "link": "<link address>",
+     "group": "<link group>"}
+)
+# for example, the metadata page:
+sam.constants.plugin_navbar_edits.append(
+    {"name": strings.meta_title,
+     "icon": "tasks",
+     "link": "./metadata",
+     "group": "any"}
+)
+```
+* where `link text` is the title of the link
+* and `link icon` is the icon displayed (selected from [this list](https://semantic-ui.com/elements/icon.html))
+* and `link address` is the url to your page.
+* and `link group` describes what user group sees the link.
 
 ## Security rules
 * If your plugin provides new security rules, include the following in your install script for each endpoint:
@@ -93,7 +123,7 @@ from sam.pages import base
 class DisabledPost(base.HeadlessPost):
     def POST(self):
         web.header("Content-Type", "application/json")
-        fail_case = {'result': 'failure', 'message': 'Post operations disabled.'}
+        fail_case = {'result': 'failure', 'message': 'POST operations disabled.'}
         return json.dumps(fail_case)
 
 def install():

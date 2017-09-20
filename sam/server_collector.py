@@ -1,14 +1,11 @@
 import SocketServer
-import importlib
 import logging
 import signal
 import threading
 import time
-import traceback
-import web
+# import web
 from sam import constants
 import sam.importers.import_base as base_importer
-web.config.debug = constants.debug
 import requests
 import cPickle
 import select
@@ -32,11 +29,11 @@ class SocketBuffer(object):
         self.buffer = []
         self.buffer_lock = threading.Lock()
 
-    def store_data(self, lines):
+    def store_data(self, packet):
         # acquire lock
         with self.buffer_lock:
-            # append line
-            self.buffer.append(lines)
+            # append packet
+            self.buffer.append(packet)
             # release lock
 
     def __len__(self):
@@ -44,18 +41,18 @@ class SocketBuffer(object):
 
     def pop_all(self):
         with self.buffer_lock:
-            lines = self.buffer
+            packets = self.buffer
             self.buffer = []
-        return lines
+        return packets
+
 
 # used to send data between threads.
 SOCKET_BUFFER = SocketBuffer()
 
-
 class SocketListener(SocketServer.BaseRequestHandler):
     def handle(self):
         global SOCKET_BUFFER
-        data = self.request[0].strip()
+        data = self.request[0]
         SOCKET_BUFFER.store_data(data)
 
 
@@ -85,38 +82,56 @@ class FileListener(threading.Thread):
 class Collector(object):
     def __init__(self):
         self.listen_address = (constants.collector['listen_host'], int(constants.collector['listen_port']))
-        self.target_address = 'http://{}:{}'.format(constants.collector['target_host'], constants.collector['target_port'])
+        self.target_address = constants.collector['target_address']
         self.access_key = constants.collector['upload_key']
         self.default_format = constants.collector['format']
         self.transmit_buffer = []
         self.transmit_buffer_size = 0
         self.transmit_buffer_threshold = 500  # push the transmit buffer to the database server if it reaches this many entries.
-        self.time_between_imports = 1  # seconds. Period for translating lines from SOCKET to TRANSMIT buffers
-        self.time_between_transmits = 10  # seconds. Period for transmitting to the database server.
+        self.time_between_imports = 1  # float, seconds. Period for translating lines from SOCKET to TRANSMIT buffers
+        self.time_between_transmits = 10  # float, seconds. Period for transmitting to the database server.
         self.listener = None
         self.listener_thread = None
         self.shutdown_event = threading.Event()
         self.importer = None
 
+    def get_importer(self, format):
+        if format is None:
+            format = self.default_format
+        try:
+            importer = base_importer.get_importer(format, 0, 0)
+        except:
+            importer = None
+        return importer
+
+    def form_connection(self, sleep=1.0, max_tries=10):
+        attempts = 1
+        connected = self.test_connection()
+        while not connected and attempts < max_tries:
+            time.sleep(sleep)
+            connected = self.test_connection()
+            attempts += 1
+        return connected
+
     def run(self, port=None, format=None, access_key=None):
         # set up the importer
+        self.importer = self.get_importer(format)
+        if not self.importer:
+            logger.critical("Collector: Failed to load importer; aborting")
+            return
+
         if port is not None:
             try:
                 self.listen_address = (self.listen_address[0], int(port))
             except (ValueError, TypeError) as e:
                 logger.critical('Collector: Invalid port: {}'.format(e))
                 return
-        if format is None:
-            format = self.default_format
-        self.importer = base_importer.get_importer(format, 0, 0)
-        if not self.importer:
-            logger.critical("Collector: Failed to load importer; aborting")
-            return
         if access_key is not None:
             self.access_key = access_key
 
         # test the connection
-        if self.test_connection() is False:
+        if not self.form_connection():
+            logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
             # register signals for safe shut down
@@ -129,6 +144,7 @@ class Collector(object):
 
         # Start the daemon listening on the port in an infinite loop that exits when the program is killed
         self.listener_thread = threading.Thread(target=self.listener.serve_forever)
+        self.listener_thread.daemon = True
         self.listener_thread.start()
         logger.info("Live Collector listening on {0}:{1}.".format(*self.listen_address))
 
@@ -142,22 +158,16 @@ class Collector(object):
 
     def run_streamreader(self, stream, format=None, access_key=None):
         # set up the importer
-        if format is None:
-            format = self.default_format
-        self.importer = base_importer.get_importer(format, 0, 0)
+        self.importer = self.get_importer(format)
         if not self.importer:
             logger.critical("Collector: Failed to load importer; aborting")
             return
+
         if access_key is not None:
             self.access_key = access_key
 
         # test the connection
-        attempts = 1
-        connected = self.test_connection()
-        while not connected and attempts < 10:
-            time.sleep(1)
-            connected = self.test_connection()
-        if not connected:
+        if not self.form_connection():
             logger.critical('Collector: Failed to connect to aggregator; aborting')
             return
 
@@ -199,43 +209,42 @@ class Collector(object):
                 alive = False
 
             deltatime = time.time() - last_processing
+            # Buffer full. Processing.
             if self.transmit_buffer_size > self.transmit_buffer_threshold:
                 logger.debug("COLLECTOR: process server running batch (due to buffer cap reached)")
                 self.transmit_lines()
                 last_processing = time.time()
+            # Time's up. Processing.
             elif deltatime > self.time_between_transmits and self.transmit_buffer_size > 0:
                 logger.debug("COLLECTOR: process server running batch (due to time)")
                 self.transmit_lines()
                 last_processing = time.time()
+            # Stuff is in there, but the buffer's not full and time isn't up. Not processing.
             elif self.transmit_buffer_size > 0:
                 logger.debug("COLLECTOR: waiting for time limit or a full buffer. "
                       "Time at {0:.1f}, Size at {1}".format(deltatime, self.transmit_buffer_size))
+            # buffer is empty. Waiting...
             else:
                 # Don't let time accumulate while the buffer is empty
                 last_processing = time.time()
 
             # import lines in memory buffer:
             if len(SOCKET_BUFFER) > 0:
-                self.import_lines()
+                self.import_packets()
 
         logger.info("COLLECTOR: process server shutting down")
 
-    def import_lines(self):
+    def import_packets(self):
         global SOCKET_BUFFER
         # clear socket buffer
-        lines = SOCKET_BUFFER.pop_all()
+        packets = SOCKET_BUFFER.pop_all()
 
         # translate lines
-        translated = []
-        for line in lines:
-            translated_line = {}
-            success = self.importer.translate(line, 1, translated_line)
-            if success == 0:
-                translated.append(translated_line)
+        translations = self.importer.import_packets(packets)
 
         # insert translations into TRANSMIT_BUFFER
         headers = base_importer.BaseImporter.keys
-        for line in translated:
+        for line in translations:
             list_line = [line[header] for header in headers]
             self.transmit_buffer.append(list_line)
 
@@ -262,10 +271,12 @@ class Collector(object):
             reply = response.content
             logger.debug("COLLECTOR: Received reply: {0}".format(reply))
         except Exception as e:
+            reply = 'error'
             logger.error("COLLECTOR: Error sending package: {0}".format(e))
             # keep the unsent lines around
             self.transmit_buffer.extend(lines)
             self.transmit_buffer_size = len(self.transmit_buffer)
+        return reply
 
     def test_connection(self):
         package = {
@@ -279,23 +290,27 @@ class Collector(object):
             response = requests.request('POST', self.target_address, data=cPickle.dumps(package))
             reply = response.content
         except Exception as e:
-            logger.exception("Collector: Testing connection...Failed")
+            logger.error("Collector: Testing connection...Failed")
             return False
         if reply == 'handshake':
-            logger.exception("Collector: Testing connection...Succeeded")
+            logger.info("Collector: Testing connection...Succeeded")
             return True
         else:
-            logger.error("Bad reply. Aborting")
-            logger.debug('  "{}"'.format(reply))
+            reply.replace('\r', '').replace('\n', '')
+            if len(reply) > 50:
+                logger.error("Error: {}...".format(reply[:50]))
+            else:
+                logger.error("Error: {}".format(reply))
             return False
 
     def shutdown(self):
-        logger.info("Collector: Shutting down handler.")
-        self.listener.shutdown()
-        if self.listener_thread:
-            self.listener_thread.join()
-            logger.info("Collector: Handler stopped.")
-        logger.info("Collector: Shutting down batch processor.")
+        if self.listener is not None:
+            logger.info("COLLECTOR: Shutting down handler.")
+            self.listener.shutdown()
+            if self.listener_thread:
+                self.listener_thread.join()
+            logger.info("COLLECTOR: Handler stopped.")
+        logger.info("COLLECTOR: Shutting down batch processor.")
         self.shutdown_event.set()
 
 

@@ -9,9 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_plugins():
+    newly_loaded = []
     plugin_path = os.path.abspath(constants.plugins['root'])
     if not os.path.isdir(plugin_path):
-        return
+        return newly_loaded
     sys.path.append(plugin_path)
 
     plugin_names = constants.plugins['enabled']
@@ -27,6 +28,7 @@ def load_plugins():
             mod = importlib.import_module(plugin)
             mod.sam_installer.install()
             loaded.append(plugin)
+            newly_loaded.append(plugin)
         except:
             logger.error("Failed to load {}".format(plugin))
             raise
@@ -36,6 +38,7 @@ def load_plugins():
     # Plugins change the initialization data, prompting this re-init:
 
     init_globals()
+    return newly_loaded
 
 
 def init_globals():
@@ -198,8 +201,8 @@ def determine_range_string(ip=u"0/0"):
     return low, high
 
 
-def get_domain():
-    domain = web.ctx.home
+def get_domain(path):
+    domain = path
     prefix = domain.find("//")
     if prefix != -1:
         domain = domain[prefix + 2:]
@@ -207,6 +210,9 @@ def get_domain():
     if prefix != -1:
         domain = domain[prefix + 1:]
     suffix = domain.find(":")
+    if suffix != -1:
+        domain = domain[:suffix]
+    suffix = domain.find("/")
     if suffix != -1:
         domain = domain[:suffix]
     return domain
@@ -233,6 +239,10 @@ def sendmail(to_address, subject, body, from_address=constants.smtp['from'], hea
         logger.exception("Other email error:")
 
 
+def sendsms(number, msg):
+    raise NotImplementedError
+
+
 class MultiRender(object):
     def __init__(self, default):
         default_path = os.path.join(constants.base_path, default)
@@ -253,7 +263,7 @@ class MultiRender(object):
         if path in self.bare_paths:
             return
         self.bare_paths.append(path)
-        plugin_path = os.path.join(constants.plugins['root'], path)
+        plugin_path = os.path.join(constants.plugins['root'], path, "templates")
         self.plugin_renderers.append(web.template.render(plugin_path))
 
 
@@ -284,10 +294,12 @@ def get_db(config):
 
 
 def db_concat(db, *args):
+    if not args:
+        raise ValueError("Must supply arguments to concatenate")
     if db.dbname == 'mysql':
-        return 'CONCAT({})'.format(','.join(args))
+        return 'CONCAT({})'.format(','.join(map(str,args)))
     elif db.dbname == 'sqlite':
-        return ' || '.join(args)
+        return '||'.join(map(str,args))
 
 
 # tell renderer where to look for templates

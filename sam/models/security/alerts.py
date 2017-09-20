@@ -15,7 +15,7 @@ class AlertFilter:
          :type limit: int
         :param age_limit: maximum age in seconds to get.
          :type age_limit: int
-        :param sort: column to sort results by
+        :param sort: column to sort results by. Examples, id, severity, log_time, report_time, label...
          :type sort: unicode
         :param order: order to sort in, one of "DESC" or "ASC"
          :type order: unicode
@@ -108,8 +108,17 @@ class Alerts:
     def clear(self):
         return self.db.delete(self.table, where="1")
 
-    def count(self):
-        rows = self.db.select(self.table, what="COUNT(0) AS 'count'")
+    def count(self, filters=None, ipstart=1, ipend=2**32-1):
+        qvars = {
+            'ips': ipstart,
+            'ipe': ipend
+        }
+        what = "COUNT(0) AS 'count'"
+        if filters:
+            where = filters.get_where("ipstart>=$ips AND ipend<=$ipe")
+        else:
+            where = 'ipstart>=$ips AND ipend<=$ipe'
+        rows = self.db.select(self.table, what=what, where=where, vars=qvars)
         return rows.first()['count']
 
     def alert_already_exists(self, ipstart, ipend, rule_id, timestamp):

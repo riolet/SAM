@@ -9,6 +9,12 @@ from sam import errors
 
 
 def test_render():
+    try:
+        import ldap3
+        ldap_installed = True
+    except ImportError:
+        ldap_installed = False
+
     with db_connection.env(mock_input=True, login_active=True, mock_session=True, mock_render=True):
         p = sam.pages.login.Login_LDAP()
         common.session.clear()
@@ -16,7 +22,10 @@ def test_render():
         dummy = p.GET()
         calls = common.renderer.calls
         assert calls[0] == ('render', ('_head', 'Login',), {'lang': 'en', 'stylesheets': ['/static/css/general.css'], 'scripts': []})
-        assert calls[1] == ('render', ('en/login', '/login',), {})
+        if ldap_installed:
+            assert calls[1] == ('render', ('en/login', '/login',), {})
+        else:
+            assert calls[1] == ('render', ('en/login', '/login', ['LDAP module not installed. Cannot perform login.']), {})
         assert calls[2] == ('render', ('en/_footer', {'English': '/en/sam/testpage', 'Française': '/fr/sam/testpage'}), {})
         assert calls[3] == ('render', ('_tail', ), {})
         assert dummy == "NoneNoneNoneNone"

@@ -7,7 +7,16 @@ from sam.models.security import alerts
 
 
 def time_to_seconds(tstring):
-    matches = Alerts.REGEX.findall(tstring)
+    """
+    Converts a period of time (expressed as a string) to seconds.
+
+    :param tstring: string time period. use # of (years/weeks/days/hours/minutes/seconds)
+        examples: "1 year", "3 min, 6 hr, 1 second 1 year 20 weeks",  "500" (seconds assumed.)
+    :type tstring: str
+    :return: number of seconds
+    :rtype: int
+    """
+    matches = Alerts.TIME_REGEX.findall(tstring)
     timespan = 0
     for quantity, period in matches:
         if period == 'y':
@@ -65,14 +74,13 @@ def fuzzy_time(seconds):
 
 
 class Alerts(base.headless_post):
-    REGEX = re.compile(r'(\d+)\s*([ywdhms])', re.I)
+    TIME_REGEX = re.compile(r'(\d+)\s*([ywdhms])', re.I)
 
     # ------------------- GET ---------------------
 
     def decode_get_request(self, data):
         # request should (but doesn't need to) include: 'subnet', 'severity', 'time', 'sort', 'sort_dir', 'page_size', 'page_num'
         subnet = data.get('subnet', None)
-
 
         try:
             severity = int(data.get('severity', 1))
@@ -106,6 +114,7 @@ class Alerts(base.headless_post):
         return request
 
     def perform_get_command(self, request):
+        # request keys are: subnet, severity, time, sort, sort_dir, page_size, page_num
         response = {}
         m_alerts = alerts.Alerts(common.db, self.page.user.viewing)
 
@@ -114,11 +123,12 @@ class Alerts(base.headless_post):
         alert_filters = alerts.AlertFilter(min_severity=request['severity'], sort=request['sort'], order=request['sort_dir'], age_limit=request['time'], limit=request['page_size'], offset=page_offset)
         if request['subnet'] is None:
             response['alerts'] = m_alerts.get(alert_filters)
+            total_alerts = m_alerts.count(alert_filters)
         else:
             ipstart, ipend = common.determine_range_string(request['subnet'])
             response['alerts'] = m_alerts.get_by_host(alert_filters, ipstart, ipend)
+            total_alerts = m_alerts.count(alert_filters, ipstart, ipend)
 
-        total_alerts = m_alerts.count()
         response['results'] = total_alerts
         response['page'] = request['page_num']
         response['pages'] = int(math.ceil(float(total_alerts) / request['page_size']))
@@ -184,7 +194,6 @@ class Alerts(base.headless_post):
         return encoded
 
 
-
 class AlertDetails(base.headless_post):
 
     # ------------------- GET ---------------------
@@ -207,6 +216,18 @@ class AlertDetails(base.headless_post):
 
     def encode_get_response(self, response):
         details = response['details']
+        if details is None:
+            encoded = {
+                'for': response['for'],
+                'time': None,
+                'host': None,
+                'severity': None,
+                'label': None,
+                'rule_name': None,
+                'details': None,
+                'description': None,
+            }
+            return encoded
         raw_metadata = details['details']
         metadata = {}
         if isinstance(raw_metadata, (str, unicode)):
@@ -219,7 +240,6 @@ class AlertDetails(base.headless_post):
         else:
             metadata['data'] = str(raw_metadata)
 
-
         # prettify some values
         if 'timestamp' in metadata:
             metadata['timestamp'] = metadata['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
@@ -229,7 +249,6 @@ class AlertDetails(base.headless_post):
             metadata['dst'] = common.IPtoString(metadata['dst'])
         if 'duration' in metadata:
             metadata['duration'] = fuzzy_time(metadata['duration'])
-
 
         host = iprange_to_string(details['ipstart'], details['ipend'])
         encoded = {
@@ -256,20 +275,21 @@ class AlertDetails(base.headless_post):
         request = {
             'method': method
         }
-        if method == "update_status":
+        if method == "update_label":
             try:
                 request['id'] = int(data.get('id'))
             except:
                 raise errors.RequiredKey('alert id', 'id')
             try:
-                request['label'] = data.get('label')
+                request['label'] = data.get('label', '')
+                assert len(request['label']) > 0
             except:
                 raise errors.RequiredKey('label', 'label')
 
         return request
 
     def perform_post_command(self, request):
-        if request['method'] == 'update_status':
+        if request['method'] == 'update_label':
             a_model = alerts.Alerts(common.db, self.page.user.viewing)
             a_model.set_label(request['id'], request['label'])
         return "success"

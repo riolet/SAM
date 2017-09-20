@@ -94,6 +94,7 @@ plugin_navbar_edits = []  # format to append is (link, dict) and each is applied
 
 plugin_hooks_traffic_import = []
 plugin_hooks_server_start = []
+plugin_hooks_server_stop = []
 
 default_urls = [
     '/', 'sam.pages.map.Map',  # Omit the overview page and go straight to map (no content in overview anyway)
@@ -177,10 +178,13 @@ def get_navbar(lang):
     ]
     for edit in plugin_navbar_edits:
         try:
-            for link in navbar:
-                if link['link'] == edit[0]:
-                    link.update(edit[1])
-                    break
+            if len(edit) == 2:
+                for link in navbar:
+                    if link['link'] == edit[0]:
+                        link.update(edit[1])
+                        break
+            elif edit.keys() == navbar[0].keys():
+                navbar.append(edit)
         except:
             logger.warning("Unable to update navbar: {}".format(edit))
 

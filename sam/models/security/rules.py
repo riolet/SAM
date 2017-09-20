@@ -43,6 +43,16 @@ class Rules():
         return rule_obj
 
     def add_rule(self, path, name, description, params):
+        """
+        :param path: file name: 'compromised.yml', 'plugin: compromised.yml', 'custom: compromised.yml'
+        :type path: str
+        :param name: Short rule name
+        :type name: str
+        :param description: Long description of rule
+        :type description: str
+        :param params: default parameters to use for rule customization
+        :type params: dict
+        """
         valid_path = rule_template.abs_rule_path(path)
         if valid_path is None:
             print("Rule definition path cannot be verified. Saving anyway.")
@@ -55,9 +65,10 @@ class Rules():
             raise ValueError("Description must be a string.")
         description = description.strip()
 
-        self.db.insert(self.table, active=True, rule_path=path,
+        self.db.insert(self.table, active=False, rule_path=path,
                        name=name, description=description,
                        params=cPickle.dumps(params))
+
 
     def get_all_rules(self):
         """

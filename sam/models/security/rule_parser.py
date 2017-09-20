@@ -57,7 +57,10 @@ class RuleSQL(object):
                         clause_sql = '(dst {c} {val} or src {c} {val})'.format(c=clause['comp'], val=ips)
                     parts.append(clause_sql)
                 elif clause['type'] == 'protocol':
-                    val = web.sqlquote(clause['value'].upper())
+                    if type(clause['value']) == list:
+                        val = web.sqlquote([v.upper() for v in clause['value']])
+                    else:
+                        val = web.sqlquote(clause['value'].upper())
                     clause_sql = 'protocol {} {}'.format(clause['comp'], val)
                     parts.append(clause_sql)
                 elif clause['type'] == 'aggregate':
@@ -78,7 +81,8 @@ class RuleSQL(object):
          :type tend: datetime.datetime
         :return:
         """
-        self.when = "timestamp BETWEEN {} AND {}".format(web.sqlquote(tstart), web.sqlquote(tend))
+        offset = datetime.timedelta(0,1)
+        self.when = "timestamp BETWEEN {} AND {}".format(web.sqlquote(tstart), web.sqlquote(tend - offset))
 
     def _build_where_columns(self, wheres):
         columns = set()
@@ -110,7 +114,6 @@ class RuleSQL(object):
             whats.append(self.subject)
         whats.extend(self._where_columns)
 
-        #
         if 'dst' not in whats:
             whats.append("COUNT(DISTINCT dst) AS 'dst[hosts]'")
         if 'src' not in whats:
@@ -211,7 +214,13 @@ class RuleParser(object):
     # TODO: remove the token CONTEXT ("having") so that you write horrible rules like:
     #   "dst protocol UDP and (dst[ports] >500 or dst host 1.2.3.4)"
 
-    def __init__(self, replacements, subject, rule_string):
+    def __init__(self, replacements, subject, rule_string, timerange=None):
+        """
+        :param replacements: dictionary of string replacements for placeholders (found in rule_string)
+        :param subject: either 'src' or 'dst'; Which end of the connection to report on.
+        :param rule_string: the definition of the query. eg: "(port > 16384 and port < 32768) or protocol TCP having dst[hosts] > $threshold"
+        :param timerange: optional, tuple of `start` and `end` datetime.datetime objects
+        """
         self.replacements = replacements
         self.subject = subject
 
@@ -225,6 +234,7 @@ class RuleParser(object):
         self.tokens = []
         self.where_clauses = []
         self.having_clauses = []
+        self.timerange = timerange
         self.sql = ""
 
         self.tokens = self.tokenize(self.original)
@@ -439,4 +449,6 @@ class RuleParser(object):
          :rtype: RuleSQL
         """
         sql = RuleSQL(self.subject, self.where_clauses, self.having_clauses)
+        if self.timerange and len(self.timerange) == 2:
+            sql.set_timerange(self.timerange[0], self.timerange[1])
         return sql

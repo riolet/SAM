@@ -1,5 +1,6 @@
 import os
 import yaml
+import pytest
 from sam import constants
 from sam.models.security import rule_template
 
