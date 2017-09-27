@@ -25,8 +25,10 @@ ip_apnic1 = '203.119.101.24'
 ip_apnic1_name = 'Asia Pacific Network Information Centre'
 ip_apnic1_net = ('APNIC-SERVICES-AU', 3413598208, 3413602303, 20)
 ip_apnic2 = '164.100.78.177'
-ip_apnic2_name = 'NICNET, INDIA'
-ip_apnic2_net = ('NICNET', 2758017024, 2758082559, 16)
+# ip_apnic2_name = 'NICNET, INDIA'
+ip_apnic2_name = 'NIC Data Centres.  Delhi IT Park, Shastri Park Delhi -  110053'
+# ip_apnic2_net = ('NICNET', 2758017024, 2758082559, 16)
+ip_apnic2_net = ('NDCSP-Delhi', 2758036992, 2758037247, 24)
 
 
 def test_ip_itos():
@@ -137,7 +139,7 @@ def test_apnic():
     w = whois.Whois(ip_apnic1)
     network = w.query_APNIC()
     objs = {n['objectType'] for n in network if n['type'] == 'object'}
-    assert objs == {'role', 'route', 'irt', 'inetnum'}
+    assert objs - {'person', 'role', 'route', 'irt', 'inetnum'} == set()
 
     w.info = network
     w.downloaded = True
@@ -148,8 +150,7 @@ def test_apnic():
     w = whois.Whois(ip_apnic2)
     network = w.query_APNIC()
     objs = {n['objectType'] for n in network if n['type'] == 'object'}
-    print objs
-    assert objs == {'person', 'role', 'route', 'irt', 'inetnum'}
+    assert objs - {'person', 'role', 'route', 'irt', 'inetnum'} == set()
 
     w.info = network
     w.downloaded = True
