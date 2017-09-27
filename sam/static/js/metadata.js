@@ -475,7 +475,6 @@ function present_quick_info(info) {
         if (info.hasOwnProperty("in")) {
             segment = document.getElementById("in_col");
             segment.innerHTML = "";
-            let avg_denom = info.in.duration ? info.in.duration : 1;
 
             //Add Header
             td = document.createElement("H3");
@@ -489,19 +488,18 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow(strings.meta_uconns, info.in.u_conn));
             table.appendChild(buildKeyValueRow(strings.meta_conns, info.in.total + strings.meta_conns2 + build_label_duration(info.in.seconds)));
             table.appendChild(buildKeyValueRow(strings.meta_connps, parseFloat(info.in.total / info.in.seconds).toFixed(3)));
-            table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.in.bytes_sent)));
-            table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.in.bytes_received)));
-            table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.in.avg_bps)));
+            table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.in.avg_conn_bps)));
             table.appendChild(buildKeyValueRow(strings.meta_max_bps, build_label_datarate(info.in.max_bps)));
-            table.appendChild(buildKeyValueRow(strings.meta_p_snt, build_label_packetrate(info.in.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow(strings.meta_p_rcv, build_label_packetrate(info.in.packets_received / avg_denom)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_datarate(info.in.bytes_sent / info.in.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_datarate(info.in.bytes_received / info.in.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_snt, build_label_packetrate(info.in.packets_sent / info.in.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_rcv, build_label_packetrate(info.in.packets_received / info.in.seconds)));
             table.appendChild(buildKeyValueRow(strings.meta_avg_duration, build_label_duration(info.in.duration)));
             segment.appendChild(table);
         }
         if (info.hasOwnProperty("out")) {
             segment = document.getElementById("out_col");
             segment.innerHTML = "";
-            let avg_denom = info.out.duration ? info.out.duration : 1;
 
             //Add Header
             td = document.createElement("H3");
@@ -515,12 +513,12 @@ function present_quick_info(info) {
             table.appendChild(buildKeyValueRow(strings.meta_uconns, info.out.u_conn));
             table.appendChild(buildKeyValueRow(strings.meta_conns, info.out.total + strings.meta_conns2 + build_label_duration(info.out.seconds)));
             table.appendChild(buildKeyValueRow(strings.meta_connps, parseFloat(info.out.total / info.out.seconds).toFixed(3)));
-            table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_bytes(info.out.bytes_sent)));
-            table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_bytes(info.out.bytes_received)));
-            table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.out.avg_bps)));
+            table.appendChild(buildKeyValueRow(strings.meta_avg_bps, build_label_datarate(info.out.avg_conn_bps)));
             table.appendChild(buildKeyValueRow(strings.meta_max_bps, build_label_datarate(info.out.max_bps)));
-            table.appendChild(buildKeyValueRow(strings.meta_p_snt, build_label_packetrate(info.out.packets_sent / avg_denom)));
-            table.appendChild(buildKeyValueRow(strings.meta_p_rcv, build_label_packetrate(info.out.packets_received / avg_denom)))
+            table.appendChild(buildKeyValueRow(strings.meta_b_snt, build_label_datarate(info.out.bytes_sent / info.out.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_b_rcv, build_label_datarate(info.out.bytes_received / info.out.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_snt, build_label_packetrate(info.out.packets_sent / info.out.seconds)));
+            table.appendChild(buildKeyValueRow(strings.meta_p_rcv, build_label_packetrate(info.out.packets_received / info.out.seconds)))
             table.appendChild(buildKeyValueRow(strings.meta_avg_duration, build_label_duration(info.out.duration)));
             segment.appendChild(table);
         }

@@ -14,9 +14,9 @@ def nice_protocol(strings, p_in, p_out):
     """
     
     :param p_in: comma-seperated protocol list for inbound connections
-     :type p_in: unicode
+     :type p_in: unicode or None
     :param p_out: comma-seperated protocol list for outbound connections
-     :type p_out: unicode
+     :type p_out: unicode or None
     :return: user-friendly string describing in-/outbound connections
      :rtype: unicode
     """
@@ -245,7 +245,7 @@ class Details(base.headless):
                 info['in']['bytes_sent'] = node_info.in_bytes_sent
                 info['in']['bytes_received'] = node_info.in_bytes_received
             info['in']['max_bps'] = node_info.in_max_bps if node_info.in_max_bps else 0
-            info['in']['avg_bps'] = node_info.in_avg_bps if node_info.in_avg_bps else 0
+            info['in']['avg_conn_bps'] = node_info.in_avg_conn_bps if node_info.in_avg_conn_bps else 0
             if not node_info.in_packets_sent and not node_info.in_packets_received:
                 info['in']['packets_sent'] = 0
                 info['in']['packets_received'] = 0
@@ -265,7 +265,7 @@ class Details(base.headless):
                 info['out']['bytes_sent'] = node_info.out_bytes_sent
                 info['out']['bytes_received'] = node_info.out_bytes_received
             info['out']['max_bps'] = node_info.out_max_bps if node_info.out_max_bps else 0
-            info['out']['avg_bps'] = node_info.out_avg_bps if node_info.out_avg_bps else 0
+            info['out']['avg_conn_bps'] = node_info.out_avg_conn_bps if node_info.out_avg_conn_bps else 0
             if not node_info.out_packets_sent and not node_info.out_packets_received:
                 info['out']['packets_sent'] = 0
                 info['out']['packets_received'] = 0
