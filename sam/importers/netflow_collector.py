@@ -14,15 +14,14 @@ from sam.importers import import_netflow
 logger = logging.getLogger(__name__)
 
 """
-Live Collector
+Netflow-specific Collector
 -----------
 
 * runs client-side.
-* listens on a socket (usually localhost:514) for messages from a gateway or router
-* translates those messages into a standard SAM format
-* periodically opens an SSL connection to live_server to send accumulated messages
+* spawns a nfcapd process to listen for netflow data on the given port
+* watches for complete log files from nfcapd, and spawns nfdump to translate them to text
+* periodically opens an SSL connection to the aggregator to send accumulated messages
 
-* two threads: one to read the socket, one to translate and transmit
 """
 
 
@@ -104,7 +103,6 @@ class Collector(object):
             raise e
 
     def thread_batch_processor(self):
-        global SOCKET_BUFFER
         # loop:
         #    wait for event, with timeout
         #    check bufferSize
@@ -144,6 +142,8 @@ class Collector(object):
         logger.info("COLLECTOR: process server shutting down")
 
     def new_capture_exists(self):
+        if not os.path.exists(self.nfcapd_folder):
+            return False
         files = os.listdir(self.nfcapd_folder)
         return any(["current" not in f for f in files if f.startswith("nfcapd")])
 

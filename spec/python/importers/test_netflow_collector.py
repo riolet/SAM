@@ -13,38 +13,6 @@ from sam.importers.import_tcpdump import TCPDumpImporter
 from py._path.local import LocalPath
 
 
-def xtest_import_packets():
-    buffer = server_collector.SOCKET_BUFFER
-    buffer.pop_all()
-    assert len(buffer) == 0
-    buffer_data = [
-        "",
-        "1491525947.515414 STP 802.1d, Config, Flags [none], bridge-id 8000.f8:32:e4:af:0a:a8.8001, "
-            "length 43",
-        "1491525947.915376 ARP, Request who-has 192.168.10.106 tell 192.168.10.254, length 46",
-        "1491525948.268015 IP 192.168.10.113.33060 > 172.217.3.196.443: Flags [P.], seq 256:730, "
-            "ack 116, win 3818, options [nop,nop,TS val 71847613 ecr 4161606244], length 474",
-        "1491525737.317942 IP 192.168.10.254.1900 > 239.238.237.236.55943: UDP, length 166, "
-            "other info",
-        "1491525737.317942 IP 192.168.10.254.55943 > 239.255.255.250.1900: UDP, length 449",
-        "",
-        "nonsensical entry",
-        "",
-    ]
-    map(buffer.store_data, buffer_data)
-
-    collector = server_collector.Collector()
-    collector.importer = TCPDumpImporter()
-    assert len(buffer) == 9
-    assert collector.transmit_buffer == []
-    assert collector.transmit_buffer_size == 0
-
-    collector.import_packets()
-    assert len(buffer) == 0
-    assert len(collector.transmit_buffer) == 3
-    assert collector.transmit_buffer_size == 3
-
-
 def test_transmit_lines():
     collector = netflow_collector.Collector()
     collector.transmit_buffer = ['data1', 'data2', 'data3']

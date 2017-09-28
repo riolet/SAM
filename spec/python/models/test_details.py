@@ -35,7 +35,7 @@ def test_get_metadata():
     assert meta['in_bytes_received'] == 2750
     assert meta['in_packets_sent'] == 34
     assert meta['in_packets_received'] == 37
-    assert close_to(meta['in_avg_bps'], 25.4566)
+    assert close_to(meta['in_avg_conn_bps'], 25.4566)
     assert close_to(meta['in_max_bps'], 500.0000)
     assert set(meta['in_protocols'].split(',')) == {'TCP', 'UDP'}
     assert close_to(meta['in_duration'], 33.6923)
@@ -45,7 +45,7 @@ def test_get_metadata():
     assert meta['out_packets_sent'] == 69
     assert meta['out_packets_received'] == 63
     assert close_to(meta['out_max_bps'], 500.0000)
-    assert close_to(meta['out_avg_bps'], 33.8068)
+    assert close_to(meta['out_avg_conn_bps'], 33.8068)
     assert set(meta['out_protocols'].split(',')) == {'TCP', 'UDP'}
     assert close_to(meta['out_duration'], 22.0000)
 

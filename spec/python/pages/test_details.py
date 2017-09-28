@@ -25,6 +25,9 @@ def test_nice_protocol():
     res = sam.pages.details.nice_protocol(strings, None, u'udp')
     assert res == u'udp (out)'
 
+    res = sam.pages.details.nice_protocol(strings, None, None)
+    assert res == u''
+
     res = sam.pages.details.nice_protocol(strings, u'abc,def', u'def,ghi,jkl')
     assert res == u'abc (in), def (i/o), jkl (out), ghi (out)'
 
